@@ -5,15 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ONSdigital/go-ns/common/commontest"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 
-	"github.com/ONSdigital/dp-rchttp"
+	"github.com/pkg/errors"
+
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -53,6 +53,7 @@ func TestClient_GetOutput(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+		mockedAPI.cli.SetMaxRetries(2)
 		_, err := mockedAPI.GetOutput(ctx, serviceToken, downloadServiceToken, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})
@@ -68,8 +69,8 @@ func TestClient_GetDimension(t *testing.T) {
 	filterOutputID := "foo"
 	name := "corge"
 	dimensionBody := `{
-		"url": "www.ons.gov.uk", 
-		"name": "quuz", 
+		"url": "www.ons.gov.uk",
+		"name": "quuz",
 		"options": ["corge"]}`
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
@@ -79,6 +80,7 @@ func TestClient_GetDimension(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+		mockedAPI.cli.SetMaxRetries(2)
 		_, err := mockedAPI.GetDimension(ctx, serviceToken, filterOutputID, name)
 		So(err, ShouldNotBeNil)
 	})
@@ -93,8 +95,8 @@ func TestClient_GetDimension(t *testing.T) {
 func TestClient_GetDimensions(t *testing.T) {
 	filterOutputID := "foo"
 	dimensionBody := `[{
-		"url": "www.ons.gov.uk", 
-		"name": "quuz", 
+		"url": "www.ons.gov.uk",
+		"name": "quuz",
 		"options": ["corge"]}]`
 
 	Convey("When bad request is returned", t, func() {
@@ -105,6 +107,7 @@ func TestClient_GetDimensions(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+		mockedAPI.cli.SetMaxRetries(2)
 		_, err := mockedAPI.GetDimensions(ctx, serviceToken, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})
@@ -128,6 +131,7 @@ func TestClient_GetDimensionOptions(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+		mockedAPI.cli.SetMaxRetries(2)
 		_, err := mockedAPI.GetDimensionOptions(ctx, serviceToken, filterOutputID, name)
 		So(err, ShouldNotBeNil)
 	})
@@ -145,7 +149,7 @@ func TestClient_CreateBlueprint(t *testing.T) {
 	version := "1"
 	names := []string{"quuz", "corge"}
 
-	checkResponse := func(mockRCHTTPCli *commontest.RCHTTPClienterMock, expectedFilterID string) {
+	checkResponse := func(mockRCHTTPCli *rchttp.ClienterMock, expectedFilterID string) {
 		So(len(mockRCHTTPCli.DoCalls()), ShouldEqual, 1)
 
 		actualBody, _ := ioutil.ReadAll(mockRCHTTPCli.DoCalls()[0].Req.Body)
@@ -155,7 +159,7 @@ func TestClient_CreateBlueprint(t *testing.T) {
 	}
 
 	Convey("Given a valid Blueprint is returned", t, func() {
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusCreated,
@@ -184,7 +188,7 @@ func TestClient_CreateBlueprint(t *testing.T) {
 
 	Convey("given rchttpclient.do returns an error", t, func() {
 		mockErr := errors.New("foo")
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, mockErr
 			},
@@ -208,7 +212,7 @@ func TestClient_CreateBlueprint(t *testing.T) {
 	Convey("given rchttpclient.do returns a non 200 response status", t, func() {
 		url := "http://localhost:8080"
 		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusCreated, 500, url + "/filters"}
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusInternalServerError,
@@ -249,7 +253,7 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 	}
 	doSubmit := true
 
-	checkResponse := func(mockRCHTTPCli *commontest.RCHTTPClienterMock, expectedModel Model) {
+	checkResponse := func(mockRCHTTPCli *rchttp.ClienterMock, expectedModel Model) {
 		So(len(mockRCHTTPCli.DoCalls()), ShouldEqual, 1)
 
 		actualBody, _ := ioutil.ReadAll(mockRCHTTPCli.DoCalls()[0].Req.Body)
@@ -260,7 +264,7 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 	}
 
 	Convey("Given a valid blueprint update is given", t, func() {
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusOK,
@@ -289,7 +293,7 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 
 	Convey("given rchttpclient.do returns an error", t, func() {
 		mockErr := errors.New("foo")
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, mockErr
 			},
@@ -313,7 +317,7 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 	Convey("given rchttpclient.do returns a non 200 response status", t, func() {
 		url := "http://localhost:8080"
 		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusOK, 500, url + "/filters/?submitted=" + strconv.FormatBool(doSubmit)}
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusInternalServerError,
@@ -344,7 +348,7 @@ func TestClient_AddDimensionValue(t *testing.T) {
 	name := "quz"
 
 	Convey("Given a valid dimension value is added", t, func() {
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusCreated,
@@ -369,7 +373,7 @@ func TestClient_AddDimensionValue(t *testing.T) {
 
 	Convey("given rchttpclient.do returns an error", t, func() {
 		mockErr := errors.New("foo")
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, mockErr
 			},
@@ -391,7 +395,7 @@ func TestClient_AddDimensionValue(t *testing.T) {
 		url := "http://localhost:8080"
 		uri := url + "/filters/" + filterID + "/dimensions/" + name + "/options/filter-api"
 		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusCreated, 500, uri}
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusInternalServerError,
@@ -417,7 +421,7 @@ func TestClient_RemoveDimensionValue(t *testing.T) {
 	filterID := "baz"
 	name := "quz"
 	Convey("Given a dimension value is removed", t, func() {
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusNoContent,
@@ -442,7 +446,7 @@ func TestClient_RemoveDimensionValue(t *testing.T) {
 
 	Convey("given rchttpclient.do returns an error", t, func() {
 		mockErr := errors.New("foo")
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, mockErr
 			},
@@ -464,7 +468,7 @@ func TestClient_RemoveDimensionValue(t *testing.T) {
 		url := "http://localhost:8080"
 		uri := url + "/filters/" + filterID + "/dimensions/" + name + "/options/filter-api"
 		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusNoContent, 500, uri}
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusInternalServerError,
@@ -491,7 +495,7 @@ func TestClient_AddDimension(t *testing.T) {
 	name := "quz"
 
 	Convey("Given a dimension is provided", t, func() {
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusCreated,
@@ -516,7 +520,7 @@ func TestClient_AddDimension(t *testing.T) {
 
 	Convey("given rchttpclient.do returns an error", t, func() {
 		mockErr := errors.New("foo")
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, mockErr
 			},
@@ -537,7 +541,7 @@ func TestClient_AddDimension(t *testing.T) {
 	Convey("given rchttpclient.do returns a non 200 response status", t, func() {
 		url := "http://localhost:8080"
 		mockInvalidStatusCodeError := errors.New("invalid status from filter api")
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusInternalServerError,
@@ -577,6 +581,7 @@ func TestClient_GetJobState(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+		mockedAPI.cli.SetMaxRetries(2)
 		_, err := mockedAPI.GetJobState(ctx, serviceToken, downloadServiceToken, filterID)
 		So(err, ShouldNotBeNil)
 	})
@@ -588,7 +593,7 @@ func TestClient_AddDimensionValues(t *testing.T) {
 	options := []string{"`quuz"}
 
 	Convey("Given a valid dimension and filter", t, func() {
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusCreated,
@@ -613,7 +618,7 @@ func TestClient_AddDimensionValues(t *testing.T) {
 
 	Convey("given rchttpclient.do returns an error", t, func() {
 		mockErr := errors.New("foo")
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, mockErr
 			},
@@ -635,7 +640,7 @@ func TestClient_AddDimensionValues(t *testing.T) {
 		url := "http://localhost:8080"
 		uri := url + "/filters/" + filterID + "/dimensions/" + name
 		mockInvalidStatusCodeError := &ErrInvalidFilterAPIResponse{http.StatusCreated, http.StatusInternalServerError, uri}
-		mockRCHTTPCli := &commontest.RCHTTPClienterMock{
+		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusInternalServerError,
@@ -668,6 +673,7 @@ func TestClient_GetPreview(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+		mockedAPI.cli.SetMaxRetries(2)
 		_, err := mockedAPI.GetPreview(ctx, serviceToken, downloadServiceToken, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})

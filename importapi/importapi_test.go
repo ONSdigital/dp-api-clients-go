@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ONSdigital/dp-rchttp"
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

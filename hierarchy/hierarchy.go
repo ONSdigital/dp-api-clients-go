@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/clients/clientlog"
+	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/log"
 )
 
@@ -62,7 +62,7 @@ func New(hierarchyAPIURL string) *Client {
 func (c *Client) Healthcheck() (string, error) {
 	ctx := context.Background()
 
-	resp, err := c.cli.Get(ctx, c.url + "/healthcheck")
+	resp, err := c.cli.Get(ctx, c.url+"/healthcheck")
 	if err != nil {
 		return service, err
 	}
@@ -103,7 +103,7 @@ func (c *Client) GetChild(ctx context.Context, instanceID, name, code string) (M
 
 func (c *Client) getHierarchy(path string, ctx context.Context) (Model, error) {
 	var m Model
-	req, err := http.NewRequest("GET", c.url + path, nil)
+	req, err := http.NewRequest("GET", c.url+path, nil)
 	if err != nil {
 		return m, err
 	}
