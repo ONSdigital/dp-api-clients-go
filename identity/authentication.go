@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ONSdigital/dp-api-clients-go"
+	"github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
-	"github.com/ONSdigital/dp-rchttp"
 	"github.com/pkg/errors"
-	"github.com/ONSdigital/go-ns/clients"
 )
 
 var errUnableToIdentifyRequest = errors.New("unable to determine the user or service making the request")

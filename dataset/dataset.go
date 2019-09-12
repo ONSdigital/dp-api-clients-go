@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	"github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/clients/clientlog"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/pkg/errors"
 )
