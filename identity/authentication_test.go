@@ -10,11 +10,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/common/commontest"
 	"github.com/ONSdigital/go-ns/log"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/ONSdigital/dp-rchttp"
 )
 
 const (
@@ -188,8 +187,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 
 		req := httptest.NewRequest("GET", url, nil)
 
-		httpClient := &commontest.RCHTTPClienterMock{
-			SetAuthTokenFunc: func(string) {},
+		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusOK,
@@ -377,8 +375,8 @@ func getClientReturningIdentifier(id string) *rchttp.ClienterMock {
 		},
 	}
 }
-func getClientReturningError(err error) *commontest.RCHTTPClienterMock {
-	return &commontest.RCHTTPClienterMock{
+func getClientReturningError(err error) *rchttp.ClienterMock {
+	return &rchttp.ClienterMock{
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			return nil, err
 		},
