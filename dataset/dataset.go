@@ -101,7 +101,7 @@ func (c *Client) Get(ctx context.Context, id, serviceToken string) (m Model, err
 		return
 	}
 	defer closeResponseBody(ctx, resp)
-	
+
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
 		return
@@ -151,7 +151,7 @@ func (c *Client) GetByPath(ctx context.Context, serviceToken, path string) (m Mo
 		return
 	}
 	defer closeResponseBody(ctx, resp)
-	
+
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
 		return
@@ -597,8 +597,8 @@ func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatase
 			e.body = "Client failed to read DatasetAPI body"
 			return
 		}
-		
 		defer closeResponseBody(nil, resp)
+
 		e.body = string(b)
 	}
 	return
