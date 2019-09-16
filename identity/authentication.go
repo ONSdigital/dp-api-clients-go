@@ -10,7 +10,8 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go"
 	"github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
+
 	"github.com/pkg/errors"
 )
 
@@ -42,14 +43,12 @@ func NewAPIClient(cli rchttp.Clienter, url string) (api *Client) {
 // authenticate request over a generic error from a http or marshalling error
 type authFailure error
 
-// CheckRequest calls the AuthAPI to check florenceToken or authToken
-func (api Client) CheckRequest(req *http.Request, florenceToken, authToken string) (context.Context, int, authFailure, error) {
-	log.DebugR(req, "CheckRequest called", nil)
-
+// CheckRequest calls the AuthAPI to check florenceToken or serviceAuthToken
+func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToken string) (context.Context, int, authFailure, error) {
 	ctx := req.Context()
 
 	isUserReq := len(florenceToken) > 0
-	isServiceReq := len(authToken) > 0
+	isServiceReq := len(serviceAuthToken) > 0
 
 	// if neither user nor service request, return unchanged ctx
 	if !isUserReq && !isServiceReq {
@@ -63,20 +62,20 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, authToken strin
 		"is_service_request": isServiceReq,
 		"url":                url,
 	}
-	splitTokens(florenceToken, authToken, logData)
+	splitTokens(florenceToken, serviceAuthToken, logData)
 
-	log.DebugR(req, "calling AuthAPI to authenticate", logData)
+	log.Event(ctx, "calling AuthAPI to authenticate caller identity", logData)
 
 	outboundAuthReq, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.ErrorR(req, err, logData)
+		log.Event(ctx, "error creating AuthAPI identity http request", logData, log.Error(err))
 		return ctx, http.StatusInternalServerError, nil, err
 	}
 
 	if isUserReq {
 		outboundAuthReq.Header.Set(common.FlorenceHeaderKey, florenceToken)
 	} else {
-		outboundAuthReq.Header.Set(common.AuthHeaderKey, authToken)
+		outboundAuthReq.Header.Set(common.AuthHeaderKey, serviceAuthToken)
 	}
 
 	if api.HTTPClient == nil {
@@ -87,9 +86,11 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, authToken strin
 
 	resp, err := api.HTTPClient.Do(ctx, outboundAuthReq)
 	if err != nil {
-		log.ErrorR(req, err, logData)
+		log.Event(ctx, "HTTPClient.Do returned error making AuthAPI identity request", logData, log.Error(err))
 		return ctx, http.StatusInternalServerError, nil, err
 	}
+
+	defer CloseResponse(ctx, resp, logData)
 
 	// Check to see if the user is authorised
 	if resp.StatusCode != http.StatusOK {
@@ -98,7 +99,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, authToken strin
 
 	identityResp, err := unmarshalIdentityResponse(resp)
 	if err != nil {
-		log.ErrorR(req, err, logData)
+		log.Event(ctx, "error unmarshaling AuthAPI identity response body", logData, log.Error(err))
 		return ctx, http.StatusInternalServerError, nil, err
 	}
 
@@ -111,7 +112,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, authToken strin
 
 	logData["user_identity"] = userIdentity
 	logData["caller_identity"] = identityResp.Identifier
-	log.DebugR(req, "identity retrieved, setting context values", logData)
+	log.Event(ctx, "caller identity retrieved setting context values", logData)
 
 	ctx = context.WithValue(ctx, common.UserIdentityKey, userIdentity)
 	ctx = context.WithValue(ctx, common.CallerIdentityKey, identityResp.Identifier)
@@ -151,12 +152,12 @@ func unmarshalIdentityResponse(resp *http.Response) (identityResp *common.Identi
 		return
 	}
 
-	defer func() {
-		if errClose := resp.Body.Close(); errClose != nil {
-			log.ErrorC("error closing response body", errClose, nil)
-		}
-	}()
-
 	err = json.Unmarshal(b, &identityResp)
 	return
+}
+
+func CloseResponse(ctx context.Context, resp *http.Response, data log.Data) {
+	if errClose := resp.Body.Close(); errClose != nil {
+		log.Event(ctx, "error closing response body", log.Error(errClose), data)
+	}
 }
