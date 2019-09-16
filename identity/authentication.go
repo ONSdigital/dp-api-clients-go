@@ -90,7 +90,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 		return ctx, http.StatusInternalServerError, nil, err
 	}
 
-	defer CloseResponse(ctx, resp, logData)
+	defer closeResponse(ctx, resp, logData)
 
 	// Check to see if the user is authorised
 	if resp.StatusCode != http.StatusOK {
@@ -156,7 +156,7 @@ func unmarshalIdentityResponse(resp *http.Response) (identityResp *common.Identi
 	return
 }
 
-func CloseResponse(ctx context.Context, resp *http.Response, data log.Data) {
+func closeResponse(ctx context.Context, resp *http.Response, data log.Data) {
 	if errClose := resp.Body.Close(); errClose != nil {
 		log.Event(ctx, "error closing response body", log.Error(errClose), data)
 	}

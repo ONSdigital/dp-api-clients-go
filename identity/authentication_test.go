@@ -115,7 +115,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 				So(common.IsCallerPresent(ctx), ShouldBeFalse)
 			})
 
-			Convey("And authResp.Body is closed", func() {
+			Convey("And Auth API response body is closed", func() {
 				So(body.IsClosed, ShouldBeTrue)
 			})
 		})
@@ -151,7 +151,7 @@ func TestHandler_florenceToken(t *testing.T) {
 				So(common.User(ctx), ShouldEqual, userIdentifier)
 			})
 
-			Convey("And authResp.Body is closed", func() {
+			Convey("And Auth API response body is closed", func() {
 				So(body.IsClosed, ShouldBeTrue)
 			})
 		})
@@ -183,7 +183,7 @@ func TestHandler_florenceToken(t *testing.T) {
 				So(common.User(ctx), ShouldEqual, userIdentifier)
 			})
 
-			Convey("And authResp.Body is closed", func() {
+			Convey("And Auth API response body is closed", func() {
 				So(body.IsClosed, ShouldBeTrue)
 			})
 		})
@@ -228,7 +228,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 				So(common.User(ctx), ShouldBeEmpty)
 			})
 
-			Convey("And authResp.Body is closed", func() {
+			Convey("And Auth API response body is closed", func() {
 				So(body.IsClosed, ShouldBeTrue)
 			})
 		})
@@ -266,7 +266,7 @@ func TestHandler_ReadBodyError(t *testing.T) {
 				So(err, ShouldResemble, expectedErr)
 			})
 
-			Convey("And authResp.Body is closed", func() {
+			Convey("And Auth API response body is closed", func() {
 				So(body.IsClosed, ShouldBeTrue)
 			})
 		})
@@ -338,7 +338,7 @@ func TestHandler_authToken(t *testing.T) {
 				So(common.User(ctx), ShouldEqual, userIdentifier)
 			})
 
-			Convey("And authResp.Body is closed", func() {
+			Convey("And Auth API response body is closed", func() {
 				So(body.IsClosed, ShouldBeTrue)
 			})
 		})
@@ -380,7 +380,7 @@ func TestHandler_bothTokens(t *testing.T) {
 				So(common.Caller(ctx), ShouldEqual, userIdentifier)
 			})
 
-			Convey("And authResp.Body is closed", func() {
+			Convey("And Auth API response body is closed", func() {
 				So(body.IsClosed, ShouldBeTrue)
 			})
 		})
