@@ -82,7 +82,7 @@ func (c *Client) Healthcheck() (string, error) {
 }
 
 // Get returns dataset level information for a given dataset id
-func (c *Client) Get(ctx context.Context, id, serviceToken string) (m Model, err error) {
+func (c *Client) Get(ctx context.Context, serviceToken, id  string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s", c.url, id)
 
 	clientlog.Do(ctx, "retrieving dataset", service, uri)
