@@ -157,6 +157,10 @@ func unmarshalIdentityResponse(resp *http.Response) (identityResp *common.Identi
 }
 
 func closeResponse(ctx context.Context, resp *http.Response, data log.Data) {
+	if resp == nil || resp.Body == nil {
+		return
+	}
+
 	if errClose := resp.Body.Close(); errClose != nil {
 		log.Event(ctx, "error closing response body", log.Error(errClose), data)
 	}
