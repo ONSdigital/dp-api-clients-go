@@ -1,18 +1,16 @@
 package identity
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/ONSdigital/dp-mocking/httpmocks"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -86,18 +84,17 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 }
 
 func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
-
 	Convey("Given a request with a florence token, and mock client that returns a non-200 response", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-
+		body := httpmocks.NewReadCloserMock([]byte{}, nil)
+		authResp := httpmocks.NewResponseMock(body, http.StatusNotFound)
 		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusNotFound,
-				}, nil
+				return authResp, nil
 			},
 		}
+
 		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
@@ -117,6 +114,10 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 				So(common.IsUserPresent(ctx), ShouldBeFalse)
 				So(common.IsCallerPresent(ctx), ShouldBeFalse)
 			})
+
+			Convey("And Auth API response body is closed", func() {
+				So(body.IsClosed, ShouldBeTrue)
+			})
 		})
 	})
 }
@@ -127,7 +128,7 @@ func TestHandler_florenceToken(t *testing.T) {
 
 		req := httptest.NewRequest("GET", url, nil)
 
-		httpClient := getClientReturningIdentifier(userIdentifier)
+		httpClient, body, _ := getClientReturningIdentifier(t, userIdentifier)
 		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
@@ -148,6 +149,10 @@ func TestHandler_florenceToken(t *testing.T) {
 				So(ctx, ShouldNotBeNil)
 				So(common.Caller(ctx), ShouldEqual, userIdentifier)
 				So(common.User(ctx), ShouldEqual, userIdentifier)
+			})
+
+			Convey("And Auth API response body is closed", func() {
+				So(body.IsClosed, ShouldBeTrue)
 			})
 		})
 	})
@@ -155,7 +160,7 @@ func TestHandler_florenceToken(t *testing.T) {
 	Convey("Given a request with a florence token as a cookie, and mock client that returns 200", t, func() {
 		req := httptest.NewRequest("GET", url, nil)
 
-		httpClient := getClientReturningIdentifier(userIdentifier)
+		httpClient, body, _ := getClientReturningIdentifier(t, userIdentifier)
 		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
@@ -176,6 +181,10 @@ func TestHandler_florenceToken(t *testing.T) {
 				So(ctx, ShouldNotBeNil)
 				So(common.Caller(ctx), ShouldEqual, userIdentifier)
 				So(common.User(ctx), ShouldEqual, userIdentifier)
+			})
+
+			Convey("And Auth API response body is closed", func() {
+				So(body.IsClosed, ShouldBeTrue)
 			})
 		})
 	})
@@ -187,12 +196,13 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 
 		req := httptest.NewRequest("GET", url, nil)
 
+		b := []byte("{ invalid JSON")
+		body := httpmocks.NewReadCloserMock(b, nil)
+		resp := httpmocks.NewResponseMock(body, http.StatusOK)
+
 		httpClient := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewBufferString("{ invalid JSON")),
-				}, nil
+				return resp, nil
 			},
 		}
 		idClient := NewAPIClient(httpClient, zebedeeURL)
@@ -217,6 +227,75 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 				So(common.Caller(ctx), ShouldBeEmpty)
 				So(common.User(ctx), ShouldBeEmpty)
 			})
+
+			Convey("And Auth API response body is closed", func() {
+				So(body.IsClosed, ShouldBeTrue)
+			})
+		})
+	})
+}
+
+func TestHandler_ReadBodyError(t *testing.T) {
+	Convey("Given a ioutil.ReadAll returns an error when reading the response body", t, func() {
+		req := httptest.NewRequest("GET", url, nil)
+
+		expectedErr := errors.New("cause i'm tnt i'm dynamite tnt and i'll win the fight")
+		body := httpmocks.NewReadCloserMock(nil, expectedErr)
+		resp := httpmocks.NewResponseMock(body, http.StatusOK)
+
+		httpClient := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return resp, nil
+			},
+		}
+		idClient := NewAPIClient(httpClient, zebedeeURL)
+
+		Convey("When CheckRequest is called", func() {
+
+			_, status, _, err := idClient.CheckRequest(req, florenceToken, "")
+
+			Convey("Then the identity service is called as expected", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 1)
+				zebedeeReq := httpClient.DoCalls()[0].Req
+				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
+				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+			})
+
+			Convey("And the expected status code and error is returned", func() {
+				So(status, ShouldEqual, http.StatusInternalServerError)
+				So(err, ShouldResemble, expectedErr)
+			})
+
+			Convey("And Auth API response body is closed", func() {
+				So(body.IsClosed, ShouldBeTrue)
+			})
+		})
+	})
+}
+
+func TestHandler_NewAuthRequestError(t *testing.T) {
+	Convey("Given creating a new auth request returns an error", t, func() {
+		req := httptest.NewRequest("GET", url, nil)
+
+		httpClient := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return nil, nil
+			},
+		}
+		idClient := NewAPIClient(httpClient, "£$%^&*(((((")
+
+		Convey("When CheckRequest is called", func() {
+
+			_, status, _, err := idClient.CheckRequest(req, florenceToken, "")
+
+			Convey("Then the identity service is not called", func() {
+				So(httpClient.DoCalls(), ShouldHaveLength, 0)
+			})
+
+			Convey("And the expected status code and error is returned", func() {
+				So(status, ShouldEqual, http.StatusInternalServerError)
+				So(err, ShouldNotBeNil)
+			})
 		})
 	})
 }
@@ -230,7 +309,7 @@ func TestHandler_authToken(t *testing.T) {
 			common.UserHeaderKey: {userIdentifier},
 		}
 
-		httpClient := getClientReturningIdentifier(callerIdentifier)
+		httpClient, body, _ := getClientReturningIdentifier(t, callerIdentifier)
 		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
@@ -258,6 +337,10 @@ func TestHandler_authToken(t *testing.T) {
 				So(common.Caller(ctx), ShouldEqual, callerIdentifier)
 				So(common.User(ctx), ShouldEqual, userIdentifier)
 			})
+
+			Convey("And Auth API response body is closed", func() {
+				So(body.IsClosed, ShouldBeTrue)
+			})
 		})
 	})
 }
@@ -272,7 +355,7 @@ func TestHandler_bothTokens(t *testing.T) {
 			common.AuthHeaderKey:     {callerAuthToken},
 		}
 
-		httpClient := getClientReturningIdentifier(userIdentifier)
+		httpClient, body, _ := getClientReturningIdentifier(t, userIdentifier)
 		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
@@ -295,6 +378,10 @@ func TestHandler_bothTokens(t *testing.T) {
 				So(common.IsUserPresent(ctx), ShouldBeTrue)
 				So(common.User(ctx), ShouldEqual, userIdentifier)
 				So(common.Caller(ctx), ShouldEqual, userIdentifier)
+			})
+
+			Convey("And Auth API response body is closed", func() {
+				So(body.IsClosed, ShouldBeTrue)
 			})
 		})
 	})
@@ -363,18 +450,19 @@ func TestSplitTokens(t *testing.T) {
 
 }
 
-func getClientReturningIdentifier(id string) *rchttp.ClienterMock {
-	return &rchttp.ClienterMock{
+func getClientReturningIdentifier(t *testing.T, id string) (*rchttp.ClienterMock, *httpmocks.ReadCloserMock, *http.Response) {
+	b := httpmocks.GetEntityBytes(t, &common.IdentityResponse{Identifier: id})
+	body := httpmocks.NewReadCloserMock(b, nil)
+	resp := httpmocks.NewResponseMock(body, http.StatusOK)
+	cli := &rchttp.ClienterMock{
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-			response := &common.IdentityResponse{Identifier: id}
-			body, _ := json.Marshal(response)
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(bytes.NewBuffer(body)),
-			}, nil
+			return resp, nil
 		},
 	}
+
+	return cli, body, resp
 }
+
 func getClientReturningError(err error) *rchttp.ClienterMock {
 	return &rchttp.ClienterMock{
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
