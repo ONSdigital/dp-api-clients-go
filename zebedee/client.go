@@ -45,12 +45,12 @@ var _ error = ErrInvalidZebedeeResponse{}
 // NewZebedeeClient creates a new Zebedee Client, set ZEBEDEE_REQUEST_TIMEOUT_SECOND
 // environment variable to modify default client timeout as zebedee can often be slow
 // to respond
-func NewZebedeeClient(client rchttp.Clienter, url string) *ZebedeeClient {
+func NewZebedeeClient(url string) *ZebedeeClient {
 	timeout, err := strconv.Atoi(os.Getenv("ZEBEDEE_REQUEST_TIMEOUT_SECONDS"))
 	if timeout == 0 || err != nil {
 		timeout = 5
 	}
-	cli := rchttp.ClientWithTimeout(client, time.Duration(timeout)*time.Second)
+	cli := rchttp.ClientWithTimeout(rchttp.NewClient(), time.Duration(timeout)*time.Second)
 
 	return &ZebedeeClient{
 		zebedeeURL: url,
