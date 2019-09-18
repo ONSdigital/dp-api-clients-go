@@ -9,8 +9,6 @@ import (
 	"os"
 	"testing"
 
-	rchttp "github.com/ONSdigital/dp-rchttp"
-
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/gorilla/mux"
@@ -24,7 +22,7 @@ func TestUnitClient(t *testing.T) {
 	go mockZebedeeServer(portChan)
 
 	port := <-portChan
-	cli := NewZebedeeClient(rchttp.NewClient(), fmt.Sprintf("http://localhost:%d", port))
+	cli := NewZebedeeClient(fmt.Sprintf("http://localhost:%d", port))
 
 	ctx := context.Background()
 
