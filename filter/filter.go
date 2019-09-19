@@ -64,6 +64,9 @@ func New(filterAPIURL string) *Client {
 
 // CloseResponseBody closes the response body and logs an error if unsuccessful
 func CloseResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body == nil {
+		return
+	}
 	if err := resp.Body.Close(); err != nil {
 		log.ErrorCtx(ctx, err, log.Data{"message": "error closing http response body"})
 	}

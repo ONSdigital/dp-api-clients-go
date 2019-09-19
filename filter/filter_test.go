@@ -17,9 +17,9 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-const serviceToken = "bar"
-const downloadServiceToken = "baz"
-const userAuthToken = "grault"
+const testServiceToken = "bar"
+const testDownloadServiceToken = "baz"
+const testUserAuthToken = "grault"
 
 // client with no retries, no backoff
 var client = &rchttp.Client{HTTPClient: &http.Client{}}
@@ -48,20 +48,20 @@ func TestClient_GetOutput(t *testing.T) {
 	filterOutputBody := `{"filter_id":"` + filterOutputID + `"}`
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetOutput(ctx, userAuthToken, serviceToken, downloadServiceToken, filterOutputID)
+		_, err := mockedAPI.GetOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.cli.SetMaxRetries(2)
-		_, err := mockedAPI.GetOutput(ctx, userAuthToken, serviceToken, downloadServiceToken, filterOutputID)
+		_, err := mockedAPI.GetOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("When a filter-instance is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: filterOutputBody})
-		_, err := mockedAPI.GetOutput(ctx, userAuthToken, serviceToken, downloadServiceToken, filterOutputID)
+		_, err := mockedAPI.GetOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterOutputID)
 		So(err, ShouldBeNil)
 	})
 }
@@ -75,20 +75,20 @@ func TestClient_GetDimension(t *testing.T) {
 		"options": ["corge"]}`
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetDimension(ctx, userAuthToken, serviceToken, filterOutputID, name)
+		_, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, filterOutputID, name)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.cli.SetMaxRetries(2)
-		_, err := mockedAPI.GetDimension(ctx, userAuthToken, serviceToken, filterOutputID, name)
+		_, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, filterOutputID, name)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("When a dimension-instance is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
-		_, err := mockedAPI.GetDimension(ctx, userAuthToken, serviceToken, filterOutputID, name)
+		_, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, filterOutputID, name)
 		So(err, ShouldBeNil)
 	})
 }
@@ -102,20 +102,20 @@ func TestClient_GetDimensions(t *testing.T) {
 
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetDimensions(ctx, userAuthToken, serviceToken, filterOutputID)
+		_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.cli.SetMaxRetries(2)
-		_, err := mockedAPI.GetDimensions(ctx, userAuthToken, serviceToken, filterOutputID)
+		_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("When a dimension-instance is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
-		_, err := mockedAPI.GetDimensions(ctx, userAuthToken, serviceToken, filterOutputID)
+		_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, filterOutputID)
 		So(err, ShouldBeNil)
 	})
 }
@@ -126,20 +126,20 @@ func TestClient_GetDimensionOptions(t *testing.T) {
 	name := "corge"
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetDimensionOptions(ctx, userAuthToken, serviceToken, filterOutputID, name)
+		_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, filterOutputID, name)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.cli.SetMaxRetries(2)
-		_, err := mockedAPI.GetDimensionOptions(ctx, userAuthToken, serviceToken, filterOutputID, name)
+		_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, filterOutputID, name)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("When a dimension option is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
-		_, err := mockedAPI.GetDimensionOptions(ctx, userAuthToken, serviceToken, filterOutputID, name)
+		_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, filterOutputID, name)
 		So(err, ShouldBeNil)
 	})
 }
@@ -175,7 +175,7 @@ func TestClient_CreateBlueprint(t *testing.T) {
 		}
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := cli.CreateBlueprint(ctx, userAuthToken, serviceToken, downloadServiceToken, datasetID, edition, version, names)
+			bp, err := cli.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, datasetID, edition, version, names)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -198,7 +198,7 @@ func TestClient_CreateBlueprint(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := cli.CreateBlueprint(ctx, userAuthToken, serviceToken, downloadServiceToken, datasetID, edition, version, names)
+			bp, err := cli.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, datasetID, edition, version, names)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -225,7 +225,7 @@ func TestClient_CreateBlueprint(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: url}
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := cli.CreateBlueprint(ctx, userAuthToken, serviceToken, downloadServiceToken, datasetID, edition, version, names)
+			bp, err := cli.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, datasetID, edition, version, names)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -280,7 +280,7 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 		}
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := cli.UpdateBlueprint(ctx, userAuthToken, serviceToken, downloadServiceToken, model, doSubmit)
+			bp, err := cli.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, model, doSubmit)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -303,7 +303,7 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := cli.UpdateBlueprint(ctx, userAuthToken, serviceToken, downloadServiceToken, model, doSubmit)
+			bp, err := cli.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, model, doSubmit)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -330,7 +330,7 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: url}
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := cli.UpdateBlueprint(ctx, userAuthToken, serviceToken, downloadServiceToken, model, doSubmit)
+			bp, err := cli.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, model, doSubmit)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -364,7 +364,7 @@ func TestClient_AddDimensionValue(t *testing.T) {
 		}
 
 		Convey("when AddDimensionValue is called", func() {
-			err := cli.AddDimensionValue(ctx, userAuthToken, serviceToken, filterID, name, service)
+			err := cli.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, filterID, name, service)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -383,7 +383,7 @@ func TestClient_AddDimensionValue(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when AddDimensionValue is called", func() {
-			err := cli.AddDimensionValue(ctx, userAuthToken, serviceToken, filterID, name, service)
+			err := cli.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, filterID, name, service)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -408,7 +408,7 @@ func TestClient_AddDimensionValue(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: url}
 
 		Convey("when AddDimensionValue is called", func() {
-			err := cli.AddDimensionValue(ctx, userAuthToken, serviceToken, filterID, name, service)
+			err := cli.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, filterID, name, service)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -437,7 +437,7 @@ func TestClient_RemoveDimensionValue(t *testing.T) {
 		}
 
 		Convey("when RemoveDimensionValue is called", func() {
-			err := cli.RemoveDimensionValue(ctx, userAuthToken, serviceToken, filterID, name, service)
+			err := cli.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, filterID, name, service)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -456,7 +456,7 @@ func TestClient_RemoveDimensionValue(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when RemoveDimensionValue is called", func() {
-			err := cli.RemoveDimensionValue(ctx, userAuthToken, serviceToken, filterID, name, service)
+			err := cli.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, filterID, name, service)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -481,7 +481,7 @@ func TestClient_RemoveDimensionValue(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: url}
 
 		Convey("when RemoveDimensionValue is called", func() {
-			err := cli.RemoveDimensionValue(ctx, userAuthToken, serviceToken, filterID, name, service)
+			err := cli.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, filterID, name, service)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -511,7 +511,7 @@ func TestClient_AddDimension(t *testing.T) {
 		}
 
 		Convey("when AddDimension is called", func() {
-			err := cli.AddDimension(ctx, userAuthToken, serviceToken, filterID, name)
+			err := cli.AddDimension(ctx, testUserAuthToken, testServiceToken, filterID, name)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -530,7 +530,7 @@ func TestClient_AddDimension(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when AddDimension is called", func() {
-			err := cli.AddDimension(ctx, userAuthToken, serviceToken, filterID, name)
+			err := cli.AddDimension(ctx, testUserAuthToken, testServiceToken, filterID, name)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -554,7 +554,7 @@ func TestClient_AddDimension(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: url}
 
 		Convey("when AddDimension is called", func() {
-			err := cli.AddDimension(ctx, userAuthToken, serviceToken, filterID, name)
+			err := cli.AddDimension(ctx, testUserAuthToken, testServiceToken, filterID, name)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -571,19 +571,19 @@ func TestClient_GetJobState(t *testing.T) {
 	Convey("When a state is returned", t, func() {
 
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: mockJobStateBody})
-		_, err := mockedAPI.GetJobState(ctx, userAuthToken, serviceToken, downloadServiceToken, filterID)
+		_, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterID)
 		So(err, ShouldBeNil)
 	})
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetJobState(ctx, userAuthToken, serviceToken, downloadServiceToken, filterID)
+		_, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterID)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.cli.SetMaxRetries(2)
-		_, err := mockedAPI.GetJobState(ctx, userAuthToken, serviceToken, downloadServiceToken, filterID)
+		_, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterID)
 		So(err, ShouldNotBeNil)
 	})
 }
@@ -609,7 +609,7 @@ func TestClient_AddDimensionValues(t *testing.T) {
 		}
 
 		Convey("when AddDimensionValues is called", func() {
-			err := cli.AddDimensionValues(ctx, userAuthToken, serviceToken, filterID, name, options)
+			err := cli.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, filterID, name, options)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -628,7 +628,7 @@ func TestClient_AddDimensionValues(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when AddDimensionValues is called", func() {
-			err := cli.AddDimensionValues(ctx, userAuthToken, serviceToken, filterID, name, options)
+			err := cli.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, filterID, name, options)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -653,7 +653,7 @@ func TestClient_AddDimensionValues(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: url}
 
 		Convey("when AddDimensionValues is called", func() {
-			err := cli.AddDimensionValues(ctx, userAuthToken, serviceToken, filterID, name, options)
+			err := cli.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, filterID, name, options)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -668,20 +668,20 @@ func TestClient_GetPreview(t *testing.T) {
 	previewBody := `{"somePreview":""}`
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetPreview(ctx, userAuthToken, serviceToken, downloadServiceToken, filterOutputID)
+		_, err := mockedAPI.GetPreview(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.cli.SetMaxRetries(2)
-		_, err := mockedAPI.GetPreview(ctx, userAuthToken, serviceToken, downloadServiceToken, filterOutputID)
+		_, err := mockedAPI.GetPreview(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("When a preview is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: previewBody})
-		_, err := mockedAPI.GetPreview(ctx, userAuthToken, serviceToken, downloadServiceToken, filterOutputID)
+		_, err := mockedAPI.GetPreview(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterOutputID)
 		So(err, ShouldBeNil)
 	})
 }
