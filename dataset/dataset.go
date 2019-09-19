@@ -83,8 +83,8 @@ func (c *Client) Healthcheck() (string, error) {
 }
 
 // Get returns dataset level information for a given dataset id
-func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id string) (m Model, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s", c.url, id)
+func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m Model, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s", c.url, datasetID)
 
 	clientlog.Do(ctx, "retrieving dataset", service, uri)
 
@@ -233,8 +233,8 @@ func (c *Client) GetEdition(ctx context.Context, userAuthToken, serviceAuthToken
 }
 
 // GetEditions returns all editions for a dataset
-func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id string) (m []Edition, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions", c.url, id)
+func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m []Edition, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions", c.url, datasetID)
 
 	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
 
@@ -281,8 +281,8 @@ func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToke
 }
 
 // GetVersions gets all versions for an edition from the dataset api
-func (c *Client) GetVersions(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, id, edition string) (m []Version, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.url, id, edition)
+func (c *Client) GetVersions(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition string) (m []Version, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.url, datasetID, edition)
 
 	clientlog.Do(ctx, "retrieving dataset versions", service, uri)
 
@@ -312,8 +312,8 @@ func (c *Client) GetVersions(ctx context.Context, userAuthToken, serviceAuthToke
 }
 
 // GetVersion gets a specific version for an edition from the dataset api
-func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, id, edition, version string) (m Version, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, id, edition, version)
+func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (m Version, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
 
