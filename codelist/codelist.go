@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
-	"io"
-	"io/ioutil"
-	"net/http"
 )
 
 const service = "code-list-api"
@@ -67,7 +67,7 @@ func (c *Client) Healthcheck() (string, error) {
 }
 
 // GetValues returns dimension values from the codelist api
-func (c *Client) GetValues(ctx context.Context, serviceAuthToken string, id string) (DimensionValues, error) {
+func (c *Client) GetValues(ctx context.Context, userAuthToken string, serviceAuthToken string, id string) (DimensionValues, error) {
 	var vals DimensionValues
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
 
@@ -77,7 +77,7 @@ func (c *Client) GetValues(ctx context.Context, serviceAuthToken string, id stri
 		"service": service,
 	})
 
-	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", uri, nil)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
 	if err != nil {
 		return vals, err
 	}
@@ -98,10 +98,10 @@ func (c *Client) GetValues(ctx context.Context, serviceAuthToken string, id stri
 }
 
 // GetIDNameMap returns dimension values in the form of an id name map
-func (c *Client) GetIDNameMap(ctx context.Context, serviceAuthToken string, id string) (map[string]string, error) {
+func (c *Client) GetIDNameMap(ctx context.Context, userAuthToken string, serviceAuthToken string, id string) (map[string]string, error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
 
-	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", uri, nil)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
 	if err != nil {
 		return nil, err
 	}
@@ -130,11 +130,11 @@ func (c *Client) GetIDNameMap(ctx context.Context, serviceAuthToken string, id s
 }
 
 //GetGeographyCodeLists returns the geography codelists
-func (c *Client) GetGeographyCodeLists(ctx context.Context, serviceAuthToken string) (CodeListResults, error) {
+func (c *Client) GetGeographyCodeLists(ctx context.Context, userAuthToken string, serviceAuthToken string) (CodeListResults, error) {
 	uri := fmt.Sprintf("%s/code-lists?type=geography", c.url)
 	var results CodeListResults
 
-	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", uri, nil)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
 	if err != nil {
 		return results, err
 	}
@@ -157,11 +157,11 @@ func (c *Client) GetGeographyCodeLists(ctx context.Context, serviceAuthToken str
 }
 
 //GetCodeListEditions returns the editions for a codelist
-func (c *Client) GetCodeListEditions(ctx context.Context, serviceAuthToken string, codeListID string) (EditionsListResults, error) {
+func (c *Client) GetCodeListEditions(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string) (EditionsListResults, error) {
 	url := fmt.Sprintf("%s/code-lists/%s/editions", c.url, codeListID)
 	var editionsList EditionsListResults
 
-	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", url, nil)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, url)
 	if err != nil {
 		return editionsList, err
 	}
@@ -186,11 +186,11 @@ func (c *Client) GetCodeListEditions(ctx context.Context, serviceAuthToken strin
 }
 
 //GetCodes returns the codes for a specific edition of a code list
-func (c *Client) GetCodes(ctx context.Context, serviceAuthToken string, codeListID string, edition string) (CodesResults, error) {
+func (c *Client) GetCodes(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string, edition string) (CodesResults, error) {
 	var codes CodesResults
 	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes", c.url, codeListID, edition)
 
-	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", url, nil)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, url)
 	if err != nil {
 		return codes, err
 	}
@@ -215,11 +215,11 @@ func (c *Client) GetCodes(ctx context.Context, serviceAuthToken string, codeList
 }
 
 // GetCodeByID returns information about a code
-func (c *Client) GetCodeByID(ctx context.Context, serviceAuthToken string, codeListID string, edition string, codeID string) (CodeResult, error) {
+func (c *Client) GetCodeByID(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string, edition string, codeID string) (CodeResult, error) {
 	var code CodeResult
 	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s", c.url, codeListID, edition, codeID)
 
-	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", url, nil)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, url)
 	if err != nil {
 		return code, err
 	}
@@ -244,11 +244,11 @@ func (c *Client) GetCodeByID(ctx context.Context, serviceAuthToken string, codeL
 }
 
 // GetDatasetsByCode returns datasets containing the codelist codeID.
-func (c *Client) GetDatasetsByCode(ctx context.Context, serviceAuthToken string, codeListID string, edition string, codeID string) (DatasetsResult, error) {
+func (c *Client) GetDatasetsByCode(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string, edition string, codeID string) (DatasetsResult, error) {
 	var datasets DatasetsResult
 	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s/datasets", c.url, codeListID, edition, codeID)
 
-	resp, err := c.doRequestWithServiceAuthHeader(ctx, serviceAuthToken, "GET", url, nil)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, url)
 	if err != nil {
 		return datasets, err
 	}
@@ -271,14 +271,15 @@ func (c *Client) GetDatasetsByCode(ctx context.Context, serviceAuthToken string,
 	return datasets, nil
 }
 
-// doRequestWithServiceAuthHeader executes clienter.Do setting the service authentication token as a request header. Returns the http.Response and any error.
+// doGetWithAuthHeaders executes clienter.Do setting the service authentication token as a request header. Returns the http.Response and any error.
 // It is the callers responsibility to ensure response.Body is closed on completion.
-func (c *Client) doRequestWithServiceAuthHeader(ctx context.Context, serviceAuthToken string, method string, uri string, body io.Reader) (*http.Response, error) {
-	req, err := http.NewRequest(method, uri, body)
+func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken string, serviceAuthToken string, uri string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, err
 	}
 
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 	return c.cli.Do(ctx, req)
 }

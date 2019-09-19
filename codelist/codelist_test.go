@@ -5,16 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"testing"
+
 	"github.com/ONSdigital/dp-mocking/httpmocks"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
-	"net/http"
-	"testing"
 )
 
 var (
 	testServiceAuthToken = "666"
+	testUserAuthToken    = "217" // room 217 the overlook hotel
 	testHost             = "http://localhost:8080"
 )
 
@@ -113,6 +115,7 @@ func TestClient_Healthcheck(t *testing.T) {
 }
 
 func TestClient_GetValues(t *testing.T) {
+	host := "localhost:8080"
 
 	Convey("should return expect values for 200 status response", t, func() {
 		b, err := json.Marshal(testDimensionValues)
@@ -124,7 +127,7 @@ func TestClient_GetValues(t *testing.T) {
 		clienter := getClienterMock(resp, nil)
 		codelistClient := &Client{cli: clienter, url: testHost}
 
-		actual, err := codelistClient.GetValues(nil, testServiceAuthToken, "999")
+		actual, err := codelistClient.GetValues(nil, testUserAuthToken, testServiceAuthToken, "999")
 
 		So(err, ShouldBeNil)
 		So(actual, ShouldResemble, testDimensionValues)
@@ -133,10 +136,7 @@ func TestClient_GetValues(t *testing.T) {
 		So(calls, ShouldHaveLength, 1)
 
 		req := calls[0].Req
-		So(req.URL.Path, ShouldEqual, "/code-lists/999/codes")
-		So(req.Method, ShouldEqual, "GET")
-		So(req.Body, ShouldBeNil)
-		So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+		assertClienterDoCalls(req, "/code-lists/999/codes", host)
 		So(body.IsClosed, ShouldBeTrue)
 	})
 
@@ -147,7 +147,7 @@ func TestClient_GetValues(t *testing.T) {
 
 		codelistClient := &Client{cli: clienter, url: testHost}
 
-		actual, err := codelistClient.GetValues(nil, testServiceAuthToken, "999")
+		actual, err := codelistClient.GetValues(nil, testUserAuthToken, testServiceAuthToken, "999")
 
 		So(err, ShouldResemble, expectedErr)
 		So(actual, ShouldResemble, DimensionValues{})
@@ -156,10 +156,7 @@ func TestClient_GetValues(t *testing.T) {
 		So(calls, ShouldHaveLength, 1)
 
 		req := calls[0].Req
-		So(req.URL.Path, ShouldEqual, "/code-lists/999/codes")
-		So(req.Method, ShouldEqual, "GET")
-		So(req.Body, ShouldBeNil)
-		So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+		assertClienterDoCalls(req, "/code-lists/999/codes", host)
 	})
 
 	Convey("should return expected error for non 200 response status", t, func() {
@@ -172,7 +169,7 @@ func TestClient_GetValues(t *testing.T) {
 		expectedURI := fmt.Sprintf("%s/code-lists/%s/codes", testHost, "999")
 		expectedErr := &ErrInvalidCodelistAPIResponse{http.StatusOK, 500, expectedURI}
 
-		dimensionValues, err := codelistClient.GetValues(nil, testServiceAuthToken, "999")
+		dimensionValues, err := codelistClient.GetValues(nil, testUserAuthToken, testServiceAuthToken, "999")
 
 		So(err, ShouldResemble, expectedErr)
 		So(dimensionValues, ShouldResemble, DimensionValues{})
@@ -181,10 +178,7 @@ func TestClient_GetValues(t *testing.T) {
 		So(calls, ShouldHaveLength, 1)
 
 		req := calls[0].Req
-		So(req.URL.Path, ShouldEqual, "/code-lists/999/codes")
-		So(req.Method, ShouldEqual, "GET")
-		So(req.Body, ShouldBeNil)
-		So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+		assertClienterDoCalls(req, "/code-lists/999/codes", host)
 		So(body.IsClosed, ShouldBeTrue)
 	})
 
@@ -195,7 +189,7 @@ func TestClient_GetValues(t *testing.T) {
 		clienter := getClienterMock(resp, nil)
 		codelistClient := &Client{cli: clienter, url: testHost}
 
-		dimensionValues, err := codelistClient.GetValues(nil, testServiceAuthToken, "999")
+		dimensionValues, err := codelistClient.GetValues(nil, testUserAuthToken, testServiceAuthToken, "999")
 
 		So(err, ShouldResemble, expectedErr)
 		So(dimensionValues, ShouldResemble, DimensionValues{})
@@ -204,10 +198,7 @@ func TestClient_GetValues(t *testing.T) {
 		So(calls, ShouldHaveLength, 1)
 
 		req := calls[0].Req
-		So(req.URL.Path, ShouldEqual, "/code-lists/999/codes")
-		So(req.Method, ShouldEqual, "GET")
-		So(req.Body, ShouldBeNil)
-		So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+		assertClienterDoCalls(req, "/code-lists/999/codes", host)
 		So(body.IsClosed, ShouldBeTrue)
 	})
 }
@@ -225,7 +216,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, testServiceAuthToken, "666")
+			actual, err := codelistclient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -256,7 +247,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, testServiceAuthToken, "666")
+			actual, err := codelistclient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -286,7 +277,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, testServiceAuthToken, "666")
+			actual, err := codelistclient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -319,7 +310,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, testServiceAuthToken, "666")
+			actual, err := codelistclient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -349,7 +340,7 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		codelistclient := &Client{url: testHost, cli: clienter}
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, testServiceAuthToken, "666")
+			actual, err := codelistclient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected ID Name map is returned", func() {
 				expected := map[string]string{"123": "Schwifty"}
@@ -387,7 +378,7 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 		}
 
 		Convey("when codelistClient.GetGeographyCodeLists is called", func() {
-			actual, err := codelistclient.GetGeographyCodeLists(nil, testServiceAuthToken)
+			actual, err := codelistclient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeListResults{})
@@ -415,7 +406,7 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 		}
 
 		Convey("when codelistClient.GetGeographyCodeLists is called", func() {
-			actual, err := codelistclient.GetGeographyCodeLists(nil, testServiceAuthToken)
+			actual, err := codelistclient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeListResults{})
@@ -455,7 +446,7 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 		}
 
 		Convey("when codelistClient.GetGeographyCodeLists is called", func() {
-			actual, err := codelistclient.GetGeographyCodeLists(nil, testServiceAuthToken)
+			actual, err := codelistclient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeListResults{})
@@ -489,7 +480,7 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 		}
 
 		Convey("when codelistClient.GetGeographyCodeLists is called", func() {
-			actual, err := codelistclient.GetGeographyCodeLists(nil, testServiceAuthToken)
+			actual, err := codelistclient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeListResults{})
@@ -522,7 +513,7 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 		}
 
 		Convey("when codelistClient.GetGeographyCodeLists is called", func() {
-			actual, err := codelistclient.GetGeographyCodeLists(nil, testServiceAuthToken)
+			actual, err := codelistclient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
 
 			Convey("then the expected result is returned", func() {
 				So(actual, ShouldResemble, testCodeListResults)
@@ -558,7 +549,7 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeListEditions is called", func() {
-			actual, err := codelistclient.GetCodeListEditions(nil, testServiceAuthToken, "666")
+			actual, err := codelistclient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, EditionsListResults{})
@@ -592,7 +583,7 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeListEditions is called", func() {
-			actual, err := codelistclient.GetCodeListEditions(nil, testServiceAuthToken, "666")
+			actual, err := codelistclient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, EditionsListResults{})
@@ -625,7 +616,7 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeListEditions is called", func() {
-			actual, err := codelistclient.GetCodeListEditions(nil, testServiceAuthToken, "666")
+			actual, err := codelistclient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then client.Do should be called 1 time with the expected parameters", func() {
 				calls := clienter.DoCalls()
@@ -659,7 +650,7 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeListEditions is called", func() {
-			actual, err := codelistclient.GetCodeListEditions(nil, testServiceAuthToken, "666")
+			actual, err := codelistclient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then client.Do should be called 1 time with the expected parameters", func() {
 				calls := clienter.DoCalls()
@@ -692,7 +683,7 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeListEditions is called", func() {
-			actual, err := codelistclient.GetCodeListEditions(nil, testServiceAuthToken, "666")
+			actual, err := codelistclient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("and client.Do should be called 1 time with the expected parameters", func() {
 				calls := clienter.DoCalls()
@@ -728,7 +719,7 @@ func TestClient_GetCodes(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodes is called", func() {
-			actual, err := codelistclient.GetCodes(nil, testServiceAuthToken, "foo", "bar")
+			actual, err := codelistclient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodesResults{})
@@ -756,7 +747,7 @@ func TestClient_GetCodes(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodes is called", func() {
-			actual, err := codelistclient.GetCodes(nil, testServiceAuthToken, "foo", "bar")
+			actual, err := codelistclient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodesResults{})
@@ -793,7 +784,7 @@ func TestClient_GetCodes(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodes is called", func() {
-			actual, err := codelistclient.GetCodes(nil, testServiceAuthToken, "foo", "bar")
+			actual, err := codelistclient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodesResults{})
@@ -827,7 +818,7 @@ func TestClient_GetCodes(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodes is called", func() {
-			actual, err := codelistclient.GetCodes(nil, testServiceAuthToken, "foo", "bar")
+			actual, err := codelistclient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodesResults{})
@@ -860,7 +851,7 @@ func TestClient_GetCodes(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodes is called", func() {
-			actual, err := codelistclient.GetCodes(nil, testServiceAuthToken, "foo", "bar")
+			actual, err := codelistclient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, codesResults)
@@ -896,7 +887,7 @@ func TestClient_GetCodeByID(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetCodeByID(nil, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistclient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeResult{})
@@ -930,7 +921,7 @@ func TestClient_GetCodeByID(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetCodeByID(nil, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistclient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeResult{})
@@ -964,7 +955,7 @@ func TestClient_GetCodeByID(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetCodeByID(nil, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistclient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeResult{})
@@ -998,7 +989,7 @@ func TestClient_GetCodeByID(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetCodeByID(nil, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistclient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeResult{})
@@ -1031,7 +1022,7 @@ func TestClient_GetCodeByID(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetCodeByID(nil, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistclient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, codeResult)
@@ -1067,7 +1058,7 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetDatasetsByCode(nil, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistclient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, DatasetsResult{})
@@ -1101,7 +1092,7 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetDatasetsByCode(nil, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistclient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, DatasetsResult{})
@@ -1134,7 +1125,7 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetDatasetsByCode(nil, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistclient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, DatasetsResult{})
@@ -1168,7 +1159,7 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetDatasetsByCode(nil, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistclient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, DatasetsResult{})
@@ -1201,7 +1192,7 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 		}
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetDatasetsByCode(nil, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistclient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, datasetsResult)
@@ -1224,6 +1215,50 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 
 }
 
+func TestDoGetWithAuthHeaders(t *testing.T) {
+	Convey("given create new request returns an error", t, func() {
+		clienter := getClienterMock(nil, nil)
+		codelistclient := &Client{url: testHost, cli: clienter}
+
+		Convey("when doGetWithAuthHeaders is called", func() {
+			resp, err := codelistclient.doGetWithAuthHeaders(nil, testUserAuthToken, testServiceAuthToken, "@£$%^&*()_")
+
+			Convey("then the expected error is returned", func() {
+				So(resp, ShouldBeNil)
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("and clienter is not called", func() {
+				So(clienter.DoCalls(), ShouldHaveLength, 0)
+			})
+		})
+	})
+
+	Convey("given sending a request is unsuccessful", t, func() {
+		expectedErr := errors.New("im going off the rails on a crazy train")
+		clienter := getClienterMock(nil, expectedErr)
+		codelistclient := &Client{url: testHost, cli: clienter}
+
+		Convey("when doGetWithAuthHeaders is called", func() {
+			resp, err := codelistclient.doGetWithAuthHeaders(nil, testUserAuthToken, testServiceAuthToken, "/foobar")
+
+			Convey("then the expected error is returned", func() {
+				So(resp, ShouldBeNil)
+				So(err, ShouldResemble, expectedErr)
+			})
+
+			Convey("and clienter is not called", func() {
+				calls := clienter.DoCalls()
+				So(calls, ShouldHaveLength, 1)
+
+				req := calls[0].Req
+				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+				So(req.Header.Get(common.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
+			})
+		})
+	})
+}
+
 func getClienterMock(resp *http.Response, err error) *rchttp.ClienterMock {
 	return &rchttp.ClienterMock{
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
@@ -1238,4 +1273,5 @@ func assertClienterDoCalls(actual *http.Request, uri string, host string) {
 	So(actual.Method, ShouldEqual, "GET")
 	So(actual.Body, ShouldBeNil)
 	So(actual.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
+	So(actual.Header.Get(common.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
 }
