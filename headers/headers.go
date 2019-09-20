@@ -38,8 +38,10 @@ func setRequestHeader(req *http.Request, headerName string, headerValue string) 
 		return errRequestNil
 	}
 
+	logD := log.Data{"header_name": headerName}
+
 	if len(headerValue) == 0 {
-		log.Event(context.Background(), "request header not set as value was empty", log.Data{"header_name": headerName})
+		log.Event(context.Background(), "request header not set as value was empty", logD)
 		return nil
 	}
 
@@ -49,11 +51,8 @@ func setRequestHeader(req *http.Request, headerName string, headerValue string) 
 	}
 
 	if err != nil && err == ErrHeaderNotFound {
-		logD := log.Data{
-			"header_name": headerName,
-			"existing":    existing,
-			"new":         headerValue,
-		}
+		logD["existing"] = existing
+		logD["new"] = headerValue
 		log.Event(context.Background(), "overwriting existing request header", logD)
 	}
 
