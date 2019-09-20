@@ -23,6 +23,9 @@ const (
 
 	// bearerPrefix is the prefix for authorization header values
 	bearerPrefix = "Bearer "
+
+	// downloadServiceToken is the authorization header for the download service
+	downloadServiceToken = "X-Download-Service-Token"
 )
 
 var (
@@ -92,6 +95,18 @@ func GetServiceAuthToken(req *http.Request) (string, error) {
 		token = strings.TrimPrefix(token, bearerPrefix)
 	}
 	return token, nil
+}
+
+// SetDownloadServiceToken set the download service auth token header on the provided request. If the authentication
+// token is already present it will be overwritten by the new value.
+func SetDownloadServiceToken(req *http.Request, headerValue string) error {
+	return setRequestHeader(req, downloadServiceToken, headerValue)
+}
+
+// GetDownloadServiceToken returns the value of the "X-Download-Service-Token" request header if it exists, returns
+// ErrHeaderNotFound if the header is not found.
+func GetDownloadServiceToken(req *http.Request) (string, error) {
+	return getRequestHeader(req, downloadServiceToken)
 }
 
 func getRequestHeader(req *http.Request, headerName string) (string, error) {

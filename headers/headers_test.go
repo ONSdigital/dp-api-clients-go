@@ -208,6 +208,77 @@ func TestGetServiceAuthToken(t *testing.T) {
 	})
 }
 
+func TestSetDownloadServiceToken(t *testing.T) {
+	Convey("SetDownloadServiceToken should return error if request is nil", t, func() {
+		err := SetDownloadServiceToken(nil, "")
+
+		So(err, ShouldResemble, errRequestNil)
+	})
+
+	Convey("SetDownloadServiceToken should not add header if value is empty", t, func() {
+		req := requestWithHeader(downloadServiceToken, "")
+
+		err := SetDownloadServiceToken(req, "")
+
+		So(err, ShouldBeNil)
+		So(req.Header.Get(downloadServiceToken), ShouldBeEmpty)
+	})
+
+	Convey("SetDownloadServiceToken should overwrite an existing header", t, func() {
+		req := requestWithHeader(downloadServiceToken, testHeader1)
+
+		err := SetDownloadServiceToken(req, testHeader2)
+
+		So(err, ShouldBeNil)
+		So(req.Header.Get(downloadServiceToken), ShouldEqual, testHeader2)
+	})
+
+	Convey("SetDownloadServiceToken should set header if it does not already exist", t, func() {
+		req := requestWithHeader(downloadServiceToken, "")
+
+		err := SetDownloadServiceToken(req, testHeader1)
+
+		So(err, ShouldBeNil)
+		So(req.Header.Get(downloadServiceToken), ShouldEqual, testHeader1)
+	})
+}
+
+func TestGetDownloadServiceToken(t *testing.T) {
+	Convey("GetDownloadServiceToken should return expected error if request is nil", t, func() {
+		actual, err := GetDownloadServiceToken(nil)
+
+		So(err, ShouldResemble, errRequestNil)
+		So(actual, ShouldBeEmpty)
+	})
+
+	Convey("GetDownloadServiceToken should return ErrHeaderNotFound if the serviceAuthToken request header is not found", t, func() {
+		req := requestWithHeader(downloadServiceToken, "")
+
+		actual, err := GetDownloadServiceToken(req)
+
+		So(err, ShouldResemble, ErrHeaderNotFound)
+		So(actual, ShouldBeEmpty)
+	})
+
+	Convey("GetDownloadServiceToken should return header value if present", t, func() {
+		req := requestWithHeader(downloadServiceToken, testHeader1)
+
+		actual, err := GetDownloadServiceToken(req)
+
+		So(err, ShouldBeNil)
+		So(actual, ShouldEqual, testHeader1)
+	})
+
+	Convey("GetDownloadServiceToken should return header value if it does not have the bearer prefix", t, func() {
+		req := requestWithHeader(downloadServiceToken, testHeader1)
+
+		actual, err := GetDownloadServiceToken(req)
+
+		So(err, ShouldBeNil)
+		So(actual, ShouldEqual, testHeader1)
+	})
+}
+
 func requestWithHeader(key, val string) *http.Request {
 	r := httptest.NewRequest(http.MethodGet, "http://localhost:456789/schwifty", nil)
 	if len(val) > 0 {
