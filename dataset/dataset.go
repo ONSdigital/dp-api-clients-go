@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ONSdigital/go-ns/log"
 	"io/ioutil"
 	"net/http"
 	"sort"
 	"strings"
 
+	"github.com/ONSdigital/go-ns/log"
+
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
-	"github.com/ONSdigital/dp-rchttp"
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/pkg/errors"
 )
@@ -82,21 +83,12 @@ func (c *Client) Healthcheck() (string, error) {
 }
 
 // Get returns dataset level information for a given dataset id
-func (c *Client) Get(ctx context.Context, serviceToken, id  string) (m Model, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s", c.url, id)
+func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m Model, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s", c.url, datasetID)
 
 	clientlog.Do(ctx, "retrieving dataset", service, uri)
 
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return
-	}
-
-	req = setCollectionID(ctx, req)
-
-	common.AddServiceTokenHeader(req, serviceToken)
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -132,21 +124,12 @@ func (c *Client) Get(ctx context.Context, serviceToken, id  string) (m Model, er
 }
 
 // GetByPath returns dataset level information for a given dataset path
-func (c *Client) GetByPath(ctx context.Context, serviceToken, path string) (m Model, err error) {
+func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, path string) (m Model, err error) {
 	uri := fmt.Sprintf("%s/%s", c.url, strings.Trim(path, "/"))
 
 	clientlog.Do(ctx, "retrieving data from dataset API", service, uri)
 
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return
-	}
-
-	req = setCollectionID(ctx, req)
-
-	common.AddServiceTokenHeader(req, serviceToken)
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -182,21 +165,12 @@ func (c *Client) GetByPath(ctx context.Context, serviceToken, path string) (m Mo
 }
 
 // GetDatasets returns the list of datasets
-func (c *Client) GetDatasets(ctx context.Context, serviceToken string) (m ModelCollection, err error) {
+func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string) (m ModelCollection, err error) {
 	uri := fmt.Sprintf("%s/datasets", c.url)
 
 	clientlog.Do(ctx, "retrieving datasets", service, uri)
 
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return
-	}
-
-	req = setCollectionID(ctx, req)
-
-	common.AddServiceTokenHeader(req, serviceToken)
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -221,21 +195,12 @@ func (c *Client) GetDatasets(ctx context.Context, serviceToken string) (m ModelC
 }
 
 // GetEdition retrieves a single edition document from a given datasetID and edition label
-func (c *Client) GetEdition(ctx context.Context, serviceToken, datasetID, edition string) (m Edition, err error) {
+func (c *Client) GetEdition(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition string) (m Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s", c.url, datasetID, edition)
 
 	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
 
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return
-	}
-
-	req = setCollectionID(ctx, req)
-
-	common.AddServiceTokenHeader(req, serviceToken)
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -268,21 +233,12 @@ func (c *Client) GetEdition(ctx context.Context, serviceToken, datasetID, editio
 }
 
 // GetEditions returns all editions for a dataset
-func (c *Client) GetEditions(ctx context.Context, serviceToken, id string) (m []Edition, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions", c.url, id)
+func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m []Edition, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions", c.url, datasetID)
 
 	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
 
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return
-	}
-
-	req = setCollectionID(ctx, req)
-
-	common.AddServiceTokenHeader(req, serviceToken)
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -325,23 +281,12 @@ func (c *Client) GetEditions(ctx context.Context, serviceToken, id string) (m []
 }
 
 // GetVersions gets all versions for an edition from the dataset api
-func (c *Client) GetVersions(ctx context.Context, serviceToken, downloadServiceToken, id, edition string ) (m []Version, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.url, id, edition)
+func (c *Client) GetVersions(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition string) (m []Version, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.url, datasetID, edition)
 
 	clientlog.Do(ctx, "retrieving dataset versions", service, uri)
 
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return
-	}
-
-	req = setCollectionID(ctx, req)
-
-	common.AddServiceTokenHeader(req, serviceToken)
-
-	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeadersAndWithDownloadToken(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -367,23 +312,12 @@ func (c *Client) GetVersions(ctx context.Context, serviceToken, downloadServiceT
 }
 
 // GetVersion gets a specific version for an edition from the dataset api
-func (c *Client) GetVersion(ctx context.Context, serviceToken, downloadServiceToken, id, edition, version string) (m Version, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, id, edition, version)
+func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (m Version, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
 
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return
-	}
-
-	req = setCollectionID(ctx, req)
-
-	common.AddServiceTokenHeader(req, serviceToken)
-
-	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeadersAndWithDownloadToken(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -404,21 +338,12 @@ func (c *Client) GetVersion(ctx context.Context, serviceToken, downloadServiceTo
 }
 
 // GetInstance returns an instance from the dataset api
-func (c *Client) GetInstance(ctx context.Context, serviceToken, instanceID string) (m Instance, err error) {
+func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string) (m Instance, err error) {
 	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
 
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return
-	}
-
-	req = setCollectionID(ctx, req)
-
-	common.AddServiceTokenHeader(req, serviceToken)
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -439,7 +364,7 @@ func (c *Client) GetInstance(ctx context.Context, serviceToken, instanceID strin
 }
 
 // PutVersion update the version
-func (c *Client) PutVersion(ctx context.Context, serviceToken, datasetID, edition, version string, v Version) error {
+func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version string, v Version) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
 	clientlog.Do(ctx, "updating version", service, uri)
 
@@ -453,9 +378,9 @@ func (c *Client) PutVersion(ctx context.Context, serviceToken, datasetID, editio
 		return errors.Wrap(err, "error while attempting to create http request")
 	}
 
-	req = setCollectionID(ctx, req)
-
-	common.AddServiceTokenHeader(req, serviceToken)
+	addCollectionIDHeader(req, collectionID)
+	common.AddFlorenceHeader(req, userAuthToken)
+	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -476,21 +401,12 @@ func (c *Client) GetMetadataURL(id, edition, version string) string {
 }
 
 // GetVersionMetadata returns the metadata for a given dataset id, edition and version
-func (c *Client) GetVersionMetadata(ctx context.Context, serviceToken, id, edition, version string) (m Metadata, err error) {
+func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m Metadata, err error) {
 	uri := c.GetMetadataURL(id, edition, version)
 
 	clientlog.Do(ctx, "retrieving dataset version metadata", service, uri)
 
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return
-	}
-
-	req = setCollectionID(ctx, req)
-
-	common.AddServiceTokenHeader(req, serviceToken)
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -511,21 +427,12 @@ func (c *Client) GetVersionMetadata(ctx context.Context, serviceToken, id, editi
 }
 
 // GetDimensions will return a versions dimensions
-func (c *Client) GetDimensions(ctx context.Context, serviceToken, id, edition, version string) (m Dimensions, err error) {
+func (c *Client) GetDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m Dimensions, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions", c.url, id, edition, version)
 
 	clientlog.Do(ctx, "retrieving dataset version dimensions", service, uri)
 
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return
-	}
-
-	req = setCollectionID(ctx, req)
-
-	common.AddServiceTokenHeader(req, serviceToken)
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -551,21 +458,12 @@ func (c *Client) GetDimensions(ctx context.Context, serviceToken, id, edition, v
 }
 
 // GetOptions will return the options for a dimension
-func (c *Client) GetOptions(ctx context.Context, serviceToken, id, edition, version, dimension string) (m Options, err error) {
+func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string) (m Options, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", c.url, id, edition, version, dimension)
 
 	clientlog.Do(ctx, "retrieving options for dimension", service, uri)
 
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return
-	}
-
-	req = setCollectionID(ctx, req)
-
-	common.AddServiceTokenHeader(req, serviceToken)
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -604,14 +502,37 @@ func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatase
 	return
 }
 
-func setCollectionID(ctx context.Context, req *http.Request) *http.Request {
+func addCollectionIDHeader(r *http.Request, collectionID string) {
+	if len(collectionID) > 0 {
+		r.Header.Add(common.CollectionIDHeaderKey, collectionID)
+	}
+}
 
-	rawKeyValue := ctx.Value(common.CollectionIDHeaderKey)
-
-	if rawKeyValue != nil { // avoid stringifying an empty interface
-		collectionID := rawKeyValue.(string)
-		req.Header.Set(common.CollectionIDHeaderKey, collectionID)
+// doGetWithAuthHeaders executes clienter.Do setting the user and service authentication token as a request header. Returns the http.Response and any error.
+// It is the callers responsibility to ensure response.Body is closed on completion.
+func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, uri, nil)
+	if err != nil {
+		return nil, err
 	}
 
-	return req
+	addCollectionIDHeader(req, collectionID)
+	common.AddFlorenceHeader(req, userAuthToken)
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	return c.cli.Do(ctx, req)
+}
+
+// doGetWithAuthHeadersAndWithDownloadToken executes clienter.Do setting the user and service authentication and dwonload token token as a request header. Returns the http.Response and any error.
+// It is the callers responsibility to ensure response.Body is closed on completion.
+func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, userAuthToken, serviceAuthToken, downloadserviceAuthToken, collectionID, uri string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, uri, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	addCollectionIDHeader(req, collectionID)
+	common.AddFlorenceHeader(req, userAuthToken)
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	common.AddDownloadServiceTokenHeader(req, downloadserviceAuthToken)
+	return c.cli.Do(ctx, req)
 }
