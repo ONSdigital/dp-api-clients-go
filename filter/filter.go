@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
@@ -240,7 +241,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return "", err
 	}
 
-	//todo common.AddCollectionID
+	headers.SetCollectionID(req, collectionID)
 	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
@@ -332,7 +333,7 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 		return err
 	}
 
-	//todo common.AddCollectionID
+	headers.SetCollectionID(req, collectionID)
 	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
@@ -363,7 +364,7 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 		"value":  value,
 	})
 
-	//todo add collectionID
+	headers.SetCollectionID(req, collectionID)
 	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
@@ -394,7 +395,7 @@ func (c *Client) RemoveDimension(ctx context.Context, userAuthToken, serviceAuth
 		return err
 	}
 
-	// todo add collectionID
+	headers.SetCollectionID(req, collectionID)
 	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
@@ -425,7 +426,7 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 	if err != nil {
 		return err
 	}
-	// todo add collectionID
+	headers.SetCollectionID(req, collectionID)
 	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
@@ -495,7 +496,7 @@ func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceA
 		return err
 	}
 
-	// todo collectionID
+	headers.SetCollectionID(req, collectionID)
 	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
@@ -550,7 +551,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 		return nil, err
 	}
 
-	addCollectionIDHeader(req, collectionID)
+	headers.SetCollectionID(req, collectionID)
 	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 	return c.cli.Do(ctx, req)
@@ -558,15 +559,15 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 
 // doGetWithAuthHeadersAndWithDownloadToken executes clienter.Do setting the user and service authentication and dwonload token token as a request header. Returns the http.Response and any error.
 // It is the callers responsibility to ensure response.Body is closed on completion.
-func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, userAuthToken, serviceAuthToken, downloadserviceAuthToken, collectionID, uri string) (*http.Response, error) {
+func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, uri string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	addCollectionIDHeader(req, collectionID)
+	headers.SetCollectionID(req, collectionID)
 	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
-	common.AddDownloadServiceTokenHeader(req, downloadserviceAuthToken)
+	common.AddDownloadServiceTokenHeader(req, downloadServiceAuthToken)
 	return c.cli.Do(ctx, req)
 }
