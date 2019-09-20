@@ -10,15 +10,46 @@ import (
 	"github.com/ONSdigital/log.go/log"
 )
 
-var (
-	// CollectionIDKey is the name used for a collection ID http request header
-	CollectionIDKey = "Collection-Id"
+const (
+	// CollectionIDHeader is the name used for a collection ID http request header
+	CollectionIDHeader = "Collection-Id"
 
+	// UserAuthTokenHeader is the user Florence auth token header name
+	UserAuthTokenHeader = "X-Florence-Token"
+)
+
+var (
 	// ErrHeaderNotFound returned if the requested header is not present in the provided request
 	ErrHeaderNotFound = errors.New("header not found")
 
 	errRequestNil = errors.New("error setting request header request was nil")
 )
+
+// GetCollectionID returns the value of the "Collection-Id" request header if it exists, returns ErrHeaderNotFound if
+// the header is not found.
+func GetCollectionID(req *http.Request) (string, error) {
+	return getRequestHeader(req, CollectionIDHeader)
+}
+
+// SetCollectionID set the collection ID header on the provided request. If the collection ID header is already present
+// in the request it will be overwritten by the new value. If the header value is empty then no header will be set and
+// no error is returned.
+func SetCollectionID(req *http.Request, collectionID string) error {
+	return setRequestHeader(req, CollectionIDHeader, collectionID)
+}
+
+// SetUserAuthToken set the user authentication token header on the provided request. If the authentication token is
+// already present it will be overwritten by the new value. If the header value is empty then no header will be set and
+// no error is returned.
+func SetUserAuthToken(req *http.Request, userAuthToken string) error {
+	return setRequestHeader(req, UserAuthTokenHeader, userAuthToken)
+}
+
+// GetUserAuthToken returns the value of the "X-Florence-Token" request header if it exists, returns ErrHeaderNotFound if
+// the header is not found.
+func GetUserAuthToken(req *http.Request) (string, error) {
+	return getRequestHeader(req, UserAuthTokenHeader)
+}
 
 func getRequestHeader(req *http.Request, headerName string) (string, error) {
 	if req == nil {
@@ -58,17 +89,4 @@ func setRequestHeader(req *http.Request, headerName string, headerValue string) 
 
 	req.Header.Set(headerName, headerValue)
 	return nil
-}
-
-// GetCollectionID returns the value of the "Collection-Id" request header if it exists, returns ErrHeaderNotFound if
-// the header is not found.
-func GetCollectionID(req *http.Request) (string, error) {
-	return getRequestHeader(req, CollectionIDKey)
-}
-
-// SetCollectionID set the collection ID header on the provided request. If the collection ID header is already present
-// in the request it will be overwritten by the new value. If the header value is empty then no header will be set and
-// no error is returned.
-func SetCollectionID(req *http.Request, collectionID string) error {
-	return setRequestHeader(req, CollectionIDKey, collectionID)
 }
