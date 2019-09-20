@@ -21,30 +21,30 @@ func TestSetCollectionID(t *testing.T) {
 	})
 
 	Convey("should not add header if value is empty", t, func() {
-		req := requestWithHeader(CollectionIDHeader, "")
+		req := requestWithHeader(collectionID, "")
 
 		err := SetCollectionID(req, "")
 
 		So(err, ShouldBeNil)
-		So(req.Header.Get(CollectionIDHeader), ShouldBeEmpty)
+		So(req.Header.Get(collectionID), ShouldBeEmpty)
 	})
 
 	Convey("should overwrite an existing header", t, func() {
-		req := requestWithHeader(CollectionIDHeader, testHeader1)
+		req := requestWithHeader(collectionID, testHeader1)
 
 		err := SetCollectionID(req, testHeader2)
 
 		So(err, ShouldBeNil)
-		So(req.Header.Get(CollectionIDHeader), ShouldEqual, testHeader2)
+		So(req.Header.Get(collectionID), ShouldEqual, testHeader2)
 	})
 
 	Convey("should set header if it does not already exist", t, func() {
-		req := requestWithHeader(CollectionIDHeader, "")
+		req := requestWithHeader(collectionID, "")
 
 		err := SetCollectionID(req, testHeader1)
 
 		So(err, ShouldBeNil)
-		So(req.Header.Get(CollectionIDHeader), ShouldEqual, testHeader1)
+		So(req.Header.Get(collectionID), ShouldEqual, testHeader1)
 	})
 }
 
@@ -57,7 +57,7 @@ func TestGetCollectionID(t *testing.T) {
 	})
 
 	Convey("should return ErrHeaderNotFound if the collection ID request header is not found", t, func() {
-		req := requestWithHeader(CollectionIDHeader, "")
+		req := requestWithHeader(collectionID, "")
 
 		actual, err := GetCollectionID(req)
 
@@ -66,7 +66,7 @@ func TestGetCollectionID(t *testing.T) {
 	})
 
 	Convey("should return header value if present", t, func() {
-		req := requestWithHeader(CollectionIDHeader, testHeader1)
+		req := requestWithHeader(collectionID, testHeader1)
 
 		actual, err := GetCollectionID(req)
 
@@ -83,30 +83,30 @@ func TestSetUserAuthToken(t *testing.T) {
 	})
 
 	Convey("SetUserAuthToken should not add header if value is empty", t, func() {
-		req := requestWithHeader(UserAuthTokenHeader, "")
+		req := requestWithHeader(userAuthToken, "")
 
 		err := SetUserAuthToken(req, "")
 
 		So(err, ShouldBeNil)
-		So(req.Header.Get(UserAuthTokenHeader), ShouldBeEmpty)
+		So(req.Header.Get(userAuthToken), ShouldBeEmpty)
 	})
 
 	Convey("SetUserAuthToken should overwrite an existing header", t, func() {
-		req := requestWithHeader(UserAuthTokenHeader, testHeader1)
+		req := requestWithHeader(userAuthToken, testHeader1)
 
 		err := SetUserAuthToken(req, testHeader2)
 
 		So(err, ShouldBeNil)
-		So(req.Header.Get(UserAuthTokenHeader), ShouldEqual, testHeader2)
+		So(req.Header.Get(userAuthToken), ShouldEqual, testHeader2)
 	})
 
 	Convey("SetUserAuthToken should set header if it does not already exist", t, func() {
-		req := requestWithHeader(UserAuthTokenHeader, "")
+		req := requestWithHeader(userAuthToken, "")
 
 		err := SetUserAuthToken(req, testHeader1)
 
 		So(err, ShouldBeNil)
-		So(req.Header.Get(UserAuthTokenHeader), ShouldEqual, testHeader1)
+		So(req.Header.Get(userAuthToken), ShouldEqual, testHeader1)
 	})
 }
 
@@ -119,7 +119,7 @@ func TestGetUserAuthToken(t *testing.T) {
 	})
 
 	Convey("GetUserAuthToken should return ErrHeaderNotFound if the UserAuthTokenHeader request header is not found", t, func() {
-		req := requestWithHeader(UserAuthTokenHeader, "")
+		req := requestWithHeader(userAuthToken, "")
 
 		actual, err := GetUserAuthToken(req)
 
@@ -128,7 +128,7 @@ func TestGetUserAuthToken(t *testing.T) {
 	})
 
 	Convey("GetUserAuthToken should return header value if present", t, func() {
-		req := requestWithHeader(UserAuthTokenHeader, testHeader1)
+		req := requestWithHeader(userAuthToken, testHeader1)
 
 		actual, err := GetUserAuthToken(req)
 

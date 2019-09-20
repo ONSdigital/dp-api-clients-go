@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	// CollectionIDHeader is the name used for a collection ID http request header
-	CollectionIDHeader = "Collection-Id"
+	// collectionID is the name used for a collection ID http request header
+	collectionID = "Collection-Id"
 
-	// UserAuthTokenHeader is the user Florence auth token header name
-	UserAuthTokenHeader = "X-Florence-Token"
+	// userAuthToken is the user Florence auth token header name
+	userAuthToken = "X-Florence-Token"
 )
 
 var (
@@ -28,27 +28,27 @@ var (
 // GetCollectionID returns the value of the "Collection-Id" request header if it exists, returns ErrHeaderNotFound if
 // the header is not found.
 func GetCollectionID(req *http.Request) (string, error) {
-	return getRequestHeader(req, CollectionIDHeader)
+	return getRequestHeader(req, collectionID)
 }
 
 // SetCollectionID set the collection ID header on the provided request. If the collection ID header is already present
 // in the request it will be overwritten by the new value. If the header value is empty then no header will be set and
 // no error is returned.
-func SetCollectionID(req *http.Request, collectionID string) error {
-	return setRequestHeader(req, CollectionIDHeader, collectionID)
+func SetCollectionID(req *http.Request, headerValue string) error {
+	return setRequestHeader(req, collectionID, headerValue)
 }
 
 // SetUserAuthToken set the user authentication token header on the provided request. If the authentication token is
 // already present it will be overwritten by the new value. If the header value is empty then no header will be set and
 // no error is returned.
-func SetUserAuthToken(req *http.Request, userAuthToken string) error {
-	return setRequestHeader(req, UserAuthTokenHeader, userAuthToken)
+func SetUserAuthToken(req *http.Request, headerValue string) error {
+	return setRequestHeader(req, userAuthToken, headerValue)
 }
 
 // GetUserAuthToken returns the value of the "X-Florence-Token" request header if it exists, returns ErrHeaderNotFound if
 // the header is not found.
 func GetUserAuthToken(req *http.Request) (string, error) {
-	return getRequestHeader(req, UserAuthTokenHeader)
+	return getRequestHeader(req, userAuthToken)
 }
 
 func getRequestHeader(req *http.Request, headerName string) (string, error) {
