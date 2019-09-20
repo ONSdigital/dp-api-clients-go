@@ -118,7 +118,7 @@ func TestGetUserAuthToken(t *testing.T) {
 		So(actual, ShouldBeEmpty)
 	})
 
-	Convey("GetUserAuthToken should return ErrHeaderNotFound if the collection ID request header is not found", t, func() {
+	Convey("GetUserAuthToken should return ErrHeaderNotFound if the UserAuthTokenHeader request header is not found", t, func() {
 		req := requestWithHeader(UserAuthTokenHeader, "")
 
 		actual, err := GetUserAuthToken(req)
