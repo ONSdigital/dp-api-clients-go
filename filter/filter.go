@@ -99,7 +99,7 @@ func (c *Client) GetOutput(ctx context.Context, userAuthToken, serviceAuthToken,
 		return m, err
 	}
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
@@ -135,7 +135,7 @@ func (c *Client) GetDimension(ctx context.Context, userAuthToken, serviceAuthTok
 		return dim, err
 	}
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
@@ -175,7 +175,7 @@ func (c *Client) GetDimensions(ctx context.Context, userAuthToken, serviceAuthTo
 		return dims, err
 	}
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
@@ -210,7 +210,7 @@ func (c *Client) GetDimensionOptions(ctx context.Context, userAuthToken, service
 		return opts, err
 	}
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
@@ -270,7 +270,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return "", err
 	}
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
@@ -320,7 +320,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return m, err
 	}
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
@@ -361,7 +361,7 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 		return err
 	}
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
@@ -391,7 +391,7 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 		"value":  value,
 	})
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
@@ -421,7 +421,7 @@ func (c *Client) RemoveDimension(ctx context.Context, userAuthToken, serviceAuth
 		return err
 	}
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
@@ -452,7 +452,7 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 		return err
 	}
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
@@ -480,7 +480,7 @@ func (c *Client) GetJobState(ctx context.Context, userAuthToken, serviceAuthToke
 		return m, err
 	}
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
@@ -530,7 +530,7 @@ func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceA
 		return err
 	}
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
@@ -561,7 +561,7 @@ func (c *Client) GetPreview(ctx context.Context, userAuthToken, serviceAuthToken
 		return p, err
 	}
 
-	common.AddUserHeader(req, userAuthToken)
+	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
 	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
