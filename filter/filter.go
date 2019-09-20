@@ -242,8 +242,8 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
 	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
@@ -292,8 +292,8 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return m, err
 	}
 
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
 	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
@@ -334,8 +334,8 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -365,8 +365,8 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 	})
 
 	headers.SetCollectionID(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -396,8 +396,8 @@ func (c *Client) RemoveDimension(ctx context.Context, userAuthToken, serviceAuth
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -427,8 +427,8 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 		return err
 	}
 	headers.SetCollectionID(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -497,8 +497,8 @@ func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceA
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -552,8 +552,8 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
 	return c.cli.Do(ctx, req)
 }
 
@@ -566,8 +566,8 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
 	common.AddDownloadServiceTokenHeader(req, downloadServiceAuthToken)
 	return c.cli.Do(ctx, req)
 }
