@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/ONSdigital/log.go/log"
 )
@@ -16,6 +17,12 @@ const (
 
 	// userAuthToken is the user Florence auth token header name
 	userAuthToken = "X-Florence-Token"
+
+	// serviceAuthToken the service auth token header name
+	serviceAuthToken = "Authorization"
+
+	// bearerPrefix is the prefix for authorization header values
+	bearerPrefix = "Bearer "
 )
 
 var (
@@ -51,6 +58,42 @@ func GetUserAuthToken(req *http.Request) (string, error) {
 	return getRequestHeader(req, userAuthToken)
 }
 
+// SetServiceAuthToken set the service authentication token header on the provided request. If the authentication token is
+// already present it will be overwritten by the new value. If the header value is empty then no header will be set and
+// no error is returned.
+func SetServiceAuthToken(req *http.Request, headerValue string) error {
+	if req == nil {
+		return errRequestNil
+	}
+
+	if len(headerValue) == 0 {
+		log.Event(context.Background(), "request header not set as value was empty", log.Data{
+			"header_name": serviceAuthToken,
+		})
+		return nil
+	}
+
+	if !strings.HasPrefix(headerValue, bearerPrefix) {
+		headerValue = bearerPrefix + headerValue
+	}
+
+	return setRequestHeader(req, serviceAuthToken, headerValue)
+}
+
+// GetServiceAuthToken returns the value of the "Authorization" request header if it exists, returns ErrHeaderNotFound if
+// the header is not found. If the header exists the "Bearer " prefixed is removed from returned value.
+func GetServiceAuthToken(req *http.Request) (string, error) {
+	token, err := getRequestHeader(req, serviceAuthToken)
+	if err != nil {
+		return "", err
+	}
+
+	if strings.HasPrefix(token, bearerPrefix) {
+		token = strings.TrimPrefix(token, bearerPrefix)
+	}
+	return token, nil
+}
+
 func getRequestHeader(req *http.Request, headerName string) (string, error) {
 	if req == nil {
 		return "", errRequestNil
@@ -76,12 +119,8 @@ func setRequestHeader(req *http.Request, headerName string, headerValue string) 
 		return nil
 	}
 
-	existing, err := GetCollectionID(req)
-	if err != nil && err != ErrHeaderNotFound {
-		return err
-	}
-
-	if err != nil && err == ErrHeaderNotFound {
+	existing := req.Header.Get(headerName)
+	if len(existing) > 0 {
 		logD["existing"] = existing
 		logD["new"] = headerValue
 		log.Event(context.Background(), "overwriting existing request header", logD)

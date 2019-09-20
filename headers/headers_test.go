@@ -118,7 +118,7 @@ func TestGetUserAuthToken(t *testing.T) {
 		So(actual, ShouldBeEmpty)
 	})
 
-	Convey("GetUserAuthToken should return ErrHeaderNotFound if the UserAuthTokenHeader request header is not found", t, func() {
+	Convey("GetUserAuthToken should return ErrHeaderNotFound if the userAuthToken request header is not found", t, func() {
 		req := requestWithHeader(userAuthToken, "")
 
 		actual, err := GetUserAuthToken(req)
@@ -131,6 +131,77 @@ func TestGetUserAuthToken(t *testing.T) {
 		req := requestWithHeader(userAuthToken, testHeader1)
 
 		actual, err := GetUserAuthToken(req)
+
+		So(err, ShouldBeNil)
+		So(actual, ShouldEqual, testHeader1)
+	})
+}
+
+func TestSetServiceAuthToken(t *testing.T) {
+	Convey("SetServiceAuthToken should return error if request is nil", t, func() {
+		err := SetServiceAuthToken(nil, "")
+
+		So(err, ShouldResemble, errRequestNil)
+	})
+
+	Convey("SetServiceAuthToken should not add header if value is empty", t, func() {
+		req := requestWithHeader(serviceAuthToken, "")
+
+		err := SetServiceAuthToken(req, "")
+
+		So(err, ShouldBeNil)
+		So(req.Header.Get(serviceAuthToken), ShouldBeEmpty)
+	})
+
+	Convey("SetServiceAuthToken should overwrite an existing header", t, func() {
+		req := requestWithHeader(serviceAuthToken, testHeader1)
+
+		err := SetServiceAuthToken(req, testHeader2)
+
+		So(err, ShouldBeNil)
+		So(req.Header.Get(serviceAuthToken), ShouldEqual, bearerPrefix + testHeader2)
+	})
+
+	Convey("SetServiceAuthToken should set header if it does not already exist", t, func() {
+		req := requestWithHeader(serviceAuthToken, "")
+
+		err := SetServiceAuthToken(req, testHeader1)
+
+		So(err, ShouldBeNil)
+		So(req.Header.Get(serviceAuthToken), ShouldEqual, bearerPrefix + testHeader1)
+	})
+}
+
+func TestGetServiceAuthToken(t *testing.T) {
+	Convey("GetServiceAuthToken should return expected error if request is nil", t, func() {
+		actual, err := GetServiceAuthToken(nil)
+
+		So(err, ShouldResemble, errRequestNil)
+		So(actual, ShouldBeEmpty)
+	})
+
+	Convey("GetServiceAuthToken should return ErrHeaderNotFound if the serviceAuthToken request header is not found", t, func() {
+		req := requestWithHeader(serviceAuthToken, "")
+
+		actual, err := GetServiceAuthToken(req)
+
+		So(err, ShouldResemble, ErrHeaderNotFound)
+		So(actual, ShouldBeEmpty)
+	})
+
+	Convey("GetServiceAuthToken should return header value if present", t, func() {
+		req := requestWithHeader(serviceAuthToken, bearerPrefix + testHeader1)
+
+		actual, err := GetServiceAuthToken(req)
+
+		So(err, ShouldBeNil)
+		So(actual, ShouldEqual, testHeader1)
+	})
+
+	Convey("GetServiceAuthToken should return header value if it does not have the bearer prefix", t, func() {
+		req := requestWithHeader(serviceAuthToken, bearerPrefix + testHeader1)
+
+		actual, err := GetServiceAuthToken(req)
 
 		So(err, ShouldBeNil)
 		So(actual, ShouldEqual, testHeader1)
