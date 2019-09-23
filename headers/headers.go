@@ -27,6 +27,7 @@ const (
 	// downloadServiceToken is the authorization header for the download service
 	downloadServiceToken = "X-Download-Service-Token"
 
+	// userIdentity is the user identity header used to forward a confirmed identity to another API.
 	userIdentity = "User-Identity"
 )
 
