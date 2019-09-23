@@ -52,7 +52,7 @@ func TestSetCollectionID(t *testing.T) {
 		{
 			description: "SetCollectionID should not add header if value is empty",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(collectionID, "")
+				return getRequest()
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetCollectionID(r, "")
@@ -68,7 +68,7 @@ func TestSetCollectionID(t *testing.T) {
 		{
 			description: "SetCollectionID should overwrite an existing header",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(collectionID, testHeader1)
+				return getRequestWithHeader(collectionID, testHeader1)
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetCollectionID(r, testHeader2)
@@ -84,7 +84,7 @@ func TestSetCollectionID(t *testing.T) {
 		{
 			description: "SetCollectionID should set header if it does not already exist",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(collectionID, "")
+				return getRequest()
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetCollectionID(r, testHeader1)
@@ -125,7 +125,7 @@ func TestSetUserAuthToken(t *testing.T) {
 		{
 			description: "SetUserAuthToken should not add header if value is empty",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(userAuthToken, "")
+				return getRequest()
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetUserAuthToken(r, "")
@@ -141,7 +141,7 @@ func TestSetUserAuthToken(t *testing.T) {
 		{
 			description: "SetUserAuthToken should overwrite an existing header",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(userAuthToken, testHeader1)
+				return getRequestWithHeader(userAuthToken, testHeader1)
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetUserAuthToken(r, testHeader2)
@@ -157,7 +157,7 @@ func TestSetUserAuthToken(t *testing.T) {
 		{
 			description: "SetUserAuthToken should set header if it does not already exist",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(userAuthToken, "")
+				return getRequest()
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetUserAuthToken(r, testHeader1)
@@ -198,7 +198,7 @@ func TestSetServiceAuthToken(t *testing.T) {
 		{
 			description: "SetServiceAuthToken should not add header if value is empty",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(serviceAuthToken, "")
+				return getRequest()
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetServiceAuthToken(r, "")
@@ -214,7 +214,7 @@ func TestSetServiceAuthToken(t *testing.T) {
 		{
 			description: "SetServiceAuthToken should overwrite an existing header",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(serviceAuthToken, testHeader1)
+				return getRequestWithHeader(serviceAuthToken, testHeader1)
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetServiceAuthToken(r, testHeader2)
@@ -230,7 +230,7 @@ func TestSetServiceAuthToken(t *testing.T) {
 		{
 			description: "SetServiceAuthToken should set header if it does not already exist",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(serviceAuthToken, "")
+				return getRequest()
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetServiceAuthToken(r, testHeader1)
@@ -271,7 +271,7 @@ func TestSetDownloadServiceToken(t *testing.T) {
 		{
 			description: "SetDownloadServiceToken should not add header if value is empty",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(downloadServiceToken, "")
+				return getRequest()
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetDownloadServiceToken(r, "")
@@ -287,7 +287,7 @@ func TestSetDownloadServiceToken(t *testing.T) {
 		{
 			description: "SetDownloadServiceToken should overwrite an existing header",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(downloadServiceToken, testHeader1)
+				return getRequestWithHeader(downloadServiceToken, testHeader1)
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetDownloadServiceToken(r, testHeader2)
@@ -303,7 +303,7 @@ func TestSetDownloadServiceToken(t *testing.T) {
 		{
 			description: "SetDownloadServiceToken should set header if it does not already exist",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(downloadServiceToken, "")
+				return getRequest()
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetDownloadServiceToken(r, testHeader1)
@@ -344,7 +344,7 @@ func TestSetUserIdentity(t *testing.T) {
 		{
 			description: "SetUserIdentity should not add header if value is empty",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(userIdentity, "")
+				return getRequest()
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetUserIdentity(r, "")
@@ -360,7 +360,7 @@ func TestSetUserIdentity(t *testing.T) {
 		{
 			description: "SetUserIdentity should overwrite an existing header",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(userIdentity, testHeader1)
+				return getRequestWithHeader(userIdentity, testHeader1)
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetUserIdentity(r, testHeader2)
@@ -376,7 +376,7 @@ func TestSetUserIdentity(t *testing.T) {
 		{
 			description: "SetUserIdentity should set header if it does not already exist",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(userIdentity, "")
+				return getRequest()
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetUserIdentity(r, testHeader1)
@@ -412,7 +412,7 @@ func TestGetCollectionID(t *testing.T) {
 		{
 			description: "GetCollectionID should return ErrHeaderNotFound if the collection ID request header is not found",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(collectionID, "")
+				return getRequest()
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetCollectionID(r)
@@ -425,7 +425,7 @@ func TestGetCollectionID(t *testing.T) {
 		{
 			description: "GetCollectionID should return header value if present",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(collectionID, testHeader1)
+				return getRequestWithHeader(collectionID, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetCollectionID(r)
@@ -458,7 +458,7 @@ func TestGetUserAuthToken(t *testing.T) {
 		{
 			description: "GetUserAuthToken should return ErrHeaderNotFound if the collection ID request header is not found",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(userAuthToken, "")
+				return getRequest()
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetUserAuthToken(r)
@@ -471,7 +471,7 @@ func TestGetUserAuthToken(t *testing.T) {
 		{
 			description: "GetUserAuthToken should return header value if present",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(userAuthToken, testHeader1)
+				return getRequestWithHeader(userAuthToken, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetUserAuthToken(r)
@@ -504,7 +504,7 @@ func TestGetServiceAuthToken(t *testing.T) {
 		{
 			description: "GetServiceAuthToken should return ErrHeaderNotFound if the collection ID request header is not found",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(serviceAuthToken, "")
+				return getRequest()
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetServiceAuthToken(r)
@@ -517,7 +517,7 @@ func TestGetServiceAuthToken(t *testing.T) {
 		{
 			description: "GetServiceAuthToken should return header value if present",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(serviceAuthToken, testHeader1)
+				return getRequestWithHeader(serviceAuthToken, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetServiceAuthToken(r)
@@ -550,7 +550,7 @@ func TestGetDownloadServiceToken(t *testing.T) {
 		{
 			description: "GetDownloadServiceToken should return ErrHeaderNotFound if the collection ID request header is not found",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(downloadServiceToken, "")
+				return getRequest()
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetDownloadServiceToken(r)
@@ -563,7 +563,7 @@ func TestGetDownloadServiceToken(t *testing.T) {
 		{
 			description: "GetDownloadServiceToken should return header value if present",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(downloadServiceToken, testHeader1)
+				return getRequestWithHeader(downloadServiceToken, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetDownloadServiceToken(r)
@@ -596,7 +596,7 @@ func TestGetUserIdentity(t *testing.T) {
 		{
 			description: "GetUserIdentity should return ErrHeaderNotFound if the collection ID request header is not found",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(userIdentity, "")
+				return getRequest()
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetUserIdentity(r)
@@ -609,7 +609,7 @@ func TestGetUserIdentity(t *testing.T) {
 		{
 			description: "GetUserIdentity should return header value if present",
 			getRequestFunc: func() *http.Request {
-				return requestWithHeader(userIdentity, testHeader1)
+				return getRequestWithHeader(userIdentity, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetUserIdentity(r)
@@ -647,10 +647,14 @@ func execGetHeaderTestCases(t *testing.T, cases []getHeaderTestCase) {
 	}
 }
 
-func requestWithHeader(key, val string) *http.Request {
+func getRequestWithHeader(key, val string) *http.Request {
 	r := httptest.NewRequest(http.MethodGet, "http://localhost:456789/schwifty", nil)
 	if len(val) > 0 {
 		r.Header.Set(key, val)
 	}
 	return r
+}
+
+func getRequest() *http.Request {
+	return httptest.NewRequest(http.MethodGet, "http://localhost:456789/schwifty", nil)
 }
