@@ -26,6 +26,8 @@ const (
 
 	// downloadServiceToken is the authorization header for the download service
 	downloadServiceToken = "X-Download-Service-Token"
+
+	userIdentity = "User-Identity"
 )
 
 var (
@@ -107,6 +109,18 @@ func SetDownloadServiceToken(req *http.Request, headerValue string) error {
 // ErrHeaderNotFound if the header is not found.
 func GetDownloadServiceToken(req *http.Request) (string, error) {
 	return getRequestHeader(req, downloadServiceToken)
+}
+
+// SetUserIdentity set the user identity header on the provided request. If a user identity token is already present it
+// will be overwritten by the new value.
+func SetUserIdentity(req *http.Request, headerValue string) error {
+	return setRequestHeader(req, userIdentity, headerValue)
+}
+
+// GetUserIdentity returns the value of the "User-Identity" request header if it exists, returns
+// ErrHeaderNotFound if the header is not found.
+func GetUserIdentity(req *http.Request) (string, error) {
+	return getRequestHeader(req, userIdentity)
 }
 
 func getRequestHeader(req *http.Request, headerName string) (string, error) {
