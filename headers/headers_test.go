@@ -624,6 +624,52 @@ func TestGetUserIdentity(t *testing.T) {
 	execGetHeaderTestCases(t, cases)
 }
 
+func TestGetRequestID(t *testing.T) {
+	cases := []getHeaderTestCase{
+		{
+			description: "GetRequestID should return expected error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetRequestID(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, errRequestNil)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetRequestID should return ErrHeaderNotFound if the request ID header is not found",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetRequestID(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrHeaderNotFound)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetRequestID should return header value if present",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(requestIDHeader, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetRequestID(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
+
+	execGetHeaderTestCases(t, cases)
+}
+
 func execSetHeaderTestCases(t *testing.T, cases []setHeaderTestCase) {
 	for i, tc := range cases {
 		desc := fmt.Sprintf("%d/%d) %s", i+1, len(cases), tc.description)
