@@ -61,7 +61,7 @@ func TestSetCollectionID(t *testing.T) {
 				return r.Header.Get(collectionIDHeader)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldBeNil)
+				So(err, ShouldResemble, ErrValueEmpty)
 				So(val, ShouldBeEmpty)
 			},
 		},
@@ -134,7 +134,7 @@ func TestSetUserAuthToken(t *testing.T) {
 				return r.Header.Get(userAuthTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldBeNil)
+				So(err, ShouldResemble, ErrValueEmpty)
 				So(val, ShouldBeEmpty)
 			},
 		},
@@ -207,7 +207,7 @@ func TestSetServiceAuthToken(t *testing.T) {
 				return r.Header.Get(serviceAuthTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldBeNil)
+				So(err, ShouldResemble, ErrValueEmpty)
 				So(val, ShouldBeEmpty)
 			},
 		},
@@ -280,7 +280,7 @@ func TestSetDownloadServiceToken(t *testing.T) {
 				return r.Header.Get(downloadServiceTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldBeNil)
+				So(err, ShouldResemble, ErrValueEmpty)
 				So(val, ShouldBeEmpty)
 			},
 		},
@@ -353,7 +353,7 @@ func TestSetUserIdentity(t *testing.T) {
 				return r.Header.Get(userIdentityHeader)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldBeNil)
+				So(err, ShouldResemble, ErrValueEmpty)
 				So(val, ShouldBeEmpty)
 			},
 		},
