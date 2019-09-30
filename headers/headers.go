@@ -32,8 +32,8 @@ var (
 	// ErrHeaderNotFound returned if the requested header is not present in the provided request
 	ErrHeaderNotFound = errors.New("header not found")
 
-	ErrValueEmpty = errors.New("header not set as value was empty")
 	// ErrValueEmpty returned if an empty value is passed to a SetX header function
+	ErrValueEmpty = errors.New("header not set as value was empty")
 
 	errRequestNil = errors.New("error setting request header request was nil")
 )
