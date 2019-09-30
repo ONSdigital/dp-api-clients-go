@@ -12,23 +12,23 @@ import (
 )
 
 const (
-	// collectionID is the name used for a collection ID http request header
-	collectionID = "Collection-Id"
+	// collectionIDHeader is the name used for a collection ID http request header
+	collectionIDHeader = "Collection-Id"
 
-	// userAuthToken is the user Florence auth token header name
-	userAuthToken = "X-Florence-Token"
+	// userAuthTokenHeader is the user Florence auth token header name
+	userAuthTokenHeader = "X-Florence-Token"
 
 	// serviceAuthToken the service auth token header name
-	serviceAuthToken = "Authorization"
+	serviceAuthTokenHeader = "Authorization"
 
 	// bearerPrefix is the prefix for authorization header values
 	bearerPrefix = "Bearer "
 
 	// downloadServiceToken is the authorization header for the download service
-	downloadServiceToken = "X-Download-Service-Token"
+	downloadServiceTokenHeader = "X-Download-Service-Token"
 
 	// userIdentity is the user identity header used to forward a confirmed identity to another API.
-	userIdentity = "User-Identity"
+	userIdentityHeader = "User-Identity"
 )
 
 var (
@@ -41,27 +41,27 @@ var (
 // GetCollectionID returns the value of the "Collection-Id" request header if it exists, returns ErrHeaderNotFound if
 // the header is not found.
 func GetCollectionID(req *http.Request) (string, error) {
-	return getRequestHeader(req, collectionID)
+	return getRequestHeader(req, collectionIDHeader)
 }
 
 // SetCollectionID set the collection ID header on the provided request. If the collection ID header is already present
 // in the request it will be overwritten by the new value. If the header value is empty then no header will be set and
 // no error is returned.
 func SetCollectionID(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, collectionID, headerValue)
+	return setRequestHeader(req, collectionIDHeader, headerValue)
 }
 
 // SetUserAuthToken set the user authentication token header on the provided request. If the authentication token is
 // already present it will be overwritten by the new value. If the header value is empty then no header will be set and
 // no error is returned.
 func SetUserAuthToken(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, userAuthToken, headerValue)
+	return setRequestHeader(req, userAuthTokenHeader, headerValue)
 }
 
 // GetUserAuthToken returns the value of the "X-Florence-Token" request header if it exists, returns ErrHeaderNotFound if
 // the header is not found.
 func GetUserAuthToken(req *http.Request) (string, error) {
-	return getRequestHeader(req, userAuthToken)
+	return getRequestHeader(req, userAuthTokenHeader)
 }
 
 // SetServiceAuthToken set the service authentication token header on the provided request. If the authentication token is
@@ -74,7 +74,7 @@ func SetServiceAuthToken(req *http.Request, headerValue string) error {
 
 	if len(headerValue) == 0 {
 		log.Event(context.Background(), "request header not set as value was empty", log.Data{
-			"header_name": serviceAuthToken,
+			"header_name": serviceAuthTokenHeader,
 		})
 		return nil
 	}
@@ -83,13 +83,13 @@ func SetServiceAuthToken(req *http.Request, headerValue string) error {
 		headerValue = bearerPrefix + headerValue
 	}
 
-	return setRequestHeader(req, serviceAuthToken, headerValue)
+	return setRequestHeader(req, serviceAuthTokenHeader, headerValue)
 }
 
 // GetServiceAuthToken returns the value of the "Authorization" request header if it exists, returns ErrHeaderNotFound if
 // the header is not found. If the header exists the "Bearer " prefixed is removed from returned value.
 func GetServiceAuthToken(req *http.Request) (string, error) {
-	token, err := getRequestHeader(req, serviceAuthToken)
+	token, err := getRequestHeader(req, serviceAuthTokenHeader)
 	if err != nil {
 		return "", err
 	}
@@ -103,25 +103,25 @@ func GetServiceAuthToken(req *http.Request) (string, error) {
 // SetDownloadServiceToken set the download service auth token header on the provided request. If the authentication
 // token is already present it will be overwritten by the new value.
 func SetDownloadServiceToken(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, downloadServiceToken, headerValue)
+	return setRequestHeader(req, downloadServiceTokenHeader, headerValue)
 }
 
 // GetDownloadServiceToken returns the value of the "X-Download-Service-Token" request header if it exists, returns
 // ErrHeaderNotFound if the header is not found.
 func GetDownloadServiceToken(req *http.Request) (string, error) {
-	return getRequestHeader(req, downloadServiceToken)
+	return getRequestHeader(req, downloadServiceTokenHeader)
 }
 
 // SetUserIdentity set the user identity header on the provided request. If a user identity token is already present it
 // will be overwritten by the new value.
 func SetUserIdentity(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, userIdentity, headerValue)
+	return setRequestHeader(req, userIdentityHeader, headerValue)
 }
 
 // GetUserIdentity returns the value of the "User-Identity" request header if it exists, returns
 // ErrHeaderNotFound if the header is not found.
 func GetUserIdentity(req *http.Request) (string, error) {
-	return getRequestHeader(req, userIdentity)
+	return getRequestHeader(req, userIdentityHeader)
 }
 
 func getRequestHeader(req *http.Request, headerName string) (string, error) {

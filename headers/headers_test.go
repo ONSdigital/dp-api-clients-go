@@ -58,7 +58,7 @@ func TestSetCollectionID(t *testing.T) {
 				return SetCollectionID(r, "")
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(collectionID)
+				return r.Header.Get(collectionIDHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -68,13 +68,13 @@ func TestSetCollectionID(t *testing.T) {
 		{
 			description: "SetCollectionID should overwrite an existing header",
 			getRequestFunc: func() *http.Request {
-				return getRequestWithHeader(collectionID, testHeader1)
+				return getRequestWithHeader(collectionIDHeader, testHeader1)
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetCollectionID(r, testHeader2)
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(collectionID)
+				return r.Header.Get(collectionIDHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -90,7 +90,7 @@ func TestSetCollectionID(t *testing.T) {
 				return SetCollectionID(r, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(collectionID)
+				return r.Header.Get(collectionIDHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -131,7 +131,7 @@ func TestSetUserAuthToken(t *testing.T) {
 				return SetUserAuthToken(r, "")
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(userAuthToken)
+				return r.Header.Get(userAuthTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -141,13 +141,13 @@ func TestSetUserAuthToken(t *testing.T) {
 		{
 			description: "SetUserAuthToken should overwrite an existing header",
 			getRequestFunc: func() *http.Request {
-				return getRequestWithHeader(userAuthToken, testHeader1)
+				return getRequestWithHeader(userAuthTokenHeader, testHeader1)
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetUserAuthToken(r, testHeader2)
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(userAuthToken)
+				return r.Header.Get(userAuthTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -163,7 +163,7 @@ func TestSetUserAuthToken(t *testing.T) {
 				return SetUserAuthToken(r, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(userAuthToken)
+				return r.Header.Get(userAuthTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -204,7 +204,7 @@ func TestSetServiceAuthToken(t *testing.T) {
 				return SetServiceAuthToken(r, "")
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(serviceAuthToken)
+				return r.Header.Get(serviceAuthTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -214,13 +214,13 @@ func TestSetServiceAuthToken(t *testing.T) {
 		{
 			description: "SetServiceAuthToken should overwrite an existing header",
 			getRequestFunc: func() *http.Request {
-				return getRequestWithHeader(serviceAuthToken, testHeader1)
+				return getRequestWithHeader(serviceAuthTokenHeader, testHeader1)
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetServiceAuthToken(r, testHeader2)
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(serviceAuthToken)
+				return r.Header.Get(serviceAuthTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -236,7 +236,7 @@ func TestSetServiceAuthToken(t *testing.T) {
 				return SetServiceAuthToken(r, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(serviceAuthToken)
+				return r.Header.Get(serviceAuthTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -277,7 +277,7 @@ func TestSetDownloadServiceToken(t *testing.T) {
 				return SetDownloadServiceToken(r, "")
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(downloadServiceToken)
+				return r.Header.Get(downloadServiceTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -287,13 +287,13 @@ func TestSetDownloadServiceToken(t *testing.T) {
 		{
 			description: "SetDownloadServiceToken should overwrite an existing header",
 			getRequestFunc: func() *http.Request {
-				return getRequestWithHeader(downloadServiceToken, testHeader1)
+				return getRequestWithHeader(downloadServiceTokenHeader, testHeader1)
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetDownloadServiceToken(r, testHeader2)
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(downloadServiceToken)
+				return r.Header.Get(downloadServiceTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -309,7 +309,7 @@ func TestSetDownloadServiceToken(t *testing.T) {
 				return SetDownloadServiceToken(r, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(downloadServiceToken)
+				return r.Header.Get(downloadServiceTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -350,7 +350,7 @@ func TestSetUserIdentity(t *testing.T) {
 				return SetUserIdentity(r, "")
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(userIdentity)
+				return r.Header.Get(userIdentityHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -360,13 +360,13 @@ func TestSetUserIdentity(t *testing.T) {
 		{
 			description: "SetUserIdentity should overwrite an existing header",
 			getRequestFunc: func() *http.Request {
-				return getRequestWithHeader(userIdentity, testHeader1)
+				return getRequestWithHeader(userIdentityHeader, testHeader1)
 			},
 			setHeaderFunc: func(r *http.Request) error {
 				return SetUserIdentity(r, testHeader2)
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(userIdentity)
+				return r.Header.Get(userIdentityHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -382,7 +382,7 @@ func TestSetUserIdentity(t *testing.T) {
 				return SetUserIdentity(r, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) string {
-				return r.Header.Get(userIdentity)
+				return r.Header.Get(userIdentityHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -425,7 +425,7 @@ func TestGetCollectionID(t *testing.T) {
 		{
 			description: "GetCollectionID should return header value if present",
 			getRequestFunc: func() *http.Request {
-				return getRequestWithHeader(collectionID, testHeader1)
+				return getRequestWithHeader(collectionIDHeader, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetCollectionID(r)
@@ -471,7 +471,7 @@ func TestGetUserAuthToken(t *testing.T) {
 		{
 			description: "GetUserAuthToken should return header value if present",
 			getRequestFunc: func() *http.Request {
-				return getRequestWithHeader(userAuthToken, testHeader1)
+				return getRequestWithHeader(userAuthTokenHeader, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetUserAuthToken(r)
@@ -517,7 +517,7 @@ func TestGetServiceAuthToken(t *testing.T) {
 		{
 			description: "GetServiceAuthToken should return header value if present",
 			getRequestFunc: func() *http.Request {
-				return getRequestWithHeader(serviceAuthToken, testHeader1)
+				return getRequestWithHeader(serviceAuthTokenHeader, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetServiceAuthToken(r)
@@ -563,7 +563,7 @@ func TestGetDownloadServiceToken(t *testing.T) {
 		{
 			description: "GetDownloadServiceToken should return header value if present",
 			getRequestFunc: func() *http.Request {
-				return getRequestWithHeader(downloadServiceToken, testHeader1)
+				return getRequestWithHeader(downloadServiceTokenHeader, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetDownloadServiceToken(r)
@@ -609,7 +609,7 @@ func TestGetUserIdentity(t *testing.T) {
 		{
 			description: "GetUserIdentity should return header value if present",
 			getRequestFunc: func() *http.Request {
-				return getRequestWithHeader(userIdentity, testHeader1)
+				return getRequestWithHeader(userIdentityHeader, testHeader1)
 			},
 			getHeaderFunc: func(r *http.Request) (string, error) {
 				return GetUserIdentity(r)
