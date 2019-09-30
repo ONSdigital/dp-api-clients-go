@@ -140,6 +140,12 @@ func SetUserIdentity(req *http.Request, headerValue string) error {
 	return setRequestHeader(req, userIdentityHeader, headerValue)
 }
 
+// SetRequestID set the unique request ID header on the provided request. If a request ID header is already present it
+// will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+func SetRequestID(req *http.Request, headerValue string) error {
+	return setRequestHeader(req, requestIDHeader, headerValue)
+}
+
 func setRequestHeader(req *http.Request, headerName string, headerValue string) error {
 	if req == nil {
 		return errRequestNil

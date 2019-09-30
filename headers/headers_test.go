@@ -394,6 +394,79 @@ func TestSetUserIdentity(t *testing.T) {
 	execSetHeaderTestCases(t, cases)
 }
 
+func TestSetRequestID(t *testing.T) {
+	cases := []setHeaderTestCase{
+		{
+			description: "SetRequestID should return error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetRequestID(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				if r != nil {
+					t.Fatalf("expected nil request but was not")
+				}
+				return ""
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, errRequestNil)
+			},
+		},
+		{
+			description: "SetRequestID should not add header if value is empty",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetRequestID(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(requestIDHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrValueEmpty)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "SetRequestID should overwrite an existing header",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(requestIDHeader, testHeader1)
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetRequestID(r, testHeader2)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(requestIDHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader2)
+			},
+		},
+		{
+			description: "SetRequestID should set header if it does not already exist",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetRequestID(r, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(requestIDHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
+
+	execSetHeaderTestCases(t, cases)
+}
+
 func TestGetCollectionID(t *testing.T) {
 	cases := []getHeaderTestCase{
 		{
