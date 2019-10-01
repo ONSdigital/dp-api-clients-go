@@ -35,6 +35,7 @@ var (
 	// ErrValueEmpty returned if an empty value is passed to a SetX header function
 	ErrValueEmpty = errors.New("header not set as value was empty")
 
+	// ErrRequestNil return if SetX header function is called with a nil request
 	ErrRequestNil = errors.New("error setting request header request was nil")
 )
 
