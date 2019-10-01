@@ -7,6 +7,7 @@ Common client code - in go - for ONS APIs:
 * codelist
 * dataset
 * filter
+* headers - common API request headers
 * hierarchy
 * identity
 * importapi
