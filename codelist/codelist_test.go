@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/dp-mocking/httpmocks"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
@@ -1256,6 +1258,51 @@ func TestDoGetWithAuthHeaders(t *testing.T) {
 				So(req.Header.Get(common.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
 			})
 		})
+	})
+}
+
+func TestSetAuthenticationHeaders(t *testing.T) {
+	Convey("should return expected error if request is nil", t, func() {
+		err := setAuthenticationHeaders(nil, testUserAuthToken, testServiceAuthToken)
+		So(err, ShouldResemble, headers.ErrRequestNil)
+	})
+
+	Convey("should not return an error if user auth token is empty", t, func() {
+		req := httptest.NewRequest(http.MethodGet, testHost, nil)
+		err := setAuthenticationHeaders(req, "", "")
+		So(err, ShouldBeNil)
+
+		actual, getErr := headers.GetUserAuthToken(req)
+		So(actual, ShouldBeEmpty)
+		So(getErr, ShouldResemble, headers.ErrHeaderNotFound)
+	})
+
+	Convey("should not return an error if service auth token is empty", t, func() {
+		req := httptest.NewRequest(http.MethodGet, testHost, nil)
+		err := setAuthenticationHeaders(req, testUserAuthToken, "")
+		So(err, ShouldBeNil)
+
+		actual, getErr := headers.GetUserAuthToken(req)
+		So(actual, ShouldResemble, testUserAuthToken)
+		So(getErr, ShouldBeNil)
+
+		actual, getErr = headers.GetServiceAuthToken(req)
+		So(actual, ShouldBeEmpty)
+		So(getErr, ShouldResemble, headers.ErrHeaderNotFound)
+	})
+
+	Convey("should set expected user and service auth tokens", t, func() {
+		req := httptest.NewRequest(http.MethodGet, testHost, nil)
+		err := setAuthenticationHeaders(req, testUserAuthToken, testServiceAuthToken)
+		So(err, ShouldBeNil)
+
+		actual, getErr := headers.GetUserAuthToken(req)
+		So(actual, ShouldResemble, testUserAuthToken)
+		So(getErr, ShouldBeNil)
+
+		actual, getErr = headers.GetServiceAuthToken(req)
+		So(actual, ShouldResemble, testServiceAuthToken)
+		So(getErr, ShouldBeNil)
 	})
 }
 

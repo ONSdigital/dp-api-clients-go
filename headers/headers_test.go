@@ -46,7 +46,7 @@ func TestSetCollectionID(t *testing.T) {
 				return ""
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, errRequestNil)
+				So(err, ShouldResemble, ErrRequestNil)
 			},
 		},
 		{
@@ -119,7 +119,7 @@ func TestSetUserAuthToken(t *testing.T) {
 				return ""
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, errRequestNil)
+				So(err, ShouldResemble, ErrRequestNil)
 			},
 		},
 		{
@@ -192,7 +192,7 @@ func TestSetServiceAuthToken(t *testing.T) {
 				return ""
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, errRequestNil)
+				So(err, ShouldResemble, ErrRequestNil)
 			},
 		},
 		{
@@ -265,7 +265,7 @@ func TestSetDownloadServiceToken(t *testing.T) {
 				return ""
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, errRequestNil)
+				So(err, ShouldResemble, ErrRequestNil)
 			},
 		},
 		{
@@ -338,7 +338,7 @@ func TestSetUserIdentity(t *testing.T) {
 				return ""
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, errRequestNil)
+				So(err, ShouldResemble, ErrRequestNil)
 			},
 		},
 		{
@@ -405,7 +405,7 @@ func TestGetCollectionID(t *testing.T) {
 				return GetCollectionID(r)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, errRequestNil)
+				So(err, ShouldResemble, ErrRequestNil)
 				So(val, ShouldBeEmpty)
 			},
 		},
@@ -451,7 +451,7 @@ func TestGetUserAuthToken(t *testing.T) {
 				return GetUserAuthToken(r)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, errRequestNil)
+				So(err, ShouldResemble, ErrRequestNil)
 				So(val, ShouldBeEmpty)
 			},
 		},
@@ -497,7 +497,7 @@ func TestGetServiceAuthToken(t *testing.T) {
 				return GetServiceAuthToken(r)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, errRequestNil)
+				So(err, ShouldResemble, ErrRequestNil)
 				So(val, ShouldBeEmpty)
 			},
 		},
@@ -543,7 +543,7 @@ func TestGetDownloadServiceToken(t *testing.T) {
 				return GetDownloadServiceToken(r)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, errRequestNil)
+				So(err, ShouldResemble, ErrRequestNil)
 				So(val, ShouldBeEmpty)
 			},
 		},
@@ -589,7 +589,7 @@ func TestGetUserIdentity(t *testing.T) {
 				return GetUserIdentity(r)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, errRequestNil)
+				So(err, ShouldResemble, ErrRequestNil)
 				So(val, ShouldBeEmpty)
 			},
 		},

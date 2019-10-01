@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	rchttp "github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -279,9 +279,25 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken string,
 		return nil, err
 	}
 
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	if err := setAuthenticationHeaders(req, userAuthToken, serviceAuthToken); err != nil {
+		return nil, err
+	}
+
 	return c.cli.Do(ctx, req)
+}
+
+func setAuthenticationHeaders(req *http.Request, userAuthToken, serviceAuthToken string) error {
+	err := headers.SetUserAuthToken(req, userAuthToken)
+	if err != nil && err != headers.ErrValueEmpty {
+		return err
+	}
+
+	err = headers.SetServiceAuthToken(req, serviceAuthToken);
+	if err != nil && err != headers.ErrValueEmpty {
+		return err
+	}
+
+	return nil
 }
 
 func closeResponseBody(ctx context.Context, resp *http.Response) {

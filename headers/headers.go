@@ -35,7 +35,7 @@ var (
 	// ErrValueEmpty returned if an empty value is passed to a SetX header function
 	ErrValueEmpty = errors.New("header not set as value was empty")
 
-	errRequestNil = errors.New("error setting request header request was nil")
+	ErrRequestNil = errors.New("error setting request header request was nil")
 )
 
 // GetCollectionID returns the value of the "Collection-Id" request header if it exists, returns ErrHeaderNotFound if
@@ -78,7 +78,7 @@ func GetUserIdentity(req *http.Request) (string, error) {
 
 func getRequestHeader(req *http.Request, headerName string) (string, error) {
 	if req == nil {
-		return "", errRequestNil
+		return "", ErrRequestNil
 	}
 
 	headerValue := req.Header.Get(headerName)
@@ -105,7 +105,7 @@ func SetUserAuthToken(req *http.Request, headerValue string) error {
 // already present it will be overwritten by the new value. If the header value is empty then returns ErrValueEmpty
 func SetServiceAuthToken(req *http.Request, headerValue string) error {
 	if req == nil {
-		return errRequestNil
+		return ErrRequestNil
 	}
 
 	if len(headerValue) == 0 {
@@ -133,7 +133,7 @@ func SetUserIdentity(req *http.Request, headerValue string) error {
 
 func setRequestHeader(req *http.Request, headerName string, headerValue string) error {
 	if req == nil {
-		return errRequestNil
+		return ErrRequestNil
 	}
 
 	if len(headerValue) == 0 {
