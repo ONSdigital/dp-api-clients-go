@@ -1,6 +1,7 @@
 package headers
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,205 +14,647 @@ var (
 	testHeader2 = "0987654321"
 )
 
-func TestSetCollectionID(t *testing.T) {
-	Convey("should return error if request is nil", t, func() {
-		err := SetCollectionID(nil, "")
-
-		So(err, ShouldResemble, errRequestNil)
-	})
-
-	Convey("should not add header if value is empty", t, func() {
-		req := requestWithHeader(collectionID, "")
-
-		err := SetCollectionID(req, "")
-
-		So(err, ShouldBeNil)
-		So(req.Header.Get(collectionID), ShouldBeEmpty)
-	})
-
-	Convey("should overwrite an existing header", t, func() {
-		req := requestWithHeader(collectionID, testHeader1)
-
-		err := SetCollectionID(req, testHeader2)
-
-		So(err, ShouldBeNil)
-		So(req.Header.Get(collectionID), ShouldEqual, testHeader2)
-	})
-
-	Convey("should set header if it does not already exist", t, func() {
-		req := requestWithHeader(collectionID, "")
-
-		err := SetCollectionID(req, testHeader1)
-
-		So(err, ShouldBeNil)
-		So(req.Header.Get(collectionID), ShouldEqual, testHeader1)
-	})
+type setHeaderTestCase struct {
+	description      string
+	getRequestFunc   func() *http.Request
+	setHeaderFunc    func(r *http.Request) error
+	getHeaderFunc    func(r *http.Request) string
+	assertResultFunc func(err error, val string)
 }
 
-func TestGetCollectionID(t *testing.T) {
-	Convey("should return expected error if request is nil", t, func() {
-		actual, err := GetCollectionID(nil)
+type getHeaderTestCase struct {
+	description      string
+	getRequestFunc   func() *http.Request
+	getHeaderFunc    func(r *http.Request) (string, error)
+	assertResultFunc func(err error, val string)
+}
 
-		So(err, ShouldResemble, errRequestNil)
-		So(actual, ShouldBeEmpty)
-	})
+func TestSetCollectionID(t *testing.T) {
+	cases := []setHeaderTestCase{
+		{
+			description: "SetCollectionID should return error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetCollectionID(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				if r != nil {
+					t.Fatalf("expected nil request but was not")
+				}
+				return ""
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, errRequestNil)
+			},
+		},
+		{
+			description: "SetCollectionID should not add header if value is empty",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetCollectionID(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(collectionIDHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrValueEmpty)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "SetCollectionID should overwrite an existing header",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(collectionIDHeader, testHeader1)
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetCollectionID(r, testHeader2)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(collectionIDHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader2)
+			},
+		},
+		{
+			description: "SetCollectionID should set header if it does not already exist",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetCollectionID(r, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(collectionIDHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
 
-	Convey("should return ErrHeaderNotFound if the collection ID request header is not found", t, func() {
-		req := requestWithHeader(collectionID, "")
-
-		actual, err := GetCollectionID(req)
-
-		So(err, ShouldResemble, ErrHeaderNotFound)
-		So(actual, ShouldBeEmpty)
-	})
-
-	Convey("should return header value if present", t, func() {
-		req := requestWithHeader(collectionID, testHeader1)
-
-		actual, err := GetCollectionID(req)
-
-		So(err, ShouldBeNil)
-		So(actual, ShouldEqual, testHeader1)
-	})
+	execSetHeaderTestCases(t, cases)
 }
 
 func TestSetUserAuthToken(t *testing.T) {
-	Convey("SetUserAuthToken should return error if request is nil", t, func() {
-		err := SetUserAuthToken(nil, "")
+	cases := []setHeaderTestCase{
+		{
+			description: "SetUserAuthToken should return error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetUserAuthToken(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				if r != nil {
+					t.Fatalf("expected nil request but was not")
+				}
+				return ""
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, errRequestNil)
+			},
+		},
+		{
+			description: "SetUserAuthToken should not add header if value is empty",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetUserAuthToken(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(userAuthTokenHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrValueEmpty)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "SetUserAuthToken should overwrite an existing header",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(userAuthTokenHeader, testHeader1)
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetUserAuthToken(r, testHeader2)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(userAuthTokenHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader2)
+			},
+		},
+		{
+			description: "SetUserAuthToken should set header if it does not already exist",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetUserAuthToken(r, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(userAuthTokenHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
 
-		So(err, ShouldResemble, errRequestNil)
-	})
-
-	Convey("SetUserAuthToken should not add header if value is empty", t, func() {
-		req := requestWithHeader(userAuthToken, "")
-
-		err := SetUserAuthToken(req, "")
-
-		So(err, ShouldBeNil)
-		So(req.Header.Get(userAuthToken), ShouldBeEmpty)
-	})
-
-	Convey("SetUserAuthToken should overwrite an existing header", t, func() {
-		req := requestWithHeader(userAuthToken, testHeader1)
-
-		err := SetUserAuthToken(req, testHeader2)
-
-		So(err, ShouldBeNil)
-		So(req.Header.Get(userAuthToken), ShouldEqual, testHeader2)
-	})
-
-	Convey("SetUserAuthToken should set header if it does not already exist", t, func() {
-		req := requestWithHeader(userAuthToken, "")
-
-		err := SetUserAuthToken(req, testHeader1)
-
-		So(err, ShouldBeNil)
-		So(req.Header.Get(userAuthToken), ShouldEqual, testHeader1)
-	})
-}
-
-func TestGetUserAuthToken(t *testing.T) {
-	Convey("GetUserAuthToken should return expected error if request is nil", t, func() {
-		actual, err := GetUserAuthToken(nil)
-
-		So(err, ShouldResemble, errRequestNil)
-		So(actual, ShouldBeEmpty)
-	})
-
-	Convey("GetUserAuthToken should return ErrHeaderNotFound if the userAuthToken request header is not found", t, func() {
-		req := requestWithHeader(userAuthToken, "")
-
-		actual, err := GetUserAuthToken(req)
-
-		So(err, ShouldResemble, ErrHeaderNotFound)
-		So(actual, ShouldBeEmpty)
-	})
-
-	Convey("GetUserAuthToken should return header value if present", t, func() {
-		req := requestWithHeader(userAuthToken, testHeader1)
-
-		actual, err := GetUserAuthToken(req)
-
-		So(err, ShouldBeNil)
-		So(actual, ShouldEqual, testHeader1)
-	})
+	execSetHeaderTestCases(t, cases)
 }
 
 func TestSetServiceAuthToken(t *testing.T) {
-	Convey("SetServiceAuthToken should return error if request is nil", t, func() {
-		err := SetServiceAuthToken(nil, "")
+	cases := []setHeaderTestCase{
+		{
+			description: "SetServiceAuthToken should return error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetServiceAuthToken(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				if r != nil {
+					t.Fatalf("expected nil request but was not")
+				}
+				return ""
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, errRequestNil)
+			},
+		},
+		{
+			description: "SetServiceAuthToken should not add header if value is empty",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetServiceAuthToken(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(serviceAuthTokenHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrValueEmpty)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "SetServiceAuthToken should overwrite an existing header",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(serviceAuthTokenHeader, testHeader1)
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetServiceAuthToken(r, testHeader2)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(serviceAuthTokenHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, bearerPrefix+testHeader2)
+			},
+		},
+		{
+			description: "SetServiceAuthToken should set header if it does not already exist",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetServiceAuthToken(r, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(serviceAuthTokenHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, bearerPrefix+testHeader1)
+			},
+		},
+	}
 
-		So(err, ShouldResemble, errRequestNil)
-	})
+	execSetHeaderTestCases(t, cases)
+}
 
-	Convey("SetServiceAuthToken should not add header if value is empty", t, func() {
-		req := requestWithHeader(serviceAuthToken, "")
+func TestSetDownloadServiceToken(t *testing.T) {
+	cases := []setHeaderTestCase{
+		{
+			description: "SetDownloadServiceToken should return error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetDownloadServiceToken(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				if r != nil {
+					t.Fatalf("expected nil request but was not")
+				}
+				return ""
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, errRequestNil)
+			},
+		},
+		{
+			description: "SetDownloadServiceToken should not add header if value is empty",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetDownloadServiceToken(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(downloadServiceTokenHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrValueEmpty)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "SetDownloadServiceToken should overwrite an existing header",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(downloadServiceTokenHeader, testHeader1)
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetDownloadServiceToken(r, testHeader2)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(downloadServiceTokenHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader2)
+			},
+		},
+		{
+			description: "SetDownloadServiceToken should set header if it does not already exist",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetDownloadServiceToken(r, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(downloadServiceTokenHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
 
-		err := SetServiceAuthToken(req, "")
+	execSetHeaderTestCases(t, cases)
+}
 
-		So(err, ShouldBeNil)
-		So(req.Header.Get(serviceAuthToken), ShouldBeEmpty)
-	})
+func TestSetUserIdentity(t *testing.T) {
+	cases := []setHeaderTestCase{
+		{
+			description: "SetUserIdentity should return error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetUserIdentity(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				if r != nil {
+					t.Fatalf("expected nil request but was not")
+				}
+				return ""
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, errRequestNil)
+			},
+		},
+		{
+			description: "SetUserIdentity should not add header if value is empty",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetUserIdentity(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(userIdentityHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrValueEmpty)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "SetUserIdentity should overwrite an existing header",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(userIdentityHeader, testHeader1)
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetUserIdentity(r, testHeader2)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(userIdentityHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader2)
+			},
+		},
+		{
+			description: "SetUserIdentity should set header if it does not already exist",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetUserIdentity(r, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(userIdentityHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
 
-	Convey("SetServiceAuthToken should overwrite an existing header", t, func() {
-		req := requestWithHeader(serviceAuthToken, testHeader1)
+	execSetHeaderTestCases(t, cases)
+}
 
-		err := SetServiceAuthToken(req, testHeader2)
+func TestGetCollectionID(t *testing.T) {
+	cases := []getHeaderTestCase{
+		{
+			description: "GetCollectionID should return expected error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetCollectionID(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, errRequestNil)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetCollectionID should return ErrHeaderNotFound if the collection ID request header is not found",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetCollectionID(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrHeaderNotFound)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetCollectionID should return header value if present",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(collectionIDHeader, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetCollectionID(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
 
-		So(err, ShouldBeNil)
-		So(req.Header.Get(serviceAuthToken), ShouldEqual, bearerPrefix + testHeader2)
-	})
+	execGetHeaderTestCases(t, cases)
+}
 
-	Convey("SetServiceAuthToken should set header if it does not already exist", t, func() {
-		req := requestWithHeader(serviceAuthToken, "")
+func TestGetUserAuthToken(t *testing.T) {
+	cases := []getHeaderTestCase{
+		{
+			description: "GetUserAuthToken should return expected error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetUserAuthToken(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, errRequestNil)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetUserAuthToken should return ErrHeaderNotFound if the collection ID request header is not found",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetUserAuthToken(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrHeaderNotFound)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetUserAuthToken should return header value if present",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(userAuthTokenHeader, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetUserAuthToken(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
 
-		err := SetServiceAuthToken(req, testHeader1)
-
-		So(err, ShouldBeNil)
-		So(req.Header.Get(serviceAuthToken), ShouldEqual, bearerPrefix + testHeader1)
-	})
+	execGetHeaderTestCases(t, cases)
 }
 
 func TestGetServiceAuthToken(t *testing.T) {
-	Convey("GetServiceAuthToken should return expected error if request is nil", t, func() {
-		actual, err := GetServiceAuthToken(nil)
+	cases := []getHeaderTestCase{
+		{
+			description: "GetServiceAuthToken should return expected error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetServiceAuthToken(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, errRequestNil)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetServiceAuthToken should return ErrHeaderNotFound if the collection ID request header is not found",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetServiceAuthToken(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrHeaderNotFound)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetServiceAuthToken should return header value if present",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(serviceAuthTokenHeader, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetServiceAuthToken(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
 
-		So(err, ShouldResemble, errRequestNil)
-		So(actual, ShouldBeEmpty)
-	})
-
-	Convey("GetServiceAuthToken should return ErrHeaderNotFound if the serviceAuthToken request header is not found", t, func() {
-		req := requestWithHeader(serviceAuthToken, "")
-
-		actual, err := GetServiceAuthToken(req)
-
-		So(err, ShouldResemble, ErrHeaderNotFound)
-		So(actual, ShouldBeEmpty)
-	})
-
-	Convey("GetServiceAuthToken should return header value if present", t, func() {
-		req := requestWithHeader(serviceAuthToken, bearerPrefix + testHeader1)
-
-		actual, err := GetServiceAuthToken(req)
-
-		So(err, ShouldBeNil)
-		So(actual, ShouldEqual, testHeader1)
-	})
-
-	Convey("GetServiceAuthToken should return header value if it does not have the bearer prefix", t, func() {
-		req := requestWithHeader(serviceAuthToken, bearerPrefix + testHeader1)
-
-		actual, err := GetServiceAuthToken(req)
-
-		So(err, ShouldBeNil)
-		So(actual, ShouldEqual, testHeader1)
-	})
+	execGetHeaderTestCases(t, cases)
 }
 
-func requestWithHeader(key, val string) *http.Request {
+func TestGetDownloadServiceToken(t *testing.T) {
+	cases := []getHeaderTestCase{
+		{
+			description: "GetDownloadServiceToken should return expected error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetDownloadServiceToken(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, errRequestNil)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetDownloadServiceToken should return ErrHeaderNotFound if the collection ID request header is not found",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetDownloadServiceToken(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrHeaderNotFound)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetDownloadServiceToken should return header value if present",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(downloadServiceTokenHeader, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetDownloadServiceToken(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
+
+	execGetHeaderTestCases(t, cases)
+}
+
+func TestGetUserIdentity(t *testing.T) {
+	cases := []getHeaderTestCase{
+		{
+			description: "GetUserIdentity should return expected error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetUserIdentity(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, errRequestNil)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetUserIdentity should return ErrHeaderNotFound if the collection ID request header is not found",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetUserIdentity(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrHeaderNotFound)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetUserIdentity should return header value if present",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(userIdentityHeader, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetUserIdentity(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
+
+	execGetHeaderTestCases(t, cases)
+}
+
+func execSetHeaderTestCases(t *testing.T, cases []setHeaderTestCase) {
+	for i, tc := range cases {
+		desc := fmt.Sprintf("%d/%d) %s", i+1, len(cases), tc.description)
+		Convey(desc, t, func() {
+			r := tc.getRequestFunc()
+			err := tc.setHeaderFunc(r)
+			val := tc.getHeaderFunc(r)
+			tc.assertResultFunc(err, val)
+		})
+	}
+}
+
+func execGetHeaderTestCases(t *testing.T, cases []getHeaderTestCase) {
+	for i, tc := range cases {
+		desc := fmt.Sprintf("%d/%d) %s", i+1, len(cases), tc.description)
+		Convey(desc, t, func() {
+			r := tc.getRequestFunc()
+			val, err := tc.getHeaderFunc(r)
+			tc.assertResultFunc(err, val)
+		})
+	}
+}
+
+func getRequestWithHeader(key, val string) *http.Request {
 	r := httptest.NewRequest(http.MethodGet, "http://localhost:456789/schwifty", nil)
 	if len(val) > 0 {
 		r.Header.Set(key, val)
 	}
 	return r
+}
+
+func getRequest() *http.Request {
+	return httptest.NewRequest(http.MethodGet, "http://localhost:456789/schwifty", nil)
 }
