@@ -13,7 +13,6 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/log"
 )
 
@@ -244,7 +243,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	headers.SetCollectionID(req, collectionID)
 	headers.SetUserAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
-	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
+	headers.SetDownloadServiceToken(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -294,7 +293,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 
 	headers.SetUserAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
-	common.AddDownloadServiceTokenHeader(req, downloadServiceToken)
+	headers.SetDownloadServiceToken(req, downloadServiceToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -568,6 +567,6 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	headers.SetCollectionID(req, collectionID)
 	headers.SetUserAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
-	common.AddDownloadServiceTokenHeader(req, downloadServiceAuthToken)
+	headers.SetDownloadServiceToken(req, downloadServiceAuthToken)
 	return c.cli.Do(ctx, req)
 }
