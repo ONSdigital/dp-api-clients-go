@@ -224,7 +224,7 @@ func TestSetServiceAuthToken(t *testing.T) {
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
-				So(val, ShouldEqual, bearerPrefix+testHeader2)
+				So(val, ShouldEqual, BearerPrefix+testHeader2)
 			},
 		},
 		{
@@ -240,7 +240,7 @@ func TestSetServiceAuthToken(t *testing.T) {
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
-				So(val, ShouldEqual, bearerPrefix+testHeader1)
+				So(val, ShouldEqual, BearerPrefix+testHeader1)
 			},
 		},
 	}

@@ -18,8 +18,8 @@ const (
 	// serviceAuthToken the service auth token header name
 	serviceAuthTokenHeader = "Authorization"
 
-	// bearerPrefix is the prefix for authorization header values
-	bearerPrefix = "Bearer "
+	// BearerPrefix is the prefix for authorization header values
+	BearerPrefix = "Bearer "
 
 	// downloadServiceToken is the authorization header for the download service
 	downloadServiceTokenHeader = "X-Download-Service-Token"
@@ -65,8 +65,8 @@ func GetServiceAuthToken(req *http.Request) (string, error) {
 		return "", err
 	}
 
-	if strings.HasPrefix(token, bearerPrefix) {
-		token = strings.TrimPrefix(token, bearerPrefix)
+	if strings.HasPrefix(token, BearerPrefix) {
+		token = strings.TrimPrefix(token, BearerPrefix)
 	}
 	return token, nil
 }
@@ -131,8 +131,8 @@ func SetServiceAuthToken(req *http.Request, headerValue string) error {
 		return ErrValueEmpty
 	}
 
-	if !strings.HasPrefix(headerValue, bearerPrefix) {
-		headerValue = bearerPrefix + headerValue
+	if !strings.HasPrefix(headerValue, BearerPrefix) {
+		headerValue = BearerPrefix + headerValue
 	}
 
 	return setRequestHeader(req, serviceAuthTokenHeader, headerValue)
