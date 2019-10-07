@@ -26,6 +26,9 @@ const (
 
 	// userIdentity is the user identity header used to forward a confirmed identity to another API.
 	userIdentityHeader = "User-Identity"
+
+	// requestIDHeader is the unique request ID header name.
+	requestIDHeader = "X-Request-Id"
 )
 
 var (
@@ -75,6 +78,12 @@ func GetDownloadServiceToken(req *http.Request) (string, error) {
 // ErrHeaderNotFound if the header is not found.
 func GetUserIdentity(req *http.Request) (string, error) {
 	return getRequestHeader(req, userIdentityHeader)
+}
+
+// GetRequestID returns the value of the "X-Request-Id" request header if it exists, returns
+// ErrHeaderNotFound if the header is not found.
+func GetRequestID(req *http.Request) (string, error) {
+	return getRequestHeader(req, requestIDHeader)
 }
 
 func getRequestHeader(req *http.Request, headerName string) (string, error) {
@@ -130,6 +139,12 @@ func SetDownloadServiceToken(req *http.Request, headerValue string) error {
 // will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
 func SetUserIdentity(req *http.Request, headerValue string) error {
 	return setRequestHeader(req, userIdentityHeader, headerValue)
+}
+
+// SetRequestID set the unique request ID header on the provided request. If a request ID header is already present it
+// will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+func SetRequestID(req *http.Request, headerValue string) error {
+	return setRequestHeader(req, requestIDHeader, headerValue)
 }
 
 func setRequestHeader(req *http.Request, headerName string, headerValue string) error {
