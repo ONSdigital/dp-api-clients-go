@@ -411,7 +411,7 @@ func TestSetRequestID(t *testing.T) {
 				return ""
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, errRequestNil)
+				So(err, ShouldResemble, ErrRequestNil)
 			},
 		},
 		{
@@ -456,6 +456,80 @@ func TestSetRequestID(t *testing.T) {
 			},
 			getHeaderFunc: func(r *http.Request) string {
 				return r.Header.Get(requestIDHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
+
+	execSetHeaderTestCases(t, cases)
+}
+
+
+func TestSetLocaleCode(t *testing.T) {
+	cases := []setHeaderTestCase{
+		{
+			description: "SetLocaleCode should return error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetLocaleCode(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				if r != nil {
+					t.Fatalf("expected nil request but was not")
+				}
+				return ""
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrRequestNil)
+			},
+		},
+		{
+			description: "SetLocaleCode should not add header if value is empty",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetLocaleCode(r, "")
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(localeCodeHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrValueEmpty)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "SetLocaleCode should overwrite an existing header",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(localeCodeHeader, testHeader1)
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetLocaleCode(r, testHeader2)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(localeCodeHeader)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader2)
+			},
+		},
+		{
+			description: "SetLocaleCode should set header if it does not already exist",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			setHeaderFunc: func(r *http.Request) error {
+				return SetLocaleCode(r, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) string {
+				return r.Header.Get(localeCodeHeader)
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
@@ -708,7 +782,7 @@ func TestGetRequestID(t *testing.T) {
 				return GetRequestID(r)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, errRequestNil)
+				So(err, ShouldResemble, ErrRequestNil)
 				So(val, ShouldBeEmpty)
 			},
 		},
@@ -742,6 +816,53 @@ func TestGetRequestID(t *testing.T) {
 
 	execGetHeaderTestCases(t, cases)
 }
+
+func TestGetLocaleCode(t *testing.T) {
+	cases := []getHeaderTestCase{
+		{
+			description: "GetLocaleCode should return expected error if request is nil",
+			getRequestFunc: func() *http.Request {
+				return nil
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetLocaleCode(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrRequestNil)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetLocaleCode should return ErrHeaderNotFound if the locale code header is not found",
+			getRequestFunc: func() *http.Request {
+				return getRequest()
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetRequestID(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldResemble, ErrHeaderNotFound)
+				So(val, ShouldBeEmpty)
+			},
+		},
+		{
+			description: "GetLocaleCode should return header value if present",
+			getRequestFunc: func() *http.Request {
+				return getRequestWithHeader(requestIDHeader, testHeader1)
+			},
+			getHeaderFunc: func(r *http.Request) (string, error) {
+				return GetRequestID(r)
+			},
+			assertResultFunc: func(err error, val string) {
+				So(err, ShouldBeNil)
+				So(val, ShouldEqual, testHeader1)
+			},
+		},
+	}
+
+	execGetHeaderTestCases(t, cases)
+}
+
 
 func execSetHeaderTestCases(t *testing.T, cases []setHeaderTestCase) {
 	for i, tc := range cases {

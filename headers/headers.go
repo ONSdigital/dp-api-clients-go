@@ -29,6 +29,9 @@ const (
 
 	// requestIDHeader is the unique request ID header name.
 	requestIDHeader = "X-Request-Id"
+
+	// localeCodeHeader is the locale code header name
+	localeCodeHeader = "LocaleCode"
 )
 
 var (
@@ -84,6 +87,12 @@ func GetUserIdentity(req *http.Request) (string, error) {
 // ErrHeaderNotFound if the header is not found.
 func GetRequestID(req *http.Request) (string, error) {
 	return getRequestHeader(req, requestIDHeader)
+}
+
+// GetLocaleCode returns the value of the "LocaleCode" request header if it exists, returns ErrHeaderNotFound if
+// the header is not found.
+func GetLocaleCode(req *http.Request) (string, error) {
+	return getRequestHeader(req, localeCodeHeader)
 }
 
 func getRequestHeader(req *http.Request, headerName string) (string, error) {
@@ -145,6 +154,12 @@ func SetUserIdentity(req *http.Request, headerValue string) error {
 // will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
 func SetRequestID(req *http.Request, headerValue string) error {
 	return setRequestHeader(req, requestIDHeader, headerValue)
+}
+
+// SetLocaleCode set the locale code header on the provided request. If this header is already present it
+// will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+func SetLocaleCode(req *http.Request, headerValue string) error {
+	return setRequestHeader(req, localeCodeHeader, headerValue)
 }
 
 func setRequestHeader(req *http.Request, headerName string, headerValue string) error {
