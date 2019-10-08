@@ -1,6 +1,7 @@
 package headers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -27,6 +28,20 @@ type getHeaderTestCase struct {
 	getRequestFunc   func() *http.Request
 	getHeaderFunc    func(r *http.Request) (string, error)
 	assertResultFunc func(err error, val string)
+}
+
+func TestIsNotFound(t *testing.T) {
+	Convey("IsNotFound should return false if nil", t, func() {
+		So(IsNotFound(nil), ShouldBeFalse)
+	})
+
+	Convey("IsNotFound should return false if err not equal to ErrHeaderNotFound ", t, func() {
+		So(IsNotFound(errors.New("test")), ShouldBeFalse)
+	})
+
+	Convey("IsNotFound should return true if err equal to ErrHeaderNotFound ", t, func() {
+		So(IsNotFound(ErrHeaderNotFound), ShouldBeTrue)
+	})
 }
 
 func TestSetCollectionID(t *testing.T) {
@@ -467,7 +482,6 @@ func TestSetRequestID(t *testing.T) {
 	execSetHeaderTestCases(t, cases)
 }
 
-
 func TestSetLocaleCode(t *testing.T) {
 	cases := []setHeaderTestCase{
 		{
@@ -862,7 +876,6 @@ func TestGetLocaleCode(t *testing.T) {
 
 	execGetHeaderTestCases(t, cases)
 }
-
 
 func execSetHeaderTestCases(t *testing.T, cases []setHeaderTestCase) {
 	for i, tc := range cases {
