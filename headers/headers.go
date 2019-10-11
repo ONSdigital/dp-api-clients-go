@@ -45,9 +45,14 @@ var (
 	ErrRequestNil = errors.New("error setting request header request was nil")
 )
 
-// IsNotFound return true if the err equals ErrHeaderNotFound return false otherwise
-func IsNotFound(err error) bool {
+// IsErrNotFound return true if the err equal to ErrHeaderNotFound. Return false otherwise
+func IsErrNotFound(err error) bool {
 	return err == ErrHeaderNotFound
+}
+
+// IsNotErrNotFound return true if error is not nil and not equal to ErrHeaderNotFound
+func IsNotErrNotFound(err error) bool {
+	return !IsErrNotFound(err)
 }
 
 // GetCollectionID returns the value of the "Collection-Id" request header if it exists, returns ErrHeaderNotFound if

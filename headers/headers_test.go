@@ -30,19 +30,34 @@ type getHeaderTestCase struct {
 	assertResultFunc func(err error, val string)
 }
 
-func TestIsNotFound(t *testing.T) {
-	Convey("IsNotFound should return false if nil", t, func() {
-		So(IsNotFound(nil), ShouldBeFalse)
+func TestIsErrNotFound(t *testing.T) {
+	Convey("IsErrNotFound should return false if nil", t, func() {
+		So(IsErrNotFound(nil), ShouldBeFalse)
 	})
 
-	Convey("IsNotFound should return false if err not equal to ErrHeaderNotFound ", t, func() {
-		So(IsNotFound(errors.New("test")), ShouldBeFalse)
+	Convey("IsErrNotFound should return false if err not equal to ErrHeaderNotFound ", t, func() {
+		So(IsErrNotFound(errors.New("test")), ShouldBeFalse)
 	})
 
-	Convey("IsNotFound should return true if err equal to ErrHeaderNotFound ", t, func() {
-		So(IsNotFound(ErrHeaderNotFound), ShouldBeTrue)
+	Convey("IsErrNotFound should return true if err equal to ErrHeaderNotFound ", t, func() {
+		So(IsErrNotFound(ErrHeaderNotFound), ShouldBeTrue)
 	})
 }
+
+func TestIsNotErrNotFound(t *testing.T) {
+	Convey("IsNotErrNotFound should return true if error nil", t, func() {
+		So(IsNotErrNotFound(nil), ShouldBeTrue)
+	})
+
+	Convey("IsNotErrNotFound should return true if error not equal to ErrHeaderNotFound", t, func() {
+		So(IsNotErrNotFound(errors.New("i am an error")), ShouldBeTrue)
+	})
+
+	Convey("IsNotErrNotFound should return false if error equal to ErrHeaderNotFound", t, func() {
+		So(IsNotErrNotFound(ErrHeaderNotFound), ShouldBeFalse)
+	})
+}
+
 
 func TestSetCollectionID(t *testing.T) {
 	cases := []setHeaderTestCase{
