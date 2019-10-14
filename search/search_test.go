@@ -111,7 +111,7 @@ func TestSearchUnit(t *testing.T) {
 			So(m, ShouldBeNil)
 		})
 
-		Convey("test Dimension uses default search limit when none set", func() {
+		Convey("test Dimension uses default search limit when no limit config provided", func() {
 
 			mockClient := &rchttp.ClienterMock{
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
@@ -127,14 +127,13 @@ func TestSearchUnit(t *testing.T) {
 				url: "http://localhost:22000",
 			}
 
-			Convey("when search is called", func() {
+			Convey("when dimension search is called", func() {
 				m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Offset: &offset})
 
-				Convey("then the default limit is used", func() {
+				Convey("then the request is sent with the default limit", func() {
 					So(mockClient.DoCalls(), ShouldHaveLength, 1)
 					q := mockClient.DoCalls()[0].Req.URL.Query()
-					limit := q.Get("limit")
-					So(limit, ShouldEqual, strconv.Itoa(defaultLimit))
+					So(q.Get("limit"), ShouldEqual, strconv.Itoa(defaultLimit))
 				})
 
 				Convey("and the expected model is returned", func() {
@@ -175,11 +174,10 @@ func TestSearchUnit(t *testing.T) {
 			Convey("when search is called", func() {
 				m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Offset: &offset})
 
-				Convey("then the default limit is used", func() {
+				Convey("then the request is sent with the default limit", func() {
 					So(mockClient.DoCalls(), ShouldHaveLength, 1)
 					q := mockClient.DoCalls()[0].Req.URL.Query()
-					limit := q.Get("limit")
-					So(limit, ShouldEqual, strconv.Itoa(defaultLimit))
+					So(q.Get("limit"), ShouldEqual, strconv.Itoa(defaultLimit))
 				})
 
 				Convey("and the expected error is returned", func() {
@@ -210,11 +208,10 @@ func TestSearchUnit(t *testing.T) {
 			Convey("when search is called", func() {
 				m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Offset: &offset})
 
-				Convey("then the default limit is used", func() {
+				Convey("then the request is sent with the default limit", func() {
 					So(mockClient.DoCalls(), ShouldHaveLength, 1)
 					q := mockClient.DoCalls()[0].Req.URL.Query()
-					limit := q.Get("limit")
-					So(limit, ShouldEqual, strconv.Itoa(defaultLimit))
+					So(q.Get("limit"), ShouldEqual, strconv.Itoa(defaultLimit))
 				})
 
 				Convey("and the expected error is returned", func() {
