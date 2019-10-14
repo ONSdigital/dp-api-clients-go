@@ -15,7 +15,7 @@ import (
 
 const (
 	service       = "search-api"
-	defaultLimit  = 20
+	defaultLimit  = 50
 	defaultOffset = 0
 )
 
