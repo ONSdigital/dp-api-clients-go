@@ -6,9 +6,10 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"testing"
 
-	"github.com/ONSdigital/dp-rchttp"
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/golang/mock/gomock"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -109,6 +110,122 @@ func TestSearchUnit(t *testing.T) {
 			So(err, ShouldEqual, searchErr)
 			So(m, ShouldBeNil)
 		})
+
+		Convey("test Dimension uses default search limit when none set", func() {
+
+			mockClient := &rchttp.ClienterMock{
+				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       ioutil.NopCloser(bytes.NewReader([]byte(searchResp))),
+					}, nil
+				},
+			}
+
+			searchCli := &Client{
+				cli: mockClient,
+				url: "http://localhost:22000",
+			}
+
+			Convey("when search is called", func() {
+				m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Offset: &offset})
+
+				Convey("then the default limit is used", func() {
+					So(mockClient.DoCalls(), ShouldHaveLength, 1)
+					q := mockClient.DoCalls()[0].Req.URL.Query()
+					limit := q.Get("limit")
+					So(limit, ShouldEqual, strconv.Itoa(defaultLimit))
+				})
+
+				Convey("and the expected model is returned", func() {
+					So(err, ShouldBeNil)
+					So(m.Count, ShouldEqual, 1)
+					So(m.Limit, ShouldEqual, 1)
+					So(m.Offset, ShouldEqual, 0)
+					So(m.TotalCount, ShouldEqual, 1)
+					So(m.Items, ShouldHaveLength, 1)
+
+					item := m.Items[0]
+					So(item.Code, ShouldEqual, "6789")
+					So(item.DimensionOptionURL, ShouldEqual, "http://localhost:22000/datasets/12345/editions/time-series/versions/1/dimensions/geography/options/6789")
+					So(item.HasData, ShouldBeTrue)
+					So(item.Label, ShouldEqual, "Newport")
+					So(item.Matches.Label, ShouldHaveLength, 1)
+					So(item.NumberOfChildren, ShouldEqual, 3)
+
+					label := item.Matches.Label[0]
+					So(label.Start, ShouldEqual, 0)
+					So(label.End, ShouldEqual, 6)
+				})
+			})
+		})
+
+		Convey("test Dimension no limit returns error from HTTPClient if it throws an error", func() {
+			mockClient := &rchttp.ClienterMock{
+				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+					return nil, errors.New(clientErrText)
+				},
+			}
+
+			searchCli := &Client{
+				cli: mockClient,
+				url: "http://localhost:22000",
+			}
+
+			Convey("when search is called", func() {
+				m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Offset: &offset})
+
+				Convey("then the default limit is used", func() {
+					So(mockClient.DoCalls(), ShouldHaveLength, 1)
+					q := mockClient.DoCalls()[0].Req.URL.Query()
+					limit := q.Get("limit")
+					So(limit, ShouldEqual, strconv.Itoa(defaultLimit))
+				})
+
+				Convey("and the expected error is returned", func() {
+					So(err.Error(), ShouldEqual, clientErrText)
+					So(m, ShouldBeNil)
+				})
+
+			})
+		})
+
+		Convey("test Dimension no limit returns error if HTTP Status code is not 200", func() {
+
+			expectedError := &ErrInvalidSearchAPIResponse{http.StatusOK, http.StatusTeapot, "http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=50&offset=1&q=Newport"}
+			mockClient := &rchttp.ClienterMock{
+				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusTeapot,
+						Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					}, nil
+				},
+			}
+
+			searchCli := &Client{
+				cli: mockClient,
+				url: "http://localhost:22000",
+			}
+
+			Convey("when search is called", func() {
+				m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Offset: &offset})
+
+				Convey("then the default limit is used", func() {
+					So(mockClient.DoCalls(), ShouldHaveLength, 1)
+					q := mockClient.DoCalls()[0].Req.URL.Query()
+					limit := q.Get("limit")
+					So(limit, ShouldEqual, strconv.Itoa(defaultLimit))
+				})
+
+				Convey("and the expected error is returned", func() {
+					So(err, ShouldResemble, expectedError)
+					So(m, ShouldBeNil)
+				})
+
+			})
+
+		})
+
 	})
 
 	Convey("test Healthcheck method", t, func() {
@@ -116,7 +233,7 @@ func TestSearchUnit(t *testing.T) {
 
 			mockClient := &rchttp.ClienterMock{
 				GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
-					return &http.Response{StatusCode:http.StatusOK}, nil
+					return &http.Response{StatusCode: http.StatusOK}, nil
 				},
 			}
 
