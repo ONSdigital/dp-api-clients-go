@@ -19,6 +19,8 @@ var ctx = context.Background()
 
 const clientErrText = "client threw an error"
 
+var defaultLimitAsString = strconv.Itoa(defaultLimit)
+
 func TestSearchUnit(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -133,7 +135,7 @@ func TestSearchUnit(t *testing.T) {
 				Convey("then the request is sent with the default limit", func() {
 					So(mockClient.DoCalls(), ShouldHaveLength, 1)
 					q := mockClient.DoCalls()[0].Req.URL.Query()
-					So(q.Get("limit"), ShouldEqual, strconv.Itoa(defaultLimit))
+					So(q.Get("limit"), ShouldEqual, defaultLimitAsString)
 				})
 
 				Convey("and the expected model is returned", func() {
@@ -160,6 +162,7 @@ func TestSearchUnit(t *testing.T) {
 		})
 
 		Convey("test Dimension no limit returns error from HTTPClient if it throws an error", func() {
+
 			mockClient := &rchttp.ClienterMock{
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return nil, errors.New(clientErrText)
@@ -177,7 +180,7 @@ func TestSearchUnit(t *testing.T) {
 				Convey("then the request is sent with the default limit", func() {
 					So(mockClient.DoCalls(), ShouldHaveLength, 1)
 					q := mockClient.DoCalls()[0].Req.URL.Query()
-					So(q.Get("limit"), ShouldEqual, strconv.Itoa(defaultLimit))
+					So(q.Get("limit"), ShouldEqual, defaultLimitAsString)
 				})
 
 				Convey("and the expected error is returned", func() {
@@ -211,7 +214,7 @@ func TestSearchUnit(t *testing.T) {
 				Convey("then the request is sent with the default limit", func() {
 					So(mockClient.DoCalls(), ShouldHaveLength, 1)
 					q := mockClient.DoCalls()[0].Req.URL.Query()
-					So(q.Get("limit"), ShouldEqual, strconv.Itoa(defaultLimit))
+					So(q.Get("limit"), ShouldEqual, defaultLimitAsString)
 				})
 
 				Convey("and the expected error is returned", func() {
