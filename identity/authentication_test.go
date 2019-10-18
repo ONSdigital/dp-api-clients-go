@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/dp-mocking/httpmocks"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
@@ -320,12 +321,14 @@ func TestHandler_authToken(t *testing.T) {
 			So(status, ShouldEqual, http.StatusOK)
 
 			Convey("Then the identity service is called as expected", func() {
-				So(len(httpClient.DoCalls()), ShouldEqual, 1)
+				So(httpClient.DoCalls(), ShouldHaveLength, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(len(zebedeeReq.Header[common.UserHeaderKey]), ShouldEqual, 0)
-				So(len(zebedeeReq.Header[common.AuthHeaderKey]), ShouldEqual, 1)
-				So(zebedeeReq.Header[common.AuthHeaderKey][0], ShouldEqual, callerAuthToken)
+				So(zebedeeReq.Header[common.UserHeaderKey], ShouldHaveLength, 0)
+				So(zebedeeReq.Header[common.AuthHeaderKey], ShouldHaveLength, 1)
+				actual, err := headers.GetServiceAuthToken(zebedeeReq)
+				So(err, ShouldBeNil)
+				So(actual, ShouldEqual, callerAuthToken)
 			})
 
 			Convey("Then the downstream HTTP handler request has the expected context values", func() {

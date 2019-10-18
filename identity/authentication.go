@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go"
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
@@ -73,9 +74,9 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 	}
 
 	if isUserReq {
-		outboundAuthReq.Header.Set(common.FlorenceHeaderKey, florenceToken)
+		headers.SetUserAuthToken(outboundAuthReq, florenceToken)
 	} else {
-		outboundAuthReq.Header.Set(common.AuthHeaderKey, serviceAuthToken)
+		headers.SetServiceAuthToken(outboundAuthReq, serviceAuthToken)
 	}
 
 	if api.HTTPClient == nil {
@@ -107,7 +108,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 	if isUserReq {
 		userIdentity = identityResp.Identifier
 	} else {
-		userIdentity = req.Header.Get(common.UserHeaderKey)
+		userIdentity, _  = headers.GetUserIdentity(req)
 	}
 
 	logData["user_identity"] = userIdentity
