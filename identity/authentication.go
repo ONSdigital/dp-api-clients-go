@@ -67,16 +67,18 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 
 	log.Event(ctx, "calling AuthAPI to authenticate caller identity", logData)
 
-	outboundAuthReq, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Event(ctx, "error creating AuthAPI identity http request", logData, log.Error(err))
-		return ctx, http.StatusInternalServerError, nil, err
-	}
+	var outboundAuthReq *http.Request
+	var errCreatingReq error
 
 	if isUserReq {
-		headers.SetUserAuthToken(outboundAuthReq, florenceToken)
+		outboundAuthReq, errCreatingReq = createUserAuthRequest(url, florenceToken)
 	} else {
-		headers.SetServiceAuthToken(outboundAuthReq, serviceAuthToken)
+		outboundAuthReq, errCreatingReq = createServiceAuthRequest(url, serviceAuthToken)
+	}
+
+	if errCreatingReq != nil {
+		log.Event(ctx, "error creating AuthAPI identity http request", logData, log.Error(errCreatingReq))
+		return ctx, http.StatusInternalServerError, nil, errCreatingReq
 	}
 
 	if api.HTTPClient == nil {
@@ -108,7 +110,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 	if isUserReq {
 		userIdentity = identityResp.Identifier
 	} else {
-		userIdentity, _  = headers.GetUserIdentity(req)
+		userIdentity, _ = headers.GetUserIdentity(req)
 	}
 
 	logData["user_identity"] = userIdentity
@@ -144,6 +146,32 @@ func splitToken(token string) (tokenObj tokenObject) {
 	tokenObj.tokenPart = splitToken[lastTokenPart][tokenSampleStart:]
 
 	return tokenObj
+}
+
+func createUserAuthRequest(url string, userAuthToken string) (*http.Request, error) {
+	outboundAuthReq, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := headers.SetUserAuthToken(outboundAuthReq, userAuthToken); err != nil {
+		return nil, err
+	}
+
+	return outboundAuthReq, nil
+}
+
+func createServiceAuthRequest(url string, serviceAuthToken string) (*http.Request, error) {
+	outboundAuthReq, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := headers.SetServiceAuthToken(outboundAuthReq, serviceAuthToken); err != nil {
+		return nil, err
+	}
+
+	return outboundAuthReq, nil
 }
 
 // unmarshalIdentityResponse converts a resp.Body (JSON) into an IdentityResponse
