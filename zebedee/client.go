@@ -81,7 +81,7 @@ func (c *ZebedeeClient) Healthcheck() (string, error) {
 // GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
 // is returned there is a chance that a partly completed DatasetLandingPage is returned
 func (c *ZebedeeClient) GetDatasetLandingPage(ctx context.Context, userAccessToken, path string) (data.DatasetLandingPage, error) {
-	reqURL := c.createRequestURL(ctx, "/data?uri="+path)
+	reqURL := c.createRequestURL(ctx, "uri="+path)
 	b, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
 		return data.DatasetLandingPage{}, err
@@ -236,8 +236,8 @@ func (c *ZebedeeClient) GetPageTitle(ctx context.Context, userAccessToken, uri s
 	return pt, nil
 }
 
-func (c *ZebedeeClient) createRequestURL(ctx context.Context, path string) string {
-	var url string
+func (c *ZebedeeClient) createRequestURL(ctx context.Context, query string) string {
+	var url = "/data"
 
 	// Check if collection ID is set in context
 	if ctx.Value(common.CollectionIDHeaderKey) != nil {
@@ -245,10 +245,10 @@ func (c *ZebedeeClient) createRequestURL(ctx context.Context, path string) strin
 		if !ok {
 			log.ErrorCtx(ctx, errors.New("error casting collection ID cookie to string"), nil)
 		}
-		url = "/data/" + collectionID
+		url += "/" + collectionID
 	}
 
-	url = url + path
+	url += "?" + query
 
 	// Check if locale code is set in context and add lang query param to url
 	if ctx.Value(common.LocaleHeaderKey) != nil {
@@ -256,7 +256,7 @@ func (c *ZebedeeClient) createRequestURL(ctx context.Context, path string) strin
 		if !ok {
 			log.ErrorCtx(ctx, errors.New("error casting locale code to string"), nil)
 		}
-		url = url + "&lang=" + localeCode
+		url += "&lang=" + localeCode
 	}
 
 	return url
