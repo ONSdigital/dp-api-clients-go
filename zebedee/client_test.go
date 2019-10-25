@@ -73,8 +73,8 @@ func TestUnitClient(t *testing.T) {
 	Convey("test createRequestURL", t, func() {
 		Convey("test collection ID is added to URL when collection ID is present in context", func() {
 			ctx := context.WithValue(ctx, "Collection-Id", "test1234567")
-			url := cli.createRequestURL(ctx, "/data", "uri=testpath123")
-			So(url, ShouldEqual, "/data/test1234567?uri=testpath123")
+			url := cli.createRequestURL(ctx, "/data", "uri=/test/path/123")
+			So(url, ShouldEqual, "/data/test1234567?uri=%2Ftest%2Fpath%2F123")
 		})
 		Convey("test collection ID is not added to URL when collection ID is not present in context", func() {
 			url := cli.createRequestURL(ctx, "/data", "uri=/test/path/123")
