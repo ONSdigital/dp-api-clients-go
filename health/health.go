@@ -28,16 +28,15 @@ type Client struct {
 }
 
 // NewClient creates a new instance of Client with a given api url
-func NewClient(name, url string) *Client {
+func NewClient(name, url string, maxRetries int) *Client {
 	c := &Client{
 		client: rchttp.NewClient(),
 		name:   name,
 		url:    url,
 	}
 
-	// Set the number of max retries to 1, allow caller to
-	// handle re-calling health checker
-	c.client.SetMaxRetries(1)
+	// Overwrite the default number of max retries on the new client
+	c.client.SetMaxRetries(maxRetries)
 
 	return c
 }

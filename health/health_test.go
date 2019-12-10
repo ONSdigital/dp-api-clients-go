@@ -32,9 +32,10 @@ func getMockAPI(expectRequest http.Request, mockedHTTPResponse MockedHTTPRespons
 		fmt.Fprintln(w, mockedHTTPResponse.Body)
 	}))
 
-	api := NewClient(apiName, ts.URL)
 	// Set the number of retries to 1 for test
-	api.client.SetMaxRetries(1)
+	maxRetries := 1
+
+	api := NewClient(apiName, ts.URL, maxRetries)
 
 	return api
 }
