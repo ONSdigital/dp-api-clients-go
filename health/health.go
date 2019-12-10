@@ -27,8 +27,8 @@ type Client struct {
 	url    string
 }
 
-// New creates a new instance of Client with a given api url
-func New(name, url string) *Client {
+// NewClient creates a new instance of Client with a given api url
+func NewClient(name, url string) *Client {
 	c := &Client{
 		client: rchttp.NewClient(),
 		name:   name,
