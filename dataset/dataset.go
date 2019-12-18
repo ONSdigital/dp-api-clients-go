@@ -10,11 +10,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ONSdigital/go-ns/log"
-
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/go-ns/log"
 	"github.com/pkg/errors"
 )
 
@@ -186,8 +185,7 @@ func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToke
 		return
 	}
 
-	var body map[string]interface{}
-	if err = json.Unmarshal(b, &body); err != nil {
+	if err = json.Unmarshal(b, &m); err != nil {
 		return
 	}
 
