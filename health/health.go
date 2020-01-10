@@ -2,6 +2,7 @@ package health
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,35 +14,37 @@ import (
 )
 
 // ErrInvalidAPIResponse is returned when an api does not respond
-// with a valid status
+// with a valid status.
 type ErrInvalidAPIResponse struct {
 	expectedCode int
 	actualCode   int
 	uri          string
 }
 
-// Client represents an api client
+// Client represents an api client.
 type Client struct {
-	client rchttp.Clienter
-	name   string
-	url    string
+	Client rchttp.Clienter
+	Name   string
+	URL    string
 }
 
-// NewClient creates a new instance of Client with a given api url
-func NewClient(name, url string, maxRetries int) *Client {
+// NewClient creates a new instance of Client with a given api url.
+func NewClient(name, url string) *Client {
+	client := rchttp.NewClient()
+
 	c := &Client{
-		client: rchttp.NewClient(),
-		name:   name,
-		url:    url,
+		Client: client,
+		Name:   name,
+		URL:    url,
 	}
 
-	// Overwrite the default number of max retries on the new client
-	c.client.SetMaxRetries(maxRetries)
+	// Overwrite the default number of max retries on the new healthcheck client.
+	c.Client.SetMaxRetries(0)
 
 	return c
 }
 
-// Error should be called by the user to print out the stringified version of the error
+// Error should be called by the user to print out the stringified version of the error.
 func (e ErrInvalidAPIResponse) Error() string {
 	return fmt.Sprintf("invalid response from downstream api - should be: %d, got: %d, path: %s",
 		e.expectedCode,
@@ -50,43 +53,60 @@ func (e ErrInvalidAPIResponse) Error() string {
 	)
 }
 
-// Checker calls an api health endpoint and returns a check object to the caller
-func (c *Client) Checker(ctx *context.Context) (*health.Check, error) {
+// Checker calls an api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	errorMessage := ""
+
 	logData := log.Data{
-		"api": c.name,
+		"api": c.Name,
 	}
 
-	statusCode, err := c.get(*ctx, "/health")
-	// Apps may still have /healthcheck endpoint
-	// instead of a /health one
-	if statusCode == http.StatusNotFound {
-		statusCode, err = c.get(*ctx, "/healthcheck")
+	code, status, err := c.get(ctx, "/health")
+	// Apps may still have /healthcheck endpoint instead of a /health one.
+	if code == http.StatusNotFound {
+		code, status, err = c.get(ctx, "/healthcheck")
 	}
 	if err != nil {
-		log.Event(*ctx, "failed to request api health", log.Error(err), logData)
+		errorMessage = err.Error()
+		log.Event(ctx, "failed to request api health", log.Error(err), logData)
 	}
 
-	check := getCheck(ctx, c.name, statusCode)
+	check := getCheck(ctx, c.Name, status, errorMessage, code)
 
 	return check, nil
 }
 
-func (c *Client) get(ctx context.Context, path string) (int, error) {
-	req, err := http.NewRequest("GET", c.url+path, nil)
+func (c *Client) get(ctx context.Context, path string) (int, string, error) {
+	var check *health.HealthCheck
+
+	req, err := http.NewRequest("GET", c.URL+path, nil)
 	if err != nil {
-		return 0, err
+		return 0, health.StatusCritical, err
 	}
 
-	resp, err := c.client.Do(ctx, req)
+	resp, err := c.Client.Do(ctx, req)
 	if err != nil {
-		return 0, err
+		return 0, health.StatusCritical, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || (resp.StatusCode > 399 && resp.StatusCode != 429) {
-		io.Copy(ioutil.Discard, resp.Body)
-		return resp.StatusCode, ErrInvalidAPIResponse{http.StatusOK, resp.StatusCode, req.URL.Path}
+	if resp.Body != nil {
+		defer resp.Body.Close()
 	}
 
-	return resp.StatusCode, nil
+	if resp.StatusCode < 200 || resp.StatusCode > 399 {
+		if resp.Body != nil {
+			io.Copy(ioutil.Discard, resp.Body)
+		}
+		return resp.StatusCode, health.StatusCritical, ErrInvalidAPIResponse{http.StatusOK, resp.StatusCode, req.URL.Path}
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return resp.StatusCode, health.StatusCritical, err
+	}
+
+	if err = json.Unmarshal(b, &check); err != nil {
+		return resp.StatusCode, check.Status, err
+	}
+
+	return resp.StatusCode, check.Status, nil
 }

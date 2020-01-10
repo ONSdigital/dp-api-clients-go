@@ -7,41 +7,46 @@ import (
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 )
 
-var (
-	statusDescription = map[string]string{
-		health.StatusOK:       "Everything is ok",
-		health.StatusWarning:  "Things are degraded, but at least partially functioning",
-		health.StatusCritical: "The checked functionality is unavailable or non-functioning",
-	}
-
-	unixTime = time.Unix(1494505756, 0)
+const (
+	healthyMessage  = "service is OK"
+	warningMessage  = "service is warming up or downgraded"
+	criticalMessage = "service is in critical state"
+	notFoundMessage = "received status code 404, unable to find health check endpoint"
 )
 
-func getCheck(ctx *context.Context, name string, code int) *health.Check {
+var unixTime = time.Unix(0, 0)
+
+func getCheck(ctx context.Context, service, status, errorMessage string, code int) *health.Check {
 
 	currentTime := time.Now().UTC()
 
 	check := &health.Check{
-		Name:        name,
+		Name:        service,
 		StatusCode:  code,
+		Status:      status,
 		LastChecked: currentTime,
 		LastSuccess: unixTime,
 		LastFailure: unixTime,
 	}
 
-	switch code {
-	case 200:
-		check.Message = statusDescription[health.StatusOK]
-		check.Status = health.StatusOK
+	switch status {
+	case health.StatusOK:
 		check.LastSuccess = currentTime
-	case 429:
-		check.Message = statusDescription[health.StatusWarning]
-		check.Status = health.StatusWarning
+		check.Message = healthyMessage
+	case health.StatusWarning:
 		check.LastFailure = currentTime
+		check.Message = warningMessage
 	default:
-		check.Message = statusDescription[health.StatusCritical]
-		check.Status = health.StatusCritical
 		check.LastFailure = currentTime
+
+		switch code {
+		case 200:
+			check.Message = criticalMessage
+		case 404:
+			check.Message = notFoundMessage
+		default:
+			check.Message = errorMessage
+		}
 	}
 
 	return check
