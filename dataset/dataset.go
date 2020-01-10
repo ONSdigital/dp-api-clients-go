@@ -11,9 +11,11 @@ import (
 	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/pkg/errors"
 )
 
@@ -52,7 +54,7 @@ type Client struct {
 // closeResponseBody closes the response body and logs an error containing the context if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if err := resp.Body.Close(); err != nil {
-		log.ErrorCtx(ctx, err, log.Data{"message": "error closing http response body"})
+		log.Event(ctx, "error closing http response body", log.Error(err))
 	}
 }
 
@@ -64,11 +66,28 @@ func NewAPIClient(datasetAPIURL string) *Client {
 	}
 }
 
+// Checker calls dataset api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Client: c.cli,
+		Name:   service,
+		URL:    c.url,
+	}
+	// healthcheck client should have a default maximum retry count of 0 (overrides rchttp default)
+	hcClient.Client.SetMaxRetries(0)
+
+	return hcClient.Checker(ctx)
+}
+
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
 func (c *Client) Healthcheck() (string, error) {
 	ctx := context.Background()
 
-	resp, err := c.cli.Get(ctx, c.url+"/healthcheck")
+	resp, err := c.cli.Get(ctx, c.url+"/health")
+	// Apps may still have /healthcheck endpoint instead of a /health one.
+	if resp.StatusCode == http.StatusNotFound {
+		resp, err = c.cli.Get(ctx, c.url+"/healthcheck")
+	}
 	if err != nil {
 		return service, err
 	}

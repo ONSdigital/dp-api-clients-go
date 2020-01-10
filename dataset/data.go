@@ -31,6 +31,7 @@ type Model struct {
 	UsageNotes        *[]UsageNote     `json:"usage_notes,omitempty"`
 }
 
+// ModelCollection represents a list of dataset models
 type ModelCollection struct {
 	Items []Model `json:"items"`
 }
@@ -231,6 +232,7 @@ type Temporal struct {
 	Frequency string `json:"frequency"`
 }
 
+// ToString returns the metadata object as a string
 func (m Metadata) ToString() string {
 	var b bytes.Buffer
 
