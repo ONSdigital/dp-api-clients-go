@@ -686,3 +686,86 @@ func TestClient_GetPreview(t *testing.T) {
 		So(err, ShouldBeNil)
 	})
 }
+
+func TestClient_GetHealth(t *testing.T) {
+
+	Convey("Given a healthy filter api is running", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, nil
+			},
+		}
+
+		cli := Client{
+			cli: mockRCHTTPCli,
+			url: "http://localhost:8080",
+		}
+
+		Convey("when Healthcheck is called", func() {
+			serviceName, err := cli.Healthcheck()
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+				So(serviceName, ShouldEqual, service)
+				So(len(mockRCHTTPCli.GetCalls()), ShouldEqual, 1)
+			})
+		})
+	})
+
+	Convey("Given filter api does not contain a healthcheck endpoint", t, func() {
+		mockErr := errors.New("endpoint not found")
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusNotFound,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, mockErr
+			},
+		}
+
+		cli := Client{
+			cli: mockRCHTTPCli,
+			url: "http://localhost:8080",
+		}
+
+		Convey("when Healthcheck is called", func() {
+			serviceName, err := cli.Healthcheck()
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+				So(serviceName, ShouldEqual, service)
+				So(len(mockRCHTTPCli.GetCalls()), ShouldEqual, 2)
+			})
+		})
+	})
+
+	Convey("Given filter api is not running", t, func() {
+		mockErr := errors.New("internal server error")
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusInternalServerError,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, mockErr
+			},
+		}
+
+		cli := Client{
+			cli: mockRCHTTPCli,
+			url: "http://localhost:8080",
+		}
+
+		Convey("when Healthcheck is called", func() {
+			serviceName, err := cli.Healthcheck()
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+				So(serviceName, ShouldEqual, service)
+				So(len(mockRCHTTPCli.GetCalls()), ShouldEqual, 1)
+			})
+		})
+	})
+}
