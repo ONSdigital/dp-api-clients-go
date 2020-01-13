@@ -90,11 +90,13 @@ func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 // Healthcheck calls the health endpoint on the api and alerts the caller of any errors
 func (c *Client) Healthcheck() (string, error) {
 	ctx := context.Background()
+	endpoint := "/health"
 
-	resp, err := c.cli.Get(ctx, c.url+"/health")
+	resp, err := c.cli.Get(ctx, c.url+endpoint)
 	// Apps may still have /healthcheck endpoint instead of a /health one.
 	if resp.StatusCode == http.StatusNotFound {
-		resp, err = c.cli.Get(ctx, c.url+"/healthcheck")
+		endpoint = "/healthcheck"
+		resp, err = c.cli.Get(ctx, c.url+endpoint)
 	}
 	if err != nil {
 		return service, err
@@ -102,7 +104,7 @@ func (c *Client) Healthcheck() (string, error) {
 	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
-		return service, &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
+		return service, &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, endpoint}
 	}
 
 	return service, nil

@@ -53,6 +53,9 @@ type Client struct {
 
 // closeResponseBody closes the response body and logs an error containing the context if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body == nil {
+		return
+	}
 	if err := resp.Body.Close(); err != nil {
 		log.Event(ctx, "error closing http response body", log.Error(err))
 	}
@@ -82,11 +85,13 @@ func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
 func (c *Client) Healthcheck() (string, error) {
 	ctx := context.Background()
+	endpoint := "/health"
 
-	resp, err := c.cli.Get(ctx, c.url+"/health")
+	resp, err := c.cli.Get(ctx, c.url+endpoint)
 	// Apps may still have /healthcheck endpoint instead of a /health one.
 	if resp.StatusCode == http.StatusNotFound {
-		resp, err = c.cli.Get(ctx, c.url+"/healthcheck")
+		endpoint = "/healthcheck"
+		resp, err = c.cli.Get(ctx, c.url+endpoint)
 	}
 	if err != nil {
 		return service, err
@@ -94,7 +99,7 @@ func (c *Client) Healthcheck() (string, error) {
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
-		return service, NewDatasetAPIResponse(resp, "/healthcheck")
+		return service, NewDatasetAPIResponse(resp, endpoint)
 	}
 
 	return service, nil
