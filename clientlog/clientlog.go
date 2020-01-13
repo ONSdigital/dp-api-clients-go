@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 )
 
 // Do should be used by clients to log a request to a given service
@@ -26,5 +26,5 @@ func Do(ctx context.Context, action, service, uri string, data ...log.Data) {
 		}
 	}
 
-	log.InfoCtx(ctx, fmt.Sprintf("Making request to service: %s", service), d)
+	log.Event(ctx, fmt.Sprintf("Making request to service: %s", service), d)
 }
