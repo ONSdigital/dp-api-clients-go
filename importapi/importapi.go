@@ -10,9 +10,12 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ONSdigital/dp-rchttp"
+	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 )
 
 const service = "import-api"
@@ -56,13 +59,40 @@ func (e ErrInvalidAPIResponse) Code() int {
 
 var _ error = ErrInvalidAPIResponse{}
 
+// Checker calls hierarchy api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Client: c.client,
+		Name:   service,
+		URL:    c.url,
+	}
+
+	// healthcheck client should not retry when calling a healthcheck endpoint,
+	// append to current paths as to not change the client setup by service
+	paths := hcClient.Client.GetPathsWithNoRetries()
+	paths = append(paths, "/health", "/healthcheck")
+	hcClient.Client.SetPathsWithNoRetries(paths)
+
+	return hcClient.Checker(ctx)
+}
+
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
 func (c *Client) Healthcheck() (string, error) {
 	ctx := context.Background()
+	endpoint := "/health"
 
-	resp, err := c.client.Get(ctx, c.url+"/healthcheck")
+	clientlog.Do(ctx, "checking health", service, endpoint)
+
+	resp, err := c.client.Get(ctx, c.url+endpoint)
 	if err != nil {
 		return service, err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	// Apps may still have /healthcheck endpoint instead of a /health one.
+	if resp.StatusCode == http.StatusNotFound {
+		endpoint = "/healthcheck"
+		return c.callHealthcheckEndpoint(ctx, service, endpoint)
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -114,12 +144,12 @@ func (api *Client) GetImportJob(ctx context.Context, importJobID, serviceToken s
 		isFatal = true
 	}
 	if err != nil {
-		log.ErrorC("GetImportJob", err, logData)
+		log.Event(ctx, "GetImportJob", log.Error(err), logData)
 		return importJob, isFatal, err
 	}
 
 	if err := json.Unmarshal(jsonBody, &importJob); err != nil {
-		log.ErrorC("GetImportJob unmarshal", err, logData)
+		log.Event(ctx, "GetImportJob unmarshal", log.Error(err), logData)
 		return ImportJob{}, true, err
 	}
 
@@ -143,7 +173,7 @@ func (api *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken
 		err = errors.New("Bad HTTP response")
 	}
 	if err != nil {
-		log.ErrorC("UpdateImportJobState", err, logData)
+		log.Event(ctx, "UpdateImportJobState", log.Error(err), logData)
 		return err
 	}
 	return nil
@@ -163,7 +193,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 
 	URL, err := url.Parse(path)
 	if err != nil {
-		log.ErrorC("Failed to create url for API call", err, logData)
+		log.Event(ctx, "Failed to create url for API call", log.Error(err), logData)
 		return nil, 0, err
 	}
 	path = URL.String()
@@ -185,7 +215,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 	}
 	// check above req had no errors
 	if err != nil {
-		log.ErrorC("Failed to create request for API", err, logData)
+		log.Event(ctx, "Failed to create request for API", log.Error(err), logData)
 		return nil, 0, err
 	}
 
@@ -194,18 +224,18 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 
 	resp, err := client.Do(ctx, req)
 	if err != nil {
-		log.ErrorC("Failed to action API", err, logData)
+		log.Event(ctx, "Failed to action API", log.Error(err), logData)
 		return nil, 0, err
 	}
 
 	logData["httpCode"] = resp.StatusCode
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= 300 {
-		log.Debug("unexpected status code from API", logData)
+		log.Event(ctx, "unexpected status code from API", log.Data{"url": path, "method": method, "severity": 3})
 	}
 
 	jsonBody, err := getBody(resp)
 	if err != nil {
-		log.ErrorC("Failed to read body from API", err, logData)
+		log.Event(ctx, "Failed to read body from API", log.Error(err), logData)
 		return nil, resp.StatusCode, err
 	}
 	return jsonBody, resp.StatusCode, nil
@@ -234,8 +264,33 @@ func getBody(resp *http.Response) ([]byte, error) {
 		return nil, err
 	}
 	if err = resp.Body.Close(); err != nil {
-		log.ErrorC("closing body", err, nil)
+		log.Event(ctx, "closing body", log.Error(err))
 		return nil, err
 	}
 	return b, nil
+}
+
+// CloseResponseBody closes the response body and logs an error if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body == nil {
+		return
+	}
+	if err := resp.Body.Close(); err != nil {
+		log.Event(ctx, "error closing http response body", log.Error(err))
+	}
+}
+
+func (c *Client) callHealthcheckEndpoint(ctx context.Context, service, endpoint string) (string, error) {
+	clientlog.Do(ctx, "checking health", service, endpoint)
+	resp, err := c.client.Get(ctx, c.url+endpoint)
+	if err != nil {
+		return service, err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return service, NewAPIResponse(resp, endpoint)
+	}
+
+	return service, nil
 }
