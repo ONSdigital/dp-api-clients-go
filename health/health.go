@@ -47,7 +47,7 @@ func NewClient(name, url string) *Client {
 
 // Error should be called by the user to print out the stringified version of the error.
 func (e ErrInvalidAPIResponse) Error() string {
-	return fmt.Sprintf("invalid response from downstream api - should be: %d, got: %d, path: %s",
+	return fmt.Sprintf("invalid response from downstream service - should be: %d, got: %d, path: %s",
 		e.expectedCode,
 		e.actualCode,
 		e.uri,
@@ -69,7 +69,7 @@ func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 	}
 	if err != nil {
 		errorMessage = err.Error()
-		log.Event(ctx, "failed to request api health", log.Error(err), logData)
+		log.Event(ctx, "failed to request service health", log.Error(err), logData)
 	}
 
 	check := getCheck(ctx, c.Name, status, errorMessage, code)

@@ -9,8 +9,11 @@ import (
 	"strconv"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/log.go/log"
 )
 
 const (
@@ -65,15 +68,44 @@ func New(searchAPIURL string) *Client {
 	}
 }
 
+// Checker calls search api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Client: c.cli,
+		Name:   service,
+		URL:    c.url,
+	}
+
+	// healthcheck client should not retry when calling a healthcheck endpoint,
+	// append to current paths as to not change the client setup by service
+	paths := hcClient.Client.GetPathsWithNoRetries()
+	paths = append(paths, "/health", "/healthcheck")
+	hcClient.Client.SetPathsWithNoRetries(paths)
+
+	return hcClient.Checker(ctx)
+}
+
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
 func (c *Client) Healthcheck() (string, error) {
-	resp, err := c.cli.Get(context.Background(), c.url+"/healthcheck")
+	ctx := context.Background()
+	endpoint := "/health"
+
+	clientlog.Do(ctx, "checking health", service, endpoint)
+
+	resp, err := c.cli.Get(ctx, c.url+endpoint)
 	if err != nil {
 		return service, err
 	}
+	defer closeResponseBody(ctx, resp)
+
+	// Apps may still have /healthcheck endpoint instead of a /health one.
+	if resp.StatusCode == http.StatusNotFound {
+		endpoint = "/healthcheck"
+		return c.callHealthcheckEndpoint(ctx, service, endpoint)
+	}
 
 	if resp.StatusCode != http.StatusOK {
-		return service, &ErrInvalidSearchAPIResponse{http.StatusOK, resp.StatusCode, c.url + "/healthcheck"}
+		return service, &ErrInvalidSearchAPIResponse{http.StatusOK, resp.StatusCode, c.url + endpoint}
 	}
 
 	return service, nil
@@ -139,4 +171,29 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 	err = json.NewDecoder(resp.Body).Decode(&m)
 
 	return
+}
+
+func (c *Client) callHealthcheckEndpoint(ctx context.Context, service, endpoint string) (string, error) {
+	clientlog.Do(ctx, "checking health", service, endpoint)
+	resp, err := c.cli.Get(ctx, c.url+endpoint)
+	if err != nil {
+		return service, err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return service, &ErrInvalidSearchAPIResponse{http.StatusOK, resp.StatusCode, c.url + endpoint}
+	}
+
+	return service, nil
+}
+
+// CloseResponseBody closes the response body and logs an error if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body == nil {
+		return
+	}
+	if err := resp.Body.Close(); err != nil {
+		log.Event(ctx, "error closing http response body", log.Error(err))
+	}
 }
