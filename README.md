@@ -8,11 +8,16 @@ Common client code - in go - for ONS APIs:
 * dataset
 * filter
 * headers - common API request headers
+* healthcheck -> health
 * hierarchy
 * identity
 * importapi
 * renderer
 * search
+
+### Tests
+
+Run tests using `make test`
 
 ### Licence
 
