@@ -14,11 +14,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/zebedee/data"
+	"github.com/ONSdigital/log.go/log"
 )
+
+const service = "zebedee"
 
 // ZebedeeClient represents a zebedee client
 type ZebedeeClient struct {
@@ -64,19 +69,47 @@ func (c *ZebedeeClient) Get(ctx context.Context, userAccessToken, path string) (
 	return c.get(ctx, userAccessToken, path)
 }
 
+// Checker calls zebedee health endpoint and returns a check object to the caller.
+func (c *ZebedeeClient) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Client: c.client,
+		Name:   service,
+		URL:    c.zebedeeURL,
+	}
+
+	// healthcheck client should not retry when calling a healthcheck endpoint,
+	// append to current paths as to not change the client setup by service
+	paths := hcClient.Client.GetPathsWithNoRetries()
+	paths = append(paths, "/health", "/healthcheck")
+	hcClient.Client.SetPathsWithNoRetries(paths)
+
+	return hcClient.Checker(ctx)
+}
+
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
 func (c *ZebedeeClient) Healthcheck() (string, error) {
 	ctx := context.Background()
-	resp, err := c.client.Get(ctx, c.zebedeeURL+"/healthcheck")
+	endpoint := "/health"
+
+	clientlog.Do(ctx, "checking health", service, endpoint)
+
+	resp, err := c.client.Get(ctx, c.zebedeeURL+endpoint)
 	if err != nil {
-		return "zebedee", err
+		return service, err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	// Apps may still have /healthcheck endpoint instead of a /health one.
+	if resp.StatusCode == http.StatusNotFound {
+		endpoint = "/healthcheck"
+		return c.callHealthcheckEndpoint(ctx, service, endpoint)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "zebedee", ErrInvalidZebedeeResponse{resp.StatusCode, "/healthcheck"}
+		return service, ErrInvalidZebedeeResponse{resp.StatusCode, endpoint}
 	}
 
-	return "", nil
+	return service, nil
 }
 
 // GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
@@ -246,7 +279,7 @@ func (c *ZebedeeClient) createRequestURL(ctx context.Context, path, query string
 	if ctx.Value(common.CollectionIDHeaderKey) != nil {
 		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
 		if !ok {
-			log.ErrorCtx(ctx, errors.New("error casting collection ID cookie to string"), nil)
+			log.Event(ctx, "error closing http response body", log.Error(errors.New("error casting collection ID cookie to string")))
 		}
 		path += "/" + collectionID
 	}
@@ -257,10 +290,35 @@ func (c *ZebedeeClient) createRequestURL(ctx context.Context, path, query string
 	if ctx.Value(common.LocaleHeaderKey) != nil {
 		localeCode, ok := ctx.Value(common.LocaleHeaderKey).(string)
 		if !ok {
-			log.ErrorCtx(ctx, errors.New("error casting locale code to string"), nil)
+			log.Event(ctx, "error closing http response body", log.Error(errors.New("error casting locale code to string")))
 		}
 		path += "&lang=" + localeCode
 	}
 
 	return path
+}
+
+func (c *ZebedeeClient) callHealthcheckEndpoint(ctx context.Context, service, endpoint string) (string, error) {
+	clientlog.Do(ctx, "checking health", service, endpoint)
+	resp, err := c.client.Get(ctx, c.zebedeeURL+endpoint)
+	if err != nil {
+		return service, err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return service, ErrInvalidZebedeeResponse{resp.StatusCode, endpoint}
+	}
+
+	return service, nil
+}
+
+// CloseResponseBody closes the response body and logs an error if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body == nil {
+		return
+	}
+	if err := resp.Body.Close(); err != nil {
+		log.Event(ctx, "error closing http response body", log.Error(err))
+	}
 }

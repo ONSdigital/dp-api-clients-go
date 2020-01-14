@@ -1,16 +1,20 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
 	"testing"
 
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -103,7 +107,7 @@ func mockZebedeeServer(port chan int) {
 
 	l, err := net.Listen("tcp", ":0")
 	if err != nil {
-		log.Error(err, nil)
+		log.Event(context.Background(), "error listening on local network address", log.Error(err))
 		os.Exit(2)
 	}
 
@@ -111,7 +115,7 @@ func mockZebedeeServer(port chan int) {
 	close(port)
 
 	if err := http.Serve(l, r); err != nil {
-		log.Error(err, nil)
+		log.Event(context.Background(), "error serving http connections", log.Error(err))
 		os.Exit(2)
 	}
 }
@@ -160,4 +164,87 @@ func filesize(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.Write(b)
+}
+
+func TestClient_GetHealth(t *testing.T) {
+
+	Convey("Given a healthy zebedee service is running", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, nil
+			},
+		}
+
+		cli := ZebedeeClient{
+			client:     mockRCHTTPCli,
+			zebedeeURL: "http://localhost:8080",
+		}
+
+		Convey("when Healthcheck is called", func() {
+			serviceName, err := cli.Healthcheck()
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+				So(serviceName, ShouldEqual, service)
+				So(len(mockRCHTTPCli.GetCalls()), ShouldEqual, 1)
+			})
+		})
+	})
+
+	Convey("Given zebedee does not contain a healthcheck endpoint", t, func() {
+		mockErr := errors.New("endpoint not found")
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusNotFound,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, mockErr
+			},
+		}
+
+		cli := ZebedeeClient{
+			client:     mockRCHTTPCli,
+			zebedeeURL: "http://localhost:8080",
+		}
+
+		Convey("when Healthcheck is called", func() {
+			serviceName, err := cli.Healthcheck()
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+				So(serviceName, ShouldEqual, service)
+				So(len(mockRCHTTPCli.GetCalls()), ShouldEqual, 1)
+			})
+		})
+	})
+
+	Convey("Given zebedee is not running", t, func() {
+		mockErr := errors.New("internal server error")
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusInternalServerError,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, mockErr
+			},
+		}
+
+		cli := ZebedeeClient{
+			client:     mockRCHTTPCli,
+			zebedeeURL: "http://localhost:8080",
+		}
+
+		Convey("when Healthcheck is called", func() {
+			serviceName, err := cli.Healthcheck()
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+				So(serviceName, ShouldEqual, service)
+				So(len(mockRCHTTPCli.GetCalls()), ShouldEqual, 1)
+			})
+		})
+	})
 }
