@@ -9,7 +9,7 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	rchttp "github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 )
 
 const service = "renderer"
@@ -46,7 +46,7 @@ func New(url string) *Renderer {
 
 func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if err := resp.Body.Close(); err != nil {
-		log.ErrorCtx(ctx, err, log.Data{"message": "error closing http response body"})
+		log.Event(ctx, "error closing http response body", log.Error(err))
 	}
 }
 
