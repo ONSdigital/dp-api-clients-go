@@ -71,8 +71,12 @@ func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 		Name:   service,
 		URL:    c.url,
 	}
-	// healthcheck client should have a default maximum retry count of 0 (overides rchttp default)
-	hcClient.Client.SetMaxRetries(0)
+
+	// healthcheck client should not retry when calling a healthcheck endpoint,
+	// append to current paths as to not change the client setup by service
+	paths := hcClient.Client.GetPathsWithNoRetries()
+	paths = append(paths, "/health", "/healthcheck")
+	hcClient.Client.SetPathsWithNoRetries(paths)
 
 	return hcClient.Checker(ctx)
 }
@@ -80,8 +84,9 @@ func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
 func (c *Client) Healthcheck() (string, error) {
 	ctx := context.Background()
-
 	endpoint := "/health"
+
+	clientlog.Do(ctx, "checking health", service, endpoint)
 
 	resp, err := c.cli.Get(ctx, c.url+endpoint)
 	// Apps may still have /healthcheck endpoint instead of a /health one.

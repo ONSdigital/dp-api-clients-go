@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/log.go/log"
@@ -78,6 +79,7 @@ func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 
 func (c *Client) get(ctx context.Context, path string) (int, string, error) {
 	var check *health.HealthCheck
+	clientlog.Do(ctx, "checking health", c.Name, path)
 
 	req, err := http.NewRequest("GET", c.URL+path, nil)
 	if err != nil {
