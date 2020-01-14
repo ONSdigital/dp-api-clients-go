@@ -166,7 +166,7 @@ func TestClient_GetHealth(t *testing.T) {
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
 				So(serviceName, ShouldEqual, service)
-				So(len(mockRCHTTPCli.GetCalls()), ShouldEqual, 2)
+				So(len(mockRCHTTPCli.GetCalls()), ShouldEqual, 1)
 			})
 		})
 	})

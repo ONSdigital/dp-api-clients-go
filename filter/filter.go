@@ -99,15 +99,16 @@ func (c *Client) Healthcheck() (string, error) {
 	clientlog.Do(ctx, "checking health", service, endpoint)
 
 	resp, err := c.cli.Get(ctx, c.url+endpoint)
-	// Apps may still have /healthcheck endpoint instead of a /health one.
-	if resp.StatusCode == http.StatusNotFound {
-		endpoint = "/healthcheck"
-		resp, err = c.cli.Get(ctx, c.url+endpoint)
-	}
 	if err != nil {
 		return service, err
 	}
 	defer CloseResponseBody(ctx, resp)
+
+	// Apps may still have /healthcheck endpoint instead of a /health one.
+	if resp.StatusCode == http.StatusNotFound {
+		endpoint = "/healthcheck"
+		return c.callHealthcheckEndpoint(ctx, service, endpoint)
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return service, &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, endpoint}
@@ -597,4 +598,19 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceAuthToken)
 	return c.cli.Do(ctx, req)
+}
+
+func (c *Client) callHealthcheckEndpoint(ctx context.Context, service, endpoint string) (string, error) {
+	clientlog.Do(ctx, "checking health", service, endpoint)
+	resp, err := c.cli.Get(ctx, c.url+endpoint)
+	if err != nil {
+		return service, err
+	}
+	defer CloseResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return service, &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, endpoint}
+	}
+
+	return service, nil
 }

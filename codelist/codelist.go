@@ -7,7 +7,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	"github.com/ONSdigital/dp-api-clients-go/headers"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -52,15 +55,44 @@ func New(codelistAPIURL string) *Client {
 	}
 }
 
+// Checker calls filter api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Client: c.cli,
+		Name:   service,
+		URL:    c.url,
+	}
+
+	// healthcheck client should not retry when calling a healthcheck endpoint,
+	// append to current paths as to not change the client setup by service
+	paths := hcClient.Client.GetPathsWithNoRetries()
+	paths = append(paths, "/health", "/healthcheck")
+	hcClient.Client.SetPathsWithNoRetries(paths)
+
+	return hcClient.Checker(ctx)
+}
+
 // Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
 func (c *Client) Healthcheck() (string, error) {
-	resp, err := c.cli.Get(context.Background(), c.url+"/healthcheck")
+	ctx := context.Background()
+	endpoint := "/health"
+
+	clientlog.Do(ctx, "checking health", service, endpoint)
+
+	resp, err := c.cli.Get(ctx, c.url+endpoint)
 	if err != nil {
 		return service, err
 	}
+	defer closeResponseBody(ctx, resp)
+
+	// Apps may still have /healthcheck endpoint instead of a /health one.
+	if resp.StatusCode == http.StatusNotFound {
+		endpoint = "/healthcheck"
+		return c.callHealthcheckEndpoint(ctx, service, endpoint)
+	}
 
 	if resp.StatusCode != http.StatusOK {
-		return service, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
+		return service, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, endpoint}
 	}
 
 	return service, nil
@@ -292,12 +324,27 @@ func setAuthenticationHeaders(req *http.Request, userAuthToken, serviceAuthToken
 		return err
 	}
 
-	err = headers.SetServiceAuthToken(req, serviceAuthToken);
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
 	if err != nil && err != headers.ErrValueEmpty {
 		return err
 	}
 
 	return nil
+}
+
+func (c *Client) callHealthcheckEndpoint(ctx context.Context, service, endpoint string) (string, error) {
+	clientlog.Do(ctx, "checking health", service, endpoint)
+	resp, err := c.cli.Get(ctx, c.url+endpoint)
+	if err != nil {
+		return service, err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return service, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, endpoint}
+	}
+
+	return service, nil
 }
 
 func closeResponseBody(ctx context.Context, resp *http.Response) {

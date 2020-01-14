@@ -23,7 +23,7 @@ var (
 )
 
 func TestClient_Healthcheck(t *testing.T) {
-	uri := "/healthcheck"
+	uri := "/health"
 
 	Convey("given clienter.Get returns an error", t, func() {
 		expectedErr := errors.New("disciples of the watch obey")
@@ -55,8 +55,38 @@ func TestClient_Healthcheck(t *testing.T) {
 		})
 	})
 
-	Convey("given clienter.Get returns a non 200 response status", t, func() {
-		resp := httpmocks.NewResponseMock(nil, 401)
+	Convey("given clienter.Get returns a non 200 (or 404) response status", t, func() {
+		resp := httpmocks.NewResponseMock(httpmocks.NewReadCloserMock([]byte{}, nil), 401)
+
+		clienter := &rchttp.ClienterMock{
+			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+				return resp, nil
+			},
+		}
+
+		codelistClient := &Client{
+			cli: clienter,
+			url: testHost,
+		}
+
+		Convey("when codelistClient.Healthcheck is called", func() {
+			actual, err := codelistClient.Healthcheck()
+
+			Convey("then the expected error is returned", func() {
+				So(actual, ShouldEqual, service)
+				So(err, ShouldResemble, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri})
+			})
+
+			Convey("and client.Get should be called 1 time with the expected parameters", func() {
+				calls := clienter.GetCalls()
+				So(calls, ShouldHaveLength, 1)
+				So(calls[0].URL, ShouldEqual, testHost+uri)
+			})
+		})
+	})
+
+	Convey("given clienter.Get returns 404 response status", t, func() {
+		resp := httpmocks.NewResponseMock(httpmocks.NewReadCloserMock([]byte{}, nil), 404)
 
 		clienter := &rchttp.ClienterMock{
 			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
@@ -77,16 +107,17 @@ func TestClient_Healthcheck(t *testing.T) {
 				So(err, ShouldResemble, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"})
 			})
 
-			Convey("and client.Get should be called 1 time with the expected parameters", func() {
+			Convey("and client.Get should be called twice with the expected parameters", func() {
 				calls := clienter.GetCalls()
-				So(calls, ShouldHaveLength, 1)
+				So(calls, ShouldHaveLength, 2)
 				So(calls[0].URL, ShouldEqual, testHost+uri)
+				So(calls[1].URL, ShouldEqual, testHost+"/healthcheck")
 			})
 		})
 	})
 
 	Convey("given clienter.Get returns a 200 response status", t, func() {
-		resp := httpmocks.NewResponseMock(nil, 200)
+		resp := httpmocks.NewResponseMock(httpmocks.NewReadCloserMock([]byte{}, nil), 200)
 
 		clienter := &rchttp.ClienterMock{
 			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
