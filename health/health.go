@@ -14,6 +14,11 @@ import (
 	"github.com/ONSdigital/log.go/log"
 )
 
+const (
+	healthEndpoint      = "/health"
+	healthcheckEndpoint = "/healthcheck"
+)
+
 // ErrInvalidAPIResponse is returned when an api does not respond
 // with a valid status.
 type ErrInvalidAPIResponse struct {
@@ -39,8 +44,11 @@ func NewClient(name, url string) *Client {
 		URL:    url,
 	}
 
-	// Overwrite the default number of max retries on the new healthcheck client.
-	c.Client.SetMaxRetries(0)
+	// healthcheck client should not retry when calling a healthcheck endpoint,
+	// append to current paths as to not change the client setup by service
+	paths := c.Client.GetPathsWithNoRetries()
+	paths = append(paths, healthEndpoint, healthcheckEndpoint)
+	c.Client.SetPathsWithNoRetries(paths)
 
 	return c
 }
@@ -62,10 +70,10 @@ func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 		"api": c.Name,
 	}
 
-	code, status, err := c.get(ctx, "/health")
+	code, status, err := c.get(ctx, healthEndpoint)
 	// Apps may still have /healthcheck endpoint instead of a /health one.
 	if code == http.StatusNotFound {
-		code, status, err = c.get(ctx, "/healthcheck")
+		code, status, err = c.get(ctx, healthcheckEndpoint)
 	}
 	if err != nil {
 		errorMessage = err.Error()
