@@ -31,25 +31,28 @@ type ErrInvalidAppResponse struct {
 
 // Client represents an app client
 type Client struct {
-	checkObj *health.Check
-	client   rchttp.Clienter
-	name     string
-	url      string
+	CheckObj *health.Check
+	Client   rchttp.Clienter
+	Name     string
+	URL      string
 }
 
 // NewClient creates a new instance of Client with a given app url
-func NewClient(name, url string, maxRetries int) *Client {
+func NewClient(name, url string) *Client {
 	c := &Client{
-		client: rchttp.NewClient(),
-		name:   name,
-		url:    url,
-		checkObj: &health.Check{
+		Client: rchttp.NewClient(),
+		Name:   name,
+		URL:    url,
+		CheckObj: &health.Check{
 			Name: name,
 		},
 	}
 
-	// Overwrite the default number of max retries on the new client
-	c.client.SetMaxRetries(maxRetries)
+	// healthcheck client should not retry when calling a healthcheck endpoint,
+	// append to current paths as to not change the client setup by service
+	paths := c.Client.GetPathsWithNoRetries()
+	paths = append(paths, "/health", "/healthcheck")
+	c.Client.SetPathsWithNoRetries(paths)
 
 	return c
 }
@@ -64,50 +67,50 @@ func (e ErrInvalidAppResponse) Error() string {
 }
 
 // Checker calls an app health endpoint and returns a check object to the caller
-func (c *Client) Checker(ctx *context.Context) (*health.Check, error) {
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 	logData := log.Data{
-		"service": c.name,
+		"service": c.Name,
 	}
 
-	code, err := c.get(*ctx, "/health")
+	code, err := c.get(ctx, "/health")
 	// Apps may still have /healthcheck endpoint
 	// instead of a /health one
 	if code == http.StatusNotFound {
-		code, err = c.get(*ctx, "/healthcheck")
+		code, err = c.get(ctx, "/healthcheck")
 	}
 	if err != nil {
-		log.Event(*ctx, "failed to request api health", log.Error(err), logData)
+		log.Event(ctx, "failed to request api health", log.Error(err), logData)
 	}
 
 	currentTime := time.Now().UTC()
-	c.checkObj.StatusCode = code
-	c.checkObj.LastChecked = &currentTime
+	c.CheckObj.StatusCode = code
+	c.CheckObj.LastChecked = &currentTime
 
 	switch code {
 	case 200:
-		c.checkObj.Message = statusDescription[health.StatusOK]
-		c.checkObj.Status = health.StatusOK
-		c.checkObj.LastSuccess = &currentTime
+		c.CheckObj.Message = statusDescription[health.StatusOK]
+		c.CheckObj.Status = health.StatusOK
+		c.CheckObj.LastSuccess = &currentTime
 	case 429:
-		c.checkObj.Message = statusDescription[health.StatusWarning]
-		c.checkObj.Status = health.StatusWarning
-		c.checkObj.LastFailure = &currentTime
+		c.CheckObj.Message = statusDescription[health.StatusWarning]
+		c.CheckObj.Status = health.StatusWarning
+		c.CheckObj.LastFailure = &currentTime
 	default:
-		c.checkObj.Message = statusDescription[health.StatusCritical]
-		c.checkObj.Status = health.StatusCritical
-		c.checkObj.LastFailure = &currentTime
+		c.CheckObj.Message = statusDescription[health.StatusCritical]
+		c.CheckObj.Status = health.StatusCritical
+		c.CheckObj.LastFailure = &currentTime
 	}
 
-	return c.checkObj, nil
+	return c.CheckObj, nil
 }
 
 func (c *Client) get(ctx context.Context, path string) (int, error) {
-	req, err := http.NewRequest("GET", c.url+path, nil)
+	req, err := http.NewRequest("GET", c.URL+path, nil)
 	if err != nil {
 		return 0, err
 	}
 
-	resp, err := c.client.Do(ctx, req)
+	resp, err := c.Client.Do(ctx, req)
 	if err != nil {
 		return 0, err
 	}

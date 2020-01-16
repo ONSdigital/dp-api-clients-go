@@ -32,10 +32,7 @@ func getMockAPI(expectRequest http.Request, mockedHTTPResponse MockedHTTPRespons
 		fmt.Fprintln(w, mockedHTTPResponse.Body)
 	}))
 
-	// Set the number of retries to 1 for test
-	maxRetries := 1
-
-	api := NewClient(apiName, ts.URL, maxRetries)
+	api := NewClient(apiName, ts.URL)
 
 	return api
 }
@@ -49,7 +46,7 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 200, Body: "{\"status\": \"OK\"}"},
 		)
 
-		check, err := mockedAPI.Checker(&ctx)
+		check, err := mockedAPI.Checker(ctx)
 		So(check.Name, ShouldEqual, apiName)
 		So(check.StatusCode, ShouldEqual, 200)
 		So(check.Status, ShouldEqual, health.StatusOK)
@@ -66,7 +63,7 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 429, Body: "{\"status\": \"WARNING\"}"},
 		)
 
-		check, err := mockedAPI.Checker(&ctx)
+		check, err := mockedAPI.Checker(ctx)
 		So(check.Name, ShouldEqual, apiName)
 		So(check.StatusCode, ShouldEqual, 429)
 		So(check.Status, ShouldEqual, health.StatusWarning)
@@ -83,7 +80,7 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 500, Body: "{\"status\": \"CRITICAL\"}"},
 		)
 
-		check, err := mockedAPI.Checker(&ctx)
+		check, err := mockedAPI.Checker(ctx)
 		So(check.Name, ShouldEqual, apiName)
 		So(check.StatusCode, ShouldEqual, 500)
 		So(check.Status, ShouldEqual, health.StatusCritical)
@@ -100,7 +97,7 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 404, Body: ""},
 		)
 
-		check, err := mockedAPI.Checker(&ctx)
+		check, err := mockedAPI.Checker(ctx)
 		So(check.Name, ShouldEqual, apiName)
 		So(check.StatusCode, ShouldEqual, 404)
 		So(check.Status, ShouldEqual, health.StatusCritical)
@@ -117,7 +114,7 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 500, Body: ""},
 		)
 
-		check, err := mockedAPI.Checker(&ctx)
+		check, err := mockedAPI.Checker(ctx)
 		So(check.Name, ShouldEqual, apiName)
 		So(check.StatusCode, ShouldEqual, 500)
 		So(check.Status, ShouldEqual, health.StatusCritical)
