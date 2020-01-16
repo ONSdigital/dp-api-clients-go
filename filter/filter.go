@@ -12,8 +12,8 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	"github.com/ONSdigital/dp-api-clients-go/headers"
-	"github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/log"
+	rchttp "github.com/ONSdigital/dp-rchttp"
+	"github.com/ONSdigital/log.go/log"
 )
 
 const service = "filter-api"
@@ -68,7 +68,7 @@ func CloseResponseBody(ctx context.Context, resp *http.Response) {
 		return
 	}
 	if err := resp.Body.Close(); err != nil {
-		log.ErrorCtx(ctx, err, log.Data{"message": "error closing http response body"})
+		log.Event(ctx, "error closing http response body", log.Error(err))
 	}
 }
 

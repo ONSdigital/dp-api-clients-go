@@ -16,8 +16,8 @@ import (
 
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
 	"github.com/ONSdigital/go-ns/zebedee/data"
+	"github.com/ONSdigital/log.go/log"
 )
 
 // ZebedeeClient represents a zebedee client
@@ -42,6 +42,11 @@ func (e ErrInvalidZebedeeResponse) Error() string {
 }
 
 var _ error = ErrInvalidZebedeeResponse{}
+
+var (
+	errCastingCollectionID = errors.New("error casting collection ID cookie to string")
+	errCastingLocalCode    = errors.New("error casting locale code to string")
+)
 
 // NewZebedeeClient creates a new Zebedee Client, set ZEBEDEE_REQUEST_TIMEOUT_SECOND
 // environment variable to modify default client timeout as zebedee can often be slow
@@ -246,7 +251,7 @@ func (c *ZebedeeClient) createRequestURL(ctx context.Context, path, query string
 	if ctx.Value(common.CollectionIDHeaderKey) != nil {
 		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
 		if !ok {
-			log.ErrorCtx(ctx, errors.New("error casting collection ID cookie to string"), nil)
+			log.Event(ctx, "unable to find collection ID header key", log.Error(errCastingCollectionID))
 		}
 		path += "/" + collectionID
 	}
@@ -257,7 +262,7 @@ func (c *ZebedeeClient) createRequestURL(ctx context.Context, path, query string
 	if ctx.Value(common.LocaleHeaderKey) != nil {
 		localeCode, ok := ctx.Value(common.LocaleHeaderKey).(string)
 		if !ok {
-			log.ErrorCtx(ctx, errors.New("error casting locale code to string"), nil)
+			log.Event(ctx, "unable to find local header key", log.Error(errCastingLocalCode))
 		}
 		path += "&lang=" + localeCode
 	}

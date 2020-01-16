@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -103,7 +103,7 @@ func mockZebedeeServer(port chan int) {
 
 	l, err := net.Listen("tcp", ":0")
 	if err != nil {
-		log.Error(err, nil)
+		log.Event(context.Background(), "error listening on local network address", log.Error(err))
 		os.Exit(2)
 	}
 
@@ -111,7 +111,7 @@ func mockZebedeeServer(port chan int) {
 	close(port)
 
 	if err := http.Serve(l, r); err != nil {
-		log.Error(err, nil)
+		log.Event(context.Background(), "error serving http connections", log.Error(err))
 		os.Exit(2)
 	}
 }

@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ONSdigital/dp-rchttp"
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 )
 
 const service = "import-api"
@@ -90,11 +90,11 @@ type InstanceLink struct {
 }
 
 // GetImportJob asks the Import API for the details for an Import job
-func (api *Client) GetImportJob(ctx context.Context, importJobID, serviceToken string) (ImportJob, bool, error) {
+func (c *Client) GetImportJob(ctx context.Context, importJobID, serviceToken string) (ImportJob, bool, error) {
 	var importJob ImportJob
-	path := api.url + "/jobs/" + importJobID
+	path := c.url + "/jobs/" + importJobID
 
-	jsonBody, httpCode, err := api.getJSON(ctx, path, serviceToken, 0, nil)
+	jsonBody, httpCode, err := c.getJSON(ctx, path, serviceToken, 0, nil)
 	if httpCode == http.StatusNotFound {
 		return importJob, false, nil
 	}
@@ -114,12 +114,12 @@ func (api *Client) GetImportJob(ctx context.Context, importJobID, serviceToken s
 		isFatal = true
 	}
 	if err != nil {
-		log.ErrorC("GetImportJob", err, logData)
+		log.Event(ctx, "GetImportJob", logData, log.Error(err))
 		return importJob, isFatal, err
 	}
 
 	if err := json.Unmarshal(jsonBody, &importJob); err != nil {
-		log.ErrorC("GetImportJob unmarshal", err, logData)
+		log.Event(ctx, "GetImportJob unmarshal", logData, log.Error(err))
 		return ImportJob{}, true, err
 	}
 
@@ -127,11 +127,11 @@ func (api *Client) GetImportJob(ctx context.Context, importJobID, serviceToken s
 }
 
 // UpdateImportJobState tells the Import API that the state has changed of an Import job
-func (api *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken string, newState string) error {
-	path := api.url + "/jobs/" + jobID
+func (c *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken string, newState string) error {
+	path := c.url + "/jobs/" + jobID
 	jsonUpload := []byte(`{"state":"` + newState + `"}`)
 
-	jsonResult, httpCode, err := api.putJSON(ctx, path, serviceToken, 0, jsonUpload)
+	jsonResult, httpCode, err := c.putJSON(ctx, path, serviceToken, 0, jsonUpload)
 	logData := log.Data{
 		"path":        path,
 		"importJobID": jobID,
@@ -143,18 +143,18 @@ func (api *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken
 		err = errors.New("Bad HTTP response")
 	}
 	if err != nil {
-		log.ErrorC("UpdateImportJobState", err, logData)
+		log.Event(ctx, "UpdateImportJobState", logData, log.Error(err))
 		return err
 	}
 	return nil
 }
 
-func (api *Client) getJSON(ctx context.Context, path, serviceToken string, attempts int, vars url.Values) ([]byte, int, error) {
-	return callJSONAPI(ctx, api.client, "GET", path, serviceToken, vars)
+func (c *Client) getJSON(ctx context.Context, path, serviceToken string, attempts int, vars url.Values) ([]byte, int, error) {
+	return callJSONAPI(ctx, c.client, "GET", path, serviceToken, vars)
 }
 
-func (api *Client) putJSON(ctx context.Context, path, serviceToken string, attempts int, payload []byte) ([]byte, int, error) {
-	return callJSONAPI(ctx, api.client, "PUT", path, serviceToken, payload)
+func (c *Client) putJSON(ctx context.Context, path, serviceToken string, attempts int, payload []byte) ([]byte, int, error) {
+	return callJSONAPI(ctx, c.client, "PUT", path, serviceToken, payload)
 }
 
 func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serviceToken string, payload interface{}) ([]byte, int, error) {
@@ -163,7 +163,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 
 	URL, err := url.Parse(path)
 	if err != nil {
-		log.ErrorC("Failed to create url for API call", err, logData)
+		log.Event(ctx, "Failed to create url for API call", logData, log.Error(err))
 		return nil, 0, err
 	}
 	path = URL.String()
@@ -185,7 +185,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 	}
 	// check above req had no errors
 	if err != nil {
-		log.ErrorC("Failed to create request for API", err, logData)
+		log.Event(ctx, "Failed to create request for API", logData, log.Error(err))
 		return nil, 0, err
 	}
 
@@ -194,18 +194,18 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 
 	resp, err := client.Do(ctx, req)
 	if err != nil {
-		log.ErrorC("Failed to action API", err, logData)
+		log.Event(ctx, "Failed to action API", logData, log.Error(err))
 		return nil, 0, err
 	}
 
 	logData["httpCode"] = resp.StatusCode
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= 300 {
-		log.Debug("unexpected status code from API", logData)
+		log.Event(ctx, "unexpected status code from API", logData)
 	}
 
 	jsonBody, err := getBody(resp)
 	if err != nil {
-		log.ErrorC("Failed to read body from API", err, logData)
+		log.Event(ctx, "Failed to read body from API", logData, log.Error(err))
 		return nil, resp.StatusCode, err
 	}
 	return jsonBody, resp.StatusCode, nil
@@ -234,7 +234,7 @@ func getBody(resp *http.Response) ([]byte, error) {
 		return nil, err
 	}
 	if err = resp.Body.Close(); err != nil {
-		log.ErrorC("closing body", err, nil)
+		log.Event(ctx, "closing body", log.Error(err))
 		return nil, err
 	}
 	return b, nil

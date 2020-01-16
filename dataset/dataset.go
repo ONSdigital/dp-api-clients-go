@@ -13,7 +13,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/pkg/errors"
 )
 
@@ -52,7 +52,7 @@ type Client struct {
 // closeResponseBody closes the response body and logs an error containing the context if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if err := resp.Body.Close(); err != nil {
-		log.ErrorCtx(ctx, err, log.Data{"message": "error closing http response body"})
+		log.Event(ctx, "error closing http response body", log.Error(err))
 	}
 }
 
