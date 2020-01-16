@@ -3,18 +3,18 @@ package health
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 
+	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/log.go/log"
 )
 
 var (
-	statusDescription = map[string]string{
+	// StatusMessage contains a map of messages to service response statuses
+	StatusMessage = map[string]string{
 		health.StatusOK:       "Everything is ok",
 		health.StatusWarning:  "Things are degraded, but at least partially functioning",
 		health.StatusCritical: "The checked functionality is unavailable or non-functioning",
@@ -31,10 +31,10 @@ type ErrInvalidAppResponse struct {
 
 // Client represents an app client
 type Client struct {
-	CheckObj *health.Check
-	Client   rchttp.Clienter
-	Name     string
-	URL      string
+	Client rchttp.Clienter
+	Check  *health.Check
+	Name   string
+	URL    string
 }
 
 // NewClient creates a new instance of Client with a given app url
@@ -43,7 +43,7 @@ func NewClient(name, url string) *Client {
 		Client: rchttp.NewClient(),
 		Name:   name,
 		URL:    url,
-		CheckObj: &health.Check{
+		Check: &health.Check{
 			Name: name,
 		},
 	}
@@ -79,32 +79,34 @@ func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 		code, err = c.get(ctx, "/healthcheck")
 	}
 	if err != nil {
-		log.Event(ctx, "failed to request api health", log.Error(err), logData)
+		log.Event(ctx, "failed to request service health check", log.Error(err), logData)
 	}
 
 	currentTime := time.Now().UTC()
-	c.CheckObj.StatusCode = code
-	c.CheckObj.LastChecked = &currentTime
+	c.Check.StatusCode = code
+	c.Check.LastChecked = &currentTime
 
 	switch code {
 	case 200:
-		c.CheckObj.Message = statusDescription[health.StatusOK]
-		c.CheckObj.Status = health.StatusOK
-		c.CheckObj.LastSuccess = &currentTime
+		c.Check.Message = StatusMessage[health.StatusOK]
+		c.Check.Status = health.StatusOK
+		c.Check.LastSuccess = &currentTime
 	case 429:
-		c.CheckObj.Message = statusDescription[health.StatusWarning]
-		c.CheckObj.Status = health.StatusWarning
-		c.CheckObj.LastFailure = &currentTime
+		c.Check.Message = StatusMessage[health.StatusWarning]
+		c.Check.Status = health.StatusWarning
+		c.Check.LastFailure = &currentTime
 	default:
-		c.CheckObj.Message = statusDescription[health.StatusCritical]
-		c.CheckObj.Status = health.StatusCritical
-		c.CheckObj.LastFailure = &currentTime
+		c.Check.Message = StatusMessage[health.StatusCritical]
+		c.Check.Status = health.StatusCritical
+		c.Check.LastFailure = &currentTime
 	}
 
-	return c.CheckObj, nil
+	return c.Check, nil
 }
 
 func (c *Client) get(ctx context.Context, path string) (int, error) {
+	clientlog.Do(ctx, "retrieving dataset", c.Name, c.URL)
+
 	req, err := http.NewRequest("GET", c.URL+path, nil)
 	if err != nil {
 		return 0, err
@@ -114,12 +116,21 @@ func (c *Client) get(ctx context.Context, path string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode < 200 || (resp.StatusCode > 399 && resp.StatusCode != 429) {
-		io.Copy(ioutil.Discard, resp.Body)
 		return resp.StatusCode, ErrInvalidAppResponse{http.StatusOK, resp.StatusCode, req.URL.Path}
 	}
 
 	return resp.StatusCode, nil
+}
+
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body == nil {
+		return
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		log.Event(ctx, "error closing http response body", log.Error(err))
+	}
 }
