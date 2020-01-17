@@ -46,7 +46,7 @@ func TestClient_Healthcheck(t *testing.T) {
 		codelistClient := New(testHost)
 		codelistClient.cli = clienter
 
-		Convey("when codelistClient.Healthcheck is called", func() {
+		Convey("when codelistClient.Checker is called", func() {
 			check, err := codelistClient.Checker(ctx)
 
 			Convey("then the expected check is returned", func() {
@@ -84,7 +84,7 @@ func TestClient_Healthcheck(t *testing.T) {
 		codelistClient := New(testHost)
 		codelistClient.cli = clienter
 
-		Convey("when codelistClient.Healthcheck is called", func() {
+		Convey("when codelistClient.Checker is called", func() {
 			check, err := codelistClient.Checker(ctx)
 
 			Convey("then the expected check is returned", func() {
@@ -122,7 +122,7 @@ func TestClient_Healthcheck(t *testing.T) {
 		codelistClient := New(testHost)
 		codelistClient.cli = clienter
 
-		Convey("when codelistClient.Healthcheck is called", func() {
+		Convey("when codelistClient.Checker is called", func() {
 			check, err := codelistClient.Checker(ctx)
 
 			Convey("then the expected check is returned", func() {
@@ -161,7 +161,7 @@ func TestClient_Healthcheck(t *testing.T) {
 		codelistClient := New(testHost)
 		codelistClient.cli = clienter
 
-		Convey("when codelistClient.Healthcheck is called", func() {
+		Convey("when codelistClient.Checker is called", func() {
 			check, err := codelistClient.Checker(ctx)
 
 			Convey("then the expected check is returned", func() {
@@ -199,7 +199,7 @@ func TestClient_Healthcheck(t *testing.T) {
 		codelistClient := New(testHost)
 		codelistClient.cli = clienter
 
-		Convey("when codelistClient.Healthcheck is called", func() {
+		Convey("when codelistClient.Checker is called", func() {
 			check, err := codelistClient.Checker(ctx)
 
 			Convey("then the expected check is returned", func() {
