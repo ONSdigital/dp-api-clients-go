@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
@@ -19,15 +21,19 @@ const service = "import-api"
 
 // Client is an import api client which can be used to make requests to the API
 type Client struct {
-	client rchttp.Clienter
-	url    string
+	check *health.Check
+	cli   rchttp.Clienter
+	url   string
 }
 
-// NewAPIClient creates a new API Client
-func NewAPIClient(client rchttp.Clienter, apiURL string) *Client {
+// New creates new instance of Client with a give import api url
+func New(importAPIURL string) *Client {
+	hcClient := healthcheck.NewClient(service, importAPIURL)
+
 	return &Client{
-		client: client,
-		url:    apiURL,
+		check: hcClient.Check,
+		cli:   hcClient.Client,
+		url:   importAPIURL,
 	}
 }
 
@@ -56,22 +62,6 @@ func (e ErrInvalidAPIResponse) Code() int {
 
 var _ error = ErrInvalidAPIResponse{}
 
-// Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
-func (c *Client) Healthcheck() (string, error) {
-	ctx := context.Background()
-
-	resp, err := c.client.Get(ctx, c.url+"/healthcheck")
-	if err != nil {
-		return service, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return service, NewAPIResponse(resp, "/healthcheck")
-	}
-
-	return service, nil
-}
-
 // ImportJob comes from the Import API and links an import job to its (other) instances
 type ImportJob struct {
 	JobID string  `json:"id"`
@@ -89,6 +79,16 @@ type InstanceLink struct {
 	Link string `json:"href"`
 }
 
+// Checker calls import api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Check:  c.check,
+		Client: c.cli,
+	}
+
+	return hcClient.Checker(ctx)
+}
+
 // GetImportJob asks the Import API for the details for an Import job
 func (c *Client) GetImportJob(ctx context.Context, importJobID, serviceToken string) (ImportJob, bool, error) {
 	var importJob ImportJob
@@ -98,6 +98,7 @@ func (c *Client) GetImportJob(ctx context.Context, importJobID, serviceToken str
 	if httpCode == http.StatusNotFound {
 		return importJob, false, nil
 	}
+
 	logData := log.Data{
 		"path":        path,
 		"importJobID": importJobID,
@@ -150,11 +151,11 @@ func (c *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken s
 }
 
 func (c *Client) getJSON(ctx context.Context, path, serviceToken string, attempts int, vars url.Values) ([]byte, int, error) {
-	return callJSONAPI(ctx, c.client, "GET", path, serviceToken, vars)
+	return callJSONAPI(ctx, c.cli, "GET", path, serviceToken, vars)
 }
 
 func (c *Client) putJSON(ctx context.Context, path, serviceToken string, attempts int, payload []byte) ([]byte, int, error) {
-	return callJSONAPI(ctx, c.client, "PUT", path, serviceToken, payload)
+	return callJSONAPI(ctx, c.cli, "PUT", path, serviceToken, payload)
 }
 
 func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serviceToken string, payload interface{}) ([]byte, int, error) {
@@ -197,6 +198,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 		log.Event(ctx, "Failed to action API", logData, log.Error(err))
 		return nil, 0, err
 	}
+	defer closeResponseBody(ctx, resp)
 
 	logData["httpCode"] = resp.StatusCode
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= 300 {
@@ -208,6 +210,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 		log.Event(ctx, "Failed to read body from API", logData, log.Error(err))
 		return nil, resp.StatusCode, err
 	}
+
 	return jsonBody, resp.StatusCode, nil
 }
 
@@ -233,9 +236,16 @@ func getBody(resp *http.Response) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = resp.Body.Close(); err != nil {
-		log.Event(ctx, "closing body", log.Error(err))
-		return nil, err
-	}
+
 	return b, nil
+}
+
+// closeResponseBody closes the response body and logs an error if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body == nil {
+		return
+	}
+	if err := resp.Body.Close(); err != nil {
+		log.Event(ctx, "error closing http response body", log.Error(err))
+	}
 }
