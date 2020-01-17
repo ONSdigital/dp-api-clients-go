@@ -15,6 +15,10 @@ Common client code - in go - for ONS APIs:
 * renderer
 * search
 
+#### Package docs
+
+* [health](https://github.com/ONSdigital/dp-api-clients-go/tree/feature/client-checker/health)
+
 ### Tests
 
 Run tests using `make test`

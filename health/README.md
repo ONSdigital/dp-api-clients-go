@@ -14,11 +14,12 @@ import (
 
 func main() {
     ...
-    // Create new health check (rchttp) client, this will set the `/health` 
-    // and `/healthcheck` as endpoints that are not retriable
+    // Create new health check (rchttp) client, this will set the '/health' 
+    // and '/healthcheck' as endpoints that are not retriable
     hcClient := health.NewClient(<name>, <url>)
 
-    ctx := context.Context(context.Background())
+    ctx := context.Background()
+
     // Check state of external service
     checkObj, err := hcClient.Checker(ctx)
     if err != nil {
