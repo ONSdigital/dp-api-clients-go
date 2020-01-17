@@ -1,5 +1,7 @@
 language: go
-script: go test ./...
 go:
- - 1.9
+ - 1.12
  - tip
+script:
+  - export GO111MODULE="on"
+  - make test
