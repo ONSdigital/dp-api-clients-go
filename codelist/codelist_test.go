@@ -25,7 +25,7 @@ var (
 	testHost             = "http://localhost:8080"
 )
 
-func TestClient_Healthcheck(t *testing.T) {
+func TestClient_HealthChecker(t *testing.T) {
 	ctx := context.Background()
 	timePriorHealthCheck := time.Now()
 	path := "/health"
