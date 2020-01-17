@@ -6,33 +6,40 @@ import (
 	"unicode"
 )
 
-// Model represents a response dataset model from the dataset api
-type Model struct {
-	ID                string           `json:"id"`
-	CollectionID      string           `json:"collection_id"`
-	Contacts          []Contact        `json:"contacts"`
-	Description       string           `json:"description"`
-	Keywords          []string         `json:"keywords"`
-	License           string           `json:"license"`
-	Links             Links            `json:"links"`
-	Methodologies     []Methodology    `json:"methodologies"`
-	NationalStatistic bool             `json:"national_statistic"`
-	NextRelease       string           `json:"next_release"`
-	Publications      []Publication    `json:"publications"`
-	Publisher         *Publisher       `json:"publisher"`
-	QMI               Publication      `json:"qmi"`
-	RelatedDatasets   []RelatedDataset `json:"related_datasets"`
-	ReleaseFrequency  string           `json:"release_frequency"`
-	State             string           `json:"state"`
-	Theme             string           `json:"theme"`
-	Title             string           `json:"title"`
-	UnitOfMeasure     string           `json:"unit_of_measure"`
-	URI               string           `json:"uri"`
+// DatasetDetails represents a response dataset model from the dataset api
+type DatasetDetails struct {
+	ID                string           `json:"id,omitempty"`
+	CollectionID      string           `json:"collection_id,omitempty"`
+	Contacts          []Contact        `json:"contacts,omitempty"`
+	Description       string           `json:"description,omitempty"`
+	Keywords          []string         `json:"keywords,omitempty"`
+	License           string           `json:"license,omitempty"`
+	Links             Links            `json:"links,omitempty"`
+	Methodologies     []Methodology    `json:"methodologies,omitempty,omitempty"`
+	NationalStatistic bool             `json:"national_statistic,omitempty"`
+	NextRelease       string           `json:"next_release,omitempty"`
+	Publications      []Publication    `json:"publications,omitempty"`
+	Publisher         *Publisher       `json:"publisher,omitempty"`
+	QMI               Publication      `json:"qmi,omitempty"`
+	RelatedDatasets   []RelatedDataset `json:"related_datasets,omitempty"`
+	ReleaseFrequency  string           `json:"release_frequency,omitempty"`
+	State             string           `json:"state,omitempty"`
+	Theme             string           `json:"theme,omitempty"`
+	Title             string           `json:"title,omitempty"`
+	UnitOfMeasure     string           `json:"unit_of_measure,omitempty"`
+	URI               string           `json:"uri,omitempty"`
 	UsageNotes        *[]UsageNote     `json:"usage_notes,omitempty"`
 }
 
-type ModelCollection struct {
-	Items []Model `json:"items"`
+type Dataset struct {
+	ID      string          `json:"id"`
+	Next    *DatasetDetails `json:"next,omitempty"`
+	Current *DatasetDetails `json:"current,omitempty"`
+	DatasetDetails
+}
+
+type DatasetList struct {
+	Items []Dataset `json:"items"`
 }
 
 // Version represents a version within a dataset
@@ -60,7 +67,7 @@ type Instance struct {
 // Metadata is a combination of version and dataset model fields
 type Metadata struct {
 	Version
-	Model
+	DatasetDetails
 }
 
 // DownloadList represents a list of objects of containing information on the downloadable files
