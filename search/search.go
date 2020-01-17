@@ -9,6 +9,8 @@ import (
 	"strconv"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
 )
@@ -53,30 +55,30 @@ var _ error = ErrInvalidSearchAPIResponse{}
 
 // Client is a search api client that can be used to make requests to the server
 type Client struct {
-	cli rchttp.Clienter
-	url string
+	check *health.Check
+	cli   rchttp.Clienter
+	url   string
 }
 
 // New creates a new instance of Client with a given search api url
 func New(searchAPIURL string) *Client {
+	hcClient := healthcheck.NewClient(service, searchAPIURL)
+
 	return &Client{
-		cli: rchttp.NewClient(),
-		url: searchAPIURL,
+		check: hcClient.Check,
+		cli:   hcClient.Client,
+		url:   searchAPIURL,
 	}
 }
 
-// Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
-func (c *Client) Healthcheck() (string, error) {
-	resp, err := c.cli.Get(context.Background(), c.url+"/healthcheck")
-	if err != nil {
-		return service, err
+// Checker calls search api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Check:  c.check,
+		Client: c.cli,
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return service, &ErrInvalidSearchAPIResponse{http.StatusOK, resp.StatusCode, c.url + "/healthcheck"}
-	}
-
-	return service, nil
+	return hcClient.Checker(ctx)
 }
 
 // Dimension allows the searching of a dimension for a specific dimension option, optionally
