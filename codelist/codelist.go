@@ -7,7 +7,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	"github.com/ONSdigital/dp-api-clients-go/headers"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -18,8 +21,9 @@ var _ error = ErrInvalidCodelistAPIResponse{}
 
 // Client is a codelist api client which can be used to make requests to the server
 type Client struct {
-	cli rchttp.Clienter
-	url string
+	check *health.Check
+	cli   rchttp.Clienter
+	url   string
 }
 
 // ErrInvalidCodelistAPIResponse is returned when the codelist api does not respond
@@ -46,37 +50,31 @@ func (e ErrInvalidCodelistAPIResponse) Code() int {
 
 // New creates a new instance of Client with a given filter api url
 func New(codelistAPIURL string) *Client {
+	hcClient := healthcheck.NewClient(service, codelistAPIURL)
+
 	return &Client{
-		cli: rchttp.NewClient(),
-		url: codelistAPIURL,
+		check: hcClient.Check,
+		cli:   hcClient.Client,
+		url:   codelistAPIURL,
 	}
 }
 
-// Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
-func (c *Client) Healthcheck() (string, error) {
-	resp, err := c.cli.Get(context.Background(), c.url+"/healthcheck")
-	if err != nil {
-		return service, err
+// Checker calls filter api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Check:  c.check,
+		Client: c.cli,
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return service, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
-	}
-
-	return service, nil
+	return hcClient.Checker(ctx)
 }
 
 // GetValues returns dimension values from the codelist api
 func (c *Client) GetValues(ctx context.Context, userAuthToken string, serviceAuthToken string, id string) (DimensionValues, error) {
-	var vals DimensionValues
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
+	clientlog.Do(ctx, "retrieving codes from codelist", service, uri)
 
-	log.Event(ctx, "retrieving codes from codelist", log.Data{
-		"method":  "GET",
-		"uri":     uri,
-		"service": service,
-	})
-
+	var vals DimensionValues
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
 	if err != nil {
 		return vals, err
@@ -100,6 +98,7 @@ func (c *Client) GetValues(ctx context.Context, userAuthToken string, serviceAut
 // GetIDNameMap returns dimension values in the form of an id name map
 func (c *Client) GetIDNameMap(ctx context.Context, userAuthToken string, serviceAuthToken string, id string) (map[string]string, error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
+	clientlog.Do(ctx, "retrieving codes from codelist for id name map", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
 	if err != nil {
@@ -132,8 +131,9 @@ func (c *Client) GetIDNameMap(ctx context.Context, userAuthToken string, service
 //GetGeographyCodeLists returns the geography codelists
 func (c *Client) GetGeographyCodeLists(ctx context.Context, userAuthToken string, serviceAuthToken string) (CodeListResults, error) {
 	uri := fmt.Sprintf("%s/code-lists?type=geography", c.url)
-	var results CodeListResults
+	clientlog.Do(ctx, "retrieving geography codelists", service, uri)
 
+	var results CodeListResults
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
 	if err != nil {
 		return results, err
@@ -158,10 +158,11 @@ func (c *Client) GetGeographyCodeLists(ctx context.Context, userAuthToken string
 
 //GetCodeListEditions returns the editions for a codelist
 func (c *Client) GetCodeListEditions(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string) (EditionsListResults, error) {
-	url := fmt.Sprintf("%s/code-lists/%s/editions", c.url, codeListID)
-	var editionsList EditionsListResults
+	uri := fmt.Sprintf("%s/code-lists/%s/editions", c.url, codeListID)
+	clientlog.Do(ctx, "retrieving codelist editions", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, url)
+	var editionsList EditionsListResults
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
 	if err != nil {
 		return editionsList, err
 	}
@@ -169,7 +170,7 @@ func (c *Client) GetCodeListEditions(ctx context.Context, userAuthToken string, 
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != 200 {
-		return editionsList, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, url}
+		return editionsList, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
@@ -187,10 +188,11 @@ func (c *Client) GetCodeListEditions(ctx context.Context, userAuthToken string, 
 
 //GetCodes returns the codes for a specific edition of a code list
 func (c *Client) GetCodes(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string, edition string) (CodesResults, error) {
-	var codes CodesResults
-	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes", c.url, codeListID, edition)
+	uri := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes", c.url, codeListID, edition)
+	clientlog.Do(ctx, "retrieving codes from an edition of a code list", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, url)
+	var codes CodesResults
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
 	if err != nil {
 		return codes, err
 	}
@@ -198,7 +200,7 @@ func (c *Client) GetCodes(ctx context.Context, userAuthToken string, serviceAuth
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
-		return codes, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, url}
+		return codes, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
@@ -216,10 +218,11 @@ func (c *Client) GetCodes(ctx context.Context, userAuthToken string, serviceAuth
 
 // GetCodeByID returns information about a code
 func (c *Client) GetCodeByID(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string, edition string, codeID string) (CodeResult, error) {
-	var code CodeResult
-	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s", c.url, codeListID, edition, codeID)
+	uri := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s", c.url, codeListID, edition, codeID)
+	clientlog.Do(ctx, "retrieving code from an edition of a code list", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, url)
+	var code CodeResult
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
 	if err != nil {
 		return code, err
 	}
@@ -227,7 +230,7 @@ func (c *Client) GetCodeByID(ctx context.Context, userAuthToken string, serviceA
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
-		return code, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, url}
+		return code, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
@@ -245,10 +248,11 @@ func (c *Client) GetCodeByID(ctx context.Context, userAuthToken string, serviceA
 
 // GetDatasetsByCode returns datasets containing the codelist codeID.
 func (c *Client) GetDatasetsByCode(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string, edition string, codeID string) (DatasetsResult, error) {
-	var datasets DatasetsResult
-	url := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s/datasets", c.url, codeListID, edition, codeID)
+	uri := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s/datasets", c.url, codeListID, edition, codeID)
+	clientlog.Do(ctx, "retrieving datasets containing a code from an edition of a code list", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, url)
+	var datasets DatasetsResult
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
 	if err != nil {
 		return datasets, err
 	}
@@ -256,7 +260,7 @@ func (c *Client) GetDatasetsByCode(ctx context.Context, userAuthToken string, se
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
-		return datasets, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, url}
+		return datasets, &ErrInvalidCodelistAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
@@ -292,7 +296,7 @@ func setAuthenticationHeaders(req *http.Request, userAuthToken, serviceAuthToken
 		return err
 	}
 
-	err = headers.SetServiceAuthToken(req, serviceAuthToken);
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
 	if err != nil && err != headers.ErrValueEmpty {
 		return err
 	}
