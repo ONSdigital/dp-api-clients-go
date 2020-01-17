@@ -14,16 +14,21 @@ import (
 	"sync"
 	"time"
 
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/go-ns/zebedee/data"
 	"github.com/ONSdigital/log.go/log"
 )
 
-// ZebedeeClient represents a zebedee client
-type ZebedeeClient struct {
-	zebedeeURL string
-	client     rchttp.Clienter
+const service = "zebedee"
+
+// Client represents a zebedee client
+type Client struct {
+	check *health.Check
+	cli   rchttp.Clienter
+	url   string
 }
 
 // ErrInvalidZebedeeResponse is returned when zebedee does not respond
@@ -48,45 +53,42 @@ var (
 	errCastingLocalCode    = errors.New("error casting locale code to string")
 )
 
-// NewZebedeeClient creates a new Zebedee Client, set ZEBEDEE_REQUEST_TIMEOUT_SECOND
+// New creates a new Zebedee Client, set ZEBEDEE_REQUEST_TIMEOUT_SECOND
 // environment variable to modify default client timeout as zebedee can often be slow
 // to respond
-func NewZebedeeClient(url string) *ZebedeeClient {
+func New(zebedeeURL string) *Client {
 	timeout, err := strconv.Atoi(os.Getenv("ZEBEDEE_REQUEST_TIMEOUT_SECONDS"))
 	if timeout == 0 || err != nil {
 		timeout = 5
 	}
-	cli := rchttp.ClientWithTimeout(rchttp.NewClient(), time.Duration(timeout)*time.Second)
+	hcClient := healthcheck.NewClient(service, zebedeeURL)
+	hcClient.Client.SetTimeout(time.Duration(timeout) * time.Second)
 
-	return &ZebedeeClient{
-		zebedeeURL: url,
-		client:     cli,
+	return &Client{
+		check: hcClient.Check,
+		cli:   hcClient.Client,
+		url:   zebedeeURL,
 	}
+}
+
+// Checker calls zebedee health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Check:  c.check,
+		Client: c.cli,
+	}
+
+	return hcClient.Checker(ctx)
 }
 
 // Get returns a response for the requested uri in zebedee
-func (c *ZebedeeClient) Get(ctx context.Context, userAccessToken, path string) ([]byte, error) {
+func (c *Client) Get(ctx context.Context, userAccessToken, path string) ([]byte, error) {
 	return c.get(ctx, userAccessToken, path)
-}
-
-// Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
-func (c *ZebedeeClient) Healthcheck() (string, error) {
-	ctx := context.Background()
-	resp, err := c.client.Get(ctx, c.zebedeeURL+"/healthcheck")
-	if err != nil {
-		return "zebedee", err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return "zebedee", ErrInvalidZebedeeResponse{resp.StatusCode, "/healthcheck"}
-	}
-
-	return "", nil
 }
 
 // GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
 // is returned there is a chance that a partly completed DatasetLandingPage is returned
-func (c *ZebedeeClient) GetDatasetLandingPage(ctx context.Context, userAccessToken, path string) (data.DatasetLandingPage, error) {
+func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, path string) (data.DatasetLandingPage, error) {
 	reqURL := c.createRequestURL(ctx, "/data", "uri="+path)
 	b, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
@@ -128,15 +130,15 @@ func (c *ZebedeeClient) GetDatasetLandingPage(ctx context.Context, userAccessTok
 	return dlp, nil
 }
 
-func (c *ZebedeeClient) get(ctx context.Context, userAccessToken, path string) ([]byte, error) {
-	req, err := http.NewRequest("GET", c.zebedeeURL+path, nil)
+func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte, error) {
+	req, err := http.NewRequest("GET", c.url+path, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	common.AddFlorenceHeader(req, userAccessToken)
 
-	resp, err := c.client.Do(ctx, req)
+	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +153,7 @@ func (c *ZebedeeClient) get(ctx context.Context, userAccessToken, path string) (
 }
 
 // GetBreadcrumb returns a Breadcrumb
-func (c *ZebedeeClient) GetBreadcrumb(ctx context.Context, userAccessToken, uri string) ([]data.Breadcrumb, error) {
+func (c *Client) GetBreadcrumb(ctx context.Context, userAccessToken, uri string) ([]data.Breadcrumb, error) {
 	b, err := c.get(ctx, userAccessToken, "/parents?uri="+uri)
 	if err != nil {
 		return nil, err
@@ -166,7 +168,7 @@ func (c *ZebedeeClient) GetBreadcrumb(ctx context.Context, userAccessToken, uri 
 }
 
 // GetDataset returns details about a dataset from zebedee
-func (c *ZebedeeClient) GetDataset(ctx context.Context, userAccessToken, uri string) (data.Dataset, error) {
+func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (data.Dataset, error) {
 	reqURL := c.createRequestURL(ctx, "/data", "uri="+uri)
 	b, err := c.get(ctx, userAccessToken, reqURL)
 
@@ -215,7 +217,7 @@ func (c *ZebedeeClient) GetDataset(ctx context.Context, userAccessToken, uri str
 }
 
 // GetFileSize retrieves a given filesize from zebedee
-func (c *ZebedeeClient) GetFileSize(ctx context.Context, userAccessToken, uri string) (data.FileSize, error) {
+func (c *Client) GetFileSize(ctx context.Context, userAccessToken, uri string) (data.FileSize, error) {
 	reqURL := c.createRequestURL(ctx, "/filesize", "uri="+uri)
 	b, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
@@ -231,7 +233,7 @@ func (c *ZebedeeClient) GetFileSize(ctx context.Context, userAccessToken, uri st
 }
 
 // GetPageTitle retrieves a page title from zebedee
-func (c *ZebedeeClient) GetPageTitle(ctx context.Context, userAccessToken, uri string) (data.PageTitle, error) {
+func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, uri string) (data.PageTitle, error) {
 	reqURL := c.createRequestURL(ctx, "/data", "uri="+uri+"&title")
 	b, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
@@ -246,7 +248,7 @@ func (c *ZebedeeClient) GetPageTitle(ctx context.Context, userAccessToken, uri s
 	return pt, nil
 }
 
-func (c *ZebedeeClient) createRequestURL(ctx context.Context, path, query string) string {
+func (c *Client) createRequestURL(ctx context.Context, path, query string) string {
 	// Check if collection ID is set in context
 	if ctx.Value(common.CollectionIDHeaderKey) != nil {
 		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
