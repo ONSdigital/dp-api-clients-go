@@ -79,7 +79,7 @@ func TestUnitClient(t *testing.T) {
 
 	Convey("test createRequestURL", t, func() {
 		Convey("test collection ID is added to URL when collection ID is present in context", func() {
-			ctx := context.WithValue(ctx, "Collection-Id", "test1234567")
+			ctx := context.WithValue(ctx, common.CollectionIDHeaderKey, "test1234567")
 			url := cli.createRequestURL(ctx, "/data", "uri=/test/path/123")
 			So(url, ShouldEqual, "/data/test1234567?uri=%2Ftest%2Fpath%2F123")
 		})
@@ -88,13 +88,13 @@ func TestUnitClient(t *testing.T) {
 			So(url, ShouldEqual, "/data?uri=%2Ftest%2Fpath%2F123")
 		})
 		Convey("test lang query parameter is added to URL when locale code is present in context", func() {
-			ctx := context.WithValue(ctx, "LocaleCode", "cy")
+			ctx := context.WithValue(ctx, common.LocaleHeaderKey, "cy")
 			url := cli.createRequestURL(ctx, "/data", "uri=/test/path/123")
 			So(url, ShouldEqual, "/data?uri=%2Ftest%2Fpath%2F123&lang=cy")
 		})
 		Convey("test collection ID and lang query parameter are added to URL when collection ID and locale code are present in context", func() {
-			ctx := context.WithValue(ctx, "Collection-Id", "test1234567")
-			ctx = context.WithValue(ctx, "LocaleCode", "cy")
+			ctx := context.WithValue(ctx, common.CollectionIDHeaderKey, "test1234567")
+			ctx = context.WithValue(ctx, common.LocaleHeaderKey, "cy")
 			url := cli.createRequestURL(ctx, "/data", "uri=/test/path/123")
 			So(url, ShouldEqual, "/data/test1234567?uri=%2Ftest%2Fpath%2F123&lang=cy")
 		})
