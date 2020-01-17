@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -40,8 +42,9 @@ var _ error = ErrInvalidHierarchyAPIResponse{}
 
 // Client is a hierarchy api client which can be used to make requests to the server
 type Client struct {
-	cli rchttp.Clienter
-	url string
+	check *health.Check
+	cli   rchttp.Clienter
+	url   string
 }
 
 // CloseResponseBody closes the response body and logs an error if unsuccessful
@@ -51,28 +54,25 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 	}
 }
 
-// New creates a new instance of Client with a given filter api url
+// New creates a new instance of Client with a given hierarchy api url
 func New(hierarchyAPIURL string) *Client {
+	hcClient := healthcheck.NewClient(service, hierarchyAPIURL)
+
 	return &Client{
-		cli: rchttp.NewClient(),
-		url: hierarchyAPIURL,
+		check: hcClient.Check,
+		cli:   hcClient.Client,
+		url:   hierarchyAPIURL,
 	}
 }
 
-// Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
-func (c *Client) Healthcheck() (string, error) {
-	ctx := context.Background()
-
-	resp, err := c.cli.Get(ctx, c.url+"/healthcheck")
-	if err != nil {
-		return service, err
+// Checker calls hierarchy api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Check:  c.check,
+		Client: c.cli,
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return service, &ErrInvalidHierarchyAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
-	}
-
-	return service, nil
+	return hcClient.Checker(ctx)
 }
 
 // GetRoot returns the root hierarchy response from the hierarchy API
@@ -85,7 +85,7 @@ func (c *Client) GetRoot(ctx context.Context, instanceID, name string) (Model, e
 		"dimension":   name,
 	})
 
-	return c.getHierarchy(path, ctx)
+	return c.getHierarchy(ctx, path)
 }
 
 // GetChild returns a child of a given hierarchy and code
@@ -99,10 +99,10 @@ func (c *Client) GetChild(ctx context.Context, instanceID, name, code string) (M
 		"code":        code,
 	})
 
-	return c.getHierarchy(path, ctx)
+	return c.getHierarchy(ctx, path)
 }
 
-func (c *Client) getHierarchy(path string, ctx context.Context) (Model, error) {
+func (c *Client) getHierarchy(ctx context.Context, path string) (Model, error) {
 	var m Model
 	req, err := http.NewRequest("GET", c.url+path, nil)
 	if err != nil {
