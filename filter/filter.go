@@ -12,6 +12,8 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	"github.com/ONSdigital/dp-api-clients-go/headers"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -50,16 +52,30 @@ var _ error = ErrInvalidFilterAPIResponse{}
 
 // Client is a filter api client which can be used to make requests to the server
 type Client struct {
-	cli rchttp.Clienter
-	url string
+	check *health.Check
+	cli   rchttp.Clienter
+	url   string
 }
 
 // New creates a new instance of Client with a given filter api url
 func New(filterAPIURL string) *Client {
+	hcClient := healthcheck.NewClient(service, filterAPIURL)
+
 	return &Client{
-		cli: rchttp.NewClient(),
-		url: filterAPIURL,
+		check: hcClient.Check,
+		cli:   hcClient.Client,
+		url:   filterAPIURL,
 	}
+}
+
+// Checker calls filter api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Check:  c.check,
+		Client: c.cli,
+	}
+
+	return hcClient.Checker(ctx)
 }
 
 // CloseResponseBody closes the response body and logs an error if unsuccessful
@@ -70,22 +86,6 @@ func CloseResponseBody(ctx context.Context, resp *http.Response) {
 	if err := resp.Body.Close(); err != nil {
 		log.Event(ctx, "error closing http response body", log.Error(err))
 	}
-}
-
-// Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
-func (c *Client) Healthcheck() (string, error) {
-	ctx := context.Background()
-
-	resp, err := c.cli.Get(ctx, c.url+"/healthcheck")
-	if err != nil {
-		return service, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return service, &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, "/healthcheck"}
-	}
-
-	return service, nil
 }
 
 // GetOutput returns a filter output job for a given filter output id

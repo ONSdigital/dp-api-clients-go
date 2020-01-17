@@ -59,7 +59,7 @@ func New(codelistAPIURL string) *Client {
 	}
 }
 
-// Checker calls filter api health endpoint and returns a check object to the caller.
+// Checker calls codelist api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 	hcClient := healthcheck.Client{
 		Check:  c.check,
