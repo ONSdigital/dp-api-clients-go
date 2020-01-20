@@ -164,7 +164,7 @@ func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken,
 }
 
 // GetDatasets returns the list of datasets
-func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string) (m DatasetList, err error) {
+func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string) (m List, err error) {
 	uri := fmt.Sprintf("%s/datasets", c.url)
 
 	clientlog.Do(ctx, "retrieving datasets", service, uri)

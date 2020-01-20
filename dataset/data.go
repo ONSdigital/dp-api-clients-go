@@ -31,6 +31,7 @@ type DatasetDetails struct {
 	UsageNotes        *[]UsageNote      `json:"usage_notes,omitempty"`
 }
 
+// Dataset represents a dataset resource
 type Dataset struct {
 	ID      string          `json:"id"`
 	Next    *DatasetDetails `json:"next,omitempty"`
@@ -38,7 +39,8 @@ type Dataset struct {
 	DatasetDetails
 }
 
-type DatasetList struct {
+// List represents an object containing a list of datasets
+type List struct {
 	Items []Dataset `json:"items"`
 }
 
@@ -238,16 +240,17 @@ type Temporal struct {
 	Frequency string `json:"frequency"`
 }
 
+// ToString builds a string of metadata information
 func (m Metadata) ToString() string {
 	var b bytes.Buffer
 
 	b.WriteString(fmt.Sprintf("Title: %s\n", m.Title))
 	b.WriteString(fmt.Sprintf("Description: %s\n", m.Description))
-	b.WriteString(fmt.Sprintf("Publisher: %s\n", m.Publisher))
+	b.WriteString(fmt.Sprintf("Publisher: %s\n", *m.Publisher))
 	b.WriteString(fmt.Sprintf("Issued: %s\n", m.ReleaseDate))
 	b.WriteString(fmt.Sprintf("Next Release: %s\n", m.NextRelease))
 	b.WriteString(fmt.Sprintf("Identifier: %s\n", m.Title))
-	b.WriteString(fmt.Sprintf("Keywords: %s\n", m.Keywords))
+	b.WriteString(fmt.Sprintf("Keywords: %s\n", *m.Keywords))
 	b.WriteString(fmt.Sprintf("Language: %s\n", "English"))
 	contacts := *m.Contacts
 	if len(contacts) > 0 {
@@ -266,10 +269,10 @@ func (m Metadata) ToString() string {
 	}
 	b.WriteString(fmt.Sprintf("Unit of measure: %s\n", m.UnitOfMeasure))
 	b.WriteString(fmt.Sprintf("License: %s\n", m.License))
-	b.WriteString(fmt.Sprintf("Methodologies: %s\n", m.Methodologies))
+	b.WriteString(fmt.Sprintf("Methodologies: %s\n", *m.Methodologies))
 	b.WriteString(fmt.Sprintf("National Statistic: %t\n", m.NationalStatistic))
-	b.WriteString(fmt.Sprintf("Publications: %s\n", m.Publications))
-	b.WriteString(fmt.Sprintf("Related Links: %s\n", m.RelatedDatasets))
+	b.WriteString(fmt.Sprintf("Publications: %s\n", *m.Publications))
+	b.WriteString(fmt.Sprintf("Related Links: %s\n", *m.RelatedDatasets))
 
 	return b.String()
 }
