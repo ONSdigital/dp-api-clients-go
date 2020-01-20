@@ -108,15 +108,15 @@ func TestClient_GetOutput(t *testing.T) {
 		So(err, ShouldBeNil)
 	})
 
-	Convey("When an api is unavailable a status code of 500 is returned", t, func() {
+	Convey("When an api is unavailable a status code of 503 is returned", t, func() {
 		mockedAPI := getMockAPI(
 			http.Request{Method: "GET"},
-			MockedHTTPResponse{StatusCode: 500, Body: ""},
+			MockedHTTPResponse{StatusCode: 503, Body: ""},
 		)
 
 		check, err := mockedAPI.Checker(ctx)
 		So(check.Name, ShouldEqual, apiName)
-		So(check.StatusCode, ShouldEqual, 500)
+		So(check.StatusCode, ShouldEqual, 503)
 		So(check.Status, ShouldEqual, health.StatusCritical)
 		So(check.Message, ShouldEqual, StatusMessage[health.StatusCritical])
 		So(*check.LastChecked, ShouldHappenAfter, defaultTime)

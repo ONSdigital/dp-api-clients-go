@@ -24,9 +24,9 @@ var (
 // ErrInvalidAppResponse is returned when an app does not respond
 // with a valid status
 type ErrInvalidAppResponse struct {
-	expectedCode int
-	actualCode   int
-	uri          string
+	ExpectedCode int
+	ActualCode   int
+	URI          string
 }
 
 // Client represents an app client
@@ -60,9 +60,9 @@ func NewClient(name, url string) *Client {
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidAppResponse) Error() string {
 	return fmt.Sprintf("invalid response from downstream service - should be: %d, got: %d, path: %s",
-		e.expectedCode,
-		e.actualCode,
-		e.uri,
+		e.ExpectedCode,
+		e.ActualCode,
+		e.URI,
 	)
 }
 
@@ -79,7 +79,7 @@ func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 		code, err = c.get(ctx, "/healthcheck")
 	}
 	if err != nil {
-		log.Event(ctx, "failed to request service health check", log.Error(err), logData)
+		log.Event(ctx, "failed to request service health", log.Error(err), logData)
 	}
 
 	currentTime := time.Now().UTC()
@@ -87,6 +87,10 @@ func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 	c.Check.LastChecked = &currentTime
 
 	switch code {
+	case 0: // When there is a problem with the client return error in message
+		c.Check.Message = err.Error()
+		c.Check.Status = health.StatusCritical
+		c.Check.LastFailure = &currentTime
 	case 200:
 		c.Check.Message = StatusMessage[health.StatusOK]
 		c.Check.Status = health.StatusOK
