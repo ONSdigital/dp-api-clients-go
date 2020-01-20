@@ -15,7 +15,7 @@ type DatasetDetails struct {
 	Keywords          *[]string         `json:"keywords,omitempty"`
 	License           string            `json:"license,omitempty"`
 	Links             Links             `json:"links,omitempty"`
-	Methodologies     *[]Methodology    `json:"methodologies,omitempty,omitempty"`
+	Methodologies     *[]Methodology    `json:"methodologies,omitempty"`
 	NationalStatistic bool              `json:"national_statistic,omitempty"`
 	NextRelease       string            `json:"next_release,omitempty"`
 	Publications      *[]Publication    `json:"publications,omitempty"`
