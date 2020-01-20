@@ -249,8 +249,9 @@ func (m Metadata) ToString() string {
 	b.WriteString(fmt.Sprintf("Identifier: %s\n", m.Title))
 	b.WriteString(fmt.Sprintf("Keywords: %s\n", m.Keywords))
 	b.WriteString(fmt.Sprintf("Language: %s\n", "English"))
-	if len(m.Contacts) > 0 {
-		b.WriteString(fmt.Sprintf("Contact: %s, %s, %s\n", m.Contacts[0].Name, m.Contacts[0].Email, m.Contacts[0].Telephone))
+	contacts := *m.Contacts
+	if len(contacts) > 0 {
+		b.WriteString(fmt.Sprintf("Contact: %s, %s, %s\n", contacts[0].Name, contacts[0].Email, contacts[0].Telephone))
 	}
 	if len(m.Temporal) > 0 {
 		b.WriteString(fmt.Sprintf("Temporal: %s\n", m.Temporal[0].Frequency))
