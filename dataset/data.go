@@ -8,27 +8,27 @@ import (
 
 // DatasetDetails represents a response dataset model from the dataset api
 type DatasetDetails struct {
-	ID                string           `json:"id,omitempty"`
-	CollectionID      string           `json:"collection_id,omitempty"`
-	Contacts          []Contact        `json:"contacts,omitempty"`
-	Description       string           `json:"description,omitempty"`
-	Keywords          []string         `json:"keywords,omitempty"`
-	License           string           `json:"license,omitempty"`
-	Links             Links            `json:"links,omitempty"`
-	Methodologies     []Methodology    `json:"methodologies,omitempty,omitempty"`
-	NationalStatistic bool             `json:"national_statistic,omitempty"`
-	NextRelease       string           `json:"next_release,omitempty"`
-	Publications      []Publication    `json:"publications,omitempty"`
-	Publisher         *Publisher       `json:"publisher,omitempty"`
-	QMI               Publication      `json:"qmi,omitempty"`
-	RelatedDatasets   []RelatedDataset `json:"related_datasets,omitempty"`
-	ReleaseFrequency  string           `json:"release_frequency,omitempty"`
-	State             string           `json:"state,omitempty"`
-	Theme             string           `json:"theme,omitempty"`
-	Title             string           `json:"title,omitempty"`
-	UnitOfMeasure     string           `json:"unit_of_measure,omitempty"`
-	URI               string           `json:"uri,omitempty"`
-	UsageNotes        *[]UsageNote     `json:"usage_notes,omitempty"`
+	ID                string            `json:"id,omitempty"`
+	CollectionID      string            `json:"collection_id,omitempty"`
+	Contacts          *[]Contact        `json:"contacts,omitempty"`
+	Description       string            `json:"description,omitempty"`
+	Keywords          *[]string         `json:"keywords,omitempty"`
+	License           string            `json:"license,omitempty"`
+	Links             Links             `json:"links,omitempty"`
+	Methodologies     *[]Methodology    `json:"methodologies,omitempty,omitempty"`
+	NationalStatistic bool              `json:"national_statistic,omitempty"`
+	NextRelease       string            `json:"next_release,omitempty"`
+	Publications      *[]Publication    `json:"publications,omitempty"`
+	Publisher         *Publisher        `json:"publisher,omitempty"`
+	QMI               Publication       `json:"qmi,omitempty"`
+	RelatedDatasets   *[]RelatedDataset `json:"related_datasets,omitempty"`
+	ReleaseFrequency  string            `json:"release_frequency,omitempty"`
+	State             string            `json:"state,omitempty"`
+	Theme             string            `json:"theme,omitempty"`
+	Title             string            `json:"title,omitempty"`
+	UnitOfMeasure     string            `json:"unit_of_measure,omitempty"`
+	URI               string            `json:"uri,omitempty"`
+	UsageNotes        *[]UsageNote      `json:"usage_notes,omitempty"`
 }
 
 type Dataset struct {
