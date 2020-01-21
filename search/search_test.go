@@ -8,18 +8,25 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
+	"time"
 
+	"github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/golang/mock/gomock"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-var ctx = context.Background()
+var (
+	ctx                  = context.Background()
+	defaultLimitAsString = strconv.Itoa(defaultLimit)
+)
 
-const clientErrText = "client threw an error"
-
-var defaultLimitAsString = strconv.Itoa(defaultLimit)
+const (
+	clientErrText = "client threw an error"
+	testHost      = "http://localhost:8080"
+)
 
 func TestSearchUnit(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
@@ -225,64 +232,202 @@ func TestSearchUnit(t *testing.T) {
 			})
 
 		})
+	})
+}
 
+func TestClient_HealthChecker(t *testing.T) {
+	ctx := context.Background()
+	timePriorHealthCheck := time.Now()
+	path := "/health"
+
+	Convey("given clienter.Do returns an error", t, func() {
+		clientError := errors.New("disciples of the watch obey")
+
+		clienter := &rchttp.ClienterMock{
+			SetPathsWithNoRetriesFunc: func(paths []string) {
+				return
+			},
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{}, clientError
+			},
+		}
+		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+
+		searchClient := New(testHost)
+		searchClient.cli = clienter
+
+		Convey("when searchClient.Checker is called", func() {
+			check, err := searchClient.Checker(ctx)
+
+			Convey("then the expected check is returned", func() {
+				So(check.Name, ShouldEqual, service)
+				So(check.Status, ShouldEqual, healthcheck.StatusCritical)
+				So(check.StatusCode, ShouldEqual, 0)
+				So(check.Message, ShouldEqual, clientError.Error())
+				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
+				So(check.LastSuccess, ShouldBeNil)
+				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := clienter.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
+			})
+		})
 	})
 
-	Convey("test Healthcheck method", t, func() {
-		Convey("test Healthcheck returns no error upon a 200 response from search api", func() {
+	Convey("given clienter.Do returns 500 response", t, func() {
+		clienter := &rchttp.ClienterMock{
+			SetPathsWithNoRetriesFunc: func(paths []string) {
+				return
+			},
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 500,
+				}, nil
+			},
+		}
+		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-			mockClient := &rchttp.ClienterMock{
-				GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
-					return &http.Response{StatusCode: http.StatusOK}, nil
-				},
-			}
+		searchClient := New(testHost)
+		searchClient.cli = clienter
 
-			searchCli := &Client{
-				cli: mockClient,
-				url: "http://localhost:22000",
-			}
+		Convey("when searchClient.Checker is called", func() {
+			check, err := searchClient.Checker(ctx)
 
-			s, err := searchCli.Healthcheck()
-			So(err, ShouldBeNil)
-			So(s, ShouldEqual, service)
+			Convey("then the expected check is returned", func() {
+				So(check.Name, ShouldEqual, service)
+				So(check.Status, ShouldEqual, healthcheck.StatusCritical)
+				So(check.StatusCode, ShouldEqual, 500)
+				So(check.Message, ShouldEqual, health.StatusMessage[healthcheck.StatusCritical])
+				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
+				So(check.LastSuccess, ShouldBeNil)
+				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := clienter.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
+			})
 		})
+	})
 
-		Convey("test Healthcheck returns error from HTTPClient if it throws an error", func() {
+	Convey("given clienter.Do returns 404 response", t, func() {
+		clienter := &rchttp.ClienterMock{
+			SetPathsWithNoRetriesFunc: func(paths []string) {
+				return
+			},
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 404,
+				}, nil
+			},
+		}
+		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-			mockClient := &rchttp.ClienterMock{
-				GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
-					return &http.Response{}, errors.New(clientErrText)
-				},
-			}
+		searchClient := New(testHost)
+		searchClient.cli = clienter
 
-			searchCli := &Client{
-				cli: mockClient,
-				url: "http://localhost:22000",
-			}
+		Convey("when searchClient.Checker is called", func() {
+			check, err := searchClient.Checker(ctx)
 
-			s, err := searchCli.Healthcheck()
-			So(err.Error(), ShouldEqual, clientErrText)
-			So(s, ShouldEqual, service)
+			Convey("then the expected check is returned", func() {
+				So(check.Name, ShouldEqual, service)
+				So(check.Status, ShouldEqual, healthcheck.StatusCritical)
+				So(check.StatusCode, ShouldEqual, 404)
+				So(check.Message, ShouldEqual, health.StatusMessage[healthcheck.StatusCritical])
+				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
+				So(check.LastSuccess, ShouldBeNil)
+				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := clienter.DoCalls()
+				So(doCalls, ShouldHaveLength, 2)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
+				So(doCalls[1].Req.URL.Path, ShouldEqual, "/healthcheck")
+			})
 		})
+	})
 
-		Convey("test Dimension returns error if HTTP Status code is not 200", func() {
+	Convey("given clienter.Do returns 429 response", t, func() {
+		clienter := &rchttp.ClienterMock{
+			SetPathsWithNoRetriesFunc: func(paths []string) {
+				return
+			},
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 429,
+				}, nil
+			},
+		}
+		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-			errText := "invalid response from search api - should be: 200, got: 500, path: http://localhost:22000/healthcheck"
+		searchClient := New(testHost)
+		searchClient.cli = clienter
 
-			mockClient := &rchttp.ClienterMock{
-				GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
-					return nil, errors.New(errText)
-				},
-			}
+		Convey("when searchClient.Checker is called", func() {
+			check, err := searchClient.Checker(ctx)
 
-			searchCli := &Client{
-				cli: mockClient,
-				url: "http://localhost:22000",
-			}
+			Convey("then the expected check is returned", func() {
+				So(check.Name, ShouldEqual, service)
+				So(check.Status, ShouldEqual, healthcheck.StatusWarning)
+				So(check.StatusCode, ShouldEqual, 429)
+				So(check.Message, ShouldEqual, health.StatusMessage[healthcheck.StatusWarning])
+				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
+				So(check.LastSuccess, ShouldBeNil)
+				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
+				So(err, ShouldBeNil)
+			})
 
-			s, err := searchCli.Healthcheck()
-			So(err.Error(), ShouldEqual, errText)
-			So(s, ShouldEqual, service)
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := clienter.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
+			})
+		})
+	})
+
+	Convey("given clienter.Do returns 200 response", t, func() {
+		clienter := &rchttp.ClienterMock{
+			SetPathsWithNoRetriesFunc: func(paths []string) {
+				return
+			},
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 200,
+				}, nil
+			},
+		}
+		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+
+		searchClient := New(testHost)
+		searchClient.cli = clienter
+
+		Convey("when searchClient.Checker is called", func() {
+			check, err := searchClient.Checker(ctx)
+
+			Convey("then the expected check is returned", func() {
+				So(check.Name, ShouldEqual, service)
+				So(check.Status, ShouldEqual, healthcheck.StatusOK)
+				So(check.StatusCode, ShouldEqual, 200)
+				So(check.Message, ShouldEqual, health.StatusMessage[healthcheck.StatusOK])
+				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
+				So(*check.LastSuccess, ShouldHappenAfter, timePriorHealthCheck)
+				So(check.LastFailure, ShouldBeNil)
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := clienter.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
+			})
 		})
 	})
 }

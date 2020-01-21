@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ONSdigital/dp-api-clients-go"
+	clients "github.com/ONSdigital/dp-api-clients-go"
 	"github.com/ONSdigital/dp-api-clients-go/headers"
-	"github.com/ONSdigital/dp-rchttp"
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 

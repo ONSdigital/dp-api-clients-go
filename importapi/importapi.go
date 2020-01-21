@@ -10,24 +10,30 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ONSdigital/dp-rchttp"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
+	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 )
 
 const service = "import-api"
 
 // Client is an import api client which can be used to make requests to the API
 type Client struct {
-	client rchttp.Clienter
-	url    string
+	check *health.Check
+	cli   rchttp.Clienter
+	url   string
 }
 
-// NewAPIClient creates a new API Client
-func NewAPIClient(client rchttp.Clienter, apiURL string) *Client {
+// New creates new instance of Client with a give import api url
+func New(importAPIURL string) *Client {
+	hcClient := healthcheck.NewClient(service, importAPIURL)
+
 	return &Client{
-		client: client,
-		url:    apiURL,
+		check: hcClient.Check,
+		cli:   hcClient.Client,
+		url:   importAPIURL,
 	}
 }
 
@@ -56,22 +62,6 @@ func (e ErrInvalidAPIResponse) Code() int {
 
 var _ error = ErrInvalidAPIResponse{}
 
-// Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
-func (c *Client) Healthcheck() (string, error) {
-	ctx := context.Background()
-
-	resp, err := c.client.Get(ctx, c.url+"/healthcheck")
-	if err != nil {
-		return service, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return service, NewAPIResponse(resp, "/healthcheck")
-	}
-
-	return service, nil
-}
-
 // ImportJob comes from the Import API and links an import job to its (other) instances
 type ImportJob struct {
 	JobID string  `json:"id"`
@@ -89,15 +79,26 @@ type InstanceLink struct {
 	Link string `json:"href"`
 }
 
-// GetImportJob asks the Import API for the details for an Import job
-func (api *Client) GetImportJob(ctx context.Context, importJobID, serviceToken string) (ImportJob, bool, error) {
-	var importJob ImportJob
-	path := api.url + "/jobs/" + importJobID
+// Checker calls import api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Check:  c.check,
+		Client: c.cli,
+	}
 
-	jsonBody, httpCode, err := api.getJSON(ctx, path, serviceToken, 0, nil)
+	return hcClient.Checker(ctx)
+}
+
+// GetImportJob asks the Import API for the details for an Import job
+func (c *Client) GetImportJob(ctx context.Context, importJobID, serviceToken string) (ImportJob, bool, error) {
+	var importJob ImportJob
+	path := c.url + "/jobs/" + importJobID
+
+	jsonBody, httpCode, err := c.getJSON(ctx, path, serviceToken, 0, nil)
 	if httpCode == http.StatusNotFound {
 		return importJob, false, nil
 	}
+
 	logData := log.Data{
 		"path":        path,
 		"importJobID": importJobID,
@@ -114,12 +115,12 @@ func (api *Client) GetImportJob(ctx context.Context, importJobID, serviceToken s
 		isFatal = true
 	}
 	if err != nil {
-		log.ErrorC("GetImportJob", err, logData)
+		log.Event(ctx, "GetImportJob", logData, log.Error(err))
 		return importJob, isFatal, err
 	}
 
 	if err := json.Unmarshal(jsonBody, &importJob); err != nil {
-		log.ErrorC("GetImportJob unmarshal", err, logData)
+		log.Event(ctx, "GetImportJob unmarshal", logData, log.Error(err))
 		return ImportJob{}, true, err
 	}
 
@@ -127,11 +128,11 @@ func (api *Client) GetImportJob(ctx context.Context, importJobID, serviceToken s
 }
 
 // UpdateImportJobState tells the Import API that the state has changed of an Import job
-func (api *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken string, newState string) error {
-	path := api.url + "/jobs/" + jobID
+func (c *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken string, newState string) error {
+	path := c.url + "/jobs/" + jobID
 	jsonUpload := []byte(`{"state":"` + newState + `"}`)
 
-	jsonResult, httpCode, err := api.putJSON(ctx, path, serviceToken, 0, jsonUpload)
+	jsonResult, httpCode, err := c.putJSON(ctx, path, serviceToken, 0, jsonUpload)
 	logData := log.Data{
 		"path":        path,
 		"importJobID": jobID,
@@ -143,18 +144,18 @@ func (api *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken
 		err = errors.New("Bad HTTP response")
 	}
 	if err != nil {
-		log.ErrorC("UpdateImportJobState", err, logData)
+		log.Event(ctx, "UpdateImportJobState", logData, log.Error(err))
 		return err
 	}
 	return nil
 }
 
-func (api *Client) getJSON(ctx context.Context, path, serviceToken string, attempts int, vars url.Values) ([]byte, int, error) {
-	return callJSONAPI(ctx, api.client, "GET", path, serviceToken, vars)
+func (c *Client) getJSON(ctx context.Context, path, serviceToken string, attempts int, vars url.Values) ([]byte, int, error) {
+	return callJSONAPI(ctx, c.cli, "GET", path, serviceToken, vars)
 }
 
-func (api *Client) putJSON(ctx context.Context, path, serviceToken string, attempts int, payload []byte) ([]byte, int, error) {
-	return callJSONAPI(ctx, api.client, "PUT", path, serviceToken, payload)
+func (c *Client) putJSON(ctx context.Context, path, serviceToken string, attempts int, payload []byte) ([]byte, int, error) {
+	return callJSONAPI(ctx, c.cli, "PUT", path, serviceToken, payload)
 }
 
 func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serviceToken string, payload interface{}) ([]byte, int, error) {
@@ -163,7 +164,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 
 	URL, err := url.Parse(path)
 	if err != nil {
-		log.ErrorC("Failed to create url for API call", err, logData)
+		log.Event(ctx, "Failed to create url for API call", logData, log.Error(err))
 		return nil, 0, err
 	}
 	path = URL.String()
@@ -185,7 +186,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 	}
 	// check above req had no errors
 	if err != nil {
-		log.ErrorC("Failed to create request for API", err, logData)
+		log.Event(ctx, "Failed to create request for API", logData, log.Error(err))
 		return nil, 0, err
 	}
 
@@ -194,20 +195,22 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 
 	resp, err := client.Do(ctx, req)
 	if err != nil {
-		log.ErrorC("Failed to action API", err, logData)
+		log.Event(ctx, "Failed to action API", logData, log.Error(err))
 		return nil, 0, err
 	}
+	defer closeResponseBody(ctx, resp)
 
 	logData["httpCode"] = resp.StatusCode
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= 300 {
-		log.Debug("unexpected status code from API", logData)
+		log.Event(ctx, "unexpected status code from API", logData)
 	}
 
 	jsonBody, err := getBody(resp)
 	if err != nil {
-		log.ErrorC("Failed to read body from API", err, logData)
+		log.Event(ctx, "Failed to read body from API", logData, log.Error(err))
 		return nil, resp.StatusCode, err
 	}
+
 	return jsonBody, resp.StatusCode, nil
 }
 
@@ -233,9 +236,16 @@ func getBody(resp *http.Response) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = resp.Body.Close(); err != nil {
-		log.ErrorC("closing body", err, nil)
-		return nil, err
-	}
+
 	return b, nil
+}
+
+// closeResponseBody closes the response body and logs an error if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body == nil {
+		return
+	}
+	if err := resp.Body.Close(); err != nil {
+		log.Event(ctx, "error closing http response body", log.Error(err))
+	}
 }

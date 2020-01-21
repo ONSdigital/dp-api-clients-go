@@ -32,10 +32,7 @@ func getMockAPI(expectRequest http.Request, mockedHTTPResponse MockedHTTPRespons
 		fmt.Fprintln(w, mockedHTTPResponse.Body)
 	}))
 
-	// Set the number of retries to 1 for test
-	maxRetries := 1
-
-	api := NewClient(apiName, ts.URL, maxRetries)
+	api := NewClient(apiName, ts.URL)
 
 	return api
 }
@@ -49,14 +46,14 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 200, Body: "{\"status\": \"OK\"}"},
 		)
 
-		check, err := mockedAPI.Checker(&ctx)
+		check, err := mockedAPI.Checker(ctx)
 		So(check.Name, ShouldEqual, apiName)
 		So(check.StatusCode, ShouldEqual, 200)
 		So(check.Status, ShouldEqual, health.StatusOK)
-		So(check.Message, ShouldEqual, statusDescription[health.StatusOK])
-		So(check.LastChecked, ShouldHappenAfter, defaultTime)
-		So(check.LastFailure, ShouldEqual, unixTime)
-		So(check.LastSuccess, ShouldHappenAfter, defaultTime)
+		So(check.Message, ShouldEqual, StatusMessage[health.StatusOK])
+		So(*check.LastChecked, ShouldHappenAfter, defaultTime)
+		So(check.LastFailure, ShouldBeNil)
+		So(*check.LastSuccess, ShouldHappenAfter, defaultTime)
 		So(err, ShouldBeNil)
 	})
 
@@ -66,14 +63,14 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 429, Body: "{\"status\": \"WARNING\"}"},
 		)
 
-		check, err := mockedAPI.Checker(&ctx)
+		check, err := mockedAPI.Checker(ctx)
 		So(check.Name, ShouldEqual, apiName)
 		So(check.StatusCode, ShouldEqual, 429)
 		So(check.Status, ShouldEqual, health.StatusWarning)
-		So(check.Message, ShouldEqual, statusDescription[health.StatusWarning])
-		So(check.LastChecked, ShouldHappenAfter, defaultTime)
-		So(check.LastFailure, ShouldHappenAfter, defaultTime)
-		So(check.LastSuccess, ShouldEqual, unixTime)
+		So(check.Message, ShouldEqual, StatusMessage[health.StatusWarning])
+		So(*check.LastChecked, ShouldHappenAfter, defaultTime)
+		So(*check.LastFailure, ShouldHappenAfter, defaultTime)
+		So(check.LastSuccess, ShouldBeNil)
 		So(err, ShouldBeNil)
 	})
 
@@ -83,14 +80,14 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 500, Body: "{\"status\": \"CRITICAL\"}"},
 		)
 
-		check, err := mockedAPI.Checker(&ctx)
+		check, err := mockedAPI.Checker(ctx)
 		So(check.Name, ShouldEqual, apiName)
 		So(check.StatusCode, ShouldEqual, 500)
 		So(check.Status, ShouldEqual, health.StatusCritical)
-		So(check.Message, ShouldEqual, statusDescription[health.StatusCritical])
-		So(check.LastChecked, ShouldHappenAfter, defaultTime)
-		So(check.LastFailure, ShouldHappenAfter, defaultTime)
-		So(check.LastSuccess, ShouldEqual, unixTime)
+		So(check.Message, ShouldEqual, StatusMessage[health.StatusCritical])
+		So(*check.LastChecked, ShouldHappenAfter, defaultTime)
+		So(*check.LastFailure, ShouldHappenAfter, defaultTime)
+		So(check.LastSuccess, ShouldBeNil)
 		So(err, ShouldBeNil)
 	})
 
@@ -100,31 +97,31 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 404, Body: ""},
 		)
 
-		check, err := mockedAPI.Checker(&ctx)
+		check, err := mockedAPI.Checker(ctx)
 		So(check.Name, ShouldEqual, apiName)
 		So(check.StatusCode, ShouldEqual, 404)
 		So(check.Status, ShouldEqual, health.StatusCritical)
-		So(check.Message, ShouldEqual, statusDescription[health.StatusCritical])
-		So(check.LastChecked, ShouldHappenAfter, defaultTime)
-		So(check.LastFailure, ShouldHappenAfter, defaultTime)
-		So(check.LastSuccess, ShouldEqual, unixTime)
+		So(check.Message, ShouldEqual, StatusMessage[health.StatusCritical])
+		So(*check.LastChecked, ShouldHappenAfter, defaultTime)
+		So(*check.LastFailure, ShouldHappenAfter, defaultTime)
+		So(check.LastSuccess, ShouldBeNil)
 		So(err, ShouldBeNil)
 	})
 
-	Convey("When an api is unavailable a status code of 500 is returned", t, func() {
+	Convey("When an api is unavailable a status code of 503 is returned", t, func() {
 		mockedAPI := getMockAPI(
 			http.Request{Method: "GET"},
-			MockedHTTPResponse{StatusCode: 500, Body: ""},
+			MockedHTTPResponse{StatusCode: 503, Body: ""},
 		)
 
-		check, err := mockedAPI.Checker(&ctx)
+		check, err := mockedAPI.Checker(ctx)
 		So(check.Name, ShouldEqual, apiName)
-		So(check.StatusCode, ShouldEqual, 500)
+		So(check.StatusCode, ShouldEqual, 503)
 		So(check.Status, ShouldEqual, health.StatusCritical)
-		So(check.Message, ShouldEqual, statusDescription[health.StatusCritical])
-		So(check.LastChecked, ShouldHappenAfter, defaultTime)
-		So(check.LastFailure, ShouldHappenAfter, defaultTime)
-		So(check.LastSuccess, ShouldEqual, unixTime)
+		So(check.Message, ShouldEqual, StatusMessage[health.StatusCritical])
+		So(*check.LastChecked, ShouldHappenAfter, defaultTime)
+		So(*check.LastFailure, ShouldHappenAfter, defaultTime)
+		So(check.LastSuccess, ShouldBeNil)
 		So(err, ShouldBeNil)
 	})
 }

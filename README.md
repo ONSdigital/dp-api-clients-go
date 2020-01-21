@@ -8,11 +8,20 @@ Common client code - in go - for ONS APIs:
 * dataset
 * filter
 * headers - common API request headers
+* healthcheck -> health
 * hierarchy
 * identity
 * importapi
 * renderer
 * search
+
+#### Package docs
+
+* [health](https://github.com/ONSdigital/dp-api-clients-go/tree/feature/client-checker/health)
+
+### Tests
+
+Run tests using `make test`
 
 ### Licence
 

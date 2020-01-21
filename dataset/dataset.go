@@ -11,9 +11,11 @@ import (
 	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/pkg/errors"
 )
 
@@ -45,40 +47,37 @@ var _ error = ErrInvalidDatasetAPIResponse{}
 
 // Client is a dataset api client which can be used to make requests to the server
 type Client struct {
-	cli rchttp.Clienter
-	url string
+	check *health.Check
+	cli   rchttp.Clienter
+	url   string
 }
 
 // closeResponseBody closes the response body and logs an error containing the context if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if err := resp.Body.Close(); err != nil {
-		log.ErrorCtx(ctx, err, log.Data{"message": "error closing http response body"})
+		log.Event(ctx, "error closing http response body", log.Error(err))
 	}
 }
 
 // NewAPIClient creates a new instance of Client with a given dataset api url and the relevant tokens
 func NewAPIClient(datasetAPIURL string) *Client {
+	hcClient := healthcheck.NewClient(service, datasetAPIURL)
+
 	return &Client{
-		cli: rchttp.NewClient(),
-		url: datasetAPIURL,
+		check: hcClient.Check,
+		cli:   hcClient.Client,
+		url:   datasetAPIURL,
 	}
 }
 
-// Healthcheck calls the healthcheck endpoint on the api and alerts the caller of any errors
-func (c *Client) Healthcheck() (string, error) {
-	ctx := context.Background()
-
-	resp, err := c.cli.Get(ctx, c.url+"/healthcheck")
-	if err != nil {
-		return service, err
-	}
-	defer closeResponseBody(ctx, resp)
-
-	if resp.StatusCode != http.StatusOK {
-		return service, NewDatasetAPIResponse(resp, "/healthcheck")
+// Checker calls dataset api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Check:  c.check,
+		Client: c.cli,
 	}
 
-	return service, nil
+	return hcClient.Checker(ctx)
 }
 
 // Get returns dataset level information for a given dataset id
@@ -364,6 +363,7 @@ func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToke
 // PutVersion update the version
 func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version string, v Version) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
+
 	clientlog.Do(ctx, "updating version", service, uri)
 
 	b, err := json.Marshal(v)

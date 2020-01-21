@@ -3,90 +3,138 @@ package health
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
+	"time"
 
+	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/log.go/log"
 )
 
-// ErrInvalidAPIResponse is returned when an api does not respond
+var (
+	// StatusMessage contains a map of messages to service response statuses
+	StatusMessage = map[string]string{
+		health.StatusOK:       "Everything is ok",
+		health.StatusWarning:  "Things are degraded, but at least partially functioning",
+		health.StatusCritical: "The checked functionality is unavailable or non-functioning",
+	}
+)
+
+// ErrInvalidAppResponse is returned when an app does not respond
 // with a valid status
-type ErrInvalidAPIResponse struct {
-	expectedCode int
-	actualCode   int
-	uri          string
+type ErrInvalidAppResponse struct {
+	ExpectedCode int
+	ActualCode   int
+	URI          string
 }
 
-// Client represents an api client
+// Client represents an app client
 type Client struct {
-	client rchttp.Clienter
-	name   string
-	url    string
+	Client rchttp.Clienter
+	Check  *health.Check
+	Name   string
+	URL    string
 }
 
-// NewClient creates a new instance of Client with a given api url
-func NewClient(name, url string, maxRetries int) *Client {
+// NewClient creates a new instance of Client with a given app url
+func NewClient(name, url string) *Client {
 	c := &Client{
-		client: rchttp.NewClient(),
-		name:   name,
-		url:    url,
+		Client: rchttp.NewClient(),
+		Name:   name,
+		URL:    url,
+		Check: &health.Check{
+			Name: name,
+		},
 	}
 
-	// Overwrite the default number of max retries on the new client
-	c.client.SetMaxRetries(maxRetries)
+	// healthcheck client should not retry when calling a healthcheck endpoint,
+	// append to current paths as to not change the client setup by service
+	paths := c.Client.GetPathsWithNoRetries()
+	paths = append(paths, "/health", "/healthcheck")
+	c.Client.SetPathsWithNoRetries(paths)
 
 	return c
 }
 
 // Error should be called by the user to print out the stringified version of the error
-func (e ErrInvalidAPIResponse) Error() string {
-	return fmt.Sprintf("invalid response from downstream api - should be: %d, got: %d, path: %s",
-		e.expectedCode,
-		e.actualCode,
-		e.uri,
+func (e ErrInvalidAppResponse) Error() string {
+	return fmt.Sprintf("invalid response from downstream service - should be: %d, got: %d, path: %s",
+		e.ExpectedCode,
+		e.ActualCode,
+		e.URI,
 	)
 }
 
-// Checker calls an api health endpoint and returns a check object to the caller
-func (c *Client) Checker(ctx *context.Context) (*health.Check, error) {
+// Checker calls an app health endpoint and returns a check object to the caller
+func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 	logData := log.Data{
-		"api": c.name,
+		"service": c.Name,
 	}
 
-	statusCode, err := c.get(*ctx, "/health")
+	code, err := c.get(ctx, "/health")
 	// Apps may still have /healthcheck endpoint
 	// instead of a /health one
-	if statusCode == http.StatusNotFound {
-		statusCode, err = c.get(*ctx, "/healthcheck")
+	if code == http.StatusNotFound {
+		code, err = c.get(ctx, "/healthcheck")
 	}
 	if err != nil {
-		log.Event(*ctx, "failed to request api health", log.Error(err), logData)
+		log.Event(ctx, "failed to request service health", log.Error(err), logData)
 	}
 
-	check := getCheck(ctx, c.name, statusCode)
+	currentTime := time.Now().UTC()
+	c.Check.StatusCode = code
+	c.Check.LastChecked = &currentTime
 
-	return check, nil
+	switch code {
+	case 0: // When there is a problem with the client return error in message
+		c.Check.Message = err.Error()
+		c.Check.Status = health.StatusCritical
+		c.Check.LastFailure = &currentTime
+	case 200:
+		c.Check.Message = StatusMessage[health.StatusOK]
+		c.Check.Status = health.StatusOK
+		c.Check.LastSuccess = &currentTime
+	case 429:
+		c.Check.Message = StatusMessage[health.StatusWarning]
+		c.Check.Status = health.StatusWarning
+		c.Check.LastFailure = &currentTime
+	default:
+		c.Check.Message = StatusMessage[health.StatusCritical]
+		c.Check.Status = health.StatusCritical
+		c.Check.LastFailure = &currentTime
+	}
+
+	return c.Check, nil
 }
 
 func (c *Client) get(ctx context.Context, path string) (int, error) {
-	req, err := http.NewRequest("GET", c.url+path, nil)
+	clientlog.Do(ctx, "retrieving dataset", c.Name, c.URL)
+
+	req, err := http.NewRequest("GET", c.URL+path, nil)
 	if err != nil {
 		return 0, err
 	}
 
-	resp, err := c.client.Do(ctx, req)
+	resp, err := c.Client.Do(ctx, req)
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode < 200 || (resp.StatusCode > 399 && resp.StatusCode != 429) {
-		io.Copy(ioutil.Discard, resp.Body)
-		return resp.StatusCode, ErrInvalidAPIResponse{http.StatusOK, resp.StatusCode, req.URL.Path}
+		return resp.StatusCode, ErrInvalidAppResponse{http.StatusOK, resp.StatusCode, req.URL.Path}
 	}
 
 	return resp.StatusCode, nil
+}
+
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body == nil {
+		return
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		log.Event(ctx, "error closing http response body", log.Error(err))
+	}
 }
