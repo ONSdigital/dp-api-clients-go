@@ -67,7 +67,7 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(check.Name, ShouldEqual, service)
 				So(check.Status, ShouldEqual, healthcheck.StatusCritical)
 				So(check.StatusCode, ShouldEqual, 0)
-				So(check.Message, ShouldEqual, health.StatusMessage[healthcheck.StatusCritical])
+				So(check.Message, ShouldEqual, clientError.Error())
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
