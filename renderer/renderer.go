@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -32,15 +34,19 @@ func (e ErrInvalidRendererResponse) Code() int {
 
 // Renderer represents a renderer client to interact with the dp-frontend-renderer
 type Renderer struct {
-	client rchttp.Clienter
-	url    string
+	check *health.Check
+	cli   rchttp.Clienter
+	url   string
 }
 
 // New creates an instance of renderer with a default client
 func New(url string) *Renderer {
+	hcClient := healthcheck.NewClient(service, url)
+
 	return &Renderer{
-		client: rchttp.NewClient(),
-		url:    url,
+		check: hcClient.Check,
+		cli:   rchttp.NewClient(),
+		url:   url,
 	}
 }
 
@@ -50,18 +56,14 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 	}
 }
 
-// Healthcheck calls the healthcheck endpoint on the renderer and returns any errors
-func (r *Renderer) Healthcheck() (string, error) {
-	resp, err := r.client.Get(context.Background(), r.url+"/healthcheck")
-	if err != nil {
-		return service, err
+// Checker calls dataset api health endpoint and returns a check object to the caller.
+func (r *Renderer) Checker(ctx context.Context) (*health.Check, error) {
+	hcClient := healthcheck.Client{
+		Check:  r.check,
+		Client: r.cli,
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return service, ErrInvalidRendererResponse{resp.StatusCode}
-	}
-
-	return service, nil
+	return hcClient.Checker(ctx)
 }
 
 // Do sends a request to the renderer service to render a given template
@@ -86,7 +88,7 @@ func (r *Renderer) Do(path string, b []byte) ([]byte, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := r.client.Do(ctx, req)
+	resp, err := r.cli.Do(ctx, req)
 	if err != nil {
 		return nil, err
 	}
