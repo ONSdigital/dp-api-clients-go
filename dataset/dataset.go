@@ -81,7 +81,7 @@ func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
 }
 
 // Get returns dataset level information for a given dataset id
-func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m Model, err error) {
+func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m DatasetDetails, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s", c.url, datasetID)
 
 	clientlog.Do(ctx, "retrieving dataset", service, uri)
@@ -122,7 +122,7 @@ func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, colle
 }
 
 // GetByPath returns dataset level information for a given dataset path
-func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, path string) (m Model, err error) {
+func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, path string) (m DatasetDetails, err error) {
 	uri := fmt.Sprintf("%s/%s", c.url, strings.Trim(path, "/"))
 
 	clientlog.Do(ctx, "retrieving data from dataset API", service, uri)
@@ -163,7 +163,7 @@ func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken,
 }
 
 // GetDatasets returns the list of datasets
-func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string) (m ModelCollection, err error) {
+func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string) (m List, err error) {
 	uri := fmt.Sprintf("%s/datasets", c.url)
 
 	clientlog.Do(ctx, "retrieving datasets", service, uri)
