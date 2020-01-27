@@ -14,7 +14,12 @@ import (
 	rchttp "github.com/ONSdigital/dp-rchttp"
 )
 
-var ctx = context.Background()
+var (
+	ctx          = context.Background()
+	initialState = healthcheck.CheckState{
+		Name: service,
+	}
+)
 
 const (
 	testHost = "http://localhost:8080"
@@ -40,9 +45,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		renderer := New(testHost)
 		renderer.cli = clienter
+		check := initialState
 
 		Convey("when renderer.Checker is called", func() {
-			check, err := renderer.Checker(ctx)
+			err := renderer.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -52,7 +59,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -78,9 +84,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		renderer := New(testHost)
 		renderer.cli = clienter
+		check := initialState
 
 		Convey("when renderer.Checker is called", func() {
-			check, err := renderer.Checker(ctx)
+			err := renderer.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -90,7 +98,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -116,9 +123,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		renderer := New(testHost)
 		renderer.cli = clienter
+		check := initialState
 
 		Convey("when renderer.Checker is called", func() {
-			check, err := renderer.Checker(ctx)
+			err := renderer.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -128,7 +137,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -155,9 +163,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		renderer := New(testHost)
 		renderer.cli = clienter
+		check := initialState
 
 		Convey("when renderer.Checker is called", func() {
-			check, err := renderer.Checker(ctx)
+			err := renderer.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -167,7 +177,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -193,9 +202,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		renderer := New(testHost)
 		renderer.cli = clienter
+		check := initialState
 
 		Convey("when renderer.Checker is called", func() {
-			check, err := renderer.Checker(ctx)
+			err := renderer.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -205,7 +216,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(*check.LastSuccess, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastFailure, ShouldBeNil)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {

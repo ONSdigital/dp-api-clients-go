@@ -21,9 +21,8 @@ const service = "import-api"
 
 // Client is an import api client which can be used to make requests to the API
 type Client struct {
-	check *health.Check
-	cli   rchttp.Clienter
-	url   string
+	cli rchttp.Clienter
+	url string
 }
 
 // New creates new instance of Client with a give import api url
@@ -31,9 +30,8 @@ func New(importAPIURL string) *Client {
 	hcClient := healthcheck.NewClient(service, importAPIURL)
 
 	return &Client{
-		check: hcClient.Check,
-		cli:   hcClient.Client,
-		url:   importAPIURL,
+		cli: hcClient.Client,
+		url: importAPIURL,
 	}
 }
 
@@ -80,13 +78,12 @@ type InstanceLink struct {
 }
 
 // Checker calls import api health endpoint and returns a check object to the caller.
-func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
-		Check:  c.check,
 		Client: c.cli,
 	}
 
-	return hcClient.Checker(ctx)
+	return hcClient.Checker(ctx, check)
 }
 
 // GetImportJob asks the Import API for the details for an Import job

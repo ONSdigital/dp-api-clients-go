@@ -21,9 +21,8 @@ var _ error = ErrInvalidCodelistAPIResponse{}
 
 // Client is a codelist api client which can be used to make requests to the server
 type Client struct {
-	check *health.Check
-	cli   rchttp.Clienter
-	url   string
+	cli rchttp.Clienter
+	url string
 }
 
 // ErrInvalidCodelistAPIResponse is returned when the codelist api does not respond
@@ -53,20 +52,18 @@ func New(codelistAPIURL string) *Client {
 	hcClient := healthcheck.NewClient(service, codelistAPIURL)
 
 	return &Client{
-		check: hcClient.Check,
-		cli:   hcClient.Client,
-		url:   codelistAPIURL,
+		cli: hcClient.Client,
+		url: codelistAPIURL,
 	}
 }
 
 // Checker calls codelist api health endpoint and returns a check object to the caller.
-func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
-		Check:  c.check,
 		Client: c.cli,
 	}
 
-	return hcClient.Checker(ctx)
+	return hcClient.Checker(ctx, check)
 }
 
 // GetValues returns dimension values from the codelist api

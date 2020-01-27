@@ -18,8 +18,11 @@ import (
 const serviceToken = "I r a service token"
 
 var (
-	ctx      = context.Background()
-	testHost = "http://localhost:8080"
+	ctx          = context.Background()
+	testHost     = "http://localhost:8080"
+	initialState = healthcheck.CheckState{
+		Name: service,
+	}
 )
 
 type MockedHTTPResponse struct {
@@ -47,9 +50,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		importClient := New(testHost)
 		importClient.cli = clienter
+		check := initialState
 
 		Convey("when importClient.Checker is called", func() {
-			check, err := importClient.Checker(ctx)
+			err := importClient.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -59,7 +64,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -85,9 +89,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		importClient := New(testHost)
 		importClient.cli = clienter
+		check := initialState
 
 		Convey("when importClient.Checker is called", func() {
-			check, err := importClient.Checker(ctx)
+			err := importClient.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -97,7 +103,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -123,9 +128,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		importClient := New(testHost)
 		importClient.cli = clienter
+		check := initialState
 
 		Convey("when importClient.Checker is called", func() {
-			check, err := importClient.Checker(ctx)
+			err := importClient.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -135,7 +142,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -162,9 +168,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		importClient := New(testHost)
 		importClient.cli = clienter
+		check := initialState
 
 		Convey("when importClient.Checker is called", func() {
-			check, err := importClient.Checker(ctx)
+			err := importClient.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -174,7 +182,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -200,9 +207,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		importClient := New(testHost)
 		importClient.cli = clienter
+		check := initialState
 
 		Convey("when importClient.Checker is called", func() {
-			check, err := importClient.Checker(ctx)
+			err := importClient.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -212,7 +221,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(*check.LastSuccess, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastFailure, ShouldBeNil)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {

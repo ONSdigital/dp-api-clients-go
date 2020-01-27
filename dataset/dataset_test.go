@@ -27,6 +27,10 @@ const (
 	testHost         = "http://localhost:8080"
 )
 
+var initialState = healthcheck.CheckState{
+	Name: service,
+}
+
 var checkResponseBase = func(mockRCHTTPCli *rchttp.ClienterMock) {
 	So(len(mockRCHTTPCli.DoCalls()), ShouldEqual, 1)
 	So(mockRCHTTPCli.DoCalls()[0].Req.Header.Get(common.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
@@ -52,9 +56,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		datasetClient := NewAPIClient(testHost)
 		datasetClient.cli = clienter
+		check := initialState
 
 		Convey("when datasetClient.Checker is called", func() {
-			check, err := datasetClient.Checker(ctx)
+			err := datasetClient.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -64,7 +70,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -90,9 +95,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		datasetClient := NewAPIClient(testHost)
 		datasetClient.cli = clienter
+		check := initialState
 
 		Convey("when datasetClient.Checker is called", func() {
-			check, err := datasetClient.Checker(ctx)
+			err := datasetClient.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -102,7 +109,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -128,9 +134,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		datasetClient := NewAPIClient(testHost)
 		datasetClient.cli = clienter
+		check := initialState
 
 		Convey("when datasetClient.Checker is called", func() {
-			check, err := datasetClient.Checker(ctx)
+			err := datasetClient.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -140,7 +148,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -167,9 +174,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		datasetClient := NewAPIClient(testHost)
 		datasetClient.cli = clienter
+		check := initialState
 
 		Convey("when datasetClient.Checker is called", func() {
-			check, err := datasetClient.Checker(ctx)
+			err := datasetClient.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -179,7 +188,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess, ShouldBeNil)
 				So(*check.LastFailure, ShouldHappenAfter, timePriorHealthCheck)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -205,9 +213,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 		datasetClient := NewAPIClient(testHost)
 		datasetClient.cli = clienter
+		check := initialState
 
 		Convey("when datasetClient.Checker is called", func() {
-			check, err := datasetClient.Checker(ctx)
+			err := datasetClient.Checker(ctx, &check)
+			So(err, ShouldBeNil)
 
 			Convey("then the expected check is returned", func() {
 				So(check.Name, ShouldEqual, service)
@@ -217,7 +227,6 @@ func TestClient_HealthChecker(t *testing.T) {
 				So(*check.LastChecked, ShouldHappenAfter, timePriorHealthCheck)
 				So(*check.LastSuccess, ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastFailure, ShouldBeNil)
-				So(err, ShouldBeNil)
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {

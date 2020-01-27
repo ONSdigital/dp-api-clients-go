@@ -26,9 +26,8 @@ const service = "zebedee"
 
 // Client represents a zebedee client
 type Client struct {
-	check *health.Check
-	cli   rchttp.Clienter
-	url   string
+	cli rchttp.Clienter
+	url string
 }
 
 // ErrInvalidZebedeeResponse is returned when zebedee does not respond
@@ -65,20 +64,18 @@ func New(zebedeeURL string) *Client {
 	hcClient.Client.SetTimeout(time.Duration(timeout) * time.Second)
 
 	return &Client{
-		check: hcClient.Check,
-		cli:   hcClient.Client,
-		url:   zebedeeURL,
+		cli: hcClient.Client,
+		url: zebedeeURL,
 	}
 }
 
 // Checker calls zebedee health endpoint and returns a check object to the caller.
-func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
-		Check:  c.check,
 		Client: c.cli,
 	}
 
-	return hcClient.Checker(ctx)
+	return hcClient.Checker(ctx, check)
 }
 
 // Get returns a response for the requested uri in zebedee

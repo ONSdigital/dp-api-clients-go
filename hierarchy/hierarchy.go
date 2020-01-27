@@ -42,9 +42,8 @@ var _ error = ErrInvalidHierarchyAPIResponse{}
 
 // Client is a hierarchy api client which can be used to make requests to the server
 type Client struct {
-	check *health.Check
-	cli   rchttp.Clienter
-	url   string
+	cli rchttp.Clienter
+	url string
 }
 
 // CloseResponseBody closes the response body and logs an error if unsuccessful
@@ -59,20 +58,18 @@ func New(hierarchyAPIURL string) *Client {
 	hcClient := healthcheck.NewClient(service, hierarchyAPIURL)
 
 	return &Client{
-		check: hcClient.Check,
-		cli:   hcClient.Client,
-		url:   hierarchyAPIURL,
+		cli: hcClient.Client,
+		url: hierarchyAPIURL,
 	}
 }
 
 // Checker calls hierarchy api health endpoint and returns a check object to the caller.
-func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
-		Check:  c.check,
 		Client: c.cli,
 	}
 
-	return hcClient.Checker(ctx)
+	return hcClient.Checker(ctx, check)
 }
 
 // GetRoot returns the root hierarchy response from the hierarchy API

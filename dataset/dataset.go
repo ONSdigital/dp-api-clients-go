@@ -47,9 +47,8 @@ var _ error = ErrInvalidDatasetAPIResponse{}
 
 // Client is a dataset api client which can be used to make requests to the server
 type Client struct {
-	check *health.Check
-	cli   rchttp.Clienter
-	url   string
+	cli rchttp.Clienter
+	url string
 }
 
 // closeResponseBody closes the response body and logs an error containing the context if unsuccessful
@@ -64,20 +63,18 @@ func NewAPIClient(datasetAPIURL string) *Client {
 	hcClient := healthcheck.NewClient(service, datasetAPIURL)
 
 	return &Client{
-		check: hcClient.Check,
-		cli:   hcClient.Client,
-		url:   datasetAPIURL,
+		cli: hcClient.Client,
+		url: datasetAPIURL,
 	}
 }
 
 // Checker calls dataset api health endpoint and returns a check object to the caller.
-func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
-		Check:  c.check,
 		Client: c.cli,
 	}
 
-	return hcClient.Checker(ctx)
+	return hcClient.Checker(ctx, check)
 }
 
 // Get returns dataset level information for a given dataset id
