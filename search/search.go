@@ -73,7 +73,10 @@ func New(searchAPIURL string) *Client {
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
 		Client: c.cli,
+		Name:   service,
 	}
+
+	check.Name = service
 
 	return hcClient.Checker(ctx, check)
 }

@@ -58,7 +58,10 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 func (r *Renderer) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
 		Client: r.cli,
+		Name:   service,
 	}
+
+	check.Name = service
 
 	return hcClient.Checker(ctx, check)
 }

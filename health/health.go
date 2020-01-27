@@ -64,8 +64,12 @@ func (e ErrInvalidAppResponse) Error() string {
 
 // Checker calls an app health endpoint and returns a check object to the caller
 func (c *Client) Checker(ctx context.Context, state *health.CheckState) error {
+	if state.Name == "" {
+		state.Name = c.Name
+	}
+
 	logData := log.Data{
-		"service": c.Name,
+		"service": state.Name,
 	}
 
 	code, err := c.get(ctx, "/health")
