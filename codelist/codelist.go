@@ -49,7 +49,7 @@ func (e ErrInvalidCodelistAPIResponse) Code() int {
 
 // New creates a new instance of Client with a given filter api url
 func New(codelistAPIURL string) *Client {
-	hcClient := healthcheck.NewClient(service, codelistAPIURL)
+	hcClient := healthcheck.NewClient(codelistAPIURL)
 
 	return &Client{
 		cli: hcClient.Client,
@@ -61,7 +61,7 @@ func New(codelistAPIURL string) *Client {
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
 		Client: c.cli,
-		Name:   service,
+		URL:    c.url,
 	}
 
 	check.Name = service

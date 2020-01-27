@@ -40,7 +40,7 @@ type Renderer struct {
 
 // New creates an instance of renderer with a default client
 func New(url string) *Renderer {
-	hcClient := healthcheck.NewClient(service, url)
+	hcClient := healthcheck.NewClient(url)
 
 	return &Renderer{
 		cli: hcClient.Client,
@@ -58,7 +58,7 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 func (r *Renderer) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
 		Client: r.cli,
-		Name:   service,
+		URL:    r.url,
 	}
 
 	check.Name = service

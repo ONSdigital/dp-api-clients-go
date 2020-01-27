@@ -32,13 +32,9 @@ func getMockAPI(expectRequest http.Request, mockedHTTPResponse MockedHTTPRespons
 		fmt.Fprintln(w, mockedHTTPResponse.Body)
 	}))
 
-	api := NewClient(apiName, ts.URL)
+	api := NewClient(ts.URL)
 
 	return api
-}
-
-var initialState = health.CheckState{
-	Name: apiName,
 }
 
 func TestClient_GetOutput(t *testing.T) {
@@ -50,7 +46,7 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 200, Body: "{\"status\": \"OK\"}"},
 		)
 
-		check := initialState
+		check := CreateCheck(apiName)
 
 		err := mockedAPI.Checker(ctx, &check)
 		So(check.Name, ShouldEqual, apiName)
@@ -69,7 +65,7 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 429, Body: "{\"status\": \"WARNING\"}"},
 		)
 
-		check := initialState
+		check := CreateCheck(apiName)
 
 		err := mockedAPI.Checker(ctx, &check)
 		So(check.Name, ShouldEqual, apiName)
@@ -88,7 +84,7 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 500, Body: "{\"status\": \"CRITICAL\"}"},
 		)
 
-		check := initialState
+		check := CreateCheck(apiName)
 
 		err := mockedAPI.Checker(ctx, &check)
 		So(check.Name, ShouldEqual, apiName)
@@ -107,7 +103,7 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 404, Body: ""},
 		)
 
-		check := initialState
+		check := CreateCheck(apiName)
 
 		err := mockedAPI.Checker(ctx, &check)
 		So(check.Name, ShouldEqual, apiName)
@@ -126,7 +122,7 @@ func TestClient_GetOutput(t *testing.T) {
 			MockedHTTPResponse{StatusCode: 503, Body: ""},
 		)
 
-		check := initialState
+		check := CreateCheck(apiName)
 
 		err := mockedAPI.Checker(ctx, &check)
 		So(check.Name, ShouldEqual, apiName)

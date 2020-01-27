@@ -60,7 +60,7 @@ func New(zebedeeURL string) *Client {
 	if timeout == 0 || err != nil {
 		timeout = 5
 	}
-	hcClient := healthcheck.NewClient(service, zebedeeURL)
+	hcClient := healthcheck.NewClient(zebedeeURL)
 	hcClient.Client.SetTimeout(time.Duration(timeout) * time.Second)
 
 	return &Client{
@@ -73,7 +73,7 @@ func New(zebedeeURL string) *Client {
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
 		Client: c.cli,
-		Name:   service,
+		URL:    c.url,
 	}
 
 	check.Name = service

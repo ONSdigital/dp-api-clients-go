@@ -2,6 +2,7 @@ package health
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -32,15 +33,14 @@ type ErrInvalidAppResponse struct {
 // Client represents an app client
 type Client struct {
 	Client rchttp.Clienter
-	Name   string
 	URL    string
+	name   string
 }
 
 // NewClient creates a new instance of Client with a given app url
-func NewClient(name, url string) *Client {
+func NewClient(url string) *Client {
 	c := &Client{
 		Client: rchttp.NewClient(),
-		Name:   name,
 		URL:    url,
 	}
 
@@ -51,6 +51,12 @@ func NewClient(name, url string) *Client {
 	c.Client.SetPathsWithNoRetries(paths)
 
 	return c
+}
+
+// CreateCheck creates a new check state object
+func CreateCheck(service string) (check health.CheckState) {
+	check.Name = service
+	return check
 }
 
 // Error should be called by the user to print out the stringified version of the error
@@ -65,9 +71,9 @@ func (e ErrInvalidAppResponse) Error() string {
 // Checker calls an app health endpoint and returns a check object to the caller
 func (c *Client) Checker(ctx context.Context, state *health.CheckState) error {
 	if state.Name == "" {
-		state.Name = c.Name
+		return errors.New("missing service name in state")
 	}
-
+	c.name = state.Name
 	logData := log.Data{
 		"service": state.Name,
 	}
@@ -109,7 +115,7 @@ func (c *Client) Checker(ctx context.Context, state *health.CheckState) error {
 }
 
 func (c *Client) get(ctx context.Context, path string) (int, error) {
-	clientlog.Do(ctx, "retrieving dataset", c.Name, c.URL)
+	clientlog.Do(ctx, "retrieving dataset", c.name, c.URL)
 
 	req, err := http.NewRequest("GET", c.URL+path, nil)
 	if err != nil {

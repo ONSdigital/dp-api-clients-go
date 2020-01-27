@@ -27,7 +27,7 @@ type Client struct {
 
 // New creates new instance of Client with a give import api url
 func New(importAPIURL string) *Client {
-	hcClient := healthcheck.NewClient(service, importAPIURL)
+	hcClient := healthcheck.NewClient(importAPIURL)
 
 	return &Client{
 		cli: hcClient.Client,
@@ -81,7 +81,7 @@ type InstanceLink struct {
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
 		Client: c.cli,
-		Name:   service,
+		URL:    c.url,
 	}
 
 	check.Name = service
