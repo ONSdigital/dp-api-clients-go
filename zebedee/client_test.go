@@ -39,23 +39,28 @@ func TestUnitClient(t *testing.T) {
 	ctx := context.Background()
 
 	Convey("test get()", t, func() {
-		Convey("test get sucessfully returns response from zebedee", func() {
-			b, err := cli.get(ctx, testAccessToken, "/data?uri=foo")
-			So(err, ShouldBeNil)
 
+		Convey("test get successfully returns response from zebedee with headers", func() {
+			b, h, err := cli.get(ctx, testAccessToken, "/data?uri=foo")
+			So(err, ShouldBeNil)
+			So(len(h), ShouldEqual, 3)
+			So(h.Get("Content-Length"), ShouldEqual, "2")
+			So(h.Get("Content-Type"), ShouldEqual, "text/plain; charset=utf-8")
+			So(h.Get("Date"), ShouldNotBeNil)
 			So(string(b), ShouldEqual, `{}`)
 		})
 
 		Convey("test error returned if requesting invalid zebedee url", func() {
-			b, err := cli.get(ctx, testAccessToken, "/invalid")
+			b, h, err := cli.get(ctx, testAccessToken, "/invalid")
 			So(err, ShouldNotBeNil)
 			So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
 			So(err.Error(), ShouldEqual, "invalid response from zebedee - should be 2.x.x or 3.x.x, got: 404, path: /invalid")
 			So(b, ShouldBeNil)
+			So(h, ShouldBeNil)
 		})
 	})
 
-	Convey("test getLanding sucessfully returns a landing model", t, func() {
+	Convey("test getLanding successfully returns a landing model", t, func() {
 		m, err := cli.GetDatasetLandingPage(ctx, testAccessToken, "labour")
 		So(err, ShouldBeNil)
 		So(m, ShouldNotBeEmpty)

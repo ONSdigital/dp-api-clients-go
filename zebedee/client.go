@@ -83,6 +83,12 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 
 // Get returns a response for the requested uri in zebedee
 func (c *Client) Get(ctx context.Context, userAccessToken, path string) ([]byte, error) {
+	b, _, err := c.get(ctx, userAccessToken, path)
+	return b, err
+}
+
+// GetWithHeaders returns a response for the requested uri in zebedee, providing the headers too
+func (c *Client) GetWithHeaders(ctx context.Context, userAccessToken, path string) ([]byte, http.Header, error) {
 	return c.get(ctx, userAccessToken, path)
 }
 
@@ -90,7 +96,7 @@ func (c *Client) Get(ctx context.Context, userAccessToken, path string) ([]byte,
 // is returned there is a chance that a partly completed DatasetLandingPage is returned
 func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, path string) (data.DatasetLandingPage, error) {
 	reqURL := c.createRequestURL(ctx, "/data", "uri="+path)
-	b, err := c.get(ctx, userAccessToken, reqURL)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
 		return data.DatasetLandingPage{}, err
 	}
@@ -130,31 +136,32 @@ func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, pat
 	return dlp, nil
 }
 
-func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte, error) {
+func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte, http.Header, error) {
 	req, err := http.NewRequest("GET", c.url+path, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	common.AddFlorenceHeader(req, userAccessToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
 		io.Copy(ioutil.Discard, resp.Body)
-		return nil, ErrInvalidZebedeeResponse{resp.StatusCode, req.URL.Path}
+		return nil, nil, ErrInvalidZebedeeResponse{resp.StatusCode, req.URL.Path}
 	}
 
-	return ioutil.ReadAll(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
+	return b, resp.Header, err
 }
 
 // GetBreadcrumb returns a Breadcrumb
 func (c *Client) GetBreadcrumb(ctx context.Context, userAccessToken, uri string) ([]data.Breadcrumb, error) {
-	b, err := c.get(ctx, userAccessToken, "/parents?uri="+uri)
+	b, _, err := c.get(ctx, userAccessToken, "/parents?uri="+uri)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +177,7 @@ func (c *Client) GetBreadcrumb(ctx context.Context, userAccessToken, uri string)
 // GetDataset returns details about a dataset from zebedee
 func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (data.Dataset, error) {
 	reqURL := c.createRequestURL(ctx, "/data", "uri="+uri)
-	b, err := c.get(ctx, userAccessToken, reqURL)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
 
 	if err != nil {
 		return data.Dataset{}, err
@@ -219,7 +226,7 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (d
 // GetFileSize retrieves a given filesize from zebedee
 func (c *Client) GetFileSize(ctx context.Context, userAccessToken, uri string) (data.FileSize, error) {
 	reqURL := c.createRequestURL(ctx, "/filesize", "uri="+uri)
-	b, err := c.get(ctx, userAccessToken, reqURL)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
 		return data.FileSize{}, err
 	}
@@ -235,7 +242,7 @@ func (c *Client) GetFileSize(ctx context.Context, userAccessToken, uri string) (
 // GetPageTitle retrieves a page title from zebedee
 func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, uri string) (data.PageTitle, error) {
 	reqURL := c.createRequestURL(ctx, "/data", "uri="+uri+"&title")
-	b, err := c.get(ctx, userAccessToken, reqURL)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
 		return data.PageTitle{}, err
 	}
