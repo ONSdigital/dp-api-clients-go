@@ -2,6 +2,14 @@ github.com/ONSdigital/dp-healthcheck v0.0.0-20200108090555-e18ed65f5bdd h1:i2m46
 github.com/ONSdigital/dp-healthcheck v0.0.0-20200108090555-e18ed65f5bdd/go.mod h1:zighxZ/0m5u7zo0eAr8XFlA+Dz2ic7A1vna6YXvhCjQ=
 github.com/ONSdigital/dp-healthcheck v0.0.0-20200115183048-4eeccfeaf78a h1:8VMB6ABLt8dNSM6iFPy+QrJigirl9Dafv/CvyNbu9Ps=
 github.com/ONSdigital/dp-healthcheck v0.0.0-20200115183048-4eeccfeaf78a/go.mod h1:zighxZ/0m5u7zo0eAr8XFlA+Dz2ic7A1vna6YXvhCjQ=
+github.com/ONSdigital/dp-healthcheck v0.0.0-20200124150251-169c38bada89 h1:6hqRmzNC26sIimbQG1lGCug1CImTuz7QapolHoo5tbU=
+github.com/ONSdigital/dp-healthcheck v0.0.0-20200124150251-169c38bada89/go.mod h1:zighxZ/0m5u7zo0eAr8XFlA+Dz2ic7A1vna6YXvhCjQ=
+github.com/ONSdigital/dp-healthcheck v0.0.0-20200130191125-3c5ad16474bb h1:vB3sr8i+dVBEQ88gBShrdVjZz3NyJsDvwfEG9FUesXE=
+github.com/ONSdigital/dp-healthcheck v0.0.0-20200130191125-3c5ad16474bb/go.mod h1:zighxZ/0m5u7zo0eAr8XFlA+Dz2ic7A1vna6YXvhCjQ=
+github.com/ONSdigital/dp-healthcheck v0.0.0-20200131111544-791d276787f0 h1:rZqQE7TW50L+EfNhzat8092YnzYKsXbC7yvEDeEiA9c=
+github.com/ONSdigital/dp-healthcheck v0.0.0-20200131111544-791d276787f0/go.mod h1:zighxZ/0m5u7zo0eAr8XFlA+Dz2ic7A1vna6YXvhCjQ=
+github.com/ONSdigital/dp-healthcheck v0.0.0-20200131122546-9db6d3f0494e h1:H2KVzsFp5oTbqjPXDlTHOB/LvYy2I6Mc8eSTLrmZkXs=
+github.com/ONSdigital/dp-healthcheck v0.0.0-20200131122546-9db6d3f0494e/go.mod h1:zighxZ/0m5u7zo0eAr8XFlA+Dz2ic7A1vna6YXvhCjQ=
 github.com/ONSdigital/dp-mocking v0.0.0-20190905163309-fee2702ad1b9 h1:+WXVfTDyWXY1DQRDFSmt1b/ORKk5c7jGiPu7NoeaM/0=
 github.com/ONSdigital/dp-mocking v0.0.0-20190905163309-fee2702ad1b9/go.mod h1:BcIRgitUju//qgNePRBmNjATarTtynAgc0yV29VpLEk=
 github.com/ONSdigital/dp-rchttp v0.0.0-20190919143000-bb5699e6fd59/go.mod h1:KkW68U3FPuivW4ogi9L8CPKNj9ZxGko4qcUY7KoAAkQ=

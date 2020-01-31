@@ -34,9 +34,8 @@ func (e ErrInvalidRendererResponse) Code() int {
 
 // Renderer represents a renderer client to interact with the dp-frontend-renderer
 type Renderer struct {
-	check *health.Check
-	cli   rchttp.Clienter
-	url   string
+	cli rchttp.Clienter
+	url string
 }
 
 // New creates an instance of renderer with a default client
@@ -44,9 +43,8 @@ func New(url string) *Renderer {
 	hcClient := healthcheck.NewClient(service, url)
 
 	return &Renderer{
-		check: hcClient.Check,
-		cli:   rchttp.NewClient(),
-		url:   url,
+		cli: hcClient.Client,
+		url: url,
 	}
 }
 
@@ -57,13 +55,14 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 }
 
 // Checker calls dataset api health endpoint and returns a check object to the caller.
-func (r *Renderer) Checker(ctx context.Context) (*health.Check, error) {
+func (r *Renderer) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
-		Check:  r.check,
 		Client: r.cli,
+		URL:    r.url,
+		Name:   service,
 	}
 
-	return hcClient.Checker(ctx)
+	return hcClient.Checker(ctx, check)
 }
 
 // Do sends a request to the renderer service to render a given template

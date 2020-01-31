@@ -52,9 +52,8 @@ var _ error = ErrInvalidFilterAPIResponse{}
 
 // Client is a filter api client which can be used to make requests to the server
 type Client struct {
-	check *health.Check
-	cli   rchttp.Clienter
-	url   string
+	cli rchttp.Clienter
+	url string
 }
 
 // New creates a new instance of Client with a given filter api url
@@ -62,20 +61,20 @@ func New(filterAPIURL string) *Client {
 	hcClient := healthcheck.NewClient(service, filterAPIURL)
 
 	return &Client{
-		check: hcClient.Check,
-		cli:   hcClient.Client,
-		url:   filterAPIURL,
+		cli: hcClient.Client,
+		url: filterAPIURL,
 	}
 }
 
 // Checker calls filter api health endpoint and returns a check object to the caller.
-func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
-		Check:  c.check,
 		Client: c.cli,
+		URL:    c.url,
+		Name:   service,
 	}
 
-	return hcClient.Checker(ctx)
+	return hcClient.Checker(ctx, check)
 }
 
 // CloseResponseBody closes the response body and logs an error if unsuccessful

@@ -55,9 +55,8 @@ var _ error = ErrInvalidSearchAPIResponse{}
 
 // Client is a search api client that can be used to make requests to the server
 type Client struct {
-	check *health.Check
-	cli   rchttp.Clienter
-	url   string
+	cli rchttp.Clienter
+	url string
 }
 
 // New creates a new instance of Client with a given search api url
@@ -65,20 +64,20 @@ func New(searchAPIURL string) *Client {
 	hcClient := healthcheck.NewClient(service, searchAPIURL)
 
 	return &Client{
-		check: hcClient.Check,
-		cli:   hcClient.Client,
-		url:   searchAPIURL,
+		cli: hcClient.Client,
+		url: searchAPIURL,
 	}
 }
 
 // Checker calls search api health endpoint and returns a check object to the caller.
-func (c *Client) Checker(ctx context.Context) (*health.Check, error) {
+func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
-		Check:  c.check,
 		Client: c.cli,
+		URL:    c.url,
+		Name:   service,
 	}
 
-	return hcClient.Checker(ctx)
+	return hcClient.Checker(ctx, check)
 }
 
 // Dimension allows the searching of a dimension for a specific dimension option, optionally
