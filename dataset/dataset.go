@@ -60,7 +60,7 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 
 // NewAPIClient creates a new instance of Client with a given dataset api url and the relevant tokens
 func NewAPIClient(datasetAPIURL string) *Client {
-	hcClient := healthcheck.NewClient(datasetAPIURL)
+	hcClient := healthcheck.NewClient(service, datasetAPIURL)
 
 	return &Client{
 		cli: hcClient.Client,
@@ -73,9 +73,8 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
 		Client: c.cli,
 		URL:    c.url,
+		Name:   service,
 	}
-
-	check.Name = service
 
 	return hcClient.Checker(ctx, check)
 }

@@ -55,7 +55,7 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 
 // New creates a new instance of Client with a given hierarchy api url
 func New(hierarchyAPIURL string) *Client {
-	hcClient := healthcheck.NewClient(hierarchyAPIURL)
+	hcClient := healthcheck.NewClient(service, hierarchyAPIURL)
 
 	return &Client{
 		cli: hcClient.Client,
@@ -68,9 +68,8 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
 		Client: c.cli,
 		URL:    c.url,
+		Name:   service,
 	}
-
-	check.Name = service
 
 	return hcClient.Checker(ctx, check)
 }

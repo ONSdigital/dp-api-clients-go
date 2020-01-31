@@ -58,7 +58,7 @@ type Client struct {
 
 // New creates a new instance of Client with a given filter api url
 func New(filterAPIURL string) *Client {
-	hcClient := healthcheck.NewClient(filterAPIURL)
+	hcClient := healthcheck.NewClient(service, filterAPIURL)
 
 	return &Client{
 		cli: hcClient.Client,
@@ -71,9 +71,8 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
 		Client: c.cli,
 		URL:    c.url,
+		Name:   service,
 	}
-
-	check.Name = service
 
 	return hcClient.Checker(ctx, check)
 }
