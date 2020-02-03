@@ -97,23 +97,44 @@ func TestClient_GetOutput(t *testing.T) {
 		So(err, ShouldBeNil)
 	})
 
-	Convey("When health endpoint is not implemented a status code of 404 is returned", t, func() {
-		mockedAPI := getMockAPI(
-			http.Request{Method: "GET"},
-			MockedHTTPResponse{StatusCode: 404, Body: ""},
-		)
+	Convey("When health endpoint is not implemented", t, func() {
+		Convey("and a status code of 404 is returned", func() {
+			mockedAPI := getMockAPI(
+				http.Request{Method: "GET"},
+				MockedHTTPResponse{StatusCode: 404, Body: ""},
+			)
 
-		check := CreateCheckState(apiName)
+			check := CreateCheckState(apiName)
 
-		err := mockedAPI.Checker(ctx, &check)
-		So(check.Name(), ShouldEqual, apiName)
-		So(check.StatusCode(), ShouldEqual, 404)
-		So(check.Status(), ShouldEqual, health.StatusCritical)
-		So(check.Message(), ShouldEqual, apiName+StatusMessage[health.StatusCritical])
-		So(*check.LastChecked(), ShouldHappenAfter, initialTime)
-		So(*check.LastFailure(), ShouldHappenAfter, initialTime)
-		So(check.LastSuccess(), ShouldBeNil)
-		So(err, ShouldBeNil)
+			err := mockedAPI.Checker(ctx, &check)
+			So(check.Name(), ShouldEqual, apiName)
+			So(check.StatusCode(), ShouldEqual, 404)
+			So(check.Status(), ShouldEqual, health.StatusCritical)
+			So(check.Message(), ShouldEqual, apiName+StatusMessage[health.StatusCritical])
+			So(*check.LastChecked(), ShouldHappenAfter, initialTime)
+			So(*check.LastFailure(), ShouldHappenAfter, initialTime)
+			So(check.LastSuccess(), ShouldBeNil)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("and a status code of 401 is returned", func() {
+			mockedAPI := getMockAPI(
+				http.Request{Method: "GET"},
+				MockedHTTPResponse{StatusCode: 404, Body: ""},
+			)
+
+			check := CreateCheckState(apiName)
+
+			err := mockedAPI.Checker(ctx, &check)
+			So(check.Name(), ShouldEqual, apiName)
+			So(check.StatusCode(), ShouldEqual, 404)
+			So(check.Status(), ShouldEqual, health.StatusCritical)
+			So(check.Message(), ShouldEqual, apiName+StatusMessage[health.StatusCritical])
+			So(*check.LastChecked(), ShouldHappenAfter, initialTime)
+			So(*check.LastFailure(), ShouldHappenAfter, initialTime)
+			So(check.LastSuccess(), ShouldBeNil)
+			So(err, ShouldBeNil)
+		})
 	})
 
 	Convey("When an api is unavailable a status code of 503 is returned", t, func() {

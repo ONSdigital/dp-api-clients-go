@@ -78,7 +78,7 @@ func (c *Client) Checker(ctx context.Context, state *health.CheckState) error {
 	code, err := c.get(ctx, "/health")
 	// Apps may still have /healthcheck endpoint
 	// instead of a /health one
-	if code == http.StatusNotFound {
+	if code == http.StatusNotFound || code == http.StatusUnauthorized {
 		code, err = c.get(ctx, "/healthcheck")
 	}
 	if err != nil {
