@@ -9,10 +9,10 @@ import (
 	"strconv"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/common"
 )
 
 const (
@@ -119,11 +119,8 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 	}
 
 	if len(params) > 0 {
-		if len(params[0].InternalToken) > 0 {
-			req.Header.Set(common.DeprecatedAuthHeader, params[0].InternalToken)
-		}
 		if len(params[0].FlorenceToken) > 0 {
-			req.Header.Set(common.FlorenceHeaderKey, params[0].FlorenceToken)
+			headers.SetUserAuthToken(req, params[0].FlorenceToken)
 		}
 	}
 

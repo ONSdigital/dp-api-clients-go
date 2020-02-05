@@ -15,7 +15,6 @@ import (
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/dp-mocking/httpmocks"
 	rchttp "github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -1367,8 +1366,13 @@ func TestDoGetWithAuthHeaders(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
-				So(req.Header.Get(common.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
+				userAuthToken, err := headers.GetUserAuthToken(req)
+				So(err, ShouldBeNil)
+				So(userAuthToken, ShouldEqual, testUserAuthToken)
+
+				serviceAuthToken, err := headers.GetServiceAuthToken(req)
+				So(err, ShouldBeNil)
+				So(serviceAuthToken, ShouldEqual, testServiceAuthToken)
 			})
 		})
 	})
@@ -1432,6 +1436,12 @@ func assertClienterDoCalls(actual *http.Request, uri string, host string) {
 	So(actual.URL.Host, ShouldEqual, host)
 	So(actual.Method, ShouldEqual, "GET")
 	So(actual.Body, ShouldBeNil)
-	So(actual.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
-	So(actual.Header.Get(common.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
+
+	actualServiceAuthToken, err := headers.GetServiceAuthToken(actual)
+	So(err, ShouldBeNil)
+	So(actualServiceAuthToken, ShouldEqual, testServiceAuthToken)
+
+	actualUserAuthToken, err := headers.GetUserAuthToken(actual)
+	So(err, ShouldBeNil)
+	So(actualUserAuthToken, ShouldEqual, testUserAuthToken)
 }

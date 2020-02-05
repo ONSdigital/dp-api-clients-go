@@ -20,7 +20,6 @@ var errUnableToIdentifyRequest = errors.New("unable to determine the user or ser
 
 type tokenObject struct {
 	numberOfParts int
-	hasPrefix     bool
 	tokenPart     string
 }
 
@@ -132,7 +131,6 @@ func splitTokens(florenceToken, authToken string, logData log.Data) {
 func splitToken(token string) (tokenObj tokenObject) {
 	splitToken := strings.Split(token, " ")
 	tokenObj.numberOfParts = len(splitToken)
-	tokenObj.hasPrefix = strings.HasPrefix(token, common.BearerPrefix)
 
 	// sample last 6 chars (or half, if smaller) of last token part
 	lastTokenPart := len(splitToken) - 1

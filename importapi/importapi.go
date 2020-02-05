@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
-	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -190,7 +190,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 	}
 
 	// add a service token to request where one has been provided
-	common.AddServiceTokenHeader(req, serviceToken)
+	headers.SetServiceAuthToken(req, serviceToken)
 
 	resp, err := client.Do(ctx, req)
 	if err != nil {

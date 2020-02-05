@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
@@ -141,7 +142,7 @@ func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte,
 		return nil, nil, err
 	}
 
-	common.AddFlorenceHeader(req, userAccessToken)
+	headers.SetUserAuthToken(req, userAccessToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -256,8 +257,8 @@ func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, uri string) 
 
 func (c *Client) createRequestURL(ctx context.Context, path, query string) string {
 	// Check if collection ID is set in context
-	if ctx.Value(common.CollectionIDHeaderKey) != nil {
-		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
+	if ctx.Value(common.CollectionIDContextKey) != nil {
+		collectionID, ok := ctx.Value(common.CollectionIDContextKey).(string)
 		if !ok {
 			log.Event(ctx, "unable to find collection ID header key", log.Error(errCastingCollectionID))
 		}
@@ -267,8 +268,8 @@ func (c *Client) createRequestURL(ctx context.Context, path, query string) strin
 	path += "?" + url.PathEscape(query)
 
 	// Check if locale code is set in context and add lang query param to url
-	if ctx.Value(common.LocaleHeaderKey) != nil {
-		localeCode, ok := ctx.Value(common.LocaleHeaderKey).(string)
+	if ctx.Value(common.LocaleContextKey) != nil {
+		localeCode, ok := ctx.Value(common.LocaleContextKey).(string)
 		if !ok {
 			log.Event(ctx, "unable to find local header key", log.Error(errCastingLocalCode))
 		}

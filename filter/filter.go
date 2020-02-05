@@ -30,7 +30,6 @@ type ErrInvalidFilterAPIResponse struct {
 
 // Config contains any configuration required to send requests to the filter api
 type Config struct {
-	InternalToken string
 	FlorenceToken string
 }
 

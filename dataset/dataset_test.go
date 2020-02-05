@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
-	. "github.com/smartystreets/goconvey/convey"
-
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/dp-api-clients-go/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
+	"github.com/pkg/errors"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 const (
@@ -32,7 +32,10 @@ var (
 
 var checkResponseBase = func(mockRCHTTPCli *rchttp.ClienterMock) {
 	So(len(mockRCHTTPCli.DoCalls()), ShouldEqual, 1)
-	So(mockRCHTTPCli.DoCalls()[0].Req.Header.Get(common.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
+	req := mockRCHTTPCli.DoCalls()[0].Req
+	serviceToken, err := headers.GetServiceAuthToken(req)
+	So(err, ShouldBeNil)
+	So(serviceToken, ShouldEqual, serviceAuthToken)
 }
 
 func TestClient_HealthChecker(t *testing.T) {
@@ -376,13 +379,15 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 		}
 
 		Convey("when Collection-ID is present in the context", func() {
-			ctx = context.WithValue(ctx, common.CollectionIDHeaderKey, collectionID)
+			ctx = context.WithValue(ctx, common.CollectionIDContextKey, collectionID)
 
 			Convey("and a request is made", func() {
 				_, _ = cli.GetDatasets(ctx, userAuthToken, serviceAuthToken, collectionID)
 
 				Convey("then the Collection-ID is present in the request headers", func() {
-					collectionIDFromRequest := mockRCHTTPCli.DoCalls()[0].Req.Header.Get(common.CollectionIDHeaderKey)
+					req := mockRCHTTPCli.DoCalls()[0].Req
+					collectionIDFromRequest, err := headers.GetCollectionID(req)
+					So(err, ShouldBeNil)
 					So(collectionIDFromRequest, ShouldEqual, collectionID)
 				})
 			})

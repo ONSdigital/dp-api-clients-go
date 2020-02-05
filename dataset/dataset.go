@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	"github.com/ONSdigital/dp-api-clients-go/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
@@ -376,8 +377,8 @@ func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken
 	}
 
 	addCollectionIDHeader(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -501,7 +502,7 @@ func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatase
 
 func addCollectionIDHeader(r *http.Request, collectionID string) {
 	if len(collectionID) > 0 {
-		r.Header.Add(common.CollectionIDHeaderKey, collectionID)
+		headers.SetCollectionID(r, collectionID)
 	}
 }
 
@@ -514,8 +515,8 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	}
 
 	addCollectionIDHeader(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
 	return c.cli.Do(ctx, req)
 }
 
@@ -528,8 +529,8 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	}
 
 	addCollectionIDHeader(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
-	common.AddDownloadServiceTokenHeader(req, downloadserviceAuthToken)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
+	headers.SetDownloadServiceToken(req, downloadserviceAuthToken)
 	return c.cli.Do(ctx, req)
 }

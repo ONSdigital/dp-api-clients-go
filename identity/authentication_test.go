@@ -143,7 +143,11 @@ func TestHandler_florenceToken(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				userAuthToken, headerErr := headers.GetUserAuthToken(zebedeeReq)
+				So(headerErr, ShouldBeNil)
+				So(userAuthToken, ShouldEqual, florenceToken)
+				_, headerErr = headers.GetServiceAuthToken(zebedeeReq)
+				So(headerErr, ShouldNotBeNil)
 			})
 
 			Convey("Then the downstream HTTP handler returned no error and expected context", func() {
@@ -175,7 +179,11 @@ func TestHandler_florenceToken(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				userAuthToken, headerErr := headers.GetUserAuthToken(zebedeeReq)
+				So(headerErr, ShouldBeNil)
+				So(userAuthToken, ShouldEqual, florenceToken)
+				_, headerErr = headers.GetServiceAuthToken(zebedeeReq)
+				So(headerErr, ShouldNotBeNil)
 			})
 
 			Convey("Then the downstream HTTP handler returned no error and expected context", func() {
@@ -216,7 +224,11 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				userAuthToken, headerErr := headers.GetUserAuthToken(zebedeeReq)
+				So(headerErr, ShouldBeNil)
+				So(userAuthToken, ShouldEqual, florenceToken)
+				_, headerErr = headers.GetServiceAuthToken(zebedeeReq)
+				So(headerErr, ShouldResemble, headers.ErrHeaderNotFound)
 			})
 
 			Convey("Then the response is set as expected", func() {
@@ -259,7 +271,11 @@ func TestHandler_ReadBodyError(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				userAuthToken, headerErr := headers.GetUserAuthToken(zebedeeReq)
+				So(headerErr, ShouldBeNil)
+				So(userAuthToken, ShouldEqual, florenceToken)
+				_, headerErr = headers.GetServiceAuthToken(zebedeeReq)
+				So(headerErr, ShouldNotBeNil)
 			})
 
 			Convey("And the expected status code and error is returned", func() {
@@ -306,9 +322,7 @@ func TestHandler_authToken(t *testing.T) {
 	Convey("Given a request with an auth token, and mock client that returns 200", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-		req.Header = map[string][]string{
-			common.UserHeaderKey: {userIdentifier},
-		}
+		headers.SetUserIdentity(req, userIdentifier)
 
 		httpClient, body, _ := getClientReturningIdentifier(t, callerIdentifier)
 		idClient := NewAPIClient(httpClient, zebedeeURL)
@@ -324,8 +338,11 @@ func TestHandler_authToken(t *testing.T) {
 				So(httpClient.DoCalls(), ShouldHaveLength, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.UserHeaderKey], ShouldHaveLength, 0)
-				So(zebedeeReq.Header[common.AuthHeaderKey], ShouldHaveLength, 1)
+
+				userIdentity, err := headers.GetUserIdentity(zebedeeReq)
+				So(err, ShouldResemble, headers.ErrHeaderNotFound)
+				So(userIdentity, ShouldBeBlank)
+
 				actual, err := headers.GetServiceAuthToken(zebedeeReq)
 				So(err, ShouldBeNil)
 				So(actual, ShouldEqual, callerAuthToken)
@@ -353,10 +370,8 @@ func TestHandler_bothTokens(t *testing.T) {
 	Convey("Given a request with both a florence token and service token", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
-			common.AuthHeaderKey:     {callerAuthToken},
-		}
+		headers.SetUserAuthToken(req, florenceToken)
+		headers.SetServiceAuthToken(req, callerAuthToken)
 
 		httpClient, body, _ := getClientReturningIdentifier(t, userIdentifier)
 		idClient := NewAPIClient(httpClient, zebedeeURL)
@@ -372,8 +387,11 @@ func TestHandler_bothTokens(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
-				So(len(zebedeeReq.Header[common.AuthHeaderKey]), ShouldEqual, 0)
+				userAuthToken, headerErr := headers.GetUserAuthToken(zebedeeReq)
+				So(headerErr, ShouldBeNil)
+				So(userAuthToken, ShouldEqual, florenceToken)
+				_, headerErr = headers.GetServiceAuthToken(zebedeeReq)
+				So(headerErr, ShouldNotBeNil)
 			})
 
 			Convey("Then the context returns with expected values", func() {
@@ -393,14 +411,14 @@ func TestHandler_bothTokens(t *testing.T) {
 func TestSplitTokens(t *testing.T) {
 	Convey("Given a service token and an empty florence token", t, func() {
 		florenceToken := ""
-		serviceToken := "Bearer 123456789"
+		serviceToken := "123456789"
 
 		Convey("When we pass both tokens into splitTokens function", func() {
 			logData := log.Data{}
 			splitTokens(florenceToken, serviceToken, logData)
 
 			Convey("Then the token objects are returned with the expected values", func() {
-				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 2, hasPrefix: true, tokenPart: "456789"})
+				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 1, tokenPart: "456789"})
 				So(logData["florence_token"], ShouldBeNil)
 			})
 		})
@@ -415,7 +433,7 @@ func TestSplitTokens(t *testing.T) {
 			splitTokens(florenceToken, serviceToken, logData)
 
 			Convey("Then the token objects are returned with the expected values", func() {
-				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "654321"})
+				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, tokenPart: "654321"})
 				So(logData["auth_token"], ShouldBeNil)
 			})
 		})
@@ -423,30 +441,30 @@ func TestSplitTokens(t *testing.T) {
 
 	Convey("Given a florence token and service token", t, func() {
 		florenceToken := "987654321"
-		serviceToken := "Bearer 123456789"
+		serviceToken := "123456789"
 
 		Convey("When we pass both tokens into splitTokens function", func() {
 			logData := log.Data{}
 			splitTokens(florenceToken, serviceToken, logData)
 
 			Convey("Then the token objects are returned with the expected values", func() {
-				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "654321"})
-				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 2, hasPrefix: true, tokenPart: "456789"})
+				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, tokenPart: "654321"})
+				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 1, tokenPart: "456789"})
 			})
 		})
 	})
 
 	Convey("Given a small service token", t, func() {
 		florenceToken := "54321"
-		serviceToken := "Bearer A 12"
+		serviceToken := "A 12"
 
 		Convey("When we pass the tokens into splitTokens function", func() {
 			logData := log.Data{}
 			splitTokens(florenceToken, serviceToken, logData)
 
 			Convey("Then the token objects are returned with the expected values", func() {
-				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, hasPrefix: false, tokenPart: "321"})
-				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 3, hasPrefix: true, tokenPart: "2"})
+				So(logData["florence_token"], ShouldResemble, tokenObject{numberOfParts: 1, tokenPart: "321"})
+				So(logData["auth_token"], ShouldResemble, tokenObject{numberOfParts: 2, tokenPart: "2"})
 			})
 		})
 	})
