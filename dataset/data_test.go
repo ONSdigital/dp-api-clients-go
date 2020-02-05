@@ -1,18 +1,25 @@
 package dataset
 
 import (
+	"os"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestMetaData_ToString(t *testing.T) {
-	m := setupMetadata()
-	expectedMetaString := expectedData()
-
-	metaString := m.ToString()
-
 	Convey("Given a valid metadata object return the expected text", t, func() {
+		m := setupMetadata()
+		expectedMetaString := expectedData(false)
+
+		metaString := m.ToString()
+		So(metaString, ShouldEqual, expectedMetaString)
+	})
+
+	Convey("Given an empty metadata object return the expected text", t, func() {
+		m := Metadata{}
+		expectedMetaString := expectedData(true)
+		metaString := m.ToString()
 
 		So(metaString, ShouldEqual, expectedMetaString)
 	})
@@ -85,7 +92,22 @@ func setupMetadata() Metadata {
 	return m
 }
 
-func expectedData() string {
+func expectedData(isEmpty bool) string {
+	if isEmpty {
+		return "Title: \n" +
+			"Description: \n" +
+			"Issued: \n" +
+			"Next Release: \n" +
+			"Identifier: \n" +
+			"Language: English\n" +
+			"Latest Changes: []\n" +
+			"Periodicity: \n" +
+			"Distribution:\n" +
+			"Unit of measure: \n" +
+			"License: \n" +
+			"National Statistic: false\n"
+	}
+
 	return "Title: title\n" +
 		"Description: description\n" +
 		"Publisher: {url name type}\n" +
@@ -107,4 +129,19 @@ func expectedData() string {
 		"National Statistic: true\n" +
 		"Publications: [{publication description publication url publication title}]\n" +
 		"Related Links: [{related dataset url related dataset title}]\n"
+}
+
+// writeToFile, helpful function to write expected and actual outputs for syntax comparison
+func writeToFile(filename, line string) error {
+	connection, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	if err != nil {
+		return err
+	}
+
+	_, err = connection.WriteString(line)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
