@@ -58,7 +58,6 @@ func TestIsNotErrNotFound(t *testing.T) {
 	})
 }
 
-
 func TestSetCollectionID(t *testing.T) {
 	cases := []setHeaderTestCase{
 		{

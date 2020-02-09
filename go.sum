@@ -20,12 +20,16 @@ github.com/ONSdigital/dp-rchttp v0.0.0-20200114090501-463a529590e8 h1:MWIHCr/ud5
 github.com/ONSdigital/dp-rchttp v0.0.0-20200114090501-463a529590e8/go.mod h1:821jZtK0oBsV8hjIkNr8vhAWuv0FxJBPJuAHa2B70Gk=
 github.com/ONSdigital/dp-rchttp v0.0.0-20200205184530-552e4acbde03 h1:hLtt1ZyeP9hxPPDq6yUFUa6E2Es9d/DEjJe05I8PTns=
 github.com/ONSdigital/dp-rchttp v0.0.0-20200205184530-552e4acbde03/go.mod h1:3ApQ66OQoOAExxWCOjlTwtiiAzSgqIVyoF7oRYn4YHQ=
+github.com/ONSdigital/dp-rchttp v0.0.0-20200209185241-95449bb53a18 h1:YKdAfQkTh9wJlqov3E0XLhZhjzpAwmeKYz1RQy+xDGQ=
+github.com/ONSdigital/dp-rchttp v0.0.0-20200209185241-95449bb53a18/go.mod h1:G6AXS0mmheufK6aMqykvAnZp69BFPJcFfmoLIvA68aM=
 github.com/ONSdigital/go-ns v0.0.0-20191104121206-f144c4ec2e58 h1:XHnzoC7TxueLAfkBpblPiwaIxjngGv1VNVZhvE4jY6w=
 github.com/ONSdigital/go-ns v0.0.0-20191104121206-f144c4ec2e58/go.mod h1:iWos35il+NjbvDEqwtB736pyHru0MPFE/LqcwkV1wDc=
 github.com/ONSdigital/go-ns v0.0.0-20200205202732-b9da725375d5 h1:63/8Fhteg4Y3WQ+aqya/ewXwPe9srUtFpqDs9ta7u5s=
 github.com/ONSdigital/go-ns v0.0.0-20200205202732-b9da725375d5/go.mod h1:2JUptWbbOXjX4ukLDIWv/lKZgh8cY290JfrG29n2sdY=
 github.com/ONSdigital/go-ns v0.0.0-20200205205049-d4eb9341d1d8 h1:0ej3EHyCGQIkXqyWA91HRLUn1o1nwXeabl0QCQTXSrI=
 github.com/ONSdigital/go-ns v0.0.0-20200205205049-d4eb9341d1d8/go.mod h1:I8Mye07W0KDWiF09FNpFBmoZLKdTgvYjCbby/hqr+Ww=
+github.com/ONSdigital/go-ns v0.0.0-20200209184623-2b53034cd170 h1:kGR4ejdglxAgz5a5S3JzvPePVATdV2TNBu6XHaD7G8c=
+github.com/ONSdigital/go-ns v0.0.0-20200209184623-2b53034cd170/go.mod h1:I8Mye07W0KDWiF09FNpFBmoZLKdTgvYjCbby/hqr+Ww=
 github.com/ONSdigital/log.go v0.0.0-20191127134126-2a610b254f20 h1:1bNmts028atdwyylee7DnEyV5xsz7RVSyVCx7HcyIU4=
 github.com/ONSdigital/log.go v0.0.0-20191127134126-2a610b254f20/go.mod h1:BD7D8FWP1fzwUWsrCopEG72jl9cchCaVNIGSz6YvL+Y=
 github.com/ONSdigital/log.go v1.0.0 h1:hZQTuitFv4nSrpzMhpGvafUC5/8xMVnLI0CWe1rAJNc=
