@@ -5,3 +5,5 @@ go:
 script:
   - export GO111MODULE="on"
   - make test
+env:
+    - GO111MODULE=on
