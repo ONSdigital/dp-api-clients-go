@@ -10,7 +10,7 @@ type Allowed struct {
 	Handler func(w http.ResponseWriter, req *http.Request)
 }
 
-// isMethodAllowed determines
+// isMethodAllowed determines if a method is allowed or not
 func (a *Allowed) isMethodAllowed(method string) bool {
 	for _, s := range a.Methods {
 		if method == s {
@@ -18,6 +18,16 @@ func (a *Allowed) isMethodAllowed(method string) bool {
 		}
 	}
 	return false
+}
+
+// HealthcheckFilter creates a map for healthcheck endpoints whitelisting, to be provided to the Whitelist generic function
+func HealthcheckFilter(hcHandler func(w http.ResponseWriter, req *http.Request)) map[string]Allowed {
+	return map[string]Allowed{
+		"/health": Allowed{
+			Methods: []string{http.MethodGet},
+			Handler: hcHandler,
+		},
+	}
 }
 
 // Whitelist creates a middleware that executes whitelisted endpoints
