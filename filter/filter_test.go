@@ -274,8 +274,9 @@ func TestClient_GetOutput(t *testing.T) {
 
 	Convey("When a filter-instance is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: filterOutputBody})
-		_, err := mockedAPI.GetOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
+		model, err := mockedAPI.GetOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
 		So(err, ShouldBeNil)
+		So(model, ShouldResemble, Model{FilterID: filterOutputID})
 	})
 }
 
@@ -283,7 +284,7 @@ func TestClient_GetDimension(t *testing.T) {
 	filterOutputID := "foo"
 	name := "corge"
 	dimensionBody := `{
-		"url": "www.ons.gov.uk",
+		"dimension_url": "www.ons.gov.uk",
 		"name": "quuz",
 		"options": ["corge"]}`
 	Convey("When bad request is returned", t, func() {
@@ -301,15 +302,19 @@ func TestClient_GetDimension(t *testing.T) {
 
 	Convey("When a dimension-instance is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
-		_, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
+		dim, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldBeNil)
+		So(dim, ShouldResemble, Dimension{
+			Name: "quuz",
+			URI:  "www.ons.gov.uk",
+		})
 	})
 }
 
 func TestClient_GetDimensions(t *testing.T) {
 	filterOutputID := "foo"
 	dimensionBody := `[{
-		"url": "www.ons.gov.uk",
+		"dimension_url": "www.ons.gov.uk",
 		"name": "quuz",
 		"options": ["corge"]}]`
 
@@ -328,14 +333,20 @@ func TestClient_GetDimensions(t *testing.T) {
 
 	Convey("When a dimension-instance is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
-		_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID)
+		dims, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID)
 		So(err, ShouldBeNil)
+		So(dims, ShouldResemble, []Dimension{
+			Dimension{
+				Name: "quuz",
+				URI:  "www.ons.gov.uk",
+			},
+		})
 	})
 }
 
 func TestClient_GetDimensionOptions(t *testing.T) {
 	filterOutputID := "foo"
-	dimensionBody := `[{"dimension_options_url":"quux","option": "quuz"}]`
+	dimensionBody := `[{"dimension_option_url":"quux","option": "quuz"}]`
 	name := "corge"
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
@@ -352,8 +363,14 @@ func TestClient_GetDimensionOptions(t *testing.T) {
 
 	Convey("When a dimension option is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
-		_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
+		opts, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldBeNil)
+		So(opts, ShouldResemble, []DimensionOption{
+			DimensionOption{
+				DimensionOptionsURL: "quux",
+				Option:              "quuz",
+			},
+		})
 	})
 }
 
@@ -796,8 +813,9 @@ func TestClient_GetJobState(t *testing.T) {
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.cli.SetMaxRetries(2)
-		_, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
+		m, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
 		So(err, ShouldNotBeNil)
+		So(m, ShouldResemble, Model{})
 	})
 }
 
@@ -894,7 +912,8 @@ func TestClient_GetPreview(t *testing.T) {
 
 	Convey("When a preview is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: previewBody})
-		_, err := mockedAPI.GetPreview(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
+		p, err := mockedAPI.GetPreview(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
 		So(err, ShouldBeNil)
+		So(p, ShouldResemble, Preview{})
 	})
 }
