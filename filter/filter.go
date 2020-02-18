@@ -23,9 +23,9 @@ const service = "filter-api"
 // ErrInvalidFilterAPIResponse is returned when the filter api does not respond
 // with a valid status
 type ErrInvalidFilterAPIResponse struct {
-	expectedCode int
-	actualCode   int
-	uri          string
+	ExpectedCode int
+	ActualCode   int
+	URI          string
 }
 
 // Config contains any configuration required to send requests to the filter api
@@ -37,15 +37,15 @@ type Config struct {
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidFilterAPIResponse) Error() string {
 	return fmt.Sprintf("invalid response from filter api - should be: %d, got: %d, path: %s",
-		e.expectedCode,
-		e.actualCode,
-		e.uri,
+		e.ExpectedCode,
+		e.ActualCode,
+		e.URI,
 	)
 }
 
 // Code returns the status code received from filter api if an error is returned
 func (e ErrInvalidFilterAPIResponse) Code() int {
-	return e.actualCode
+	return e.ActualCode
 }
 
 var _ error = ErrInvalidFilterAPIResponse{}
