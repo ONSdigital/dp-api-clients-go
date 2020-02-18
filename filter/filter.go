@@ -117,6 +117,47 @@ func (c *Client) GetOutputBytes(ctx context.Context, userAuthToken, serviceAuthT
 	return ioutil.ReadAll(resp.Body)
 }
 
+// UpdateFilterOutput performs a PUT operation to update the filter with the provided filterOutput model
+func (c *Client) UpdateFilterOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, filterJobID string, model *Model) error {
+
+	b, err := json.Marshal(model)
+	if err != nil {
+		return err
+	}
+
+	return c.UpdateFilterOutputBytes(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, filterJobID, b)
+}
+
+// UpdateFilterOutputBytes performs a PUT operation to update the filter with the provided byte array
+func (c *Client) UpdateFilterOutputBytes(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, filterJobID string, b []byte) error {
+	uri := fmt.Sprintf("%s/filter-outputs/%s", c.url, filterJobID)
+
+	clientlog.Do(ctx, "updating filter output", service, uri, log.Data{
+		"method": "PUT",
+		"body":   string(b),
+	})
+
+	req, err := http.NewRequest("PUT", uri, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
+	headers.SetDownloadServiceToken(req, downloadServiceToken)
+
+	resp, err := c.cli.Do(ctx, req)
+	if err != nil {
+		return err
+	}
+	defer CloseResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+	}
+	return nil
+}
+
 // GetDimension returns information on a requested dimension name for a given filterID unmarshalled as a Dimension struct
 func (c *Client) GetDimension(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string) (dim Dimension, err error) {
 	b, err := c.GetDimensionBytes(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name)

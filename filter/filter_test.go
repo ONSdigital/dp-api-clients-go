@@ -280,6 +280,29 @@ func TestClient_GetOutput(t *testing.T) {
 	})
 }
 
+func TestClient_UpdateFilterOutput(t *testing.T) {
+	filterJobID := "filterID"
+	model := Model{FilterID: filterJobID, InstanceID: "someInstance"}
+	Convey("When bad request is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "PUT"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
+		err := mockedAPI.UpdateFilterOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterJobID, &model)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "PUT"}, MockedHTTPResponse{StatusCode: 500, Body: ""})
+		mockedAPI.cli.SetMaxRetries(2)
+		err := mockedAPI.UpdateFilterOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterJobID, &model)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server returns 200 OK", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "PUT"}, MockedHTTPResponse{StatusCode: 200, Body: ""})
+		err := mockedAPI.UpdateFilterOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterJobID, &model)
+		So(err, ShouldBeNil)
+	})
+}
+
 func TestClient_GetDimension(t *testing.T) {
 	filterOutputID := "foo"
 	name := "corge"
