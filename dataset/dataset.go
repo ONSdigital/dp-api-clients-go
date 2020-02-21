@@ -109,7 +109,7 @@ func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, colle
 	// TODO: Authentication will sort this problem out for us. Currently
 	// the shape of the response body is different if you are authenticated
 	// so return the "next" item only
-	if next, ok := body["next"]; ok && (common.IsCallerPresent(ctx) || common.IsFlorenceIdentityPresent(ctx)) {
+	if next, ok := body["next"]; ok && (serviceAuthToken != "" || userAuthToken != "") {
 		b, err = json.Marshal(next)
 		if err != nil {
 			return
@@ -150,7 +150,7 @@ func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken,
 	// TODO: Authentication will sort this problem out for us. Currently
 	// the shape of the response body is different if you are authenticated
 	// so return the "next" item only
-	if next, ok := body["next"]; ok && (common.IsCallerPresent(ctx) || common.IsFlorenceIdentityPresent(ctx)) {
+	if next, ok := body["next"]; ok && (serviceAuthToken != "" || userAuthToken != "") {
 		b, err = json.Marshal(next)
 		if err != nil {
 			return
@@ -217,7 +217,7 @@ func (c *Client) GetEdition(ctx context.Context, userAuthToken, serviceAuthToken
 		return
 	}
 
-	if next, ok := body["next"]; ok && common.IsCallerPresent(ctx) {
+	if next, ok := body["next"]; ok && userAuthToken != "" {
 		b, err = json.Marshal(next)
 		if err != nil {
 			return
@@ -255,7 +255,7 @@ func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToke
 		return nil, nil
 	}
 
-	if _, ok := body["items"].([]interface{})[0].(map[string]interface{})["next"]; ok && common.IsCallerPresent(ctx) {
+	if _, ok := body["items"].([]interface{})[0].(map[string]interface{})["next"]; ok && userAuthToken != "" {
 		var items []map[string]interface{}
 		for _, item := range body["items"].([]interface{}) {
 			items = append(items, item.(map[string]interface{})["next"].(map[string]interface{}))
