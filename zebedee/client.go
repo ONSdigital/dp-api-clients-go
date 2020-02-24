@@ -18,7 +18,6 @@ import (
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
-	"github.com/ONSdigital/go-ns/zebedee/data"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -93,19 +92,19 @@ func (c *Client) GetWithHeaders(ctx context.Context, userAccessToken, path strin
 
 // GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
 // is returned there is a chance that a partly completed DatasetLandingPage is returned
-func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, path string) (data.DatasetLandingPage, error) {
+func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, path string) (DatasetLandingPage, error) {
 	reqURL := c.createRequestURL(ctx, "/data", "uri="+path)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
-		return data.DatasetLandingPage{}, err
+		return DatasetLandingPage{}, err
 	}
 
-	var dlp data.DatasetLandingPage
+	var dlp DatasetLandingPage
 	if err = json.Unmarshal(b, &dlp); err != nil {
 		return dlp, err
 	}
 
-	related := [][]data.Related{
+	related := [][]Related{
 		dlp.RelatedDatasets,
 		dlp.RelatedDocuments,
 		dlp.RelatedMethodology,
@@ -120,7 +119,7 @@ func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, pat
 		for i, e := range element {
 			sem <- 1
 			wg.Add(1)
-			go func(i int, e data.Related, element []data.Related) {
+			go func(i int, e Related, element []Related) {
 				defer func() {
 					<-sem
 					wg.Done()
@@ -159,13 +158,13 @@ func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte,
 }
 
 // GetBreadcrumb returns a Breadcrumb
-func (c *Client) GetBreadcrumb(ctx context.Context, userAccessToken, uri string) ([]data.Breadcrumb, error) {
+func (c *Client) GetBreadcrumb(ctx context.Context, userAccessToken, uri string) ([]Breadcrumb, error) {
 	b, _, err := c.get(ctx, userAccessToken, "/parents?uri="+uri)
 	if err != nil {
 		return nil, err
 	}
 
-	var parentsJSON []data.Breadcrumb
+	var parentsJSON []Breadcrumb
 	if err = json.Unmarshal(b, &parentsJSON); err != nil {
 		return nil, err
 	}
@@ -174,20 +173,20 @@ func (c *Client) GetBreadcrumb(ctx context.Context, userAccessToken, uri string)
 }
 
 // GetDataset returns details about a dataset from zebedee
-func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (data.Dataset, error) {
+func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (Dataset, error) {
 	reqURL := c.createRequestURL(ctx, "/data", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 
 	if err != nil {
-		return data.Dataset{}, err
+		return Dataset{}, err
 	}
 
-	var d data.Dataset
+	var d Dataset
 	if err = json.Unmarshal(b, &d); err != nil {
 		return d, err
 	}
 
-	downloads := make([]data.Download, 0)
+	downloads := make([]Download, 0)
 
 	for _, v := range d.Downloads {
 		fs, err := c.GetFileSize(ctx, userAccessToken, uri+"/"+v.File)
@@ -195,7 +194,7 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (d
 			return d, err
 		}
 
-		downloads = append(downloads, data.Download{
+		downloads = append(downloads, Download{
 			File: v.File,
 			Size: strconv.Itoa(fs.Size),
 		})
@@ -203,14 +202,14 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (d
 
 	d.Downloads = downloads
 
-	supplementaryFiles := make([]data.SupplementaryFile, 0)
+	supplementaryFiles := make([]SupplementaryFile, 0)
 	for _, v := range d.SupplementaryFiles {
 		fs, err := c.GetFileSize(ctx, userAccessToken, uri+"/"+v.File)
 		if err != nil {
 			return d, err
 		}
 
-		supplementaryFiles = append(supplementaryFiles, data.SupplementaryFile{
+		supplementaryFiles = append(supplementaryFiles, SupplementaryFile{
 			File:  v.File,
 			Title: v.Title,
 			Size:  strconv.Itoa(fs.Size),
@@ -223,14 +222,14 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (d
 }
 
 // GetFileSize retrieves a given filesize from zebedee
-func (c *Client) GetFileSize(ctx context.Context, userAccessToken, uri string) (data.FileSize, error) {
+func (c *Client) GetFileSize(ctx context.Context, userAccessToken, uri string) (FileSize, error) {
 	reqURL := c.createRequestURL(ctx, "/filesize", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
-		return data.FileSize{}, err
+		return FileSize{}, err
 	}
 
-	var fs data.FileSize
+	var fs FileSize
 	if err = json.Unmarshal(b, &fs); err != nil {
 		return fs, err
 	}
@@ -239,14 +238,14 @@ func (c *Client) GetFileSize(ctx context.Context, userAccessToken, uri string) (
 }
 
 // GetPageTitle retrieves a page title from zebedee
-func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, uri string) (data.PageTitle, error) {
+func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, uri string) (PageTitle, error) {
 	reqURL := c.createRequestURL(ctx, "/data", "uri="+uri+"&title")
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
-		return data.PageTitle{}, err
+		return PageTitle{}, err
 	}
 
-	var pt data.PageTitle
+	var pt PageTitle
 	if err = json.Unmarshal(b, &pt); err != nil {
 		return pt, err
 	}
