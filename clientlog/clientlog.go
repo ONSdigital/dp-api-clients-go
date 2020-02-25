@@ -13,7 +13,7 @@ import (
 func Do(ctx context.Context, action, service, uri string, data ...log.Data) {
 	d := buildLogData(action, uri, data...)
 
-	log.Event(ctx, fmt.Sprintf("Making request to service: %s", service), d)
+	log.Event(ctx, fmt.Sprintf("Making request to service: %s", service), log.INFO, d)
 }
 
 func buildLogData(action, uri string, data ...log.Data) (d log.Data) {
