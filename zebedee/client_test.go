@@ -118,7 +118,7 @@ func mockZebedeeServer(port chan int) {
 
 	l, err := net.Listen("tcp", ":0")
 	if err != nil {
-		log.Event(context.Background(), "error listening on local network address", log.Error(err))
+		log.Event(context.Background(), "error listening on local network address", log.FATAL, log.Error(err))
 		os.Exit(2)
 	}
 
@@ -126,7 +126,7 @@ func mockZebedeeServer(port chan int) {
 	close(port)
 
 	if err := http.Serve(l, r); err != nil {
-		log.Event(context.Background(), "error serving http connections", log.Error(err))
+		log.Event(context.Background(), "error serving http connections", log.FATAL, log.Error(err))
 		os.Exit(2)
 	}
 }

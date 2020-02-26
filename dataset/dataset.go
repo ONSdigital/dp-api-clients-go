@@ -54,7 +54,7 @@ type Client struct {
 // closeResponseBody closes the response body and logs an error containing the context if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if err := resp.Body.Close(); err != nil {
-		log.Event(ctx, "error closing http response body", log.Error(err))
+		log.Event(ctx, "error closing http response body", log.ERROR, log.Error(err))
 	}
 }
 

@@ -65,7 +65,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 	}
 	splitTokens(florenceToken, serviceAuthToken, logData)
 
-	log.Event(ctx, "calling AuthAPI to authenticate caller identity", logData)
+	log.Event(ctx, "calling AuthAPI to authenticate caller identity", log.INFO, logData)
 
 	var outboundAuthReq *http.Request
 	var errCreatingReq error
@@ -77,7 +77,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 	}
 
 	if errCreatingReq != nil {
-		log.Event(ctx, "error creating AuthAPI identity http request", logData, log.Error(errCreatingReq))
+		log.Event(ctx, "error creating AuthAPI identity http request", log.ERROR, logData, log.Error(errCreatingReq))
 		return ctx, http.StatusInternalServerError, nil, errCreatingReq
 	}
 
@@ -89,7 +89,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 
 	resp, err := api.HTTPClient.Do(ctx, outboundAuthReq)
 	if err != nil {
-		log.Event(ctx, "HTTPClient.Do returned error making AuthAPI identity request", logData, log.Error(err))
+		log.Event(ctx, "HTTPClient.Do returned error making AuthAPI identity request", log.ERROR, logData, log.Error(err))
 		return ctx, http.StatusInternalServerError, nil, err
 	}
 
@@ -112,7 +112,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 
 	logData["user_identity"] = userIdentity
 	logData["caller_identity"] = userIdentity
-	log.Event(ctx, "caller identity retrieved setting context values", logData)
+	log.Event(ctx, "caller identity retrieved setting context values", log.INFO, logData)
 
 	ctx = context.WithValue(ctx, common.UserIdentityKey, userIdentity)
 	ctx = context.WithValue(ctx, common.CallerIdentityKey, identityResponse.Identifier)
@@ -188,7 +188,7 @@ func closeResponse(ctx context.Context, resp *http.Response, data log.Data) {
 	}
 
 	if errClose := resp.Body.Close(); errClose != nil {
-		log.Event(ctx, "error closing response body", log.Error(errClose), data)
+		log.Event(ctx, "error closing response body", log.ERROR, log.Error(errClose), data)
 	}
 }
 

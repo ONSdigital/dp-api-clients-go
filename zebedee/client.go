@@ -258,7 +258,7 @@ func (c *Client) createRequestURL(ctx context.Context, path, query string) strin
 	if ctx.Value(common.CollectionIDHeaderKey) != nil {
 		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
 		if !ok {
-			log.Event(ctx, "unable to find collection ID header key", log.Error(errCastingCollectionID))
+			log.Event(ctx, "unable to find collection ID header key", log.ERROR, log.Error(errCastingCollectionID))
 		}
 		path += "/" + collectionID
 	}
@@ -269,7 +269,7 @@ func (c *Client) createRequestURL(ctx context.Context, path, query string) strin
 	if ctx.Value(common.LocaleHeaderKey) != nil {
 		localeCode, ok := ctx.Value(common.LocaleHeaderKey).(string)
 		if !ok {
-			log.Event(ctx, "unable to find local header key", log.Error(errCastingLocalCode))
+			log.Event(ctx, "unable to find local header key", log.ERROR, log.Error(errCastingLocalCode))
 		}
 		path += "&lang=" + localeCode
 	}

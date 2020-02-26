@@ -82,7 +82,7 @@ func (c *Client) Checker(ctx context.Context, state *health.CheckState) error {
 		code, err = c.get(ctx, "/healthcheck")
 	}
 	if err != nil {
-		log.Event(ctx, "failed to request service health", log.Error(err), logData)
+		log.Event(ctx, "failed to request service health", log.ERROR, log.Error(err), logData)
 	}
 
 	switch code {
@@ -129,7 +129,7 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 	}
 
 	if err := resp.Body.Close(); err != nil {
-		log.Event(ctx, "error closing http response body", log.Error(err))
+		log.Event(ctx, "error closing http response body", log.ERROR, log.Error(err))
 	}
 }
 

@@ -114,12 +114,12 @@ func (c *Client) GetImportJob(ctx context.Context, importJobID, serviceToken str
 		isFatal = true
 	}
 	if err != nil {
-		log.Event(ctx, "GetImportJob", logData, log.Error(err))
+		log.Event(ctx, "GetImportJob", log.ERROR, logData, log.Error(err))
 		return importJob, isFatal, err
 	}
 
 	if err := json.Unmarshal(jsonBody, &importJob); err != nil {
-		log.Event(ctx, "GetImportJob unmarshal", logData, log.Error(err))
+		log.Event(ctx, "GetImportJob unmarshal", log.ERROR, logData, log.Error(err))
 		return ImportJob{}, true, err
 	}
 
@@ -143,7 +143,7 @@ func (c *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken s
 		err = errors.New("Bad HTTP response")
 	}
 	if err != nil {
-		log.Event(ctx, "UpdateImportJobState", logData, log.Error(err))
+		log.Event(ctx, "UpdateImportJobState", log.ERROR, logData, log.Error(err))
 		return err
 	}
 	return nil
@@ -163,7 +163,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 
 	URL, err := url.Parse(path)
 	if err != nil {
-		log.Event(ctx, "Failed to create url for API call", logData, log.Error(err))
+		log.Event(ctx, "Failed to create url for API call", log.ERROR, logData, log.Error(err))
 		return nil, 0, err
 	}
 	path = URL.String()
@@ -185,7 +185,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 	}
 	// check above req had no errors
 	if err != nil {
-		log.Event(ctx, "Failed to create request for API", logData, log.Error(err))
+		log.Event(ctx, "Failed to create request for API", log.ERROR, logData, log.Error(err))
 		return nil, 0, err
 	}
 
@@ -194,19 +194,19 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 
 	resp, err := client.Do(ctx, req)
 	if err != nil {
-		log.Event(ctx, "Failed to action API", logData, log.Error(err))
+		log.Event(ctx, "Failed to action API", log.ERROR, logData, log.Error(err))
 		return nil, 0, err
 	}
 	defer closeResponseBody(ctx, resp)
 
 	logData["httpCode"] = resp.StatusCode
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= 300 {
-		log.Event(ctx, "unexpected status code from API", logData)
+		log.Event(ctx, "unexpected status code from API", log.ERROR, logData)
 	}
 
 	jsonBody, err := getBody(resp)
 	if err != nil {
-		log.Event(ctx, "Failed to read body from API", logData, log.Error(err))
+		log.Event(ctx, "Failed to read body from API", log.ERROR, log.Error(err))
 		return nil, resp.StatusCode, err
 	}
 
@@ -245,6 +245,6 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 		return
 	}
 	if err := resp.Body.Close(); err != nil {
-		log.Event(ctx, "error closing http response body", log.Error(err))
+		log.Event(ctx, "error closing http response body", log.ERROR, log.Error(err))
 	}
 }
