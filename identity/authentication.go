@@ -24,6 +24,22 @@ type tokenObject struct {
 	tokenPart     string
 }
 
+// TokenType iota enum defines possible token types
+type TokenType int
+
+// Possible Token types
+const (
+	TokenTypeUser = iota
+	TokenTypeService
+)
+
+var tokenTypes = []string{"User", "Service"}
+
+// Values of the token types
+func (t TokenType) String() string {
+	return tokenTypes[t]
+}
+
 // Client is an alias to a generic/common api client structure
 type Client clients.APIClient
 
@@ -56,56 +72,28 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 		return ctx, http.StatusUnauthorized, errors.WithMessage(errUnableToIdentifyRequest, "no headers set on request"), nil
 	}
 
-	url := api.BaseURL + "/identity"
-
 	logData := log.Data{
 		"is_user_request":    isUserReq,
 		"is_service_request": isServiceReq,
-		"url":                url,
 	}
 	splitTokens(florenceToken, serviceAuthToken, logData)
 
-	log.Event(ctx, "calling AuthAPI to authenticate caller identity", log.INFO, logData)
-
-	var outboundAuthReq *http.Request
-	var errCreatingReq error
-
+	// Check token identity (according to isUserReq or isServiceReq)
+	var tokenIdentityResp *common.IdentityResponse
+	var errTokenIdentity error
+	var authFail authFailure
+	var statusCode int
 	if isUserReq {
-		outboundAuthReq, errCreatingReq = createUserAuthRequest(url, florenceToken)
+		tokenIdentityResp, statusCode, authFail, errTokenIdentity = api.doCheckTokenIdentity(ctx, florenceToken, TokenTypeUser, logData)
 	} else {
-		outboundAuthReq, errCreatingReq = createServiceAuthRequest(url, serviceAuthToken)
+		tokenIdentityResp, statusCode, authFail, errTokenIdentity = api.doCheckTokenIdentity(ctx, serviceAuthToken, TokenTypeService, logData)
+	}
+	if errTokenIdentity != nil || authFail != nil {
+		return ctx, statusCode, authFail, errTokenIdentity
 	}
 
-	if errCreatingReq != nil {
-		log.Event(ctx, "error creating AuthAPI identity http request", log.ERROR, logData, log.Error(errCreatingReq))
-		return ctx, http.StatusInternalServerError, nil, errCreatingReq
-	}
-
-	if api.HTTPClient == nil {
-		api.Lock.Lock()
-		api.HTTPClient = rchttp.NewClient()
-		api.Lock.Unlock()
-	}
-
-	resp, err := api.HTTPClient.Do(ctx, outboundAuthReq)
-	if err != nil {
-		log.Event(ctx, "HTTPClient.Do returned error making AuthAPI identity request", log.ERROR, logData, log.Error(err))
-		return ctx, http.StatusInternalServerError, nil, err
-	}
-
-	defer closeResponse(ctx, resp, logData)
-
-	// Check to see if the user is authorised
-	if resp.StatusCode != http.StatusOK {
-		return ctx, resp.StatusCode, errors.WithMessage(errUnableToIdentifyRequest, "unexpected status code returned from AuthAPI"), nil
-	}
-
-	identityResponse, err := unmarshalIdentityResponse(resp)
-	if err != nil {
-		return ctx, http.StatusInternalServerError, nil, err
-	}
-
-	userIdentity, err := getUserIdentity(isUserReq, identityResponse, req)
+	// If token identity succeeded, get user identity
+	userIdentity, err := getUserIdentity(isUserReq, tokenIdentityResp, req)
 	if err != nil {
 		return ctx, http.StatusInternalServerError, nil, err
 	}
@@ -115,9 +103,72 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 	log.Event(ctx, "caller identity retrieved setting context values", log.INFO, logData)
 
 	ctx = context.WithValue(ctx, common.UserIdentityKey, userIdentity)
-	ctx = context.WithValue(ctx, common.CallerIdentityKey, identityResponse.Identifier)
+	ctx = context.WithValue(ctx, common.CallerIdentityKey, tokenIdentityResp.Identifier)
 
 	return ctx, http.StatusOK, nil, nil
+}
+
+// CheckTokenIdentity Checks the identity of a provided token, for a particular token type (i.e. user or service)
+func (api Client) CheckTokenIdentity(ctx context.Context, token string, tokenType TokenType) (*common.IdentityResponse, error) {
+	if len(token) == 0 {
+		return nil, errors.New("Empty token provided")
+	}
+	// Log data with token type
+	logData := log.Data{
+		"token_type": tokenType.String(),
+		"token":      splitToken(token),
+	}
+	// Perform 'GET /identity' and simplify return
+	idRes, _, authErr, err := api.doCheckTokenIdentity(ctx, token, tokenType, logData)
+	if authErr != nil {
+		return nil, authErr
+	}
+	return idRes, err
+}
+
+func (api Client) doCheckTokenIdentity(ctx context.Context, token string, tokenType TokenType, logData log.Data) (*common.IdentityResponse, int, authFailure, error) {
+
+	url := api.BaseURL + "/identity"
+	logData["url"] = url
+	log.Event(ctx, "calling AuthAPI to authenticate caller identity", log.INFO, logData)
+
+	// Crete request according to the token type
+	var outboundAuthReq *http.Request
+	var errCreatingReq error
+	switch tokenType {
+	case TokenTypeUser:
+		outboundAuthReq, errCreatingReq = createUserAuthRequest(url, token)
+	default:
+		outboundAuthReq, errCreatingReq = createServiceAuthRequest(url, token)
+	}
+	if errCreatingReq != nil {
+		log.Event(ctx, "error creating AuthAPI identity http request", log.ERROR, logData, log.Error(errCreatingReq))
+		return nil, http.StatusInternalServerError, nil, errCreatingReq
+	}
+
+	// Create client if it does not exist
+	if api.HTTPClient == nil {
+		api.Lock.Lock()
+		api.HTTPClient = rchttp.NewClient()
+		api.Lock.Unlock()
+	}
+
+	// 'GET /identity' request
+	resp, err := api.HTTPClient.Do(ctx, outboundAuthReq)
+	if err != nil {
+		log.Event(ctx, "HTTPClient.Do returned error making AuthAPI identity request", log.ERROR, logData, log.Error(err))
+		return nil, http.StatusInternalServerError, nil, err
+	}
+	defer closeResponse(ctx, resp, logData)
+
+	// Validate returned status code
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.StatusCode, errors.WithMessage(errUnableToIdentifyRequest, "unexpected status code returned from AuthAPI"), nil
+	}
+
+	// Unmarshal response
+	idResp, err := unmarshalIdentityResponse(resp)
+	return idResp, http.StatusInternalServerError, nil, err
 }
 
 func splitTokens(florenceToken, authToken string, logData log.Data) {
