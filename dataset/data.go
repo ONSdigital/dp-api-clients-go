@@ -200,6 +200,15 @@ type Option struct {
 	Option      string `json:"option"`
 }
 
+// OptionPost represents an option model to store in the dataset api
+type OptionPost struct {
+	Code     string `json:"code"`
+	CodeList string `json:"code_list,omitempty"`
+	Label    string `json:"label"`
+	Name     string `json:"dimension"`
+	Option   string `json:"option"`
+}
+
 // Methodology represents a methodology document returned by the dataset api
 type Methodology struct {
 	Description string `json:"description"`

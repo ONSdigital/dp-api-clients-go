@@ -359,6 +359,29 @@ func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToke
 	return
 }
 
+// PostInstanceDimensions performs a 'POST /instances/<id>/dimensions' with the provided OptionPost
+func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string, optionToPost OptionPost) error {
+	payload, err := json.Marshal(optionToPost)
+	if err != nil {
+		return err
+	}
+
+	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.url, instanceID)
+
+	clientlog.Do(ctx, "posting options to instance dimensions", service, uri)
+
+	resp, err := c.doPostWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, payload)
+	if err != nil {
+		return err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewDatasetAPIResponse(resp, uri)
+	}
+	return nil
+}
+
 // PutVersion update the version
 func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version string, v Version) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
@@ -519,7 +542,19 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	return c.cli.Do(ctx, req)
 }
 
-// doGetWithAuthHeadersAndWithDownloadToken executes clienter.Do setting the user and service authentication and dwonload token token as a request header. Returns the http.Response and any error.
+func (c *Client) doPostWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, payload []byte) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	addCollectionIDHeader(req, collectionID)
+	common.AddFlorenceHeader(req, userAuthToken)
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	return c.cli.Do(ctx, req)
+}
+
+// doGetWithAuthHeadersAndWithDownloadToken executes clienter.Do setting the user and service authentication and download token token as a request header. Returns the http.Response and any error.
 // It is the callers responsibility to ensure response.Body is closed on completion.
 func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, userAuthToken, serviceAuthToken, downloadserviceAuthToken, collectionID, uri string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, uri, nil)

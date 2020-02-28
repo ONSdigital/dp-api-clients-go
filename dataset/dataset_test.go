@@ -30,8 +30,9 @@ var (
 	initialState = health.CreateCheckState(service)
 )
 
-var checkResponseBase = func(mockRCHTTPCli *rchttp.ClienterMock) {
+var checkResponseBase = func(mockRCHTTPCli *rchttp.ClienterMock, expectedUri string) {
 	So(len(mockRCHTTPCli.DoCalls()), ShouldEqual, 1)
+	So(mockRCHTTPCli.DoCalls()[0].Req.URL.RequestURI(), ShouldEqual, expectedUri)
 	So(mockRCHTTPCli.DoCalls()[0].Req.Header.Get(common.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
 }
 
@@ -241,7 +242,7 @@ func TestClient_PutVersion(t *testing.T) {
 
 	checkResponse := func(mockRCHTTPCli *rchttp.ClienterMock, expectedVersion Version) {
 
-		checkResponseBase(mockRCHTTPCli)
+		checkResponseBase(mockRCHTTPCli, "/datasets/123/editions/2017/versions/1")
 
 		actualBody, _ := ioutil.ReadAll(mockRCHTTPCli.DoCalls()[0].Req.Body)
 
@@ -439,7 +440,7 @@ func TestClient_GetInstance(t *testing.T) {
 			})
 
 			Convey("and rchttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockRCHTTPCli)
+				checkResponseBase(mockRCHTTPCli, "/instances/123")
 			})
 		})
 	})
@@ -464,7 +465,78 @@ func TestClient_GetInstance(t *testing.T) {
 			})
 
 			Convey("and rchttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockRCHTTPCli)
+				checkResponseBase(mockRCHTTPCli, "/instances/123")
+			})
+		})
+	})
+}
+
+func TestClient_PostInstanceDimensions(t *testing.T) {
+
+	optionsToPost := OptionPost{
+		Name:     "testName",
+		Option:   "testOption",
+		Label:    "testLabel",
+		CodeList: "testCodeList",
+		Code:     "testCode",
+	}
+
+	Convey("given a 200 status is returned", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, nil
+			},
+		}
+
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+		expectedPayload, err := json.Marshal(optionsToPost)
+		So(err, ShouldBeNil)
+
+		Convey("when PostInstanceDimensions is called", func() {
+			err := cli.PostInstanceDimensions(ctx, serviceAuthToken, "123", optionsToPost)
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli, "/instances/123/dimensions")
+				payload, err := ioutil.ReadAll(mockRCHTTPCli.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusNotFound,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte("wrong!"))),
+				}, nil
+			},
+		}
+
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+		expectedPayload, err := json.Marshal(optionsToPost)
+		So(err, ShouldBeNil)
+
+		Convey("when PostInstanceDimensions is called", func() {
+			err := cli.PostInstanceDimensions(ctx, serviceAuthToken, "123", optionsToPost)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123/dimensions, body: wrong!").Error())
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli, "/instances/123/dimensions")
+				payload, err := ioutil.ReadAll(mockRCHTTPCli.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
 			})
 		})
 	})
