@@ -209,6 +209,12 @@ type OptionPost struct {
 	Option   string `json:"option"`
 }
 
+// JobInstance represents the details necessary to update (PUT) a job instance
+type JobInstance struct {
+	HeaderNames          []string `json:"headers"`
+	NumberOfObservations int      `json:"total_observations"`
+}
+
 // Methodology represents a methodology document returned by the dataset api
 type Methodology struct {
 	Description string `json:"description"`

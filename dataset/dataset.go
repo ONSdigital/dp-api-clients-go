@@ -68,6 +68,18 @@ func NewAPIClient(datasetAPIURL string) *Client {
 	}
 }
 
+// NewAPIClientWithMaxRetries creates a new instance of Client with a given dataset api url and the relevant tokens,
+// setting a number of max retires for the HTTP client
+func NewAPIClientWithMaxRetries(datasetAPIURL string, maxRetries int) *Client {
+	hcClient := healthcheck.NewClient(service, datasetAPIURL)
+	hcClient.Client.SetMaxRetries(maxRetries)
+
+	return &Client{
+		cli: hcClient.Client,
+		url: datasetAPIURL,
+	}
+}
+
 // Checker calls dataset api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
@@ -359,9 +371,32 @@ func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToke
 	return
 }
 
+// PutInstanceData executes a put request to update instance data via the dataset API.
+func (c *Client) PutInstanceData(ctx context.Context, serviceAuthToken, instanceID string, data JobInstance) error {
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
+
+	clientlog.Do(ctx, "putting data to instance", service, uri)
+
+	resp, err := c.doPutWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, payload)
+	if err != nil {
+		return err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewDatasetAPIResponse(resp, uri)
+	}
+	return nil
+}
+
 // PostInstanceDimensions performs a 'POST /instances/<id>/dimensions' with the provided OptionPost
-func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string, optionToPost OptionPost) error {
-	payload, err := json.Marshal(optionToPost)
+func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string, data OptionPost) error {
+	payload, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
@@ -388,25 +423,15 @@ func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken
 
 	clientlog.Do(ctx, "updating version", service, uri)
 
-	b, err := json.Marshal(v)
+	payload, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to marshall version")
 	}
 
-	req, err := http.NewRequest(http.MethodPut, uri, bytes.NewBuffer(b))
-	if err != nil {
-		return errors.Wrap(err, "error while attempting to create http request")
-	}
-
-	addCollectionIDHeader(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doPutWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload)
 	if err != nil {
 		return errors.Wrap(err, "http client returned error while attempting to make request")
 	}
-
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
@@ -544,6 +569,18 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 
 func (c *Client) doPostWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, payload []byte) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	addCollectionIDHeader(req, collectionID)
+	common.AddFlorenceHeader(req, userAuthToken)
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	return c.cli.Do(ctx, req)
+}
+
+func (c *Client) doPutWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, payload []byte) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPut, uri, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
