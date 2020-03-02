@@ -72,7 +72,9 @@ func NewAPIClient(datasetAPIURL string) *Client {
 // setting a number of max retires for the HTTP client
 func NewAPIClientWithMaxRetries(datasetAPIURL string, maxRetries int) *Client {
 	hcClient := healthcheck.NewClient(service, datasetAPIURL)
-	hcClient.Client.SetMaxRetries(maxRetries)
+	if maxRetries > 0 {
+		hcClient.Client.SetMaxRetries(maxRetries)
+	}
 
 	return &Client{
 		cli: hcClient.Client,
