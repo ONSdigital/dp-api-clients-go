@@ -369,6 +369,31 @@ func (c *Client) GetInstanceByBytes(ctx context.Context, userAuthToken, serviceA
 	return
 }
 
+// GetInstanceDimensionsByBytes returns a list of dimensions for an instance as bytes from the dataset api
+func (c *Client) GetInstanceDimensionsByBytes(ctx context.Context, userAuthToken, serviceAuthToken, instanceID string) (b []byte, err error) {
+	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.url, instanceID)
+
+	clientlog.Do(ctx, "retrieving instance dimensions", service, uri)
+
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, "", uri)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewDatasetAPIResponse(resp, uri)
+		return
+	}
+
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 // PutVersion update the version
 func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version string, v Version) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
