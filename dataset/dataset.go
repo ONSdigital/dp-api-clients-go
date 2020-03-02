@@ -335,6 +335,17 @@ func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken
 
 // GetInstance returns an instance from the dataset api
 func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string) (m Instance, err error) {
+	b, err := c.GetInstanceByBytes(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &m)
+	return
+}
+
+// GetInstanceByBytes returns an instance as bytes from the dataset api
+func (c *Client) GetInstanceByBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string) (b []byte, err error) {
 	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
@@ -350,12 +361,11 @@ func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToke
 		return
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(b, &m)
 	return
 }
 
