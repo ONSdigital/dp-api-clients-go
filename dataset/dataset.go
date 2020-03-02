@@ -335,7 +335,7 @@ func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken
 
 // GetInstance returns an instance from the dataset api
 func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string) (m Instance, err error) {
-	_, b, err := c.GetInstanceByBytes(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID)
+	b, err := c.GetInstanceByBytes(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID)
 	if err != nil {
 		return
 	}
@@ -345,7 +345,7 @@ func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToke
 }
 
 // GetInstanceByBytes returns an instance as bytes from the dataset api
-func (c *Client) GetInstanceByBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string) (code int, b []byte, err error) {
+func (c *Client) GetInstanceByBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string) (b []byte, err error) {
 	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
@@ -356,7 +356,6 @@ func (c *Client) GetInstanceByBytes(ctx context.Context, userAuthToken, serviceA
 	}
 	defer closeResponseBody(ctx, resp)
 
-	code = resp.StatusCode
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
 		return
