@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -20,6 +21,24 @@ import (
 )
 
 const service = "dataset-api"
+
+// State - iota enum of possible states
+type State int
+
+// Possible values for a State
+const (
+	StateCreated State = iota
+	StateSubmitted
+	StateCompleted
+	StateError
+)
+
+var stateValues = []string{"created", "submitted", "completed", "error"}
+
+// String returns the string representation of a state
+func (s State) String() string {
+	return stateValues[s]
+}
 
 // ErrInvalidDatasetAPIResponse is returned when the dataset api does not respond
 // with a valid status
@@ -99,7 +118,7 @@ func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, colle
 
 	clientlog.Do(ctx, "retrieving dataset", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
 	if err != nil {
 		return
 	}
@@ -140,7 +159,7 @@ func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken,
 
 	clientlog.Do(ctx, "retrieving data from dataset API", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
 	if err != nil {
 		return
 	}
@@ -181,7 +200,7 @@ func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToke
 
 	clientlog.Do(ctx, "retrieving datasets", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
 	if err != nil {
 		return
 	}
@@ -210,7 +229,7 @@ func (c *Client) GetEdition(ctx context.Context, userAuthToken, serviceAuthToken
 
 	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
 	if err != nil {
 		return
 	}
@@ -248,7 +267,7 @@ func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToke
 
 	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
 	if err != nil {
 		return
 	}
@@ -353,7 +372,7 @@ func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToke
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
 	if err != nil {
 		return
 	}
@@ -373,6 +392,55 @@ func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToke
 	return
 }
 
+// GetInstances returns a list of all instances filtered by vars
+func (c *Client) GetInstances(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, vars url.Values) (m Instances, err error) {
+	uri := fmt.Sprintf("%s/instances", c.url)
+
+	clientlog.Do(ctx, "retrieving dataset version", service, uri)
+
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, vars)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewDatasetAPIResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	json.Unmarshal(b, &m)
+	return
+}
+
+// PutInstanceState performs a PUT '/instances/<id>' with the string representation of the provided state
+func (c *Client) PutInstanceState(ctx context.Context, serviceAuthToken, instanceID string, state State) error {
+	payload, err := json.Marshal(stateData{State: state.String()})
+	if err != nil {
+		return err
+	}
+
+	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
+
+	clientlog.Do(ctx, "putting state to instance", service, uri)
+
+	resp, err := c.doPutWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, payload)
+	if err != nil {
+		return err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewDatasetAPIResponse(resp, uri)
+	}
+	return nil
+}
+
 // PutInstanceData executes a put request to update instance data via the dataset API.
 func (c *Client) PutInstanceData(ctx context.Context, serviceAuthToken, instanceID string, data JobInstance) error {
 	payload, err := json.Marshal(data)
@@ -385,6 +453,47 @@ func (c *Client) PutInstanceData(ctx context.Context, serviceAuthToken, instance
 	clientlog.Do(ctx, "putting data to instance", service, uri)
 
 	resp, err := c.doPutWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, payload)
+	if err != nil {
+		return err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewDatasetAPIResponse(resp, uri)
+	}
+	return nil
+}
+
+// PutInstanceImportTasks marks the import observation task state for an instance
+func (c *Client) PutInstanceImportTasks(ctx context.Context, serviceAuthToken, instanceID string, data InstanceImportTasks) error {
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	uri := fmt.Sprintf("%s/instances/%s/import_tasks", c.url, instanceID)
+
+	clientlog.Do(ctx, "updating instance import_tasks", service, uri)
+
+	resp, err := c.doPutWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, payload)
+	if err != nil {
+		return err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewDatasetAPIResponse(resp, uri)
+	}
+	return nil
+}
+
+// UpdateInstanceWithNewInserts increments the observation inserted count for an instance
+func (c *Client) UpdateInstanceWithNewInserts(ctx context.Context, serviceAuthToken, instanceID string, observationsInserted int32) error {
+	uri := fmt.Sprintf("%s/instances/%s/inserted_observations/%d", c.url, instanceID, observationsInserted)
+
+	clientlog.Do(ctx, "updating instance inserted observations", service, uri)
+
+	resp, err := c.doPutWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, nil)
 	if err != nil {
 		return err
 	}
@@ -453,7 +562,7 @@ func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceA
 
 	clientlog.Do(ctx, "retrieving dataset version metadata", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
 	if err != nil {
 		return
 	}
@@ -479,7 +588,7 @@ func (c *Client) GetDimensions(ctx context.Context, userAuthToken, serviceAuthTo
 
 	clientlog.Do(ctx, "retrieving dataset version dimensions", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
 	if err != nil {
 		return
 	}
@@ -510,7 +619,7 @@ func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken
 
 	clientlog.Do(ctx, "retrieving options for dimension", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
 	if err != nil {
 		return
 	}
@@ -557,10 +666,15 @@ func addCollectionIDHeader(r *http.Request, collectionID string) {
 
 // doGetWithAuthHeaders executes clienter.Do setting the user and service authentication token as a request header. Returns the http.Response and any error.
 // It is the callers responsibility to ensure response.Body is closed on completion.
-func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string) (*http.Response, error) {
+// If url.Values are provided, they will be added as query parameters in the URL.
+func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, values url.Values) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if values != nil {
+		req.URL.RawQuery = values.Encode()
 	}
 
 	addCollectionIDHeader(req, collectionID)

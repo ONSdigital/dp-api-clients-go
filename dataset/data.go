@@ -46,24 +46,62 @@ type List struct {
 
 // Version represents a version within a dataset
 type Version struct {
-	Alerts        *[]Alert            `json:"alerts"`
-	CollectionID  string              `json:"collection_id"`
-	Downloads     map[string]Download `json:"downloads"`
-	Edition       string              `json:"edition"`
-	Dimensions    []Dimension         `json:"dimensions"`
-	ID            string              `json:"id"`
-	InstanceID    string              `json:"instance_id"`
-	LatestChanges []Change            `json:"latest_changes"`
-	Links         Links               `json:"links"`
-	ReleaseDate   string              `json:"release_date"`
-	State         string              `json:"state"`
-	Temporal      []Temporal          `json:"temporal"`
-	Version       int                 `json:"version"`
+	Alerts               *[]Alert             `json:"alerts"`
+	CollectionID         string               `json:"collection_id"`
+	Downloads            map[string]Download  `json:"downloads"`
+	Edition              string               `json:"edition"`
+	Dimensions           []Dimension          `json:"dimensions"`
+	ID                   string               `json:"id"`
+	InstanceID           string               `json:"instance_id"`
+	LatestChanges        []Change             `json:"latest_changes"`
+	Links                Links                `json:"links,omitempty"`
+	ReleaseDate          string               `json:"release_date"`
+	State                string               `json:"state"`
+	Temporal             []Temporal           `json:"temporal"`
+	Version              int                  `json:"version"`
+	NumberOfObservations int64                `json:"total_observations,omitempty"`
+	ImportTasks          *InstanceImportTasks `json:"import_tasks,omitempty"`
+}
+
+// InstanceImportTasks represents all of the tasks required to complete an import job.
+type InstanceImportTasks struct {
+	ImportObservations    *ImportObservationsTask `json:"import_observations"`
+	BuildHierarchyTasks   []*BuildHierarchyTask   `json:"build_hierarchies"`
+	BuildSearchIndexTasks []*BuildSearchIndexTask `json:"build_search_indexes"`
+}
+
+// ImportObservationsTask represents the task of importing instance observation data into the database.
+type ImportObservationsTask struct {
+	State                string `json:"state,omitempty"`
+	InsertedObservations int64  `json:"total_inserted_observations,omitempty"`
+}
+
+// BuildHierarchyTask represents a task of importing a single hierarchy.
+type BuildHierarchyTask struct {
+	State         string `json:"state,omitempty"`
+	DimensionName string `json:"dimension_name,omitempty"`
+	CodeListID    string `json:"code_list_id,omitempty"`
+}
+
+// BuildSearchIndexTask represents a task of importing a single search index into search.
+type BuildSearchIndexTask struct {
+	State         string `json:"state,omitempty"`
+	DimensionName string `json:"dimension_name,omitempty"`
 }
 
 // Instance represents an instance within a dataset
 type Instance struct {
 	Version
+}
+
+// stateData represents a json with a single state filed
+type stateData struct {
+	State string `json:"state"`
+}
+
+// Instances represent a list of Instance objects
+type Instances struct {
+	Items []Instance `json:"items"`
 }
 
 // Metadata is a combination of version and dataset model fields
@@ -123,6 +161,7 @@ type Links struct {
 	Version       Link `json:"version,omitempty"`
 	Code          Link `json:"code,omitempty"`
 	Taxonomy      Link `json:"taxonomy,omitempty"`
+	Job           Link `json:"job,omitempty"`
 }
 
 // Link represents a single link within a dataset model

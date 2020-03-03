@@ -29,7 +29,7 @@ type TokenType int
 
 // Possible Token types
 const (
-	TokenTypeUser = iota
+	TokenTypeUser TokenType = iota
 	TokenTypeService
 )
 

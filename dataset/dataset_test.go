@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -472,6 +473,96 @@ func TestClient_GetInstance(t *testing.T) {
 	})
 }
 
+func TestClient_GetInstances(t *testing.T) {
+
+	Convey("given a 200 status is returned", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"buddy":"ook"}`))),
+				}, nil
+			},
+		}
+
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+
+		Convey("when GetInstance is called", func() {
+			_, err := cli.GetInstances(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{})
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli, http.MethodGet, "/instances")
+			})
+		})
+
+		Convey("When GetInstance is called with filters", func() {
+			_, err := cli.GetInstances(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{
+				"id":      []string{"123"},
+				"version": []string{"999"},
+			})
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and rchttpclient.Do is called 1 time with the expected query parameters", func() {
+				checkResponseBase(mockRCHTTPCli, http.MethodGet, "/instances?id=123&version=999")
+			})
+		})
+	})
+
+}
+
+func Test_PutInstanceImportTasks(t *testing.T) {
+
+	data := InstanceImportTasks{
+		ImportObservations: &ImportObservationsTask{State: StateSubmitted.String()},
+		BuildHierarchyTasks: []*BuildHierarchyTask{
+			&BuildHierarchyTask{DimensionName: "dimension1", State: StateCompleted.String()},
+			&BuildHierarchyTask{DimensionName: "dimension2", State: StateError.String()},
+		},
+		BuildSearchIndexTasks: []*BuildSearchIndexTask{
+			&BuildSearchIndexTask{State: StateSubmitted.String()},
+			&BuildSearchIndexTask{State: StateCompleted.String()},
+		},
+	}
+
+	Convey("given a 200 status is returned", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"buddy":"ook"}`))),
+				}, nil
+			},
+		}
+
+		expectedPayload, err := json.Marshal(data)
+		So(err, ShouldBeNil)
+
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+
+		Convey("when PutInstanceImportTasks is called", func() {
+			err := cli.PutInstanceImportTasks(ctx, serviceAuthToken, "123", data)
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli, http.MethodPut, "/instances/123/import_tasks")
+				payload, err := ioutil.ReadAll(mockRCHTTPCli.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
+			})
+		})
+	})
+}
+
 func TestClient_PostInstanceDimensions(t *testing.T) {
 
 	optionsToPost := OptionPost{
@@ -541,6 +632,73 @@ func TestClient_PostInstanceDimensions(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestClient_PutInstanceState(t *testing.T) {
+
+	data := stateData{
+		State: StateCompleted.String(),
+	}
+
+	Convey("given a 200 status is returned", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, nil
+			},
+		}
+
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+		expectedPayload, err := json.Marshal(data)
+		So(err, ShouldBeNil)
+
+		Convey("when PutInstanceState is called", func() {
+			err := cli.PutInstanceState(ctx, serviceAuthToken, "123", StateCompleted)
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli, http.MethodPut, "/instances/123")
+				payload, err := ioutil.ReadAll(mockRCHTTPCli.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
+			})
+		})
+	})
+
+}
+
+func Test_UpdateInstanceWithNewInserts(t *testing.T) {
+
+	Convey("given a 200 status is returned", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, nil
+			},
+		}
+
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+
+		Convey("when UpdateInstanceWithNewInserts is called", func() {
+			err := cli.UpdateInstanceWithNewInserts(ctx, serviceAuthToken, "123", 999)
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli, http.MethodPut, "/instances/123/inserted_observations/999")
+			})
+		})
+	})
+
 }
 
 func TestClient_PutInstanceData(t *testing.T) {
