@@ -422,12 +422,38 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 
 func TestClient_GetInstance(t *testing.T) {
 
-	Convey("given a 200 status is returned", t, func() {
+	Convey("given a 200 status with valid empty body is returned", t, func() {
 		mockRCHTTPCli := &rchttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"buddy":"ook"}`))),
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+				}, nil
+			},
+		}
+
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+
+		Convey("when GetInstance is called", func() {
+			instance, err := cli.GetInstance(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("a positive response is returned with empty instance", func() {
+				So(err, ShouldBeNil)
+				So(instance, ShouldResemble, Instance{})
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli, http.MethodGet, "/instances/123")
+			})
+		})
+	})
+
+	Convey("given a 200 status with empty body is returned", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte{})),
 				}, nil
 			},
 		}
@@ -438,7 +464,7 @@ func TestClient_GetInstance(t *testing.T) {
 			_, err := cli.GetInstance(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
 
 			Convey("a positive response is returned", func() {
-				So(err, ShouldBeNil)
+				So(err, ShouldNotBeNil)
 			})
 
 			Convey("and rchttpclient.Do is called 1 time", func() {
