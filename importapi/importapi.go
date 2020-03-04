@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -77,6 +76,11 @@ type InstanceLink struct {
 	Link string `json:"href"`
 }
 
+// stateData represents a json with a single state filed
+type stateData struct {
+	State string `json:"state"`
+}
+
 // Checker calls import api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
@@ -89,96 +93,99 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 }
 
 // GetImportJob asks the Import API for the details for an Import job
-func (c *Client) GetImportJob(ctx context.Context, importJobID, serviceToken string) (ImportJob, bool, error) {
-	var importJob ImportJob
-	path := c.url + "/jobs/" + importJobID
+func (c *Client) GetImportJob(ctx context.Context, importJobID, serviceToken string) (importJob ImportJob, err error) {
+	uri := fmt.Sprintf("%s/jobs/%s", c.url, importJobID)
 
-	jsonBody, httpCode, err := c.getJSON(ctx, path, serviceToken, 0, nil)
-	if httpCode == http.StatusNotFound {
-		return importJob, false, nil
+	resp, err := c.doGet(ctx, uri, serviceToken, 0, nil)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	jsonBody, err := getBody(resp)
+	if err != nil {
+		log.Event(ctx, "Failed to read body from API", log.ERROR, log.Error(err))
+		return importJob, err
 	}
 
 	logData := log.Data{
-		"path":        path,
+		"uri":         uri,
 		"importJobID": importJobID,
-		"httpCode":    httpCode,
+		"httpCode":    resp.StatusCode,
 		"jsonBody":    string(jsonBody),
 	}
-	var isFatal bool
-	if err == nil && httpCode != http.StatusOK {
-		if httpCode < http.StatusInternalServerError {
-			isFatal = true
-		}
-		err = errors.New("Bad response while getting import job")
-	} else {
-		isFatal = true
-	}
-	if err != nil {
-		log.Event(ctx, "GetImportJob", log.ERROR, logData, log.Error(err))
-		return importJob, isFatal, err
+
+	if resp.StatusCode != http.StatusOK {
+		return importJob, NewAPIResponse(resp, uri)
 	}
 
 	if err := json.Unmarshal(jsonBody, &importJob); err != nil {
 		log.Event(ctx, "GetImportJob unmarshal", log.ERROR, logData, log.Error(err))
-		return ImportJob{}, true, err
+		return importJob, err
 	}
 
-	return importJob, false, nil
+	return importJob, nil
 }
 
 // UpdateImportJobState tells the Import API that the state has changed of an Import job
 func (c *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken string, newState string) error {
-	path := c.url + "/jobs/" + jobID
-	jsonUpload := []byte(`{"state":"` + newState + `"}`)
+	uri := fmt.Sprintf("%s/jobs/%s", c.url, jobID)
 
-	jsonResult, httpCode, err := c.putJSON(ctx, path, serviceToken, 0, jsonUpload)
+	jsonUpload, err := json.Marshal(&stateData{newState})
+	if err != nil {
+		return err
+	}
+
 	logData := log.Data{
-		"path":        path,
+		"uri":         uri,
 		"importJobID": jobID,
-		"jsonUpload":  jsonUpload,
-		"httpCode":    httpCode,
-		"jsonResult":  jsonResult,
+		"newState":    newState,
 	}
-	if err == nil && httpCode != http.StatusOK {
-		err = errors.New("Bad HTTP response")
-	}
+
+	resp, err := c.doPut(ctx, uri, serviceToken, 0, jsonUpload)
 	if err != nil {
 		log.Event(ctx, "UpdateImportJobState", log.ERROR, logData, log.Error(err))
 		return err
 	}
+	defer closeResponseBody(ctx, resp)
+	logData["httpCode"] = resp.StatusCode
+
+	if resp.StatusCode != http.StatusOK {
+		return NewAPIResponse(resp, uri)
+	}
 	return nil
 }
 
-func (c *Client) getJSON(ctx context.Context, path, serviceToken string, attempts int, vars url.Values) ([]byte, int, error) {
-	return callJSONAPI(ctx, c.cli, "GET", path, serviceToken, vars)
+func (c *Client) doGet(ctx context.Context, uri, serviceToken string, attempts int, vars url.Values) (*http.Response, error) {
+	return doCall(ctx, c.cli, "GET", uri, serviceToken, vars)
 }
 
-func (c *Client) putJSON(ctx context.Context, path, serviceToken string, attempts int, payload []byte) ([]byte, int, error) {
-	return callJSONAPI(ctx, c.cli, "PUT", path, serviceToken, payload)
+func (c *Client) doPut(ctx context.Context, uri, serviceToken string, attempts int, payload []byte) (*http.Response, error) {
+	return doCall(ctx, c.cli, "PUT", uri, serviceToken, payload)
 }
 
-func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serviceToken string, payload interface{}) ([]byte, int, error) {
+func doCall(ctx context.Context, client rchttp.Clienter, method, uri, serviceToken string, payload interface{}) (*http.Response, error) {
 
-	logData := log.Data{"url": path, "method": method}
+	logData := log.Data{"uri": uri, "method": method}
 
-	URL, err := url.Parse(path)
+	URL, err := url.Parse(uri)
 	if err != nil {
 		log.Event(ctx, "Failed to create url for API call", log.ERROR, logData, log.Error(err))
-		return nil, 0, err
+		return nil, err
 	}
-	path = URL.String()
-	logData["url"] = path
+	uri = URL.String()
+	logData["url"] = uri
 
 	var req *http.Request
 
-	if payload != nil && method != "GET" {
-		req, err = http.NewRequest(method, path, bytes.NewReader(payload.([]byte)))
+	if payload != nil && method != http.MethodGet {
+		req, err = http.NewRequest(method, uri, bytes.NewReader(payload.([]byte)))
 		req.Header.Add("Content-type", "application/json")
 		logData["payload"] = string(payload.([]byte))
 	} else {
-		req, err = http.NewRequest(method, path, nil)
+		req, err = http.NewRequest(method, uri, nil)
 
-		if payload != nil && method == "GET" {
+		if payload != nil && method == http.MethodGet {
 			req.URL.RawQuery = payload.(url.Values).Encode()
 			logData["payload"] = payload.(url.Values)
 		}
@@ -186,7 +193,7 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 	// check above req had no errors
 	if err != nil {
 		log.Event(ctx, "Failed to create request for API", log.ERROR, logData, log.Error(err))
-		return nil, 0, err
+		return nil, err
 	}
 
 	// add a service token to request where one has been provided
@@ -195,22 +202,10 @@ func callJSONAPI(ctx context.Context, client rchttp.Clienter, method, path, serv
 	resp, err := client.Do(ctx, req)
 	if err != nil {
 		log.Event(ctx, "Failed to action API", log.ERROR, logData, log.Error(err))
-		return nil, 0, err
-	}
-	defer closeResponseBody(ctx, resp)
-
-	logData["httpCode"] = resp.StatusCode
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= 300 {
-		log.Event(ctx, "unexpected status code from API", log.ERROR, logData)
+		return nil, err
 	}
 
-	jsonBody, err := getBody(resp)
-	if err != nil {
-		log.Event(ctx, "Failed to read body from API", log.ERROR, log.Error(err))
-		return nil, resp.StatusCode, err
-	}
-
-	return jsonBody, resp.StatusCode, nil
+	return resp, nil
 }
 
 // NewAPIResponse creates an error response, optionally adding body to e when status is 404
