@@ -485,7 +485,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when GetInstanceDimensionsByBytes is called", func() {
-			_, err := cli.GetInstanceDimensionsByBytes(ctx, userAuthToken, serviceAuthToken, "123")
+			_, err := cli.GetInstanceDimensionsBytes(ctx, userAuthToken, serviceAuthToken, "123")
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -510,7 +510,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when GetInstanceDimensionsByBytes is called", func() {
-			_, err := cli.GetInstanceDimensionsByBytes(ctx, userAuthToken, serviceAuthToken, "123")
+			_, err := cli.GetInstanceDimensionsBytes(ctx, userAuthToken, serviceAuthToken, "123")
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123/dimensions, body: resource not found").Error())

@@ -24,7 +24,7 @@ const service = "dataset-api"
 // ErrInvalidDatasetAPIResponse is returned when the dataset api does not respond
 // with a valid status
 type ErrInvalidDatasetAPIResponse struct {
-	ActualCode int
+	actualCode int
 	uri        string
 	body       string
 }
@@ -32,7 +32,7 @@ type ErrInvalidDatasetAPIResponse struct {
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidDatasetAPIResponse) Error() string {
 	return fmt.Sprintf("invalid response: %d from dataset api: %s, body: %s",
-		e.ActualCode,
+		e.actualCode,
 		e.uri,
 		e.body,
 	)
@@ -40,7 +40,7 @@ func (e ErrInvalidDatasetAPIResponse) Error() string {
 
 // Code returns the status code received from dataset api if an error is returned
 func (e ErrInvalidDatasetAPIResponse) Code() int {
-	return e.ActualCode
+	return e.actualCode
 }
 
 var _ error = ErrInvalidDatasetAPIResponse{}
@@ -335,7 +335,7 @@ func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken
 
 // GetInstance returns an instance from the dataset api
 func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string) (m Instance, err error) {
-	b, err := c.GetInstanceByBytes(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID)
+	b, err := c.GetInstanceBytes(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID)
 	if err != nil {
 		return
 	}
@@ -344,8 +344,8 @@ func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToke
 	return
 }
 
-// GetInstanceByBytes returns an instance as bytes from the dataset api
-func (c *Client) GetInstanceByBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string) (b []byte, err error) {
+// GetInstanceBytes returns an instance as bytes from the dataset api
+func (c *Client) GetInstanceBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string) (b []byte, err error) {
 	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
@@ -369,8 +369,8 @@ func (c *Client) GetInstanceByBytes(ctx context.Context, userAuthToken, serviceA
 	return
 }
 
-// GetInstanceDimensionsByBytes returns a list of dimensions for an instance as bytes from the dataset api
-func (c *Client) GetInstanceDimensionsByBytes(ctx context.Context, userAuthToken, serviceAuthToken, instanceID string) (b []byte, err error) {
+// GetInstanceDimensionsBytes returns a list of dimensions for an instance as bytes from the dataset api
+func (c *Client) GetInstanceDimensionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, instanceID string) (b []byte, err error) {
 	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.url, instanceID)
 
 	clientlog.Do(ctx, "retrieving instance dimensions", service, uri)
@@ -518,7 +518,7 @@ func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken
 // NewDatasetAPIResponse creates an error response, optionally adding body to e when status is 404
 func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatasetAPIResponse) {
 	e = &ErrInvalidDatasetAPIResponse{
-		ActualCode: resp.StatusCode,
+		actualCode: resp.StatusCode,
 		uri:        uri,
 	}
 	if resp.StatusCode == http.StatusNotFound {
