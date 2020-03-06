@@ -549,7 +549,7 @@ func Test_PutInstanceImportTasks(t *testing.T) {
 		ImportObservations: &ImportObservationsTask{State: StateSubmitted.String()},
 		BuildHierarchyTasks: []*BuildHierarchyTask{
 			&BuildHierarchyTask{DimensionName: "dimension1", State: StateCompleted.String()},
-			&BuildHierarchyTask{DimensionName: "dimension2", State: StateError.String()},
+			&BuildHierarchyTask{DimensionName: "dimension2", State: StateCreated.String()},
 		},
 		BuildSearchIndexTasks: []*BuildSearchIndexTask{
 			&BuildSearchIndexTask{State: StateSubmitted.String()},
