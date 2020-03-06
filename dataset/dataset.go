@@ -30,10 +30,9 @@ const (
 	StateCreated State = iota
 	StateSubmitted
 	StateCompleted
-	StateError
 )
 
-var stateValues = []string{"created", "submitted", "completed", "error"}
+var stateValues = []string{"created", "submitted", "completed"}
 
 // String returns the string representation of a state
 func (s State) String() string {
