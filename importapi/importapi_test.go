@@ -2,6 +2,7 @@ package importapi
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -255,37 +256,43 @@ func TestGetImportJob(t *testing.T) {
 
 	Convey("When no import-job is returned", t, func() {
 		mockedAPI := getMockImportAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 404, Body: ""})
-		job, isFatal, err := mockedAPI.GetImportJob(ctx, jobID, serviceToken)
-		So(err, ShouldBeNil)
+		job, err := mockedAPI.GetImportJob(ctx, jobID, serviceToken)
+		So(err, ShouldResemble, &ErrInvalidAPIResponse{
+			actualCode: http.StatusNotFound,
+			uri:        fmt.Sprintf("%s/jobs/jid1", mockedAPI.url),
+			body:       "",
+		})
 		So(job, ShouldResemble, ImportJob{})
-		So(isFatal, ShouldBeFalse)
 	})
 
 	Convey("When bad json is returned", t, func() {
 		mockedAPI := getMockImportAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: "oops"})
-		_, isFatal, err := mockedAPI.GetImportJob(ctx, jobID, serviceToken)
+		_, err := mockedAPI.GetImportJob(ctx, jobID, serviceToken)
 		So(err, ShouldNotBeNil)
-		So(isFatal, ShouldBeTrue)
+		So(err, ShouldHaveSameTypeAs, &json.SyntaxError{})
 	})
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockImportAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "[]"})
-		_, isFatal, err := mockedAPI.GetImportJob(ctx, jobID, serviceToken)
+		_, err := mockedAPI.GetImportJob(ctx, jobID, serviceToken)
 		So(err, ShouldNotBeNil)
-		So(isFatal, ShouldBeFalse)
+		So(err, ShouldResemble, &ErrInvalidAPIResponse{
+			actualCode: http.StatusInternalServerError,
+			uri:        fmt.Sprintf("%s/jobs/jid1", mockedAPI.url),
+			body:       "",
+		})
 	})
 
 	Convey("When a single-instance import-job is returned", t, func() {
 		mockedAPI := getMockImportAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: jobJSON})
-		job, isFatal, err := mockedAPI.GetImportJob(ctx, jobID, serviceToken)
+		job, err := mockedAPI.GetImportJob(ctx, jobID, serviceToken)
 		So(err, ShouldBeNil)
 		So(job, ShouldResemble, ImportJob{JobID: jobID, Links: LinkMap{Instances: []InstanceLink{InstanceLink{ID: "iid1", Link: "iid1link"}}}})
-		So(isFatal, ShouldBeFalse)
 	})
 
 	Convey("When a multiple-instance import-job is returned", t, func() {
 		mockedAPI := getMockImportAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: jobMultiInstJSON})
-		job, isFatal, err := mockedAPI.GetImportJob(ctx, jobID, serviceToken)
+		job, err := mockedAPI.GetImportJob(ctx, jobID, serviceToken)
 		So(err, ShouldBeNil)
 		So(job, ShouldResemble, ImportJob{
 			JobID: jobID,
@@ -296,7 +303,6 @@ func TestGetImportJob(t *testing.T) {
 				},
 			},
 		})
-		So(isFatal, ShouldBeFalse)
 	})
 }
 
@@ -306,12 +312,22 @@ func TestUpdateImportJobState(t *testing.T) {
 		mockedAPI := getMockImportAPI(http.Request{Method: "PUT"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
 		err := mockedAPI.UpdateImportJobState(ctx, jobID, serviceToken, "newState")
 		So(err, ShouldNotBeNil)
+		So(err, ShouldResemble, &ErrInvalidAPIResponse{
+			actualCode: http.StatusBadRequest,
+			uri:        fmt.Sprintf("%s/jobs/jid0", mockedAPI.url),
+			body:       "",
+		})
 	})
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockImportAPI(http.Request{Method: "PUT"}, MockedHTTPResponse{StatusCode: 500, Body: "dnm"})
 		err := mockedAPI.UpdateImportJobState(ctx, jobID, serviceToken, "newState")
 		So(err, ShouldNotBeNil)
+		So(err, ShouldResemble, &ErrInvalidAPIResponse{
+			actualCode: http.StatusInternalServerError,
+			uri:        fmt.Sprintf("%s/jobs/jid0", mockedAPI.url),
+			body:       "",
+		})
 	})
 
 	Convey("When a single import-instance is returned", t, func() {
