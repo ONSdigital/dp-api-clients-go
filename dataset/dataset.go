@@ -407,7 +407,7 @@ func (c *Client) GetInstanceDimensionsBytes(ctx context.Context, userAuthToken, 
 
 	clientlog.Do(ctx, "retrieving instance dimensions", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, "", uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, "", uri, nil)
 	if err != nil {
 		return
 	}

@@ -493,7 +493,7 @@ func TestClient_GetInstance(t *testing.T) {
 			})
 
 			Convey("and rchttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockRCHTTPCli)
+				checkResponseBase(mockRCHTTPCli, http.MethodGet, "/instances/123")
 			})
 		})
 	})
@@ -513,7 +513,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
-		Convey("when GetInstanceDimensionsByBytes is called", func() {
+		Convey("when GetInstanceDimensionsBytes is called", func() {
 			_, err := cli.GetInstanceDimensionsBytes(ctx, userAuthToken, serviceAuthToken, "123")
 
 			Convey("a positive response is returned", func() {
@@ -521,7 +521,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 			})
 
 			Convey("and rchttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockRCHTTPCli)
+				checkResponseBase(mockRCHTTPCli, http.MethodGet, "/instances/123/dimensions")
 			})
 		})
 	})
@@ -546,7 +546,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 			})
 
 			Convey("and rchttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockRCHTTPCli, http.MethodGet, "/instances/123")
+				checkResponseBase(mockRCHTTPCli, http.MethodGet, "/instances/123/dimensions")
 			})
 		})
 	})
