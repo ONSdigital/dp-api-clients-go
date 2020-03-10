@@ -504,6 +504,32 @@ func (c *Client) UpdateInstanceWithNewInserts(ctx context.Context, serviceAuthTo
 	return nil
 }
 
+// GetInstanceDimensions performs a 'GET /instances/<id>/dimensions' and returns the marshalled Dimensions struct
+func (c *Client) GetInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string) (m Dimensions, err error) {
+	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.url, instanceID)
+
+	clientlog.Do(ctx, "retrieving instance dimensions", service, uri)
+
+	resp, err := c.doGetWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, nil)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewDatasetAPIResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	json.Unmarshal(b, &m)
+	return
+}
+
 // PostInstanceDimensions performs a 'POST /instances/<id>/dimensions' with the provided OptionPost
 func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string, data OptionPost) error {
 	payload, err := json.Marshal(data)
@@ -518,6 +544,24 @@ func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, i
 	resp, err := c.doPostWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, payload)
 	if err != nil {
 		return err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewDatasetAPIResponse(resp, uri)
+	}
+	return nil
+}
+
+// PutInstanceDimensionOptionNodeID performs a 'PUT /instances/<id>/dimensions/<id>/options/<id>/node_id/<id>' to update the node_id of the specified dimension
+func (c *Client) PutInstanceDimensionOptionNodeID(ctx context.Context, serviceAuthToken, instanceID, dimensionID, optionID, nodeID string) error {
+	uri := fmt.Sprintf("%s/instances/%s/dimensions/%s/options/%s/node_id/%s", c.url, instanceID, dimensionID, optionID, nodeID)
+
+	clientlog.Do(ctx, "updating instance dimension option node_id", service, uri)
+
+	resp, err := c.doPutWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, nil)
+	if err != nil {
+		return errors.Wrap(err, "http client returned error while attempting to make request")
 	}
 	defer closeResponseBody(ctx, resp)
 
@@ -581,8 +625,8 @@ func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceA
 	return
 }
 
-// GetDimensions will return a versions dimensions
-func (c *Client) GetDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m Dimensions, err error) {
+// GetVersionDimensions will return a list of dimension representations for a version
+func (c *Client) GetVersionDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m VersionDimensions, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions", c.url, id, edition, version)
 
 	clientlog.Do(ctx, "retrieving dataset version dimensions", service, uri)

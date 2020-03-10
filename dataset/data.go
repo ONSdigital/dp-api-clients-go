@@ -50,7 +50,7 @@ type Version struct {
 	CollectionID         string               `json:"collection_id"`
 	Downloads            map[string]Download  `json:"downloads"`
 	Edition              string               `json:"edition"`
-	Dimensions           []Dimension          `json:"dimensions"`
+	Dimensions           []VersionDimension   `json:"dimensions"`
 	ID                   string               `json:"id"`
 	InstanceID           string               `json:"instance_id"`
 	LatestChanges        []Change             `json:"latest_changes"`
@@ -61,6 +61,16 @@ type Version struct {
 	Version              int                  `json:"version"`
 	NumberOfObservations int64                `json:"total_observations,omitempty"`
 	ImportTasks          *InstanceImportTasks `json:"import_tasks,omitempty"`
+}
+
+// VersionDimension represents a dimension model nested in the Version model
+type VersionDimension struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Links       Links  `json:"links"`
+	Description string `json:"description"`
+	Label       string `json:"label"`
+	URL         string `json:"href,omitempty"`
 }
 
 // InstanceImportTasks represents all of the tasks required to complete an import job.
@@ -177,17 +187,17 @@ type Contact struct {
 	Email     string `json:"email"`
 }
 
-// Dimensions represent a list of dimensions from the dataset api
-type Dimensions struct {
-	Items Items `json:"items"`
+// VersionDimensions represent a list of versionDimension
+type VersionDimensions struct {
+	Items VersionDimensionItems `json:"items"`
 }
 
-// Items represents a list of dimensions
-type Items []Dimension
+// VersionDimensionItems represents a list of Version Dimensions
+type VersionDimensionItems []VersionDimension
 
-func (d Items) Len() int      { return len(d) }
-func (d Items) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
-func (d Items) Less(i, j int) bool {
+func (d VersionDimensionItems) Len() int      { return len(d) }
+func (d VersionDimensionItems) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
+func (d VersionDimensionItems) Less(i, j int) bool {
 	iRunes := []rune(d[i].Name)
 	jRunes := []rune(d[j].Name)
 
@@ -218,12 +228,17 @@ func (d Items) Less(i, j int) bool {
 
 // Dimension represents a response model for a dimension endpoint
 type Dimension struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Links       Links  `json:"links"`
-	Description string `json:"description"`
+	DimensionID string `json:"dimension"`
+	InstanceID  string `json:"instance_id"`
+	NodeID      string `json:"node_id,omitempty"`
 	Label       string `json:"label"`
-	URL         string `json:"href,omitempty"`
+	Option      string `json:"option"`
+	Links       Links  `json:"links"`
+}
+
+// Dimensions represents a list of dimensions
+type Dimensions struct {
+	Items []Dimension `json:"items"`
 }
 
 // Options represents a list of options from the dataset api

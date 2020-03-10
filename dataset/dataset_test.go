@@ -38,6 +38,18 @@ var checkResponseBase = func(mockRCHTTPCli *rchttp.ClienterMock, expectedMethod 
 	So(mockRCHTTPCli.DoCalls()[0].Req.Header.Get(common.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
 }
 
+func createHTTPClientMock(retCode int, retBody interface{}) *rchttp.ClienterMock {
+	return &rchttp.ClienterMock{
+		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			body, _ := json.Marshal(retBody)
+			return &http.Response{
+				StatusCode: retCode,
+				Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			}, nil
+		},
+	}
+}
+
 func TestClient_HealthChecker(t *testing.T) {
 	ctx := context.Background()
 	timePriorHealthCheck := time.Now()
@@ -254,19 +266,8 @@ func TestClient_PutVersion(t *testing.T) {
 	}
 
 	Convey("Given a valid version", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
-
-		cli := Client{
-			cli: mockRCHTTPCli,
-			url: "http://localhost:8080",
-		}
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, "")
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when put version is called", func() {
 			v := Version{ID: "666"}
@@ -283,19 +284,8 @@ func TestClient_PutVersion(t *testing.T) {
 	})
 
 	Convey("Given no auth token has been configured", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
-
-		cli := Client{
-			cli: mockRCHTTPCli,
-			url: "http://localhost:8080",
-		}
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, "")
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when put version is called", func() {
 			v := Version{ID: "666"}
@@ -337,15 +327,7 @@ func TestClient_PutVersion(t *testing.T) {
 	})
 
 	Convey("given rchttpclient.do returns a non 200 response status", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusInternalServerError,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
-
+		mockRCHTTPCli := createHTTPClientMock(http.StatusInternalServerError, "")
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when put version is called", func() {
@@ -367,16 +349,9 @@ func TestClient_PutVersion(t *testing.T) {
 func TestClient_IncludeCollectionID(t *testing.T) {
 
 	Convey("Given a valid request", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{Body: ioutil.NopCloser(nil)}, nil
-			},
-		}
 
-		cli := Client{
-			cli: mockRCHTTPCli,
-			url: "http://localhost:8080",
-		}
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, nil)
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when Collection-ID is present in the context", func() {
 			ctx = context.WithValue(ctx, common.CollectionIDHeaderKey, collectionID)
@@ -393,16 +368,9 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 	})
 
 	Convey("Given a valid request", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{Body: ioutil.NopCloser(nil)}, nil
-			},
-		}
 
-		cli := Client{
-			cli: mockRCHTTPCli,
-			url: "http://localhost:8080",
-		}
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, nil)
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when Collection-ID is not present in the context", func() {
 			ctx = context.Background()
@@ -423,15 +391,7 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 func TestClient_GetInstance(t *testing.T) {
 
 	Convey("given a 200 status with valid empty body is returned", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-				}, nil
-			},
-		}
-
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, Instance{})
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when GetInstance is called", func() {
@@ -449,15 +409,7 @@ func TestClient_GetInstance(t *testing.T) {
 	})
 
 	Convey("given a 200 status with empty body is returned", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte{})),
-				}, nil
-			},
-		}
-
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, []byte{})
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when GetInstance is called", func() {
@@ -502,15 +454,7 @@ func TestClient_GetInstance(t *testing.T) {
 func TestClient_GetInstances(t *testing.T) {
 
 	Convey("given a 200 status is returned", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"buddy":"ook"}`))),
-				}, nil
-			},
-		}
-
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, Instance{})
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when GetInstance is called", func() {
@@ -558,15 +502,7 @@ func Test_PutInstanceImportTasks(t *testing.T) {
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"buddy":"ook"}`))),
-				}, nil
-			},
-		}
-
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, nil)
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
 
@@ -600,15 +536,7 @@ func TestClient_PostInstanceDimensions(t *testing.T) {
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
-
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, nil)
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 		expectedPayload, err := json.Marshal(optionsToPost)
 		So(err, ShouldBeNil)
@@ -630,15 +558,7 @@ func TestClient_PostInstanceDimensions(t *testing.T) {
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusNotFound,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte("wrong!"))),
-				}, nil
-			},
-		}
-
+		mockRCHTTPCli := createHTTPClientMock(http.StatusNotFound, "wrong!")
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 		expectedPayload, err := json.Marshal(optionsToPost)
 		So(err, ShouldBeNil)
@@ -647,7 +567,7 @@ func TestClient_PostInstanceDimensions(t *testing.T) {
 			err := cli.PostInstanceDimensions(ctx, serviceAuthToken, "123", optionsToPost)
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123/dimensions, body: wrong!").Error())
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123/dimensions, body: \"wrong!\"").Error())
 			})
 
 			Convey("and rchttpclient.Do is called 1 time", func() {
@@ -667,15 +587,7 @@ func TestClient_PutInstanceState(t *testing.T) {
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
-
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, nil)
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
@@ -701,15 +613,7 @@ func TestClient_PutInstanceState(t *testing.T) {
 func Test_UpdateInstanceWithNewInserts(t *testing.T) {
 
 	Convey("given a 200 status is returned", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
-
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, nil)
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
 		Convey("when UpdateInstanceWithNewInserts is called", func() {
@@ -735,15 +639,7 @@ func TestClient_PutInstanceData(t *testing.T) {
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
-
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, nil)
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
@@ -765,15 +661,7 @@ func TestClient_PutInstanceData(t *testing.T) {
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		mockRCHTTPCli := &rchttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusNotFound,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte("wrong!"))),
-				}, nil
-			},
-		}
-
+		mockRCHTTPCli := createHTTPClientMock(http.StatusNotFound, "wrong!")
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
@@ -782,7 +670,7 @@ func TestClient_PutInstanceData(t *testing.T) {
 			err := cli.PutInstanceData(ctx, serviceAuthToken, "123", data)
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123, body: wrong!").Error())
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123, body: \"wrong!\"").Error())
 			})
 
 			Convey("and rchttpclient.Do is called 1 time with expected parameters", func() {
@@ -790,6 +678,103 @@ func TestClient_PutInstanceData(t *testing.T) {
 				payload, err := ioutil.ReadAll(mockRCHTTPCli.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
+			})
+		})
+	})
+}
+
+func TestClient_GetInstanceDimensions(t *testing.T) {
+
+	data := Dimensions{
+		Items: []Dimension{
+			Dimension{
+				DimensionID: "dimension1",
+				InstanceID:  "instance1",
+				NodeID:      "node1",
+				Label:       "label",
+				Option:      "option",
+			},
+			Dimension{
+				DimensionID: "dimension2",
+			},
+		},
+	}
+
+	Convey("given a 200 status is returned", t, func() {
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, data)
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+
+		Convey("when GetInstanceDimensions is called", func() {
+			dimensions, err := cli.GetInstanceDimensions(ctx, serviceAuthToken, "123")
+
+			Convey("a positive response with expected dimensions is returned", func() {
+				So(err, ShouldBeNil)
+				So(dimensions, ShouldResemble, data)
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli, http.MethodGet, "/instances/123/dimensions")
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		mockRCHTTPCli := createHTTPClientMock(http.StatusNotFound, nil)
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+
+		Convey("when GetInstanceDimensions is called", func() {
+			_, err := cli.GetInstanceDimensions(ctx, serviceAuthToken, "123")
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
+					actualCode: http.StatusNotFound,
+					uri:        "http://localhost:8080/instances/123/dimensions",
+					body:       "null",
+				})
+			})
+
+			Convey("and rchttpclient.Do is called 1 time with expected parameters", func() {
+				checkResponseBase(mockRCHTTPCli, http.MethodGet, "/instances/123/dimensions")
+			})
+		})
+	})
+}
+
+func TestClient_PutInstanceDimensionOptionNodeID(t *testing.T) {
+	Convey("given a 200 status is returned", t, func() {
+		mockRCHTTPCli := createHTTPClientMock(http.StatusOK, nil)
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+
+		Convey("when PutInstanceDimensionOptionNodeID is called", func() {
+			err := cli.PutInstanceDimensionOptionNodeID(ctx, serviceAuthToken, "123", "456", "789", "ABC")
+
+			Convey("a positive response with expected dimensions is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli, http.MethodPut, "/instances/123/dimensions/456/options/789/node_id/ABC")
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		mockRCHTTPCli := createHTTPClientMock(http.StatusNotFound, nil)
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+
+		Convey("when PutInstanceDimensionOptionNodeID is called", func() {
+			err := cli.PutInstanceDimensionOptionNodeID(ctx, serviceAuthToken, "123", "456", "789", "ABC")
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
+					actualCode: http.StatusNotFound,
+					uri:        "http://localhost:8080/instances/123/dimensions/456/options/789/node_id/ABC",
+					body:       "null",
+				})
+			})
+
+			Convey("and rchttpclient.Do is called 1 time with expected parameters", func() {
+				checkResponseBase(mockRCHTTPCli, http.MethodPut, "/instances/123/dimensions/456/options/789/node_id/ABC")
 			})
 		})
 	})
