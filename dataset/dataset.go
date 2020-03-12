@@ -25,14 +25,19 @@ const service = "dataset-api"
 // State - iota enum of possible states
 type State int
 
-// Possible values for a State
+// Possible values for a State of the resource. It can only be one of the following:
+// TODO these states should be enforced in all the 'POST' and 'PUT' operations that can modify states of resources
 const (
 	StateCreated State = iota
 	StateSubmitted
-	StateCompleted
+	StateCompleted        // Instances only
+	StateFailed           // Instances only
+	StateEditionConfirmed // instances and versions only
+	StateAssociated       // not editions
+	StatePublished
 )
 
-var stateValues = []string{"created", "submitted", "completed"}
+var stateValues = []string{"created", "submitted", "completed", "failed", "edition-confirmed", "associated", "published"}
 
 // String returns the string representation of a state
 func (s State) String() string {
