@@ -430,7 +430,7 @@ func TestClient_GetInstance(t *testing.T) {
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusNotFound,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte("you aint seen me roight"))),
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte("you aint seen me right"))),
 				}, nil
 			},
 		}
@@ -441,11 +441,64 @@ func TestClient_GetInstance(t *testing.T) {
 			_, err := cli.GetInstance(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123, body: you aint seen me roight").Error())
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123, body: you aint seen me right").Error())
 			})
 
 			Convey("and rchttpclient.Do is called 1 time", func() {
 				checkResponseBase(mockRCHTTPCli, http.MethodGet, "/instances/123")
+			})
+		})
+	})
+}
+
+func TestClient_GetInstanceDimensions(t *testing.T) {
+
+	Convey("given a 200 status is returned", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"buddy":"ok"}`))),
+				}, nil
+			},
+		}
+
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+
+		Convey("when GetInstanceDimensionsBytes is called", func() {
+			_, err := cli.GetInstanceDimensionsBytes(ctx, userAuthToken, serviceAuthToken, "123")
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli, http.MethodGet, "/instances/123/dimensions")
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		mockRCHTTPCli := &rchttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusNotFound,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte("resource not found"))),
+				}, nil
+			},
+		}
+
+		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
+
+		Convey("when GetInstanceDimensionsByBytes is called", func() {
+			_, err := cli.GetInstanceDimensionsBytes(ctx, userAuthToken, serviceAuthToken, "123")
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123/dimensions, body: resource not found").Error())
+			})
+
+			Convey("and rchttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockRCHTTPCli, http.MethodGet, "/instances/123/dimensions")
 			})
 		})
 	})

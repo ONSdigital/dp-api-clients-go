@@ -372,6 +372,17 @@ func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken
 
 // GetInstance returns an instance from the dataset api
 func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string) (m Instance, err error) {
+	b, err := c.GetInstanceBytes(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &m)
+	return
+}
+
+// GetInstanceBytes returns an instance as bytes from the dataset api
+func (c *Client) GetInstanceBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string) (b []byte, err error) {
 	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
@@ -387,12 +398,36 @@ func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToke
 		return
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(b, &m)
+	return
+}
+
+// GetInstanceDimensionsBytes returns a list of dimensions for an instance as bytes from the dataset api
+func (c *Client) GetInstanceDimensionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, instanceID string) (b []byte, err error) {
+	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.url, instanceID)
+
+	clientlog.Do(ctx, "retrieving instance dimensions", service, uri)
+
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, "", uri, nil)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewDatasetAPIResponse(resp, uri)
+		return
+	}
+
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
 	return
 }
 
