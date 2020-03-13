@@ -451,7 +451,7 @@ func TestClient_GetInstance(t *testing.T) {
 	})
 }
 
-func TestClient_GetInstanceDimensions(t *testing.T) {
+func TestClient_GetInstanceDimensionsBytes(t *testing.T) {
 
 	Convey("given a 200 status is returned", t, func() {
 		mockRCHTTPCli := &rchttp.ClienterMock{
@@ -490,7 +490,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 
 		cli := Client{cli: mockRCHTTPCli, url: "http://localhost:8080"}
 
-		Convey("when GetInstanceDimensionsByBytes is called", func() {
+		Convey("when GetInstanceDimensionsBytes is called", func() {
 			_, err := cli.GetInstanceDimensionsBytes(ctx, userAuthToken, serviceAuthToken, "123")
 
 			Convey("then the expected error is returned", func() {

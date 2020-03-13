@@ -550,18 +550,7 @@ func (c *Client) GetInstanceDimensions(ctx context.Context, serviceAuthToken, in
 
 	clientlog.Do(ctx, "retrieving instance dimensions", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, nil)
-	if err != nil {
-		return
-	}
-	defer closeResponseBody(ctx, resp)
-
-	if resp.StatusCode != http.StatusOK {
-		err = NewDatasetAPIResponse(resp, uri)
-		return
-	}
-
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := c.GetInstanceDimensionsBytes(ctx, "", serviceAuthToken, instanceID)
 	if err != nil {
 		return
 	}
