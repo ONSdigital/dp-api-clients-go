@@ -61,6 +61,7 @@ type Version struct {
 	Version              int                  `json:"version"`
 	NumberOfObservations int64                `json:"total_observations,omitempty"`
 	ImportTasks          *InstanceImportTasks `json:"import_tasks,omitempty"`
+	CSVHeader            []string             `json:"headers,omitempty"`
 }
 
 // VersionDimension represents a dimension model nested in the Version model
