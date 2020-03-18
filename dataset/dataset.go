@@ -654,7 +654,7 @@ func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceA
 	return
 }
 
-// GetVersionDimensions will return a list of dimension representations for a version
+// GetVersionDimensions will return a list of dimensions for a given version of a dataset
 func (c *Client) GetVersionDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m VersionDimensions, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions", c.url, id, edition, version)
 
