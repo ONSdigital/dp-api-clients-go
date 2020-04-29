@@ -19,7 +19,6 @@ import (
 	rchttp "github.com/ONSdigital/dp-rchttp"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
-	"github.com/davecgh/go-spew/spew"
 )
 
 const service = "zebedee"
@@ -256,7 +255,6 @@ func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, uri string) 
 
 func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, uri string) (TimeseriesMainFigure, error) {
 	reqURL := c.createRequestURL(ctx, "/data", "uri="+uri)
-	spew.Dump(reqURL)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 
 	if err != nil {
