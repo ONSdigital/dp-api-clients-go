@@ -113,3 +113,23 @@ type Related struct {
 	Title string `json:"title"`
 	URI   string `json:"uri"`
 }
+
+// TimeseriesMainFigure represents timeseries data for main figure on the homepage
+type TimeseriesMainFigure struct {
+	Description      TimeseriesDescription `json:"description"`
+	Years            []TimeseriesDataPoint `json:"years"`
+	Quarters         []TimeseriesDataPoint `json:"quarters"`
+	Months           []TimeseriesDataPoint `json:"months"`
+	RelatedDocuments []Related             `json:"relatedDocuments"`
+	URI              string                `json:"uri"`
+}
+
+type TimeseriesDataPoint struct {
+	Value string `json:"value"`
+	Label string `json:"label"`
+}
+
+type TimeseriesDescription struct {
+	CDID string `json:"cdid"`
+	Unit string `json:"unit"`
+}

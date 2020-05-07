@@ -253,6 +253,22 @@ func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, uri string) 
 	return pt, nil
 }
 
+func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, uri string) (TimeseriesMainFigure, error) {
+	reqURL := c.createRequestURL(ctx, "/data", "uri="+uri)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
+
+	if err != nil {
+		return TimeseriesMainFigure{}, err
+	}
+
+	var ts TimeseriesMainFigure
+	if err = json.Unmarshal(b, &ts); err != nil {
+		return ts, err
+	}
+
+	return ts, nil
+}
+
 func (c *Client) createRequestURL(ctx context.Context, path, query string) string {
 	// Check if collection ID is set in context
 	if ctx.Value(common.CollectionIDHeaderKey) != nil {
