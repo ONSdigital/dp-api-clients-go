@@ -11,7 +11,7 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	rchttp "github.com/ONSdigital/dp-rchttp"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -33,7 +33,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	Convey("given clienter.Do returns an error", t, func() {
 		clientError := errors.New("disciples of the watch obey")
 
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -70,7 +70,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 500 response", t, func() {
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -109,7 +109,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 404 response", t, func() {
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -149,7 +149,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 429 response", t, func() {
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -188,7 +188,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 200 response", t, func() {
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},

@@ -14,7 +14,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	rchttp "github.com/ONSdigital/dp-rchttp"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/pkg/errors"
@@ -70,7 +70,7 @@ var _ error = ErrInvalidDatasetAPIResponse{}
 
 // Client is a dataset api client which can be used to make requests to the server
 type Client struct {
-	cli rchttp.Clienter
+	cli dphttp.Clienter
 	url string
 }
 

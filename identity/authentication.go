@@ -9,7 +9,7 @@ import (
 
 	clients "github.com/ONSdigital/dp-api-clients-go"
 	"github.com/ONSdigital/dp-api-clients-go/headers"
-	rchttp "github.com/ONSdigital/dp-rchttp"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 
@@ -49,7 +49,7 @@ type Clienter interface {
 }
 
 // NewAPIClient returns a Client
-func NewAPIClient(cli rchttp.Clienter, url string) (api *Client) {
+func NewAPIClient(cli dphttp.Clienter, url string) (api *Client) {
 	return &Client{
 		HTTPClient: cli,
 		BaseURL:    url,
@@ -149,7 +149,7 @@ func (api Client) doCheckTokenIdentity(ctx context.Context, token string, tokenT
 	// Create client if it does not exist
 	if api.HTTPClient == nil {
 		api.Lock.Lock()
-		api.HTTPClient = rchttp.NewClient()
+		api.HTTPClient = dphttp.NewClient()
 		api.Lock.Unlock()
 	}
 

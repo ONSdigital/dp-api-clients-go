@@ -14,7 +14,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/dp-mocking/httpmocks"
-	rchttp "github.com/ONSdigital/dp-rchttp"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -35,7 +35,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	Convey("given clienter.Do returns an error", t, func() {
 		clientError := errors.New("disciples of the watch obey")
 
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -72,7 +72,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 500 response", t, func() {
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -111,7 +111,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 404 response", t, func() {
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -151,7 +151,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 429 response", t, func() {
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -190,7 +190,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 200 response", t, func() {
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -1419,8 +1419,8 @@ func TestSetAuthenticationHeaders(t *testing.T) {
 	})
 }
 
-func getClienterMock(resp *http.Response, err error) *rchttp.ClienterMock {
-	return &rchttp.ClienterMock{
+func getClienterMock(resp *http.Response, err error) *dphttp.ClienterMock {
+	return &dphttp.ClienterMock{
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			return resp, err
 		},

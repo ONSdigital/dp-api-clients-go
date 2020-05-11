@@ -14,7 +14,7 @@ import (
 
 func main() {
     ...
-    // Create new health check (rchttp) client, this will set the '/health' 
+    // Create new health check (dp-net/http) client, this will set the '/health'
     // and '/healthcheck' as endpoints that are not retriable
     hcClient := health.NewClient(<name>, <url>)
 
@@ -25,6 +25,6 @@ func main() {
     if err != nil {
         ...
     }
-    
+
     ...
 }

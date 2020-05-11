@@ -3,12 +3,12 @@ package clients
 import (
 	"sync"
 
-	rchttp "github.com/ONSdigital/dp-rchttp"
+	"github.com/ONSdigital/dp-net/http"
 )
 
 // APIClient represents a common structure for any api client
 type APIClient struct {
 	BaseURL    string
-	HTTPClient rchttp.Clienter
+	HTTPClient http.Clienter
 	Lock       sync.RWMutex
 }

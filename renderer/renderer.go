@@ -10,7 +10,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	rchttp "github.com/ONSdigital/dp-rchttp"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -34,7 +34,7 @@ func (e ErrInvalidRendererResponse) Code() int {
 
 // Renderer represents a renderer client to interact with the dp-frontend-renderer
 type Renderer struct {
-	cli rchttp.Clienter
+	cli dphttp.Clienter
 	url string
 }
 

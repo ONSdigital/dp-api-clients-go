@@ -9,7 +9,7 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/dp-mocking/httpmocks"
-	rchttp "github.com/ONSdigital/dp-rchttp"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/go-ns/common"
 	"github.com/ONSdigital/log.go/log"
 	. "github.com/smartystreets/goconvey/convey"
@@ -30,7 +30,7 @@ func TestHandler_NoAuth(t *testing.T) {
 	Convey("Given a request with no auth headers", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-		httpClient := &rchttp.ClienterMock{}
+		httpClient := &dphttp.ClienterMock{}
 		idClient := NewAPIClient(httpClient, zebedeeURL)
 
 		Convey("When CheckRequest is called", func() {
@@ -90,7 +90,7 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 		req := httptest.NewRequest("GET", url, nil)
 		body := httpmocks.NewReadCloserMock([]byte{}, nil)
 		authResp := httpmocks.NewResponseMock(body, http.StatusNotFound)
-		httpClient := &rchttp.ClienterMock{
+		httpClient := &dphttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return authResp, nil
 			},
@@ -201,7 +201,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 		body := httpmocks.NewReadCloserMock(b, nil)
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
 
-		httpClient := &rchttp.ClienterMock{
+		httpClient := &dphttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return resp, nil
 			},
@@ -244,7 +244,7 @@ func TestHandler_ReadBodyError(t *testing.T) {
 		body := httpmocks.NewReadCloserMock(nil, expectedErr)
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
 
-		httpClient := &rchttp.ClienterMock{
+		httpClient := &dphttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return resp, nil
 			},
@@ -278,7 +278,7 @@ func TestHandler_NewAuthRequestError(t *testing.T) {
 	Convey("Given creating a new auth request returns an error", t, func() {
 		req := httptest.NewRequest("GET", url, nil)
 
-		httpClient := &rchttp.ClienterMock{
+		httpClient := &dphttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return nil, nil
 			},
@@ -453,11 +453,11 @@ func TestSplitTokens(t *testing.T) {
 
 }
 
-func getClientReturningIdentifier(t *testing.T, id string) (*rchttp.ClienterMock, *httpmocks.ReadCloserMock, *http.Response) {
+func getClientReturningIdentifier(t *testing.T, id string) (*dphttp.ClienterMock, *httpmocks.ReadCloserMock, *http.Response) {
 	b := httpmocks.GetEntityBytes(t, &common.IdentityResponse{Identifier: id})
 	body := httpmocks.NewReadCloserMock(b, nil)
 	resp := httpmocks.NewResponseMock(body, http.StatusOK)
-	cli := &rchttp.ClienterMock{
+	cli := &dphttp.ClienterMock{
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			return resp, nil
 		},
@@ -466,8 +466,8 @@ func getClientReturningIdentifier(t *testing.T, id string) (*rchttp.ClienterMock
 	return cli, body, resp
 }
 
-func getClientReturningError(err error) *rchttp.ClienterMock {
-	return &rchttp.ClienterMock{
+func getClientReturningError(err error) *dphttp.ClienterMock {
+	return &dphttp.ClienterMock{
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			return nil, err
 		},

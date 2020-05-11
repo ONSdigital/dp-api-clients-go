@@ -11,7 +11,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	rchttp "github.com/ONSdigital/dp-rchttp"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -21,7 +21,7 @@ var _ error = ErrInvalidCodelistAPIResponse{}
 
 // Client is a codelist api client which can be used to make requests to the server
 type Client struct {
-	cli rchttp.Clienter
+	cli dphttp.Clienter
 	url string
 }
 

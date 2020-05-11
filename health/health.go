@@ -7,7 +7,7 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	rchttp "github.com/ONSdigital/dp-rchttp"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -30,7 +30,7 @@ type ErrInvalidAppResponse struct {
 
 // Client represents an app client
 type Client struct {
-	Client rchttp.Clienter
+	Client dphttp.Clienter
 	URL    string
 	Name   string
 }
@@ -38,7 +38,7 @@ type Client struct {
 // NewClient creates a new instance of Client with a given app url
 func NewClient(name, url string) *Client {
 	c := &Client{
-		Client: rchttp.NewClient(),
+		Client: dphttp.NewClient(),
 		URL:    url,
 		Name:   name,
 	}

@@ -12,7 +12,7 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	rchttp "github.com/ONSdigital/dp-rchttp"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/golang/mock/gomock"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -39,7 +39,7 @@ func TestSearchUnit(t *testing.T) {
 	Convey("test New creates a valid Client instance", t, func() {
 		cli := New("http://localhost:22000")
 		So(cli.url, ShouldEqual, "http://localhost:22000")
-		So(cli.cli, ShouldHaveSameTypeAs, rchttp.DefaultClient)
+		So(cli.cli, ShouldHaveSameTypeAs, dphttp.DefaultClient)
 	})
 
 	Convey("test Dimension Method", t, func() {
@@ -48,7 +48,7 @@ func TestSearchUnit(t *testing.T) {
 
 		Convey("test Dimension successfully returns a model upon a 200 response from search api", func() {
 
-			mockClient := &rchttp.ClienterMock{
+			mockClient := &dphttp.ClienterMock{
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return &http.Response{
 						StatusCode: http.StatusOK,
@@ -86,7 +86,7 @@ func TestSearchUnit(t *testing.T) {
 		})
 
 		Convey("test Dimension returns error from HTTPClient if it throws an error", func() {
-			mockClient := &rchttp.ClienterMock{
+			mockClient := &dphttp.ClienterMock{
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return nil, errors.New(clientErrText)
 				},
@@ -105,7 +105,7 @@ func TestSearchUnit(t *testing.T) {
 		Convey("test Dimension returns error if HTTP Status code is not 200", func() {
 
 			searchErr := errors.New("invalid response from search api - should be: 200, got: 400, path: http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=1&offset=1&q=Newport")
-			mockClient := &rchttp.ClienterMock{
+			mockClient := &dphttp.ClienterMock{
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return nil, searchErr
 				},
@@ -123,7 +123,7 @@ func TestSearchUnit(t *testing.T) {
 
 		Convey("test Dimension uses default search limit when no limit config provided", func() {
 
-			mockClient := &rchttp.ClienterMock{
+			mockClient := &dphttp.ClienterMock{
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return &http.Response{
 						StatusCode: http.StatusOK,
@@ -171,7 +171,7 @@ func TestSearchUnit(t *testing.T) {
 
 		Convey("test Dimension no limit returns error from HTTPClient if it throws an error", func() {
 
-			mockClient := &rchttp.ClienterMock{
+			mockClient := &dphttp.ClienterMock{
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return nil, errors.New(clientErrText)
 				},
@@ -202,7 +202,7 @@ func TestSearchUnit(t *testing.T) {
 		Convey("test Dimension no limit returns error if HTTP Status code is not 200", func() {
 
 			expectedError := &ErrInvalidSearchAPIResponse{http.StatusOK, http.StatusTeapot, "http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=50&offset=1&q=Newport"}
-			mockClient := &rchttp.ClienterMock{
+			mockClient := &dphttp.ClienterMock{
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return &http.Response{
 						StatusCode: http.StatusTeapot,
@@ -244,7 +244,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	Convey("given clienter.Do returns an error", t, func() {
 		clientError := errors.New("disciples of the watch obey")
 
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -281,7 +281,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 500 response", t, func() {
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -320,7 +320,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 404 response", t, func() {
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -360,7 +360,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 429 response", t, func() {
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -399,7 +399,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 200 response", t, func() {
-		clienter := &rchttp.ClienterMock{
+		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
