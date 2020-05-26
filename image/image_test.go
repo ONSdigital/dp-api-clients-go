@@ -426,7 +426,7 @@ func TestClient_PutImage(t *testing.T) {
 			Path: "http://s3bucket/abcd.png",
 		},
 		Type:      "animals",
-		Downloads: ImageDownloads{},
+		Downloads: map[string]map[string]ImageDownload{},
 	}
 
 	Convey("given a 200 status is returned", t, func() {
