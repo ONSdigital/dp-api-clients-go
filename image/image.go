@@ -5,10 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	"github.com/ONSdigital/log.go/log"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
+	"github.com/ONSdigital/go-ns/common"
+	"github.com/ONSdigital/log.go/log"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
@@ -91,17 +94,12 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 }
 
 // GetImages returns the list of images
-func (c *Client) GetImages(ctx context.Context) (m Images, err error) {
+func (c *Client) GetImages(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string) (m Images, err error) {
 	uri := fmt.Sprintf("%s/images", c.url)
 
 	clientlog.Do(ctx, "retrieving images", service, uri)
 
-	req, err := http.NewRequest(http.MethodGet, uri, nil)
-	if err != nil {
-		return
-	}
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
 	if err != nil {
 		return
 	}
@@ -125,7 +123,7 @@ func (c *Client) GetImages(ctx context.Context) (m Images, err error) {
 }
 
 // PostImage performs a 'POST /images' with the provided NewImage
-func (c *Client) PostImage(ctx context.Context, data NewImage) (m Image, err error) {
+func (c *Client) PostImage(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, data NewImage) (m Image, err error) {
 	payload, err := json.Marshal(data)
 	if err != nil {
 		return
@@ -135,12 +133,7 @@ func (c *Client) PostImage(ctx context.Context, data NewImage) (m Image, err err
 
 	clientlog.Do(ctx, "posting new image", service, uri)
 
-	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewReader(payload))
-	if err != nil {
-		return
-	}
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doPostWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload)
 	if err != nil {
 		return
 	}
@@ -164,17 +157,12 @@ func (c *Client) PostImage(ctx context.Context, data NewImage) (m Image, err err
 }
 
 // GetImage returns a requested image
-func (c *Client) GetImage(ctx context.Context, imageID string) (m Image, err error) {
+func (c *Client) GetImage(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string) (m Image, err error) {
 	uri := fmt.Sprintf("%s/images/%s", c.url, imageID)
 
 	clientlog.Do(ctx, "retrieving images", service, uri)
 
-	req, err := http.NewRequest(http.MethodGet, uri, nil)
-	if err != nil {
-		return
-	}
-
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
 	if err != nil {
 		return
 	}
@@ -198,7 +186,7 @@ func (c *Client) GetImage(ctx context.Context, imageID string) (m Image, err err
 }
 
 // PutImage updates the specified image
-func (c *Client) PutImage(ctx context.Context, imageID string, data Image) (m Image, err error) {
+func (c *Client) PutImage(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string, data Image) (m Image, err error) {
 	payload, err := json.Marshal(data)
 	if err != nil {
 		return
@@ -207,12 +195,8 @@ func (c *Client) PutImage(ctx context.Context, imageID string, data Image) (m Im
 	uri := fmt.Sprintf("%s/images/%s", c.url, imageID)
 
 	clientlog.Do(ctx, "updating instance import_tasks", service, uri)
-	req, err := http.NewRequest(http.MethodPut, uri, bytes.NewReader(payload))
-	if err != nil {
-		return
-	}
 
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.doPutWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload)
 	if err != nil {
 		return
 	}
@@ -252,4 +236,53 @@ func NewImageAPIResponse(resp *http.Response, uri string) (e *ErrInvalidImageAPI
 		e.body = string(b)
 	}
 	return
+}
+
+func addCollectionIDHeader(r *http.Request, collectionID string) {
+	if len(collectionID) > 0 {
+		r.Header.Add(common.CollectionIDHeaderKey, collectionID)
+	}
+}
+
+// doGetWithAuthHeaders executes clienter.Do setting the user and service authentication token as a request header. Returns the http.Response and any error.
+// It is the callers responsibility to ensure response.Body is closed on completion.
+// If url.Values are provided, they will be added as query parameters in the URL.
+func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, values url.Values) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, uri, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if values != nil {
+		req.URL.RawQuery = values.Encode()
+	}
+
+	addCollectionIDHeader(req, collectionID)
+	common.AddFlorenceHeader(req, userAuthToken)
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	return c.cli.Do(ctx, req)
+}
+
+func (c *Client) doPostWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, payload []byte) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	addCollectionIDHeader(req, collectionID)
+	common.AddFlorenceHeader(req, userAuthToken)
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	return c.cli.Do(ctx, req)
+}
+
+func (c *Client) doPutWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, payload []byte) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPut, uri, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	addCollectionIDHeader(req, collectionID)
+	common.AddFlorenceHeader(req, userAuthToken)
+	common.AddServiceTokenHeader(req, serviceAuthToken)
+	return c.cli.Do(ctx, req)
 }

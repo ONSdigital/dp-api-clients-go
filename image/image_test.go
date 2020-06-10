@@ -18,7 +18,10 @@ import (
 )
 
 const (
-	testHost = "http://localhost:8080"
+	userAuthToken    = "iamatoken"
+	serviceAuthToken = "iamaservicetoken"
+	collectionID     = "iamacollectionID"
+	testHost         = "http://localhost:8080"
 )
 
 var (
@@ -30,6 +33,9 @@ var checkResponseBase = func(mockdphttpCli *dphttp.ClienterMock, expectedMethod 
 	So(len(mockdphttpCli.DoCalls()), ShouldEqual, 1)
 	So(mockdphttpCli.DoCalls()[0].Req.URL.RequestURI(), ShouldEqual, expectedUri)
 	So(mockdphttpCli.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
+	So(mockdphttpCli.DoCalls()[0].Req.Header[dphttp.AuthHeaderKey][0], ShouldEqual, "Bearer "+serviceAuthToken)
+	So(mockdphttpCli.DoCalls()[0].Req.Header[dphttp.FlorenceHeaderKey][0], ShouldEqual, userAuthToken)
+	So(mockdphttpCli.DoCalls()[0].Req.Header[dphttp.CollectionIDHeaderKey][0], ShouldEqual, collectionID)
 }
 
 func createHTTPClientMock(retCode int, body []byte) *dphttp.ClienterMock {
@@ -254,7 +260,7 @@ func TestClient_GetImages(t *testing.T) {
 		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
 
 		Convey("when GetImages is called", func() {
-			m, err := cli.GetImages(ctx)
+			m, err := cli.GetImages(ctx, userAuthToken, serviceAuthToken, collectionID)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -279,7 +285,7 @@ func TestClient_GetImages(t *testing.T) {
 		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
 
 		Convey("when GetImages is called", func() {
-			m, err := cli.GetImages(ctx)
+			m, err := cli.GetImages(ctx, userAuthToken, serviceAuthToken, collectionID)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -323,7 +329,7 @@ func TestClient_PostImage(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		Convey("when PostInstanceDimensions is called", func() {
-			m, err := cli.PostImage(ctx, newImage)
+			m, err := cli.PostImage(ctx, userAuthToken, serviceAuthToken, collectionID, newImage)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -346,7 +352,7 @@ func TestClient_PostImage(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		Convey("when PostInstanceDimensions is called", func() {
-			_, err := cli.PostImage(ctx, newImage)
+			_, err := cli.PostImage(ctx, userAuthToken, serviceAuthToken, collectionID, newImage)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from image api: http://localhost:8080/images, body: wrong!").Error())
@@ -371,7 +377,7 @@ func TestClient_GetImage(t *testing.T) {
 		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
 
 		Convey("when GetImages is called", func() {
-			m, err := cli.GetImage(ctx, "123")
+			m, err := cli.GetImage(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -398,7 +404,7 @@ func TestClient_GetImage(t *testing.T) {
 		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
 
 		Convey("when GetInstanceDimensionsBytes is called", func() {
-			_, err := cli.GetImage(ctx, "123")
+			_, err := cli.GetImage(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from image api: http://localhost:8080/images/123, body: resource not found").Error())
@@ -439,7 +445,7 @@ func TestClient_PutImage(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		Convey("when PutInstanceData is called", func() {
-			m, err := cli.PutImage(ctx, "123", data)
+			m, err := cli.PutImage(ctx, userAuthToken, serviceAuthToken, collectionID, "123", data)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -462,7 +468,7 @@ func TestClient_PutImage(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		Convey("when PutInstanceData is called", func() {
-			_, err := cli.PutImage(ctx, "123", data)
+			_, err := cli.PutImage(ctx, userAuthToken, serviceAuthToken, collectionID, "123", data)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from image api: http://localhost:8080/images/123, body: wrong!").Error())
