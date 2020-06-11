@@ -65,6 +65,17 @@ func TestUnitClient(t *testing.T) {
 		So(m.Type, ShouldEqual, "dataset_landing_page")
 	})
 
+	Convey("GetHomepageContent() returns a homepage model", t, func() {
+		m, err := cli.GetHomepageContent(ctx, testAccessToken, "/")
+		So(err, ShouldBeNil)
+		So(m, ShouldNotBeEmpty)
+		So(m.Intro.Title, ShouldEqual, "Welcome to the Office for National Statistics")
+		So(len(m.FeaturedContent), ShouldBeGreaterThan, 0)
+		So(m.FeaturedContent[0].Title, ShouldEqual, "Featured Content One")
+		So(m.Description.Keywords[0], ShouldEqual, "keywordOne")
+		So(m.ServiceMessage, ShouldEqual, "")
+	})
+
 	Convey("test get dataset details", t, func() {
 		d, err := cli.GetDataset(ctx, testAccessToken, "12345")
 		So(err, ShouldBeNil)
@@ -149,6 +160,8 @@ func d(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte(`{"type":"dataset","uri":"www.google.com","downloads":[{"file":"test.txt"}],"supplementaryFiles":[{"title":"helloworld","file":"helloworld.txt"}],"versions":[{"uri":"www.google.com"}]}`))
 	case "pageTitle":
 		w.Write([]byte(`{"title":"baby-names","edition":"2017"}`))
+	case "/":
+		w.Write([]byte(`{"intro":{"title":"Welcome to the Office for National Statistics","markdown":"Test markdown"},"featuredContent":[{"title":"Featured Content One","description":"Featured Content One Description","uri":"/one","imageURL":"/one_image"}],"serviceMessage":"","description":{"keywords":[ "keywordOne", "keywordTwo" ],"metaDescription":"","unit":"","preUnit":"","source":""}}`))
 	}
 
 }
