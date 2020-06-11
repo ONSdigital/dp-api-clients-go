@@ -244,9 +244,9 @@ func addCollectionIDHeader(r *http.Request, collectionID string) {
 	}
 }
 
-// doGetWithAuthHeaders executes clienter.Do setting the user and service authentication token as a request header. Returns the http.Response and any error.
-// It is the callers responsibility to ensure response.Body is closed on completion.
+// doGetWithAuthHeaders executes clienter.Do GET for the provided uri, setting the required headers according to the provided useAuthToken, serviceAuthToken and collectionID.
 // If url.Values are provided, they will be added as query parameters in the URL.
+// Returns the http.Response and any error and it is the callers responsibility to ensure response.Body is closed on completion.
 func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, values url.Values) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
@@ -263,6 +263,9 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	return c.cli.Do(ctx, req)
 }
 
+// doPostWithAuthHeaders executes clienter.Do POST for the provided uri, setting the required headers according to the provided useAuthToken, serviceAuthToken and collectionID.
+// The provided payload byte array will be sent as request body.
+// Returns the http.Response and any error and it is the callers responsibility to ensure response.Body is closed on completion.
 func (c *Client) doPostWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, payload []byte) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewReader(payload))
 	if err != nil {
@@ -275,6 +278,9 @@ func (c *Client) doPostWithAuthHeaders(ctx context.Context, userAuthToken, servi
 	return c.cli.Do(ctx, req)
 }
 
+// doPutWithAuthHeaders executes clienter.Do PUT for the provided uri, setting the required headers according to the provided useAuthToken, serviceAuthToken and collectionID.
+// The provided payload byte array will be sent as request body.
+// Returns the http.Response and any error and it is the callers responsibility to ensure response.Body is closed on completion.
 func (c *Client) doPutWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, payload []byte) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPut, uri, bytes.NewBuffer(payload))
 	if err != nil {
