@@ -221,6 +221,21 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (D
 	return d, nil
 }
 
+func (c *Client) GetHomepageContent(ctx context.Context, userAccessToken, path string) (HomepageContent, error) {
+	reqURL := c.createRequestURL(ctx, "/data", "uri="+path)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
+	if err != nil {
+		return HomepageContent{}, err
+	}
+
+	var homepageContent HomepageContent
+	if err = json.Unmarshal(b, &homepageContent); err != nil {
+		return homepageContent, err
+	}
+
+	return homepageContent, nil
+}
+
 // GetFileSize retrieves a given filesize from zebedee
 func (c *Client) GetFileSize(ctx context.Context, userAccessToken, uri string) (FileSize, error) {
 	reqURL := c.createRequestURL(ctx, "/filesize", "uri="+uri)

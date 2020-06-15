@@ -133,3 +133,35 @@ type TimeseriesDescription struct {
 	CDID string `json:"cdid"`
 	Unit string `json:"unit"`
 }
+
+// HomepageContent represents the page model of the Zebedee response for the ONS homepage
+type HomepageContent struct {
+	Intro           Intro               `json:"intro"`
+	FeaturedContent []Featured          `json:"featuredContent"`
+	ServiceMessage  string              `json:"serviceMessage"`
+	URI             string              `json:"uri"`
+	Type            string              `json:"type"`
+	Description     HomepageDescription `json:"description"`
+}
+
+type Intro struct {
+	Title    string `json:"title"`
+	Markdown string `json:"markdown"`
+}
+
+type Featured struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	URI         string `json:"uri"`
+	ImageURL    string `json:"imageURL"`
+}
+
+type HomepageDescription struct {
+	Title           string   `json:"title"`
+	Summary         string   `json:"summary"`
+	Keywords        []string `json:"keywords"`
+	MetaDescription string   `json:"metaDescription"`
+	Unit            string   `json:"unit"`
+	PreUnit         string   `json:"preUnit"`
+	Source          string   `json:"source"`
+}
