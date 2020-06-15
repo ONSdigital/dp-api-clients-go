@@ -70,7 +70,7 @@ func TestUnitClient(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(m, ShouldNotBeEmpty)
 		So(m.Intro.Title, ShouldEqual, "Welcome to the Office for National Statistics")
-		So(len(m.FeaturedContent), ShouldBeGreaterThan, 0)
+		So(len(m.FeaturedContent), ShouldEqual, 1)
 		So(m.FeaturedContent[0].Title, ShouldEqual, "Featured Content One")
 		So(m.Description.Keywords[0], ShouldEqual, "keywordOne")
 		So(m.ServiceMessage, ShouldEqual, "")
