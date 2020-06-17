@@ -153,7 +153,7 @@ type Featured struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	URI         string `json:"uri"`
-	ImageURL    string `json:"imageURL"`
+	ImageID     string `json:"image"`
 }
 
 type HomepageDescription struct {
