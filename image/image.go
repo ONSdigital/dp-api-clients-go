@@ -219,6 +219,26 @@ func (c *Client) PutImage(ctx context.Context, userAuthToken, serviceAuthToken, 
 	return
 }
 
+// PublishImage triggers an image publishing
+func (c *Client) PublishImage(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string) (err error) {
+
+	uri := fmt.Sprintf("%s/images/%s/publish", c.url, imageID)
+
+	clientlog.Do(ctx, "updating instance import_tasks", service, uri)
+
+	resp, err := c.doPutWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, []byte{})
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewImageAPIResponse(resp, uri)
+		return
+	}
+	return
+}
+
 // NewImageAPIResponse creates an error response, optionally adding body to e when status is 404
 func NewImageAPIResponse(resp *http.Response, uri string) (e *ErrInvalidImageAPIResponse) {
 	e = &ErrInvalidImageAPIResponse{
