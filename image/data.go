@@ -34,7 +34,10 @@ type Image struct {
 	//- importing
 	//- imported
 	//- published
+	//- completed
 	//- deleted
+	//- failed_import
+	//- failed_publish
 	Filename  string                              `json:"filename,omitempty"`
 	License   License                             `json:"license,omitempty"`
 	Upload    ImageUpload                         `json:"upload,omitempty"`

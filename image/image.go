@@ -224,9 +224,9 @@ func (c *Client) PublishImage(ctx context.Context, userAuthToken, serviceAuthTok
 
 	uri := fmt.Sprintf("%s/images/%s/publish", c.url, imageID)
 
-	clientlog.Do(ctx, "updating instance import_tasks", service, uri)
+	clientlog.Do(ctx, "publishing image", service, uri)
 
-	resp, err := c.doPutWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, []byte{})
+	resp, err := c.doPostWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, []byte{})
 	if err != nil {
 		return
 	}

@@ -499,7 +499,7 @@ func TestClient_PublishImage(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPut, "/images/123/publish")
+				checkResponseBase(mockdphttpCli, http.MethodPost, "/images/123/publish")
 				So(err, ShouldBeNil)
 			})
 		})
@@ -517,7 +517,7 @@ func TestClient_PublishImage(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPut, "/images/123/publish")
+				checkResponseBase(mockdphttpCli, http.MethodPost, "/images/123/publish")
 			})
 		})
 	})
