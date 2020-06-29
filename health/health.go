@@ -103,7 +103,7 @@ func (c *Client) Checker(ctx context.Context, state *health.CheckState) error {
 }
 
 func (c *Client) get(ctx context.Context, path string) (int, error) {
-	clientlog.Do(ctx, "retrieving dataset", c.Name, c.URL)
+	clientlog.Do(ctx, "retrieving service health", c.Name, c.URL)
 
 	req, err := http.NewRequest("GET", c.URL+path, nil)
 	if err != nil {

@@ -1,5 +1,7 @@
 package image
 
+import "time"
+
 // Images represents the fields for a group of images as returned by Image API
 type Images struct {
 	Count      int     `json:"count"`
@@ -38,11 +40,11 @@ type Image struct {
 	//- deleted
 	//- failed_import
 	//- failed_publish
-	Filename  string                              `json:"filename,omitempty"`
-	License   License                             `json:"license,omitempty"`
-	Upload    ImageUpload                         `json:"upload,omitempty"`
-	Type      string                              `json:"type,omitempty"`
-	Downloads map[string]map[string]ImageDownload `json:"downloads,omitempty"`
+	Filename  string                   `json:"filename,omitempty"`
+	License   License                  `json:"license,omitempty"`
+	Upload    ImageUpload              `json:"upload,omitempty"`
+	Type      string                   `json:"type,omitempty"`
+	Downloads map[string]ImageDownload `json:"downloads,omitempty"`
 }
 
 // ImageUpload represents the fields for an Image Upload
@@ -53,7 +55,23 @@ type ImageUpload struct {
 // ImageDownload represents the fields for an Image Download
 type ImageDownload struct {
 	Size    int    `json:"size,omitempty"`
+	Type    string `json:"type,omitempty"`
+	Width   *int   `json:"width,omitempty"`
+	Height  *int   `json:"height,omitempty"`
+	Public  bool   `json:"public,omitempty"`
 	Href    string `json:"href,omitempty"`
-	Public  string `json:"public,omitempty"`
 	Private string `json:"private,omitempty"`
+	State   string `json:"state,omitempty"`
+	//enum:
+	//- pending
+	//- importing
+	//- imported
+	//- published
+	//- completed
+	//- failed
+	Error            string     `json:"error,omitempty"`
+	ImportStarted    *time.Time `json:"import_started,omitempty"`
+	ImportCompleted  *time.Time `json:"import_completed,omitempty"`
+	PublishStarted   *time.Time `json:"publish_started,omitempty"`
+	PublishCompleted *time.Time `json:"publish_completed,omitempty"`
 }
