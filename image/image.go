@@ -219,6 +219,26 @@ func (c *Client) PutImage(ctx context.Context, userAuthToken, serviceAuthToken, 
 	return
 }
 
+//ImportDownloadVariant triggers a download variant import
+func (c *Client) ImportDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (err error) {
+
+	uri := fmt.Sprintf("%s/images/%s/downloads/%s/import", c.url, imageID, variant)
+
+	clientlog.Do(ctx, "importing image download variant", service, uri)
+
+	resp, err := c.doPostWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, []byte{})
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewImageAPIResponse(resp, uri)
+		return
+	}
+	return
+}
+
 // PublishImage triggers an image publishing
 func (c *Client) PublishImage(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string) (err error) {
 
