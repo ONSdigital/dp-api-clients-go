@@ -128,7 +128,7 @@ func mockZebedeeServer(port chan int) {
 	r.Path("/parents").HandlerFunc(parents)
 	r.Path("/filesize").HandlerFunc(filesize)
 
-	l, err := net.Listen("tcp", ":0")
+	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		log.Event(context.Background(), "error listening on local network address", log.FATAL, log.Error(err))
 		os.Exit(2)
