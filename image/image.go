@@ -219,6 +219,30 @@ func (c *Client) PutImage(ctx context.Context, userAuthToken, serviceAuthToken, 
 	return
 }
 
+// PostImageUpload specifies download variants and triggers image import
+func (c *Client) PostImageUpload(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string, data ImageUpload) (err error) {
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+
+	uri := fmt.Sprintf("%s/images/%s/upload", c.url, imageID)
+
+	clientlog.Do(ctx, "publishing image", service, uri)
+
+	resp, err := c.doPostWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewImageAPIResponse(resp, uri)
+		return
+	}
+	return
+}
+
 //ImportDownloadVariant triggers a download variant import
 func (c *Client) ImportDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (err error) {
 
