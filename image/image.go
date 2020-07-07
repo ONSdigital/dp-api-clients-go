@@ -245,10 +245,28 @@ func (c *Client) PostImageUpload(ctx context.Context, userAuthToken, serviceAuth
 
 //ImportDownloadVariant triggers a download variant import
 func (c *Client) ImportDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (err error) {
-
 	uri := fmt.Sprintf("%s/images/%s/downloads/%s/import", c.url, imageID, variant)
 
 	clientlog.Do(ctx, "importing image download variant", service, uri)
+
+	resp, err := c.doPostWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, []byte{})
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewImageAPIResponse(resp, uri)
+		return
+	}
+	return
+}
+
+//CompleteDownloadVariant triggers a download variant import
+func (c *Client) CompleteDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (err error) {
+	uri := fmt.Sprintf("%s/images/%s/downloads/%s/complete", c.url, imageID, variant)
+
+	clientlog.Do(ctx, "completing image download variant", service, uri)
 
 	resp, err := c.doPostWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, []byte{})
 	if err != nil {

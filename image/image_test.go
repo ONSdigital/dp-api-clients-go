@@ -604,3 +604,42 @@ func TestClient_ImportDownloadVariant(t *testing.T) {
 		})
 	})
 }
+
+func TestClient_CompleteDownloadVariant(t *testing.T) {
+
+	Convey("given a 200 status is returned", t, func() {
+
+		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
+		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+
+		Convey("when CompleteDownloadVariant is called", func() {
+			err := cli.CompleteDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockdphttpCli, http.MethodPost, "/images/123/downloads/original/complete")
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
+		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+
+		Convey("when CompleteDownloadVariant is called", func() {
+			err := cli.CompleteDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from image api: http://localhost:8080/images/123/downloads/original/complete, body: wrong!").Error())
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
+				checkResponseBase(mockdphttpCli, http.MethodPost, "/images/123/downloads/original/complete")
+			})
+		})
+	})
+}
