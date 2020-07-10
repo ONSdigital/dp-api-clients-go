@@ -1,0 +1,261 @@
+{
+    "count": 5,
+    "took": 36,
+    "content_types": [
+        {
+            "type": "bulletin",
+            "count": 3
+        },
+        {
+            "type": "article",
+            "count": 1
+        },
+        {
+            "type": "reference_tables",
+            "count": 1
+        }
+    ],
+    "items": [
+        {
+            "description": {
+                "contact": {
+                    "name": "Christopher Jenkins",
+                    "telephone": "+44 (0)1633 455474",
+                    "email": "christopher.jenkins@ons.gsi.gov.uk"
+                },
+                "edition": "Q4 2014",
+                "headline1": "Improved methodology has been implemented leading to revisions to the full IPHRP time series. The data presented in this statistical bulletin are presented using the new methodology.",
+                "headline2": "Private rental prices paid by tenants in Great Britain rose by 1.7% in the 12 months to December 2014.",
+                "headline3": "Private rental prices grew by 1.8% in England, 2.0% in Scotland and 0.2% in Wales in the 12 months to December 2014.",
+                "keywords": [
+                    "Inflation",
+                    "Property",
+                    "private landlords",
+                    "rental market",
+                    "housing market"
+                ],
+                "latest_release": true,
+                "language": "English",
+                "national_statistic": false,
+                "release_date": "2015-01-30T00:00:00.000Z",
+                "summary": "The Index of Private Housing Rental Prices (IPHRP) measures the change in price of property rented by private landlords. The index is published as a series of price indices covering Great Britain, its constituent countries and the English regions.",
+                "title": "Index of Private Housing Rental Prices"
+            },
+            "type": "bulletin",
+            "uri": "/peoplepopulationandcommunity/housing/bulletins/indexofprivatehousingrentalprices/2015-01-30",
+            "matches": {
+                "description": {
+                    "summary": [
+                        {
+                            "start": 22,
+                            "end": 28
+                        }
+                    ],
+                    "title": [
+                        {
+                            "start": 18,
+                            "end": 24
+                        }
+                    ],
+                    "keywords": [
+                        {
+                            "value": "housing market",
+                            "start": 1,
+                            "end": 7
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "description": {
+                "contact": {
+                    "name": "Nigel Henretty",
+                    "telephone": "+44 (0)1329 447934",
+                    "email": "hpi@ons.gsi.gov.uk"
+                },
+                "edition": "1995 to 2013",
+                "keywords": [
+                    "regional house prices",
+                    "property prices",
+                    "area with cheapest houses",
+                    "area with most expensive houses"
+                ],
+                "latest_release": true,
+                "meta_description": "A brief overview of average (median) house prices using estimates from the sale prices of residential properties in England and Wales between 1995 and 2013. We look at the trends and features of average house prices paid over this period for 3 different geographies: local authorities, parliamentary constituencies and middle layer super output areas (MSOAs).",
+                "national_statistic": false,
+                "release_date": "2015-02-17T00:00:00.000Z",
+                "summary": "",
+                "title": "House Price Statistics for Small Areas in England and Wales"
+            },
+            "type": "article",
+            "uri": "/peoplepopulationandcommunity/housing/articles/housepricestatisticsforsmallareasinenglandandwales/2015-02-17",
+            "matches": {
+                "description": {
+                    "summary": null,
+                    "title": [
+                        {
+                            "start": 1,
+                            "end": 5
+                        }
+                    ],
+                    "keywords": [
+                        {
+                            "value": "regional house prices",
+                            "start": 10,
+                            "end": 14
+                        },
+                        {
+                            "value": "area with cheapest houses",
+                            "start": 20,
+                            "end": 25
+                        },
+                        {
+                            "value": "area with most expensive houses",
+                            "start": 26,
+                            "end": 31
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "description": {
+                "contact": {
+                    "name": "Kate Davies",
+                    "telephone": "+44 (0)1633 456344",
+                    "email": "construction.statistics@ons.gsi.gov.uk"
+                },
+                "edition": "April 2015 and New Orders Quarter 1 (Jan to Mar) 2015",
+                "headline1": "In April 2015 output in the construction industry decreased by 0.8% compared with March 2015",
+                "headline2": "Repair and maintenance decreased by 4.8%, while all new work increased by 1.6%",
+                "headline3": "It is the 23rd consecutive month of year-on-year growth, output in the construction industry increased by 1.5% compared with April 2014",
+                "keywords": [
+                    "infrastructure",
+                    "public housing",
+                    "private housing",
+                    "non–housing",
+                    "repairs and maintenance"
+                ],
+                "language": "English",
+                "meta_description": "Construction output is a monthly estimate of the output of the construction industry in both the private and public sectors. The estimates are a key component of Gross Domestic Product.",
+                "national_statistic": false,
+                "next_release": "10 July 2015",
+                "release_date": "2015-06-12T00:00:00.000Z",
+                "summary": "Construction output is a monthly estimate of the output of the construction industry in both the private and public sectors. The estimates are a key component of Gross Domestic Product.",
+                "title": "Output in the Construction Industry"
+            },
+            "type": "bulletin",
+            "uri": "/businessindustryandtrade/constructionindustry/bulletins/outputintheconstructionindustry/2015-06-12",
+            "matches": {
+                "description": {
+                    "summary": null,
+                    "title": null,
+                    "keywords": [
+                        {
+                            "value": "public housing",
+                            "start": 8,
+                            "end": 14
+                        },
+                        {
+                            "value": "private housing",
+                            "start": 9,
+                            "end": 15
+                        },
+                        {
+                            "value": "non–housing",
+                            "start": 7,
+                            "end": 13
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "description": {
+                "contact": {
+                    "name": "Kate Davies",
+                    "telephone": "+44 (0)1633 456344",
+                    "email": "construction.statistics@ons.gsi.gov.uk"
+                },
+                "edition": "May 2015",
+                "headline1": "In May 2015, output in the construction industry was estimated to have decreased by 1.3% compared with April 2015. Both all new work, and repair and maintenance contributed to the fall",
+                "headline2": "Repair and maintenance (R&M) decreased by 1.0%. Falls in non-housing R&M (-1.9%) and private housing R&M (-0.8%) were offset slightly by public housing R&M, which increased by 1.8%",
+                "headline3": "Compared with May 2014, output in the construction industry showed an increase of 1.3%. All new work increased by 3.2% while repair and maintenance decreased by 1.7%",
+                "keywords": [
+                    "building, infrastructure, industrial, commercial, housing,building,infrastructure,industrial,commercial,housing"
+                ],
+                "latest_release": true,
+                "meta_description": "Construction output at current price and chained volume measures seasonally adjusted by public and private sector.",
+                "national_statistic": false,
+                "next_release": "14 August 2015",
+                "release_date": "2015-07-09T23:00:00.000Z",
+                "summary": "Construction output at current price and chained volume measures seasonally adjusted by public and private sector.",
+                "title": "Output in the Construction Industry"
+            },
+            "type": "bulletin",
+            "uri": "/businessindustryandtrade/constructionindustry/bulletins/outputintheconstructionindustry/2015-07-10",
+            "matches": {
+                "description": {
+                    "summary": null,
+                    "title": null,
+                    "keywords": [
+                        {
+                            "value": "building, infrastructure, industrial, commercial, housing,building,infrastructure,industrial,commercial,housing",
+                            "start": 51,
+                            "end": 57
+                        },
+                        {
+                            "value": "building, infrastructure, industrial, commercial, housing,building,infrastructure,industrial,commercial,housing",
+                            "start": 105,
+                            "end": 111
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "description": {
+                "contact": {
+                    "name": "Kate Davies",
+                    "telephone": "+44 (0)1633 456344",
+                    "email": "construction.statistics@ons.gsi.gov.uk"
+                },
+                "keywords": [
+                    "infrastructure,public housing,private housing,non–housing,repairs and maintenance"
+                ],
+                "meta_description": "Construction output is a monthly estimate of the output of the construction industry in both the private and public sectors. The estimates are a key component of Gross Domestic Product.",
+                "national_statistic": false,
+                "next_release": "14 August 2015",
+                "release_date": "2015-07-09T23:00:00.000Z",
+                "summary": "Construction output is a monthly estimate of the output of the construction industry in both the private and public sectors. The estimates are a key component of Gross Domestic Product.",
+                "title": "Output in the Construction Industry, May 2015 reference tables"
+            },
+            "type": "reference_tables",
+            "uri": "/businessindustryandtrade/constructionindustry/datasets/outputintheconstructionindustrymay2015referencetables",
+            "matches": {
+                "description": {
+                    "summary": null,
+                    "title": null,
+                    "keywords": [
+                        {
+                            "value": "infrastructure,public housing,private housing,non–housing,repairs and maintenance",
+                            "start": 23,
+                            "end": 29
+                        },
+                        {
+                            "value": "infrastructure,public housing,private housing,non–housing,repairs and maintenance",
+                            "start": 39,
+                            "end": 45
+                        },
+                        {
+                            "value": "infrastructure,public housing,private housing,non–housing,repairs and maintenance",
+                            "start": 53,
+                            "end": 59
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
