@@ -78,12 +78,11 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 // doGet executes clienter.Do GET for the provided uri
 // The url.Values will be added as query parameters in the URL.
 // Returns the http.Response and any error and it is the callers responsibility to ensure response.Body is closed on completion.
-func (c *Client) doGetWithAuthHeaders(ctx context.Context, uri string, values url.Values) (*http.Response, error) {
+func (c *Client) doGetWithAuthHeaders(ctx context.Context, uri string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.URL.RawQuery = values.Encode()
 	return c.cli.Do(ctx, req)
 }
 
@@ -99,11 +98,13 @@ func NewSearchErrorResponse(resp *http.Response, uri string) (e *ErrInvalidSearc
 // GetSearch returns the search results
 func (c *Client) GetSearch(ctx context.Context, query url.Values) (r Response, err error) {
 	uri := fmt.Sprintf("%s/search", c.url)
-	uri = uri + "?" + query.Encode()
+	if query != nil {
+		uri = uri + "?" + query.Encode()
+	}
 
 	clientlog.Do(ctx, "retrieving search response", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, uri, query)
+	resp, err := c.doGetWithAuthHeaders(ctx, uri)
 	if err != nil {
 		return
 	}
