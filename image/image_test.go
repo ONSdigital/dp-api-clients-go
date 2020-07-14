@@ -566,6 +566,62 @@ func TestClient_PublishImage(t *testing.T) {
 	})
 }
 
+func TestClient_PutDownloadVariant(t *testing.T) {
+
+	w := 222
+	h := 333
+	data := ImageDownload{
+		Size:    111,
+		Type:    "downloadType",
+		Width:   &w,
+		Height:  &h,
+		Private: "myImage",
+	}
+
+	Convey("given a 200 status is returned", t, func() {
+		mockDownloadVariant, err := ioutil.ReadFile("./response_mocks/download.json")
+		So(err, ShouldBeNil)
+
+		mockdphttpCli := createHTTPClientMock(http.StatusOK, mockDownloadVariant)
+		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+
+		Convey("when PutDownloadVariant is called", func() {
+			ret, err := cli.PutDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original", data)
+
+			Convey("a positive response is returned with the expected updated ImageDownload", func() {
+				So(err, ShouldBeNil)
+				So(ret, ShouldResemble, ImageDownload{
+					Size: 1024,
+					Href: "http://download.ons.gov.uk/images/042e216a-7822-4fa0-a3d6-e3f5248ffc35/image-name.png",
+				})
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockdphttpCli, http.MethodPut, "/images/123/downloads/original")
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
+		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+
+		Convey("when ImportDownloadVariant is called", func() {
+			ret, err := cli.PutDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original", data)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from image api: http://localhost:8080/images/123/downloads/original, body: wrong!").Error())
+				So(ret, ShouldResemble, ImageDownload{})
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
+				checkResponseBase(mockdphttpCli, http.MethodPut, "/images/123/downloads/original")
+			})
+		})
+	})
+}
+
 func TestClient_ImportDownloadVariant(t *testing.T) {
 
 	Convey("given a 200 status is returned", t, func() {
