@@ -11,9 +11,30 @@ Common client code - in go - for ONS APIs:
 * healthcheck -> health
 * hierarchy
 * identity
+* image
 * importapi
 * renderer
 * search
+
+
+#### Usage
+
+(WIP) Each client defines two constructor functions: one that creates a new dp-net/http Clienter, and the other that allows you to provide it externally, so that you can reuse it among different clients.
+
+For example, you may initialise an image API client with a new Clienter:
+```
+    import  "github.com/ONSdigital/dp-api-clients-go/image"
+    ...
+    imageClient := image.NewAPIClient(<url>)
+    ...
+```
+
+Or you may initialise it providing a Clienter:
+```
+    ...
+    imageClient := image.NewWithClienter(<url>, <clienter>)
+    ...
+```
 
 #### Package docs
 

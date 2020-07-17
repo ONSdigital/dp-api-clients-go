@@ -28,3 +28,12 @@ func main() {
 
     ...
 }
+```
+
+Alternatevely, if you already have a Clienter (instance of dp-net/http Clienter), you can reuse it in your healthcheck client, like so:
+
+```
+    ...
+    hcClient := health.NewClientWithClienter(<name>, <url>, <clienter> dphttp.Clienter)
+    ...
+```

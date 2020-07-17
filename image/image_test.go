@@ -52,200 +52,182 @@ func createHTTPClientMock(retCode int, body []byte) *dphttp.ClienterMock {
 func TestClient_HealthChecker(t *testing.T) {
 	ctx := context.Background()
 	timePriorHealthCheck := time.Now()
-	path := "/health"
+	pathHealth := "/health"
+	pathHealthcheck := "/healthcheck"
 
-	Convey("given clienter.Do returns an error", t, func() {
-		clientError := errors.New("disciples of the watch obey")
+	Convey("given a clienter mock without an empty list of paths with no retry", t, func() {
 
 		clienter := &dphttp.ClienterMock{
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{}, clientError
+			GetPathsWithNoRetriesFunc: func() []string {
+				return []string{}
 			},
 		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		imageClient := NewAPIClient(testHost)
-		imageClient.cli = clienter
-		check := initialState
+		Convey("and clienter.Do returns an error", func() {
+			clientError := errors.New("disciples of the watch obey")
+			clienter.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{}, clientError
+			}
+			clienter.SetPathsWithNoRetries([]string{pathHealth, pathHealthcheck})
 
-		Convey("when imageClient.Checker is called", func() {
-			err := imageClient.Checker(ctx, &check)
-			So(err, ShouldBeNil)
+			imageClient := NewWithClienter(testHost, clienter)
+			check := initialState
 
-			Convey("then the expected check is returned", func() {
-				So(check.Name(), ShouldEqual, service)
-				So(check.Status(), ShouldEqual, healthcheck.StatusCritical)
-				So(check.StatusCode(), ShouldEqual, 0)
-				So(check.Message(), ShouldEqual, clientError.Error())
-				So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
-				So(check.LastSuccess(), ShouldBeNil)
-				So(*check.LastFailure(), ShouldHappenAfter, timePriorHealthCheck)
-			})
+			Convey("when imageClient.Checker is called", func() {
+				err := imageClient.Checker(ctx, &check)
+				So(err, ShouldBeNil)
 
-			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
-				So(doCalls, ShouldHaveLength, 1)
-				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
+				Convey("then the expected check is returned", func() {
+					So(check.Name(), ShouldEqual, service)
+					So(check.Status(), ShouldEqual, healthcheck.StatusCritical)
+					So(check.StatusCode(), ShouldEqual, 0)
+					So(check.Message(), ShouldEqual, clientError.Error())
+					So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
+					So(check.LastSuccess(), ShouldBeNil)
+					So(*check.LastFailure(), ShouldHappenAfter, timePriorHealthCheck)
+				})
+
+				Convey("and client.Do should be called once with the expected parameters", func() {
+					doCalls := clienter.DoCalls()
+					So(doCalls, ShouldHaveLength, 1)
+					So(doCalls[0].Req.URL.Path, ShouldEqual, pathHealth)
+				})
 			})
 		})
-	})
 
-	Convey("given clienter.Do returns 500 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+		Convey("and clienter.Do returns 500 response", func() {
+			clienter.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 500,
 				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+			}
+			clienter.SetPathsWithNoRetries([]string{pathHealth, pathHealthcheck})
 
-		imageClient := NewAPIClient(testHost)
-		imageClient.cli = clienter
-		check := initialState
+			imageClient := NewWithClienter(testHost, clienter)
+			check := initialState
 
-		Convey("when imageClient.Checker is called", func() {
-			err := imageClient.Checker(ctx, &check)
-			So(err, ShouldBeNil)
+			Convey("when imageClient.Checker is called", func() {
+				err := imageClient.Checker(ctx, &check)
+				So(err, ShouldBeNil)
 
-			Convey("then the expected check is returned", func() {
-				So(check.Name(), ShouldEqual, service)
-				So(check.Status(), ShouldEqual, healthcheck.StatusCritical)
-				So(check.StatusCode(), ShouldEqual, 500)
-				So(check.Message(), ShouldEqual, service+health.StatusMessage[healthcheck.StatusCritical])
-				So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
-				So(check.LastSuccess(), ShouldBeNil)
-				So(*check.LastFailure(), ShouldHappenAfter, timePriorHealthCheck)
-			})
+				Convey("then the expected check is returned", func() {
+					So(check.Name(), ShouldEqual, service)
+					So(check.Status(), ShouldEqual, healthcheck.StatusCritical)
+					So(check.StatusCode(), ShouldEqual, 500)
+					So(check.Message(), ShouldEqual, service+health.StatusMessage[healthcheck.StatusCritical])
+					So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
+					So(check.LastSuccess(), ShouldBeNil)
+					So(*check.LastFailure(), ShouldHappenAfter, timePriorHealthCheck)
+				})
 
-			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
-				So(doCalls, ShouldHaveLength, 1)
-				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
+				Convey("and client.Do should be called once with the expected parameters", func() {
+					doCalls := clienter.DoCalls()
+					So(doCalls, ShouldHaveLength, 1)
+					So(doCalls[0].Req.URL.Path, ShouldEqual, pathHealth)
+				})
 			})
 		})
-	})
 
-	Convey("given clienter.Do returns 404 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+		Convey("and clienter.Do returns 404 response", func() {
+			clienter.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 404,
 				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+			}
+			clienter.SetPathsWithNoRetries([]string{pathHealth, pathHealthcheck})
 
-		imageClient := NewAPIClient(testHost)
-		imageClient.cli = clienter
-		check := initialState
+			imageClient := NewWithClienter(testHost, clienter)
+			check := initialState
 
-		Convey("when imageClient.Checker is called", func() {
-			err := imageClient.Checker(ctx, &check)
-			So(err, ShouldBeNil)
+			Convey("when imageClient.Checker is called", func() {
+				err := imageClient.Checker(ctx, &check)
+				So(err, ShouldBeNil)
 
-			Convey("then the expected check is returned", func() {
-				So(check.Name(), ShouldEqual, service)
-				So(check.Status(), ShouldEqual, healthcheck.StatusCritical)
-				So(check.StatusCode(), ShouldEqual, 404)
-				So(check.Message(), ShouldEqual, service+health.StatusMessage[healthcheck.StatusCritical])
-				So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
-				So(check.LastSuccess(), ShouldBeNil)
-				So(*check.LastFailure(), ShouldHappenAfter, timePriorHealthCheck)
-			})
+				Convey("then the expected check is returned", func() {
+					So(check.Name(), ShouldEqual, service)
+					So(check.Status(), ShouldEqual, healthcheck.StatusCritical)
+					So(check.StatusCode(), ShouldEqual, 404)
+					So(check.Message(), ShouldEqual, service+health.StatusMessage[healthcheck.StatusCritical])
+					So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
+					So(check.LastSuccess(), ShouldBeNil)
+					So(*check.LastFailure(), ShouldHappenAfter, timePriorHealthCheck)
+				})
 
-			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
-				So(doCalls, ShouldHaveLength, 2)
-				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
-				So(doCalls[1].Req.URL.Path, ShouldEqual, "/healthcheck")
+				Convey("and client.Do should be called once with the expected parameters", func() {
+					doCalls := clienter.DoCalls()
+					So(doCalls, ShouldHaveLength, 2)
+					So(doCalls[0].Req.URL.Path, ShouldEqual, pathHealth)
+					So(doCalls[1].Req.URL.Path, ShouldEqual, pathHealthcheck)
+				})
 			})
 		})
-	})
 
-	Convey("given clienter.Do returns 429 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+		Convey("and clienter.Do returns 429 response", func() {
+			clienter.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 429,
 				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+			}
+			clienter.SetPathsWithNoRetries([]string{pathHealth, pathHealthcheck})
 
-		imageClient := NewAPIClient(testHost)
-		imageClient.cli = clienter
-		check := initialState
+			imageClient := NewWithClienter(testHost, clienter)
+			check := initialState
 
-		Convey("when imageClient.Checker is called", func() {
-			err := imageClient.Checker(ctx, &check)
-			So(err, ShouldBeNil)
+			Convey("when imageClient.Checker is called", func() {
+				err := imageClient.Checker(ctx, &check)
+				So(err, ShouldBeNil)
 
-			Convey("then the expected check is returned", func() {
-				So(check.Name(), ShouldEqual, service)
-				So(check.Status(), ShouldEqual, healthcheck.StatusWarning)
-				So(check.StatusCode(), ShouldEqual, 429)
-				So(check.Message(), ShouldEqual, service+health.StatusMessage[healthcheck.StatusWarning])
-				So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
-				So(check.LastSuccess(), ShouldBeNil)
-				So(*check.LastFailure(), ShouldHappenAfter, timePriorHealthCheck)
-			})
+				Convey("then the expected check is returned", func() {
+					So(check.Name(), ShouldEqual, service)
+					So(check.Status(), ShouldEqual, healthcheck.StatusWarning)
+					So(check.StatusCode(), ShouldEqual, 429)
+					So(check.Message(), ShouldEqual, service+health.StatusMessage[healthcheck.StatusWarning])
+					So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
+					So(check.LastSuccess(), ShouldBeNil)
+					So(*check.LastFailure(), ShouldHappenAfter, timePriorHealthCheck)
+				})
 
-			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
-				So(doCalls, ShouldHaveLength, 1)
-				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
+				Convey("and client.Do should be called once with the expected parameters", func() {
+					doCalls := clienter.DoCalls()
+					So(doCalls, ShouldHaveLength, 1)
+					So(doCalls[0].Req.URL.Path, ShouldEqual, pathHealth)
+				})
 			})
 		})
-	})
 
-	Convey("given clienter.Do returns 200 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+		Convey("and clienter.Do returns 200 response", func() {
+			clienter.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 200,
 				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+			}
+			clienter.SetPathsWithNoRetries([]string{pathHealth, pathHealthcheck})
 
-		imageClient := NewAPIClient(testHost)
-		imageClient.cli = clienter
-		check := initialState
+			imageClient := NewWithClienter(testHost, clienter)
+			check := initialState
 
-		Convey("when imageClient.Checker is called", func() {
-			err := imageClient.Checker(ctx, &check)
-			So(err, ShouldBeNil)
+			Convey("when imageClient.Checker is called", func() {
+				err := imageClient.Checker(ctx, &check)
+				So(err, ShouldBeNil)
 
-			Convey("then the expected check is returned", func() {
-				So(check.Name(), ShouldEqual, service)
-				So(check.Status(), ShouldEqual, healthcheck.StatusOK)
-				So(check.StatusCode(), ShouldEqual, 200)
-				So(check.Message(), ShouldEqual, service+health.StatusMessage[healthcheck.StatusOK])
-				So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
-				So(*check.LastSuccess(), ShouldHappenAfter, timePriorHealthCheck)
-				So(check.LastFailure(), ShouldBeNil)
-			})
+				Convey("then the expected check is returned", func() {
+					So(check.Name(), ShouldEqual, service)
+					So(check.Status(), ShouldEqual, healthcheck.StatusOK)
+					So(check.StatusCode(), ShouldEqual, 200)
+					So(check.Message(), ShouldEqual, service+health.StatusMessage[healthcheck.StatusOK])
+					So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
+					So(*check.LastSuccess(), ShouldHappenAfter, timePriorHealthCheck)
+					So(check.LastFailure(), ShouldBeNil)
+				})
 
-			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
-				So(doCalls, ShouldHaveLength, 1)
-				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
+				Convey("and client.Do should be called once with the expected parameters", func() {
+					doCalls := clienter.DoCalls()
+					So(doCalls, ShouldHaveLength, 1)
+					So(doCalls[0].Req.URL.Path, ShouldEqual, pathHealth)
+				})
 			})
 		})
 	})
@@ -257,7 +239,7 @@ func TestClient_GetImages(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when GetImages is called", func() {
 			m, err := cli.GetImages(ctx, userAuthToken, serviceAuthToken, collectionID)
@@ -282,7 +264,7 @@ func TestClient_GetImages(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when GetImages is called", func() {
 			m, err := cli.GetImages(ctx, userAuthToken, serviceAuthToken, collectionID)
@@ -324,7 +306,7 @@ func TestClient_PostImage(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 		expectedPayload, err := json.Marshal(newImage)
 		So(err, ShouldBeNil)
 
@@ -347,7 +329,7 @@ func TestClient_PostImage(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 		expectedPayload, err := json.Marshal(newImage)
 		So(err, ShouldBeNil)
 
@@ -374,7 +356,7 @@ func TestClient_GetImage(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when GetImages is called", func() {
 			m, err := cli.GetImage(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
@@ -401,7 +383,7 @@ func TestClient_GetImage(t *testing.T) {
 			},
 		}
 
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when GetInstanceDimensionsBytes is called", func() {
 			_, err := cli.GetImage(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
@@ -440,7 +422,7 @@ func TestClient_PutImage(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
 
@@ -463,7 +445,7 @@ func TestClient_PutImage(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
 
@@ -493,7 +475,7 @@ func TestClient_PostImageUpload(t *testing.T) {
 	Convey("given a 200 status is returned", t, func() {
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when ImportDownloadVariant is called", func() {
 			err := cli.PostImageUpload(ctx, userAuthToken, serviceAuthToken, collectionID, "123", data)
@@ -511,7 +493,7 @@ func TestClient_PostImageUpload(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when ImportDownloadVariant is called", func() {
 			err := cli.PostImageUpload(ctx, userAuthToken, serviceAuthToken, collectionID, "123", data)
@@ -532,7 +514,7 @@ func TestClient_PublishImage(t *testing.T) {
 	Convey("given a 200 status is returned", t, func() {
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when PublishImage is called", func() {
 			err := cli.PublishImage(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
@@ -550,7 +532,7 @@ func TestClient_PublishImage(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when PublishImage is called", func() {
 			err := cli.PublishImage(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
@@ -583,7 +565,7 @@ func TestClient_PutDownloadVariant(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, mockDownloadVariant)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when PutDownloadVariant is called", func() {
 			ret, err := cli.PutDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original", data)
@@ -605,7 +587,7 @@ func TestClient_PutDownloadVariant(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when ImportDownloadVariant is called", func() {
 			ret, err := cli.PutDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original", data)
@@ -627,7 +609,7 @@ func TestClient_ImportDownloadVariant(t *testing.T) {
 	Convey("given a 200 status is returned", t, func() {
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when ImportDownloadVariant is called", func() {
 			err := cli.ImportDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
@@ -645,7 +627,7 @@ func TestClient_ImportDownloadVariant(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when ImportDownloadVariant is called", func() {
 			err := cli.ImportDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
@@ -666,7 +648,7 @@ func TestClient_CompleteDownloadVariant(t *testing.T) {
 	Convey("given a 200 status is returned", t, func() {
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when CompleteDownloadVariant is called", func() {
 			err := cli.CompleteDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
@@ -684,7 +666,7 @@ func TestClient_CompleteDownloadVariant(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
 
 		Convey("when CompleteDownloadVariant is called", func() {
 			err := cli.CompleteDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")

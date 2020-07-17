@@ -37,8 +37,13 @@ type Client struct {
 
 // NewClient creates a new instance of Client with a given app url
 func NewClient(name, url string) *Client {
+	return NewClientWithClienter(name, url, dphttp.NewClient())
+}
+
+// NewClientWithClienter creates a new instance of Client with a given app name and url, and the provided clienter
+func NewClientWithClienter(name, url string, clienter dphttp.Clienter) *Client {
 	c := &Client{
-		Client: dphttp.NewClient(),
+		Client: clienter,
 		URL:    url,
 		Name:   name,
 	}
