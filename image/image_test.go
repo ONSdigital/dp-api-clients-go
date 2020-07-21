@@ -40,6 +40,12 @@ var checkResponseBase = func(mockdphttpCli *dphttp.ClienterMock, expectedMethod 
 
 func createHTTPClientMock(retCode int, body []byte) *dphttp.ClienterMock {
 	return &dphttp.ClienterMock{
+		SetPathsWithNoRetriesFunc: func(paths []string) {
+			return
+		},
+		GetPathsWithNoRetriesFunc: func() []string {
+			return []string{}
+		},
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: retCode,
@@ -47,6 +53,28 @@ func createHTTPClientMock(retCode int, body []byte) *dphttp.ClienterMock {
 			}, nil
 		},
 	}
+}
+
+func TestClient_New(t *testing.T) {
+	Convey("NewAPIClient creates a new API client with the expected URL and name", t, func() {
+		imageClient := NewAPIClient(testHost)
+		So(imageClient.URL(), ShouldEqual, testHost)
+		So(imageClient.HealthClient().Name, ShouldEqual, "image-api")
+	})
+
+	Convey("Given an existing healthcheck client", t, func() {
+		hcClient := health.NewClient("generic", testHost)
+		Convey("The creating a new iamge API client providing it, results in a new client with the expected URL and name", func() {
+			imageClient := NewWithHealthClient(hcClient)
+			So(imageClient.URL(), ShouldEqual, testHost)
+			So(imageClient.HealthClient().Name, ShouldEqual, "image-api")
+		})
+	})
+}
+
+func createImageAPIWithClienter(clienter dphttp.Clienter) *Client {
+	hcCli := health.NewClientWithClienter("", testHost, clienter)
+	return NewWithHealthClient(hcCli)
 }
 
 func TestClient_HealthChecker(t *testing.T) {
@@ -73,7 +101,8 @@ func TestClient_HealthChecker(t *testing.T) {
 			}
 			clienter.SetPathsWithNoRetries([]string{pathHealth, pathHealthcheck})
 
-			imageClient := NewWithClienter(testHost, clienter)
+			hcCli := health.NewClientWithClienter("", testHost, clienter)
+			imageClient := NewWithHealthClient(hcCli)
 			check := initialState
 
 			Convey("when imageClient.Checker is called", func() {
@@ -106,7 +135,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			}
 			clienter.SetPathsWithNoRetries([]string{pathHealth, pathHealthcheck})
 
-			imageClient := NewWithClienter(testHost, clienter)
+			imageClient := createImageAPIWithClienter(clienter)
 			check := initialState
 
 			Convey("when imageClient.Checker is called", func() {
@@ -139,7 +168,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			}
 			clienter.SetPathsWithNoRetries([]string{pathHealth, pathHealthcheck})
 
-			imageClient := NewWithClienter(testHost, clienter)
+			imageClient := createImageAPIWithClienter(clienter)
 			check := initialState
 
 			Convey("when imageClient.Checker is called", func() {
@@ -173,7 +202,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			}
 			clienter.SetPathsWithNoRetries([]string{pathHealth, pathHealthcheck})
 
-			imageClient := NewWithClienter(testHost, clienter)
+			imageClient := createImageAPIWithClienter(clienter)
 			check := initialState
 
 			Convey("when imageClient.Checker is called", func() {
@@ -206,7 +235,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			}
 			clienter.SetPathsWithNoRetries([]string{pathHealth, pathHealthcheck})
 
-			imageClient := NewWithClienter(testHost, clienter)
+			imageClient := createImageAPIWithClienter(clienter)
 			check := initialState
 
 			Convey("when imageClient.Checker is called", func() {
@@ -239,7 +268,7 @@ func TestClient_GetImages(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when GetImages is called", func() {
 			m, err := cli.GetImages(ctx, userAuthToken, serviceAuthToken, collectionID)
@@ -264,7 +293,7 @@ func TestClient_GetImages(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when GetImages is called", func() {
 			m, err := cli.GetImages(ctx, userAuthToken, serviceAuthToken, collectionID)
@@ -306,7 +335,7 @@ func TestClient_PostImage(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 		expectedPayload, err := json.Marshal(newImage)
 		So(err, ShouldBeNil)
 
@@ -329,7 +358,7 @@ func TestClient_PostImage(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 		expectedPayload, err := json.Marshal(newImage)
 		So(err, ShouldBeNil)
 
@@ -356,7 +385,7 @@ func TestClient_GetImage(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when GetImages is called", func() {
 			m, err := cli.GetImage(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
@@ -374,16 +403,8 @@ func TestClient_GetImage(t *testing.T) {
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusNotFound,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte("resource not found"))),
-				}, nil
-			},
-		}
-
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("resource not found"))
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when GetInstanceDimensionsBytes is called", func() {
 			_, err := cli.GetImage(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
@@ -422,7 +443,7 @@ func TestClient_PutImage(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
 
@@ -445,7 +466,7 @@ func TestClient_PutImage(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
 
@@ -475,7 +496,7 @@ func TestClient_PostImageUpload(t *testing.T) {
 	Convey("given a 200 status is returned", t, func() {
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when ImportDownloadVariant is called", func() {
 			err := cli.PostImageUpload(ctx, userAuthToken, serviceAuthToken, collectionID, "123", data)
@@ -493,7 +514,7 @@ func TestClient_PostImageUpload(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when ImportDownloadVariant is called", func() {
 			err := cli.PostImageUpload(ctx, userAuthToken, serviceAuthToken, collectionID, "123", data)
@@ -514,7 +535,7 @@ func TestClient_PublishImage(t *testing.T) {
 	Convey("given a 200 status is returned", t, func() {
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when PublishImage is called", func() {
 			err := cli.PublishImage(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
@@ -532,7 +553,7 @@ func TestClient_PublishImage(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when PublishImage is called", func() {
 			err := cli.PublishImage(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
@@ -565,7 +586,7 @@ func TestClient_PutDownloadVariant(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, mockDownloadVariant)
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when PutDownloadVariant is called", func() {
 			ret, err := cli.PutDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original", data)
@@ -587,7 +608,7 @@ func TestClient_PutDownloadVariant(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when ImportDownloadVariant is called", func() {
 			ret, err := cli.PutDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original", data)
@@ -609,7 +630,7 @@ func TestClient_ImportDownloadVariant(t *testing.T) {
 	Convey("given a 200 status is returned", t, func() {
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when ImportDownloadVariant is called", func() {
 			err := cli.ImportDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
@@ -627,7 +648,7 @@ func TestClient_ImportDownloadVariant(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when ImportDownloadVariant is called", func() {
 			err := cli.ImportDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
@@ -648,7 +669,7 @@ func TestClient_CompleteDownloadVariant(t *testing.T) {
 	Convey("given a 200 status is returned", t, func() {
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when CompleteDownloadVariant is called", func() {
 			err := cli.CompleteDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
@@ -666,7 +687,7 @@ func TestClient_CompleteDownloadVariant(t *testing.T) {
 
 	Convey("given a 404 status is returned", t, func() {
 		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := Client{Cli: mockdphttpCli, URL: "http://localhost:8080"}
+		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when CompleteDownloadVariant is called", func() {
 			err := cli.CompleteDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")

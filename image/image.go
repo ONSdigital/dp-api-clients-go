@@ -15,7 +15,6 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
-	dphttp "github.com/ONSdigital/dp-net/http"
 )
 
 const service = "image-api"
@@ -45,11 +44,10 @@ func (e ErrInvalidImageAPIResponse) Code() int {
 // compile time check that ErrInvalidImageAPIResponse satisfies the error interface
 var _ error = ErrInvalidImageAPIResponse{}
 
-// Client is a image api client which can be used to make requests to the server
+// Client is an image api client which can be used to make requests to the server.
+// It extends the generic healthcheck Client structure.
 type Client struct {
-	Cli   dphttp.Clienter
-	URL   string
-	HcCli *healthcheck.Client
+	hcCli *healthcheck.Client
 }
 
 // closeResponseBody closes the response body and logs an error containing the context if unsuccessful
@@ -59,30 +57,39 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 	}
 }
 
-// NewAPIClient creates a new instance of Client with a given image api url and the relevant tokens
+// NewAPIClient creates a new instance of ImageAPI Client with a given image api url
 func NewAPIClient(imageAPIURL string) *Client {
-	return NewWithClienter(imageAPIURL, dphttp.NewClient())
+	return &Client{
+		healthcheck.NewClient(service, imageAPIURL),
+	}
 }
 
-// NewWithClienter creates a new instance of Client with a given image api url and the provided clienter
-func NewWithClienter(imageAPIURL string, clienter dphttp.Clienter) *Client {
-	hcClient := healthcheck.NewClientWithClienter(service, imageAPIURL, clienter)
-
+// NewWithHealthClient creates a new instance of ImageAPI Client,
+// reusing the URL and Clienter from the provided healthcheck client.
+func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
 	return &Client{
-		Cli:   hcClient.Client,
-		URL:   imageAPIURL,
-		HcCli: hcClient,
+		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
 	}
+}
+
+// URL returns the URL used by this client
+func (c *Client) URL() string {
+	return c.hcCli.URL
+}
+
+// HealthClient returns the underlying Healthcheck Client for this image API client
+func (c *Client) HealthClient() *healthcheck.Client {
+	return c.hcCli
 }
 
 // Checker calls image api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
-	return c.HcCli.Checker(ctx, check)
+	return c.hcCli.Checker(ctx, check)
 }
 
 // GetImages returns the list of images
 func (c *Client) GetImages(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string) (m Images, err error) {
-	uri := fmt.Sprintf("%s/images", c.URL)
+	uri := fmt.Sprintf("%s/images", c.hcCli.URL)
 
 	clientlog.Do(ctx, "retrieving images", service, uri)
 
@@ -116,7 +123,7 @@ func (c *Client) PostImage(ctx context.Context, userAuthToken, serviceAuthToken,
 		return
 	}
 
-	uri := fmt.Sprintf("%s/images", c.URL)
+	uri := fmt.Sprintf("%s/images", c.hcCli.URL)
 
 	clientlog.Do(ctx, "posting new image", service, uri)
 
@@ -145,7 +152,7 @@ func (c *Client) PostImage(ctx context.Context, userAuthToken, serviceAuthToken,
 
 // GetImage returns a requested image
 func (c *Client) GetImage(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string) (m Image, err error) {
-	uri := fmt.Sprintf("%s/images/%s", c.URL, imageID)
+	uri := fmt.Sprintf("%s/images/%s", c.hcCli.URL, imageID)
 
 	clientlog.Do(ctx, "retrieving images", service, uri)
 
@@ -179,7 +186,7 @@ func (c *Client) PutImage(ctx context.Context, userAuthToken, serviceAuthToken, 
 		return
 	}
 
-	uri := fmt.Sprintf("%s/images/%s", c.URL, imageID)
+	uri := fmt.Sprintf("%s/images/%s", c.hcCli.URL, imageID)
 
 	clientlog.Do(ctx, "updating instance import_tasks", service, uri)
 
@@ -213,7 +220,7 @@ func (c *Client) PostImageUpload(ctx context.Context, userAuthToken, serviceAuth
 		return
 	}
 
-	uri := fmt.Sprintf("%s/images/%s/upload", c.URL, imageID)
+	uri := fmt.Sprintf("%s/images/%s/upload", c.hcCli.URL, imageID)
 
 	clientlog.Do(ctx, "publishing image", service, uri)
 
@@ -237,7 +244,7 @@ func (c *Client) PutDownloadVariant(ctx context.Context, userAuthToken, serviceA
 		return
 	}
 
-	uri := fmt.Sprintf("%s/images/%s/downloads/%s", c.URL, imageID, variant)
+	uri := fmt.Sprintf("%s/images/%s/downloads/%s", c.hcCli.URL, imageID, variant)
 
 	clientlog.Do(ctx, "updating image download variant", service, uri)
 
@@ -266,7 +273,7 @@ func (c *Client) PutDownloadVariant(ctx context.Context, userAuthToken, serviceA
 
 //ImportDownloadVariant triggers a download variant import
 func (c *Client) ImportDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (err error) {
-	uri := fmt.Sprintf("%s/images/%s/downloads/%s/import", c.URL, imageID, variant)
+	uri := fmt.Sprintf("%s/images/%s/downloads/%s/import", c.hcCli.URL, imageID, variant)
 
 	clientlog.Do(ctx, "importing image download variant", service, uri)
 
@@ -285,7 +292,7 @@ func (c *Client) ImportDownloadVariant(ctx context.Context, userAuthToken, servi
 
 //CompleteDownloadVariant triggers a download variant import
 func (c *Client) CompleteDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (err error) {
-	uri := fmt.Sprintf("%s/images/%s/downloads/%s/complete", c.URL, imageID, variant)
+	uri := fmt.Sprintf("%s/images/%s/downloads/%s/complete", c.hcCli.URL, imageID, variant)
 
 	clientlog.Do(ctx, "completing image download variant", service, uri)
 
@@ -305,7 +312,7 @@ func (c *Client) CompleteDownloadVariant(ctx context.Context, userAuthToken, ser
 // PublishImage triggers an image publishing
 func (c *Client) PublishImage(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string) (err error) {
 
-	uri := fmt.Sprintf("%s/images/%s/publish", c.URL, imageID)
+	uri := fmt.Sprintf("%s/images/%s/publish", c.hcCli.URL, imageID)
 
 	clientlog.Do(ctx, "publishing image", service, uri)
 
@@ -363,7 +370,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	addCollectionIDHeader(req, collectionID)
 	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
-	return c.Cli.Do(ctx, req)
+	return c.hcCli.Client.Do(ctx, req)
 }
 
 // doPostWithAuthHeaders executes clienter.Do POST for the provided uri, setting the required headers according to the provided useAuthToken, serviceAuthToken and collectionID.
@@ -378,7 +385,7 @@ func (c *Client) doPostWithAuthHeaders(ctx context.Context, userAuthToken, servi
 	addCollectionIDHeader(req, collectionID)
 	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
-	return c.Cli.Do(ctx, req)
+	return c.hcCli.Client.Do(ctx, req)
 }
 
 // doPutWithAuthHeaders executes clienter.Do PUT for the provided uri, setting the required headers according to the provided useAuthToken, serviceAuthToken and collectionID.
@@ -393,5 +400,5 @@ func (c *Client) doPutWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	addCollectionIDHeader(req, collectionID)
 	common.AddFlorenceHeader(req, userAuthToken)
 	common.AddServiceTokenHeader(req, serviceAuthToken)
-	return c.Cli.Do(ctx, req)
+	return c.hcCli.Client.Do(ctx, req)
 }
