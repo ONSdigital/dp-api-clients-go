@@ -130,8 +130,9 @@ type TimeseriesDataPoint struct {
 }
 
 type TimeseriesDescription struct {
-	CDID string `json:"cdid"`
-	Unit string `json:"unit"`
+	CDID        string `json:"cdid"`
+	Unit        string `json:"unit"`
+	ReleaseDate string `json:"releaseDate"`
 }
 
 // HomepageContent represents the page model of the Zebedee response for the ONS homepage
