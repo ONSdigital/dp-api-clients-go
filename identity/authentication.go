@@ -45,7 +45,7 @@ type Client clients.APIClient
 
 // Clienter provides an interface to checking identity of incoming request
 type Clienter interface {
-	CheckRequest(req *http.Request) (context.Context, int, authFailure, error)
+	CheckRequest(req *http.Request) (context.Context, int, AuthFailure, error)
 }
 
 // NewAPIClient returns a Client
@@ -56,12 +56,12 @@ func NewAPIClient(cli dphttp.Clienter, url string) (api *Client) {
 	}
 }
 
-// authFailure is an alias to an error type, this represents the failure to
+// AuthFailure is an alias to an error type, this represents the failure to
 // authenticate request over a generic error from a http or marshalling error
-type authFailure error
+type AuthFailure error
 
 // CheckRequest calls the AuthAPI to check florenceToken or serviceAuthToken
-func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToken string) (context.Context, int, authFailure, error) {
+func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToken string) (context.Context, int, AuthFailure, error) {
 	ctx := req.Context()
 
 	isUserReq := len(florenceToken) > 0
@@ -81,7 +81,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 	// Check token identity (according to isUserReq or isServiceReq)
 	var tokenIdentityResp *common.IdentityResponse
 	var errTokenIdentity error
-	var authFail authFailure
+	var authFail AuthFailure
 	var statusCode int
 	if isUserReq {
 		tokenIdentityResp, statusCode, authFail, errTokenIdentity = api.doCheckTokenIdentity(ctx, florenceToken, TokenTypeUser, logData)
@@ -126,7 +126,7 @@ func (api Client) CheckTokenIdentity(ctx context.Context, token string, tokenTyp
 	return idRes, err
 }
 
-func (api Client) doCheckTokenIdentity(ctx context.Context, token string, tokenType TokenType, logData log.Data) (*common.IdentityResponse, int, authFailure, error) {
+func (api Client) doCheckTokenIdentity(ctx context.Context, token string, tokenType TokenType, logData log.Data) (*common.IdentityResponse, int, AuthFailure, error) {
 
 	url := api.BaseURL + "/identity"
 	logData["url"] = url
