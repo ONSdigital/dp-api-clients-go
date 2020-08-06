@@ -12,6 +12,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
+	dprequest "github.com/ONSdigital/dp-net/request"
 
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
@@ -33,9 +34,9 @@ var checkResponseBase = func(mockdphttpCli *dphttp.ClienterMock, expectedMethod 
 	So(len(mockdphttpCli.DoCalls()), ShouldEqual, 1)
 	So(mockdphttpCli.DoCalls()[0].Req.URL.RequestURI(), ShouldEqual, expectedUri)
 	So(mockdphttpCli.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
-	So(mockdphttpCli.DoCalls()[0].Req.Header[dphttp.AuthHeaderKey][0], ShouldEqual, "Bearer "+serviceAuthToken)
-	So(mockdphttpCli.DoCalls()[0].Req.Header[dphttp.FlorenceHeaderKey][0], ShouldEqual, userAuthToken)
-	So(mockdphttpCli.DoCalls()[0].Req.Header[dphttp.CollectionIDHeaderKey][0], ShouldEqual, collectionID)
+	So(mockdphttpCli.DoCalls()[0].Req.Header[dprequest.AuthHeaderKey][0], ShouldEqual, "Bearer "+serviceAuthToken)
+	So(mockdphttpCli.DoCalls()[0].Req.Header[dprequest.FlorenceHeaderKey][0], ShouldEqual, userAuthToken)
+	So(mockdphttpCli.DoCalls()[0].Req.Header[dprequest.CollectionIDHeaderKey][0], ShouldEqual, collectionID)
 }
 
 func createHTTPClientMock(retCode int, body []byte) *dphttp.ClienterMock {

@@ -10,7 +10,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/dp-mocking/httpmocks"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/go-ns/common"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -42,8 +42,8 @@ func TestHandler_NoAuth(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(authFailure.Error(), ShouldContainSubstring, "no headers set on request: "+errUnableToIdentifyRequest.Error())
 				So(ctx, ShouldNotBeNil)
-				So(common.IsUserPresent(ctx), ShouldBeFalse)
-				So(common.IsCallerPresent(ctx), ShouldBeFalse)
+				So(dprequest.IsUserPresent(ctx), ShouldBeFalse)
+				So(dprequest.IsCallerPresent(ctx), ShouldBeFalse)
 			})
 
 			Convey("Then the returned code should be 401", func() {
@@ -77,8 +77,8 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 				So(err, ShouldEqual, expectedError)
 				So(status, ShouldNotEqual, http.StatusOK)
 				So(ctx, ShouldNotBeNil)
-				So(common.IsUserPresent(ctx), ShouldBeFalse)
-				So(common.IsCallerPresent(ctx), ShouldBeFalse)
+				So(dprequest.IsUserPresent(ctx), ShouldBeFalse)
+				So(dprequest.IsCallerPresent(ctx), ShouldBeFalse)
 			})
 		})
 	})
@@ -112,8 +112,8 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(status, ShouldEqual, http.StatusNotFound)
 				So(ctx, ShouldNotBeNil)
-				So(common.IsUserPresent(ctx), ShouldBeFalse)
-				So(common.IsCallerPresent(ctx), ShouldBeFalse)
+				So(dprequest.IsUserPresent(ctx), ShouldBeFalse)
+				So(dprequest.IsCallerPresent(ctx), ShouldBeFalse)
 			})
 
 			Convey("And Auth API response body is closed", func() {
@@ -143,13 +143,13 @@ func TestHandler_florenceToken(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				So(zebedeeReq.Header[dprequest.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
 			})
 
 			Convey("Then the downstream HTTP handler returned no error and expected context", func() {
 				So(ctx, ShouldNotBeNil)
-				So(common.Caller(ctx), ShouldEqual, userIdentifier)
-				So(common.User(ctx), ShouldEqual, userIdentifier)
+				So(dprequest.Caller(ctx), ShouldEqual, userIdentifier)
+				So(dprequest.User(ctx), ShouldEqual, userIdentifier)
 			})
 
 			Convey("And Auth API response body is closed", func() {
@@ -175,13 +175,13 @@ func TestHandler_florenceToken(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				So(zebedeeReq.Header[dprequest.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
 			})
 
 			Convey("Then the downstream HTTP handler returned no error and expected context", func() {
 				So(ctx, ShouldNotBeNil)
-				So(common.Caller(ctx), ShouldEqual, userIdentifier)
-				So(common.User(ctx), ShouldEqual, userIdentifier)
+				So(dprequest.Caller(ctx), ShouldEqual, userIdentifier)
+				So(dprequest.User(ctx), ShouldEqual, userIdentifier)
 			})
 
 			Convey("And Auth API response body is closed", func() {
@@ -216,7 +216,7 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				So(zebedeeReq.Header[dprequest.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
 			})
 
 			Convey("Then the response is set as expected", func() {
@@ -225,8 +225,8 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 				So(err.Error(), ShouldContainSubstring, "invalid character 'i' looking for beginning of object key string")
 				So(status, ShouldEqual, http.StatusInternalServerError)
 				So(ctx, ShouldNotBeNil)
-				So(common.Caller(ctx), ShouldBeEmpty)
-				So(common.User(ctx), ShouldBeEmpty)
+				So(dprequest.Caller(ctx), ShouldBeEmpty)
+				So(dprequest.User(ctx), ShouldBeEmpty)
 			})
 
 			Convey("And Auth API response body is closed", func() {
@@ -259,7 +259,7 @@ func TestHandler_ReadBodyError(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				So(zebedeeReq.Header[dprequest.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
 			})
 
 			Convey("And the expected status code and error is returned", func() {
@@ -307,7 +307,7 @@ func TestHandler_authToken(t *testing.T) {
 
 		req := httptest.NewRequest("GET", url, nil)
 		req.Header = map[string][]string{
-			common.UserHeaderKey: {userIdentifier},
+			dprequest.UserHeaderKey: {userIdentifier},
 		}
 
 		httpClient, body, _ := getClientReturningIdentifier(t, callerIdentifier)
@@ -324,8 +324,8 @@ func TestHandler_authToken(t *testing.T) {
 				So(httpClient.DoCalls(), ShouldHaveLength, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.UserHeaderKey], ShouldHaveLength, 0)
-				So(zebedeeReq.Header[common.AuthHeaderKey], ShouldHaveLength, 1)
+				So(zebedeeReq.Header[dprequest.UserHeaderKey], ShouldHaveLength, 0)
+				So(zebedeeReq.Header[dprequest.AuthHeaderKey], ShouldHaveLength, 1)
 				actual, err := headers.GetServiceAuthToken(zebedeeReq)
 				So(err, ShouldBeNil)
 				So(actual, ShouldEqual, callerAuthToken)
@@ -335,10 +335,10 @@ func TestHandler_authToken(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 
 				So(ctx, ShouldNotBeNil)
-				So(common.IsCallerPresent(ctx), ShouldBeTrue)
-				So(common.IsUserPresent(ctx), ShouldBeTrue)
-				So(common.Caller(ctx), ShouldEqual, callerIdentifier)
-				So(common.User(ctx), ShouldEqual, userIdentifier)
+				So(dprequest.IsCallerPresent(ctx), ShouldBeTrue)
+				So(dprequest.IsUserPresent(ctx), ShouldBeTrue)
+				So(dprequest.Caller(ctx), ShouldEqual, callerIdentifier)
+				So(dprequest.User(ctx), ShouldEqual, userIdentifier)
 			})
 
 			Convey("And Auth API response body is closed", func() {
@@ -354,8 +354,8 @@ func TestHandler_bothTokens(t *testing.T) {
 
 		req := httptest.NewRequest("GET", url, nil)
 		req.Header = map[string][]string{
-			common.FlorenceHeaderKey: {florenceToken},
-			common.AuthHeaderKey:     {callerAuthToken},
+			dprequest.FlorenceHeaderKey: {florenceToken},
+			dprequest.AuthHeaderKey:     {callerAuthToken},
 		}
 
 		httpClient, body, _ := getClientReturningIdentifier(t, userIdentifier)
@@ -372,15 +372,15 @@ func TestHandler_bothTokens(t *testing.T) {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
-				So(zebedeeReq.Header[common.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
-				So(len(zebedeeReq.Header[common.AuthHeaderKey]), ShouldEqual, 0)
+				So(zebedeeReq.Header[dprequest.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
+				So(len(zebedeeReq.Header[dprequest.AuthHeaderKey]), ShouldEqual, 0)
 			})
 
 			Convey("Then the context returns with expected values", func() {
 				So(ctx, ShouldNotBeNil)
-				So(common.IsUserPresent(ctx), ShouldBeTrue)
-				So(common.User(ctx), ShouldEqual, userIdentifier)
-				So(common.Caller(ctx), ShouldEqual, userIdentifier)
+				So(dprequest.IsUserPresent(ctx), ShouldBeTrue)
+				So(dprequest.User(ctx), ShouldEqual, userIdentifier)
+				So(dprequest.Caller(ctx), ShouldEqual, userIdentifier)
 			})
 
 			Convey("And Auth API response body is closed", func() {
@@ -454,7 +454,7 @@ func TestSplitTokens(t *testing.T) {
 }
 
 func getClientReturningIdentifier(t *testing.T, id string) (*dphttp.ClienterMock, *httpmocks.ReadCloserMock, *http.Response) {
-	b := httpmocks.GetEntityBytes(t, &common.IdentityResponse{Identifier: id})
+	b := httpmocks.GetEntityBytes(t, &dprequest.IdentityResponse{Identifier: id})
 	body := httpmocks.NewReadCloserMock(b, nil)
 	resp := httpmocks.NewResponseMock(body, http.StatusOK)
 	cli := &dphttp.ClienterMock{

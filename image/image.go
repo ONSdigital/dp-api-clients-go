@@ -10,7 +10,7 @@ import (
 	"net/url"
 
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	"github.com/ONSdigital/go-ns/common"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
@@ -350,7 +350,7 @@ func NewImageAPIResponse(resp *http.Response, uri string) (e *ErrInvalidImageAPI
 
 func addCollectionIDHeader(r *http.Request, collectionID string) {
 	if len(collectionID) > 0 {
-		r.Header.Add(common.CollectionIDHeaderKey, collectionID)
+		r.Header.Add(dprequest.CollectionIDHeaderKey, collectionID)
 	}
 }
 
@@ -368,8 +368,8 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	}
 
 	addCollectionIDHeader(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	dprequest.AddFlorenceHeader(req, userAuthToken)
+	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
 	return c.hcCli.Client.Do(ctx, req)
 }
 
@@ -383,8 +383,8 @@ func (c *Client) doPostWithAuthHeaders(ctx context.Context, userAuthToken, servi
 	}
 
 	addCollectionIDHeader(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	dprequest.AddFlorenceHeader(req, userAuthToken)
+	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
 	return c.hcCli.Client.Do(ctx, req)
 }
 
@@ -398,7 +398,7 @@ func (c *Client) doPutWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	}
 
 	addCollectionIDHeader(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	dprequest.AddFlorenceHeader(req, userAuthToken)
+	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
 	return c.hcCli.Client.Do(ctx, req)
 }

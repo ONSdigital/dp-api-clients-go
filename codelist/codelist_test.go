@@ -15,7 +15,7 @@ import (
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/dp-mocking/httpmocks"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/go-ns/common"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -1367,8 +1367,8 @@ func TestDoGetWithAuthHeaders(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
-				So(req.Header.Get(common.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
+				So(req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, dprequest.BearerPrefix+testServiceAuthToken)
+				So(req.Header.Get(dprequest.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
 			})
 		})
 	})
@@ -1432,6 +1432,6 @@ func assertClienterDoCalls(actual *http.Request, uri string, host string) {
 	So(actual.URL.Host, ShouldEqual, host)
 	So(actual.Method, ShouldEqual, "GET")
 	So(actual.Body, ShouldBeNil)
-	So(actual.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
-	So(actual.Header.Get(common.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
+	So(actual.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, dprequest.BearerPrefix+testServiceAuthToken)
+	So(actual.Header.Get(dprequest.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
 }

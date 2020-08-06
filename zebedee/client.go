@@ -17,7 +17,7 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/go-ns/common"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -140,7 +140,7 @@ func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte,
 		return nil, nil, err
 	}
 
-	common.AddFlorenceHeader(req, userAccessToken)
+	dprequest.AddFlorenceHeader(req, userAccessToken)
 
 	resp, err := c.cli.Do(ctx, req)
 	if err != nil {
@@ -286,8 +286,8 @@ func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, u
 
 func (c *Client) createRequestURL(ctx context.Context, path, query string) string {
 	// Check if collection ID is set in context
-	if ctx.Value(common.CollectionIDHeaderKey) != nil {
-		collectionID, ok := ctx.Value(common.CollectionIDHeaderKey).(string)
+	if ctx.Value(dprequest.CollectionIDHeaderKey) != nil {
+		collectionID, ok := ctx.Value(dprequest.CollectionIDHeaderKey).(string)
 		if !ok {
 			log.Event(ctx, "unable to find collection ID header key", log.ERROR, log.Error(errCastingCollectionID))
 		}
@@ -297,8 +297,8 @@ func (c *Client) createRequestURL(ctx context.Context, path, query string) strin
 	path += "?" + url.PathEscape(query)
 
 	// Check if locale code is set in context and add lang query param to url
-	if ctx.Value(common.LocaleHeaderKey) != nil {
-		localeCode, ok := ctx.Value(common.LocaleHeaderKey).(string)
+	if ctx.Value(dprequest.LocaleHeaderKey) != nil {
+		localeCode, ok := ctx.Value(dprequest.LocaleHeaderKey).(string)
 		if !ok {
 			log.Event(ctx, "unable to find local header key", log.ERROR, log.Error(errCastingLocalCode))
 		}
