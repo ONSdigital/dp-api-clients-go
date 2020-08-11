@@ -265,7 +265,7 @@ func TestClient_HealthChecker(t *testing.T) {
 
 func TestClient_GetImages(t *testing.T) {
 	Convey("given a 200 status is returned with an empty result list", t, func() {
-		searchResp, err := ioutil.ReadFile("./response_mocks/images_0.json")
+		searchResp, err := ioutil.ReadFile("./response_mocks/empty_list.json")
 		So(err, ShouldBeNil)
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
@@ -306,7 +306,6 @@ func TestClient_GetImages(t *testing.T) {
 				So(m.Items, ShouldHaveLength, 1)
 				mItem := m.Items[0]
 				So(mItem.Id, ShouldResemble, "042e216a-7822-4fa0-a3d6-e3f5248ffc35")
-				So(mItem.Downloads, ShouldNotBeEmpty)
 				So(m.Limit, ShouldEqual, 1)
 				So(m.Offset, ShouldEqual, 1)
 				So(m.TotalCount, ShouldEqual, 2)
@@ -435,8 +434,11 @@ func TestClient_PutImage(t *testing.T) {
 		Upload: ImageUpload{
 			Path: "http://s3bucket/abcd.png",
 		},
-		Type:      "animals",
-		Downloads: map[string]ImageDownload{},
+		Type: "animals",
+		Links: &ImageLinks{
+			Self:      "http://localhost:24700/images/123",
+			Downloads: "http://localhost:24700/images/123/downloads",
+		},
 	}
 
 	Convey("given a 200 status is returned", t, func() {
@@ -488,49 +490,6 @@ func TestClient_PutImage(t *testing.T) {
 	})
 }
 
-func TestClient_PostImageUpload(t *testing.T) {
-
-	data := ImageUpload{
-		Path: "http://s3bucket/abcd.png",
-	}
-
-	Convey("given a 200 status is returned", t, func() {
-
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
-		cli := createImageAPIWithClienter(mockdphttpCli)
-
-		Convey("when ImportDownloadVariant is called", func() {
-			err := cli.PostImageUpload(ctx, userAuthToken, serviceAuthToken, collectionID, "123", data)
-
-			Convey("a positive response is returned", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPost, "/images/123/upload")
-				So(err, ShouldBeNil)
-			})
-		})
-	})
-
-	Convey("given a 404 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := createImageAPIWithClienter(mockdphttpCli)
-
-		Convey("when ImportDownloadVariant is called", func() {
-			err := cli.PostImageUpload(ctx, userAuthToken, serviceAuthToken, collectionID, "123", data)
-
-			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from image api: http://localhost:8080/images/123/upload, body: wrong!").Error())
-			})
-
-			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPost, "/images/123/upload")
-			})
-		})
-	})
-}
-
 func TestClient_PublishImage(t *testing.T) {
 
 	Convey("given a 200 status is returned", t, func() {
@@ -570,16 +529,114 @@ func TestClient_PublishImage(t *testing.T) {
 	})
 }
 
+func TestClient_GetDownloadVariants(t *testing.T) {
+	Convey("given a 200 status is returned with an empty result list", t, func() {
+		searchResp, err := ioutil.ReadFile("./response_mocks/empty_list.json")
+		So(err, ShouldBeNil)
+
+		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
+		cli := createImageAPIWithClienter(mockdphttpCli)
+
+		Convey("when GetDownloadVariants is called", func() {
+			m, err := cli.GetDownloadVariants(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+				So(m.Count, ShouldEqual, 0)
+				So(m.Items, ShouldBeEmpty)
+				So(m.Limit, ShouldEqual, 0)
+				So(m.Offset, ShouldEqual, 0)
+				So(m.TotalCount, ShouldEqual, 0)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockdphttpCli, http.MethodGet, "/images/123/downloads")
+			})
+		})
+	})
+
+	Convey("given a 200 status is returned with an single result list", t, func() {
+		searchResp, err := ioutil.ReadFile("./response_mocks/downloads_1.json")
+		So(err, ShouldBeNil)
+
+		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
+		cli := createImageAPIWithClienter(mockdphttpCli)
+
+		Convey("when GetDownloadVariants is called", func() {
+			m, err := cli.GetDownloadVariants(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+				So(m.Count, ShouldEqual, 1)
+				So(m.Items, ShouldNotBeEmpty)
+				So(m.Items, ShouldHaveLength, 1)
+				mItem := m.Items[0]
+				So(mItem.Id, ShouldResemble, "original")
+				So(m.Limit, ShouldEqual, 1)
+				So(m.Offset, ShouldEqual, 1)
+				So(m.TotalCount, ShouldEqual, 2)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockdphttpCli, http.MethodGet, "/images/123/downloads")
+			})
+		})
+	})
+}
+
+func TestClient_GetDownloadVariant(t *testing.T) {
+	Convey("given a 200 status is returned", t, func() {
+		searchResp, err := ioutil.ReadFile("./response_mocks/download.json")
+		So(err, ShouldBeNil)
+
+		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
+		cli := createImageAPIWithClienter(mockdphttpCli)
+
+		Convey("when GetImages is called", func() {
+			m, err := cli.GetDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+				So(m.Id, ShouldResemble, "original")
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockdphttpCli, http.MethodGet, "/images/123/downloads/original")
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("resource not found"))
+		cli := createImageAPIWithClienter(mockdphttpCli)
+
+		Convey("when GetInstanceDimensionsBytes is called", func() {
+			_, err := cli.GetDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from image api: http://localhost:8080/images/123/downloads/original, body: resource not found").Error())
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockdphttpCli, http.MethodGet, "/images/123/downloads/original")
+			})
+		})
+	})
+}
+
 func TestClient_PutDownloadVariant(t *testing.T) {
 
-	w := 222
-	h := 333
+	w := 1920
+	h := 1080
 	data := ImageDownload{
-		Size:    111,
-		Type:    "downloadType",
+		Id:      "original",
+		Size:    1024000,
+		Type:    "png",
 		Width:   &w,
 		Height:  &h,
-		Private: "myImage",
+		Private: "my-private-bucket",
+		State:   "published",
+		Href:    "http://download.ons.gov.uk/images/042e216a-7822-4fa0-a3d6-e3f5248ffc35/image-name.png",
 	}
 
 	Convey("given a 200 status is returned", t, func() {
@@ -588,21 +645,24 @@ func TestClient_PutDownloadVariant(t *testing.T) {
 
 		mockdphttpCli := createHTTPClientMock(http.StatusOK, mockDownloadVariant)
 		cli := createImageAPIWithClienter(mockdphttpCli)
+		expectedPayload, err := json.Marshal(data)
+		So(err, ShouldBeNil)
 
 		Convey("when PutDownloadVariant is called", func() {
-			ret, err := cli.PutDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original", data)
+			m, err := cli.PutDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original", data)
 
 			Convey("a positive response is returned with the expected updated ImageDownload", func() {
-				So(err, ShouldBeNil)
-				So(ret, ShouldResemble, ImageDownload{
-					Size: 1024,
-					Href: "http://download.ons.gov.uk/images/042e216a-7822-4fa0-a3d6-e3f5248ffc35/image-name.png",
+				Convey("a positive response is returned", func() {
+					So(err, ShouldBeNil)
+					So(m.Id, ShouldResemble, "original")
 				})
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
 				checkResponseBase(mockdphttpCli, http.MethodPut, "/images/123/downloads/original")
+				payload, err := ioutil.ReadAll(mockdphttpCli.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
 			})
 		})
 	})
@@ -621,84 +681,6 @@ func TestClient_PutDownloadVariant(t *testing.T) {
 
 			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
 				checkResponseBase(mockdphttpCli, http.MethodPut, "/images/123/downloads/original")
-			})
-		})
-	})
-}
-
-func TestClient_ImportDownloadVariant(t *testing.T) {
-
-	Convey("given a 200 status is returned", t, func() {
-
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
-		cli := createImageAPIWithClienter(mockdphttpCli)
-
-		Convey("when ImportDownloadVariant is called", func() {
-			err := cli.ImportDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
-
-			Convey("a positive response is returned", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPost, "/images/123/downloads/original/import")
-				So(err, ShouldBeNil)
-			})
-		})
-	})
-
-	Convey("given a 404 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := createImageAPIWithClienter(mockdphttpCli)
-
-		Convey("when ImportDownloadVariant is called", func() {
-			err := cli.ImportDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
-
-			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from image api: http://localhost:8080/images/123/downloads/original/import, body: wrong!").Error())
-			})
-
-			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPost, "/images/123/downloads/original/import")
-			})
-		})
-	})
-}
-
-func TestClient_CompleteDownloadVariant(t *testing.T) {
-
-	Convey("given a 200 status is returned", t, func() {
-
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
-		cli := createImageAPIWithClienter(mockdphttpCli)
-
-		Convey("when CompleteDownloadVariant is called", func() {
-			err := cli.CompleteDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
-
-			Convey("a positive response is returned", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPost, "/images/123/downloads/original/complete")
-				So(err, ShouldBeNil)
-			})
-		})
-	})
-
-	Convey("given a 404 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
-		cli := createImageAPIWithClienter(mockdphttpCli)
-
-		Convey("when CompleteDownloadVariant is called", func() {
-			err := cli.CompleteDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "original")
-
-			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from image api: http://localhost:8080/images/123/downloads/original/complete, body: wrong!").Error())
-			})
-
-			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPost, "/images/123/downloads/original/complete")
 			})
 		})
 	})

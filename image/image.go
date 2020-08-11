@@ -213,18 +213,13 @@ func (c *Client) PutImage(ctx context.Context, userAuthToken, serviceAuthToken, 
 	return
 }
 
-// PostImageUpload specifies download variants and triggers image import
-func (c *Client) PostImageUpload(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string, data ImageUpload) (err error) {
-	payload, err := json.Marshal(data)
-	if err != nil {
-		return
-	}
+// GetDownloadVariants returns the list of download variants for an image
+func (c *Client) GetDownloadVariants(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string) (m ImageDownloads, err error) {
+	uri := fmt.Sprintf("%s/images/%s/downloads", c.hcCli.URL, imageID)
 
-	uri := fmt.Sprintf("%s/images/%s/upload", c.hcCli.URL, imageID)
+	clientlog.Do(ctx, "retrieving download variants", service, uri)
 
-	clientlog.Do(ctx, "publishing image", service, uri)
-
-	resp, err := c.doPostWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
 	if err != nil {
 		return
 	}
@@ -234,6 +229,45 @@ func (c *Client) PostImageUpload(ctx context.Context, userAuthToken, serviceAuth
 		err = NewImageAPIResponse(resp, uri)
 		return
 	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(b, &m); err != nil {
+		return
+	}
+
+	return
+}
+
+// GetDownloadVariant returns a requested download variant for an image
+func (c *Client) GetDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (m ImageDownload, err error) {
+	uri := fmt.Sprintf("%s/images/%s/downloads/%s", c.hcCli.URL, imageID, variant)
+
+	clientlog.Do(ctx, "retrieving download variant", service, uri)
+
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewImageAPIResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(b, &m); err != nil {
+		return
+	}
+
 	return
 }
 
@@ -268,44 +302,6 @@ func (c *Client) PutDownloadVariant(ctx context.Context, userAuthToken, serviceA
 		return
 	}
 
-	return
-}
-
-//ImportDownloadVariant triggers a download variant import
-func (c *Client) ImportDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (err error) {
-	uri := fmt.Sprintf("%s/images/%s/downloads/%s/import", c.hcCli.URL, imageID, variant)
-
-	clientlog.Do(ctx, "importing image download variant", service, uri)
-
-	resp, err := c.doPostWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, []byte{})
-	if err != nil {
-		return
-	}
-	defer closeResponseBody(ctx, resp)
-
-	if resp.StatusCode != http.StatusOK {
-		err = NewImageAPIResponse(resp, uri)
-		return
-	}
-	return
-}
-
-//CompleteDownloadVariant triggers a download variant import
-func (c *Client) CompleteDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (err error) {
-	uri := fmt.Sprintf("%s/images/%s/downloads/%s/complete", c.hcCli.URL, imageID, variant)
-
-	clientlog.Do(ctx, "completing image download variant", service, uri)
-
-	resp, err := c.doPostWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, []byte{})
-	if err != nil {
-		return
-	}
-	defer closeResponseBody(ctx, resp)
-
-	if resp.StatusCode != http.StatusOK {
-		err = NewImageAPIResponse(resp, uri)
-		return
-	}
 	return
 }
 

@@ -40,11 +40,11 @@ type Image struct {
 	//- deleted
 	//- failed_import
 	//- failed_publish
-	Filename  string                   `json:"filename,omitempty"`
-	License   License                  `json:"license,omitempty"`
-	Upload    ImageUpload              `json:"upload,omitempty"`
-	Type      string                   `json:"type,omitempty"`
-	Downloads map[string]ImageDownload `json:"downloads,omitempty"`
+	Filename string      `json:"filename,omitempty"`
+	License  License     `json:"license,omitempty"`
+	Upload   ImageUpload `json:"upload,omitempty"`
+	Type     string      `json:"type,omitempty"`
+	Links    *ImageLinks `json:"links,omitempty"`
 }
 
 // ImageUpload represents the fields for an Image Upload
@@ -52,16 +52,34 @@ type ImageUpload struct {
 	Path string `json:"path,omitempty"`
 }
 
+// ImageLinks represents the fields for the image HATEOAS links
+type ImageLinks struct {
+	Self      string `json:"self"`
+	Downloads string `json:"downloads"`
+}
+
+// Images represents the fields for a group of image download variants as returned by Image API
+type ImageDownloads struct {
+	Count      int             `json:"count"`
+	Items      []ImageDownload `json:"items"`
+	Limit      int             `json:"limit"`
+	Offset     int             `json:"offset"`
+	TotalCount int             `json:"total_count"`
+}
+
 // ImageDownload represents the fields for an Image Download
 type ImageDownload struct {
-	Size    int    `json:"size,omitempty"`
-	Type    string `json:"type,omitempty"`
-	Width   *int   `json:"width,omitempty"`
-	Height  *int   `json:"height,omitempty"`
-	Public  bool   `json:"public,omitempty"`
-	Href    string `json:"href,omitempty"`
-	Private string `json:"private,omitempty"`
-	State   string `json:"state,omitempty"`
+	Id      string              `json:"id,omitempty"`
+	Size    int                 `json:"size,omitempty"`
+	Palette string              `json:"palette,omitempty"`
+	Type    string              `json:"type,omitempty"`
+	Width   *int                `json:"width,omitempty"`
+	Height  *int                `json:"height,omitempty"`
+	Public  bool                `json:"public,omitempty"`
+	Href    string              `json:"href,omitempty"`
+	Links   *ImageDownloadLinks `json:"links,omitempty"`
+	Private string              `json:"private,omitempty"`
+	State   string              `json:"state,omitempty"`
 	//enum:
 	//- pending
 	//- importing
@@ -74,4 +92,10 @@ type ImageDownload struct {
 	ImportCompleted  *time.Time `json:"import_completed,omitempty"`
 	PublishStarted   *time.Time `json:"publish_started,omitempty"`
 	PublishCompleted *time.Time `json:"publish_completed,omitempty"`
+}
+
+// ImageDownloadLinks represents the fields for the image download HATEOAS links
+type ImageDownloadLinks struct {
+	Self  string `json:"self"`
+	Image string `json:"image"`
 }
