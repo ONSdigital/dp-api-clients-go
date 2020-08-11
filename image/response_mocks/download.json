@@ -1,5 +1,20 @@
 {
-  "size": 1024,
-  "href": "http://download.ons.gov.uk/images/042e216a-7822-4fa0-a3d6-e3f5248ffc35/image-name.png"
+  "id": "original",
+  "links": {
+    "self": "http://localhost:10000/images/042e216a-7822-4fa0-a3d6-e3f5248ffc35/downloads/original",
+    "image": "http://localhost:10000/images/042e216a-7822-4fa0-a3d6-e3f5248ffc35"
+  },
+  "size": 1024000,
+  "type": "png",
+  "width": 1920,
+  "height": 1080,
+  "public": true,
+  "href": "http://download.ons.gov.uk/images/042e216a-7822-4fa0-a3d6-e3f5248ffc35/image-name.png",
+  "private": "my-private-bucket",
+  "state": "published",
+  "error": "import process failed",
+  "import_started": "2020-04-26T08:05:52Z",
+  "import_completed": "2020-04-26T08:07:32+00:00",
+  "publish_started": "2020-04-26T09:51:03-00:00",
+  "publish_completed": "2020-04-26T10:01:28Z"
 }
-  
