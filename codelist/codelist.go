@@ -11,7 +11,6 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -21,8 +20,7 @@ var _ error = ErrInvalidCodelistAPIResponse{}
 
 // Client is a codelist api client which can be used to make requests to the server
 type Client struct {
-	cli dphttp.Clienter
-	url string
+	hcCli *healthcheck.Client
 }
 
 // ErrInvalidCodelistAPIResponse is returned when the codelist api does not respond
@@ -49,28 +47,37 @@ func (e ErrInvalidCodelistAPIResponse) Code() int {
 
 // New creates a new instance of Client with a given filter api url
 func New(codelistAPIURL string) *Client {
-	hcClient := healthcheck.NewClient(service, codelistAPIURL)
-
 	return &Client{
-		cli: hcClient.Client,
-		url: codelistAPIURL,
+		healthcheck.NewClient(service, codelistAPIURL),
 	}
+}
+
+// NewWithHealthClient creates a new instance of CodelistAPI Client,
+// reusing the URL and Clienter from the provided healthcheck client.
+func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
+	return &Client{
+		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
+	}
+}
+
+// URL returns the URL used by this client
+func (c *Client) URL() string {
+	return c.hcCli.URL
+}
+
+// HealthClient returns the underlying Healthcheck Client for this codelistAPI client
+func (c *Client) HealthClient() *healthcheck.Client {
+	return c.hcCli
 }
 
 // Checker calls codelist api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
-	hcClient := healthcheck.Client{
-		Client: c.cli,
-		URL:    c.url,
-		Name:   service,
-	}
-
-	return hcClient.Checker(ctx, check)
+	return c.hcCli.Checker(ctx, check)
 }
 
 // GetValues returns dimension values from the codelist api
 func (c *Client) GetValues(ctx context.Context, userAuthToken string, serviceAuthToken string, id string) (DimensionValues, error) {
-	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
+	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.hcCli.URL, id)
 	clientlog.Do(ctx, "retrieving codes from codelist", service, uri)
 
 	var vals DimensionValues
@@ -96,7 +103,7 @@ func (c *Client) GetValues(ctx context.Context, userAuthToken string, serviceAut
 
 // GetIDNameMap returns dimension values in the form of an id name map
 func (c *Client) GetIDNameMap(ctx context.Context, userAuthToken string, serviceAuthToken string, id string) (map[string]string, error) {
-	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.url, id)
+	uri := fmt.Sprintf("%s/code-lists/%s/codes", c.hcCli.URL, id)
 	clientlog.Do(ctx, "retrieving codes from codelist for id name map", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
@@ -129,7 +136,7 @@ func (c *Client) GetIDNameMap(ctx context.Context, userAuthToken string, service
 
 //GetGeographyCodeLists returns the geography codelists
 func (c *Client) GetGeographyCodeLists(ctx context.Context, userAuthToken string, serviceAuthToken string) (CodeListResults, error) {
-	uri := fmt.Sprintf("%s/code-lists?type=geography", c.url)
+	uri := fmt.Sprintf("%s/code-lists?type=geography", c.hcCli.URL)
 	clientlog.Do(ctx, "retrieving geography codelists", service, uri)
 
 	var results CodeListResults
@@ -157,7 +164,7 @@ func (c *Client) GetGeographyCodeLists(ctx context.Context, userAuthToken string
 
 //GetCodeListEditions returns the editions for a codelist
 func (c *Client) GetCodeListEditions(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string) (EditionsListResults, error) {
-	uri := fmt.Sprintf("%s/code-lists/%s/editions", c.url, codeListID)
+	uri := fmt.Sprintf("%s/code-lists/%s/editions", c.hcCli.URL, codeListID)
 	clientlog.Do(ctx, "retrieving codelist editions", service, uri)
 
 	var editionsList EditionsListResults
@@ -187,7 +194,7 @@ func (c *Client) GetCodeListEditions(ctx context.Context, userAuthToken string, 
 
 //GetCodes returns the codes for a specific edition of a code list
 func (c *Client) GetCodes(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string, edition string) (CodesResults, error) {
-	uri := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes", c.url, codeListID, edition)
+	uri := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes", c.hcCli.URL, codeListID, edition)
 	clientlog.Do(ctx, "retrieving codes from an edition of a code list", service, uri)
 
 	var codes CodesResults
@@ -217,7 +224,7 @@ func (c *Client) GetCodes(ctx context.Context, userAuthToken string, serviceAuth
 
 // GetCodeByID returns information about a code
 func (c *Client) GetCodeByID(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string, edition string, codeID string) (CodeResult, error) {
-	uri := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s", c.url, codeListID, edition, codeID)
+	uri := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s", c.hcCli.URL, codeListID, edition, codeID)
 	clientlog.Do(ctx, "retrieving code from an edition of a code list", service, uri)
 
 	var code CodeResult
@@ -247,7 +254,7 @@ func (c *Client) GetCodeByID(ctx context.Context, userAuthToken string, serviceA
 
 // GetDatasetsByCode returns datasets containing the codelist codeID.
 func (c *Client) GetDatasetsByCode(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string, edition string, codeID string) (DatasetsResult, error) {
-	uri := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s/datasets", c.url, codeListID, edition, codeID)
+	uri := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes/%s/datasets", c.hcCli.URL, codeListID, edition, codeID)
 	clientlog.Do(ctx, "retrieving datasets containing a code from an edition of a code list", service, uri)
 
 	var datasets DatasetsResult
@@ -286,7 +293,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken string,
 		return nil, err
 	}
 
-	return c.cli.Do(ctx, req)
+	return c.hcCli.Client.Do(ctx, req)
 }
 
 func setAuthenticationHeaders(req *http.Request, userAuthToken, serviceAuthToken string) error {
