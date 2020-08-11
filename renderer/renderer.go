@@ -10,7 +10,6 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -34,17 +33,21 @@ func (e ErrInvalidRendererResponse) Code() int {
 
 // Renderer represents a renderer client to interact with the dp-frontend-renderer
 type Renderer struct {
-	cli dphttp.Clienter
-	url string
+	hcCli *healthcheck.Client
 }
 
 // New creates an instance of renderer with a default client
 func New(url string) *Renderer {
-	hcClient := healthcheck.NewClient(service, url)
-
 	return &Renderer{
-		cli: hcClient.Client,
-		url: url,
+		healthcheck.NewClient(service, url),
+	}
+}
+
+// NewWithHealthClient creates a new instance of Renderer,
+// reusing the URL and Clienter from the provided health check client.
+func NewWithHealthClient(hcCli *healthcheck.Client) *Renderer {
+	return &Renderer{
+		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
 	}
 }
 
@@ -56,13 +59,7 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 
 // Checker calls dataset api health endpoint and returns a check object to the caller.
 func (r *Renderer) Checker(ctx context.Context, check *health.CheckState) error {
-	hcClient := healthcheck.Client{
-		Client: r.cli,
-		URL:    r.url,
-		Name:   service,
-	}
-
-	return hcClient.Checker(ctx, check)
+	return r.hcCli.Checker(ctx, check)
 }
 
 // Do sends a request to the renderer service to render a given template
@@ -73,7 +70,7 @@ func (r *Renderer) Do(path string, b []byte) ([]byte, error) {
 		b = []byte(`{}`)
 	}
 
-	uri := r.url + "/" + path
+	uri := r.hcCli.URL + "/" + path
 	ctx := context.Background()
 
 	clientlog.Do(ctx, fmt.Sprintf("rendering template: %s", path), service, uri, log.Data{
@@ -87,7 +84,7 @@ func (r *Renderer) Do(path string, b []byte) ([]byte, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := r.cli.Do(ctx, req)
+	resp, err := r.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return nil, err
 	}
