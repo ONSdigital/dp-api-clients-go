@@ -16,7 +16,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/go-ns/common"
+	dprequest "github.com/ONSdigital/dp-net/request"
 )
 
 const (
@@ -35,7 +35,7 @@ var checkResponseBase = func(mockdphttpCli *dphttp.ClienterMock, expectedMethod 
 	So(len(mockdphttpCli.DoCalls()), ShouldEqual, 1)
 	So(mockdphttpCli.DoCalls()[0].Req.URL.RequestURI(), ShouldEqual, expectedUri)
 	So(mockdphttpCli.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
-	So(mockdphttpCli.DoCalls()[0].Req.Header.Get(common.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
+	So(mockdphttpCli.DoCalls()[0].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
 }
 
 func createHTTPClientMock(retCode int, retBody interface{}) *dphttp.ClienterMock {
@@ -354,13 +354,13 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
 
 		Convey("when Collection-ID is present in the context", func() {
-			ctx = context.WithValue(ctx, common.CollectionIDHeaderKey, collectionID)
+			ctx = context.WithValue(ctx, dprequest.CollectionIDHeaderKey, collectionID)
 
 			Convey("and a request is made", func() {
 				_, _ = cli.GetDatasets(ctx, userAuthToken, serviceAuthToken, collectionID)
 
 				Convey("then the Collection-ID is present in the request headers", func() {
-					collectionIDFromRequest := mockdphttpCli.DoCalls()[0].Req.Header.Get(common.CollectionIDHeaderKey)
+					collectionIDFromRequest := mockdphttpCli.DoCalls()[0].Req.Header.Get(dprequest.CollectionIDHeaderKey)
 					So(collectionIDFromRequest, ShouldEqual, collectionID)
 				})
 			})

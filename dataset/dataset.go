@@ -15,7 +15,7 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/go-ns/common"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/pkg/errors"
 )
@@ -732,7 +732,7 @@ func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatase
 
 func addCollectionIDHeader(r *http.Request, collectionID string) {
 	if len(collectionID) > 0 {
-		r.Header.Add(common.CollectionIDHeaderKey, collectionID)
+		r.Header.Add(dprequest.CollectionIDHeaderKey, collectionID)
 	}
 }
 
@@ -750,8 +750,8 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	}
 
 	addCollectionIDHeader(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	dprequest.AddFlorenceHeader(req, userAuthToken)
+	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
 	return c.cli.Do(ctx, req)
 }
 
@@ -762,8 +762,8 @@ func (c *Client) doPostWithAuthHeaders(ctx context.Context, userAuthToken, servi
 	}
 
 	addCollectionIDHeader(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	dprequest.AddFlorenceHeader(req, userAuthToken)
+	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
 	return c.cli.Do(ctx, req)
 }
 
@@ -774,8 +774,8 @@ func (c *Client) doPutWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	}
 
 	addCollectionIDHeader(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
+	dprequest.AddFlorenceHeader(req, userAuthToken)
+	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
 	return c.cli.Do(ctx, req)
 }
 
@@ -788,8 +788,8 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	}
 
 	addCollectionIDHeader(req, collectionID)
-	common.AddFlorenceHeader(req, userAuthToken)
-	common.AddServiceTokenHeader(req, serviceAuthToken)
-	common.AddDownloadServiceTokenHeader(req, downloadserviceAuthToken)
+	dprequest.AddFlorenceHeader(req, userAuthToken)
+	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
+	dprequest.AddDownloadServiceTokenHeader(req, downloadserviceAuthToken)
 	return c.cli.Do(ctx, req)
 }

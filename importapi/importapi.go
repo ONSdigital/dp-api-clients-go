@@ -12,7 +12,7 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/go-ns/common"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -197,7 +197,7 @@ func doCall(ctx context.Context, client dphttp.Clienter, method, uri, serviceTok
 	}
 
 	// add a service token to request where one has been provided
-	common.AddServiceTokenHeader(req, serviceToken)
+	dprequest.AddServiceTokenHeader(req, serviceToken)
 
 	resp, err := client.Do(ctx, req)
 	if err != nil {

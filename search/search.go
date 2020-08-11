@@ -12,7 +12,7 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/go-ns/common"
+	dprequest "github.com/ONSdigital/dp-net/request"
 )
 
 const (
@@ -120,10 +120,10 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 
 	if len(params) > 0 {
 		if len(params[0].InternalToken) > 0 {
-			req.Header.Set(common.DeprecatedAuthHeader, params[0].InternalToken)
+			req.Header.Set(dprequest.DeprecatedAuthHeader, params[0].InternalToken)
 		}
 		if len(params[0].FlorenceToken) > 0 {
-			req.Header.Set(common.FlorenceHeaderKey, params[0].FlorenceToken)
+			req.Header.Set(dprequest.FlorenceHeaderKey, params[0].FlorenceToken)
 		}
 	}
 

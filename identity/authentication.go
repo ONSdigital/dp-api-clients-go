@@ -10,7 +10,7 @@ import (
 	clients "github.com/ONSdigital/dp-api-clients-go"
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/go-ns/common"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 
 	"github.com/pkg/errors"
@@ -79,7 +79,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 	splitTokens(florenceToken, serviceAuthToken, logData)
 
 	// Check token identity (according to isUserReq or isServiceReq)
-	var tokenIdentityResp *common.IdentityResponse
+	var tokenIdentityResp *dprequest.IdentityResponse
 	var errTokenIdentity error
 	var authFail authFailure
 	var statusCode int
@@ -102,14 +102,14 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 	logData["caller_identity"] = userIdentity
 	log.Event(ctx, "caller identity retrieved setting context values", log.INFO, logData)
 
-	ctx = context.WithValue(ctx, common.UserIdentityKey, userIdentity)
-	ctx = context.WithValue(ctx, common.CallerIdentityKey, tokenIdentityResp.Identifier)
+	ctx = context.WithValue(ctx, dprequest.UserIdentityKey, userIdentity)
+	ctx = context.WithValue(ctx, dprequest.CallerIdentityKey, tokenIdentityResp.Identifier)
 
 	return ctx, http.StatusOK, nil, nil
 }
 
 // CheckTokenIdentity Checks the identity of a provided token, for a particular token type (i.e. user or service)
-func (api Client) CheckTokenIdentity(ctx context.Context, token string, tokenType TokenType) (*common.IdentityResponse, error) {
+func (api Client) CheckTokenIdentity(ctx context.Context, token string, tokenType TokenType) (*dprequest.IdentityResponse, error) {
 	if len(token) == 0 {
 		return nil, errors.New("Empty token provided")
 	}
@@ -126,7 +126,7 @@ func (api Client) CheckTokenIdentity(ctx context.Context, token string, tokenTyp
 	return idRes, err
 }
 
-func (api Client) doCheckTokenIdentity(ctx context.Context, token string, tokenType TokenType, logData log.Data) (*common.IdentityResponse, int, authFailure, error) {
+func (api Client) doCheckTokenIdentity(ctx context.Context, token string, tokenType TokenType, logData log.Data) (*dprequest.IdentityResponse, int, authFailure, error) {
 
 	url := api.BaseURL + "/identity"
 	logData["url"] = url
@@ -183,7 +183,7 @@ func splitTokens(florenceToken, authToken string, logData log.Data) {
 func splitToken(token string) (tokenObj tokenObject) {
 	splitToken := strings.Split(token, " ")
 	tokenObj.numberOfParts = len(splitToken)
-	tokenObj.hasPrefix = strings.HasPrefix(token, common.BearerPrefix)
+	tokenObj.hasPrefix = strings.HasPrefix(token, dprequest.BearerPrefix)
 
 	// sample last 6 chars (or half, if smaller) of last token part
 	lastTokenPart := len(splitToken) - 1
@@ -223,7 +223,7 @@ func createServiceAuthRequest(url string, serviceAuthToken string) (*http.Reques
 }
 
 // unmarshalIdentityResponse converts a resp.Body (JSON) into an IdentityResponse
-func unmarshalIdentityResponse(resp *http.Response) (identityResp *common.IdentityResponse, err error) {
+func unmarshalIdentityResponse(resp *http.Response) (identityResp *dprequest.IdentityResponse, err error) {
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
@@ -245,7 +245,7 @@ func closeResponse(ctx context.Context, resp *http.Response, data log.Data) {
 
 // getUserIdentity get the user identity. If the request is user driven return identityResponse.Identifier otherwise
 // return the forwarded user Identity header from the inbound request. Return empty string if the header is not found.
-func getUserIdentity(isUserReq bool, identityResp *common.IdentityResponse, originalReq *http.Request) (string, error) {
+func getUserIdentity(isUserReq bool, identityResp *dprequest.IdentityResponse, originalReq *http.Request) (string, error) {
 	var userIdentity string
 	var err error
 

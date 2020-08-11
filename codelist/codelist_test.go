@@ -15,7 +15,7 @@ import (
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/dp-mocking/httpmocks"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/go-ns/common"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -42,11 +42,13 @@ func TestClient_HealthChecker(t *testing.T) {
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{}, clientError
 			},
+			GetPathsWithNoRetriesFunc: func() []string {
+				return []string{path, "/healthcheck"}
+			},
 		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		codelistClient := New(testHost)
-		codelistClient.cli = clienter
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 		check := initialState
 
 		Convey("when codelistClient.Checker is called", func() {
@@ -76,16 +78,18 @@ func TestClient_HealthChecker(t *testing.T) {
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
+			GetPathsWithNoRetriesFunc: func() []string {
+				return []string{path, "/healthcheck"}
+			},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 500,
 				}, nil
 			},
 		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		codelistClient := New(testHost)
-		codelistClient.cli = clienter
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 		check := initialState
 
 		Convey("when codelistClient.Checker is called", func() {
@@ -115,16 +119,18 @@ func TestClient_HealthChecker(t *testing.T) {
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
+			GetPathsWithNoRetriesFunc: func() []string {
+				return []string{path, "/healthcheck"}
+			},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 404,
 				}, nil
 			},
 		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		codelistClient := New(testHost)
-		codelistClient.cli = clienter
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 		check := initialState
 
 		Convey("when codelistClient.Checker is called", func() {
@@ -155,16 +161,18 @@ func TestClient_HealthChecker(t *testing.T) {
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
+			GetPathsWithNoRetriesFunc: func() []string {
+				return []string{path, "/healthcheck"}
+			},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 429,
 				}, nil
 			},
 		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		codelistClient := New(testHost)
-		codelistClient.cli = clienter
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 		check := initialState
 
 		Convey("when codelistClient.Checker is called", func() {
@@ -194,16 +202,18 @@ func TestClient_HealthChecker(t *testing.T) {
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
+			GetPathsWithNoRetriesFunc: func() []string {
+				return []string{path, "/healthcheck"}
+			},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 200,
 				}, nil
 			},
 		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		codelistClient := New(testHost)
-		codelistClient.cli = clienter
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 		check := initialState
 
 		Convey("when codelistClient.Checker is called", func() {
@@ -238,9 +248,10 @@ func TestClient_GetValues(t *testing.T) {
 
 		body := httpmocks.NewReadCloserMock(b, nil)
 		resp := httpmocks.NewResponseMock(body, 200)
-
 		clienter := getClienterMock(resp, nil)
-		codelistClient := &Client{cli: clienter, url: testHost}
+
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		actual, err := codelistClient.GetValues(nil, testUserAuthToken, testServiceAuthToken, "999")
 
@@ -257,10 +268,10 @@ func TestClient_GetValues(t *testing.T) {
 
 	Convey("should return expect error if clienter.Do returns an error", t, func() {
 		expectedErr := errors.New("lets get schwifty")
-
 		clienter := getClienterMock(nil, expectedErr)
 
-		codelistClient := &Client{cli: clienter, url: testHost}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		actual, err := codelistClient.GetValues(nil, testUserAuthToken, testServiceAuthToken, "999")
 
@@ -279,7 +290,8 @@ func TestClient_GetValues(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, 500)
 
 		clienter := getClienterMock(resp, nil)
-		codelistClient := &Client{cli: clienter, url: testHost}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		expectedURI := fmt.Sprintf("%s/code-lists/%s/codes", testHost, "999")
 		expectedErr := &ErrInvalidCodelistAPIResponse{http.StatusOK, 500, expectedURI}
@@ -301,8 +313,10 @@ func TestClient_GetValues(t *testing.T) {
 		expectedErr := errors.New("lets get schwifty")
 		body := httpmocks.NewReadCloserMock(nil, expectedErr)
 		resp := httpmocks.NewResponseMock(body, 200)
+
 		clienter := getClienterMock(resp, nil)
-		codelistClient := &Client{cli: clienter, url: testHost}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		dimensionValues, err := codelistClient.GetValues(nil, testUserAuthToken, testServiceAuthToken, "999")
 
@@ -325,13 +339,13 @@ func TestClient_GetIDNameMap(t *testing.T) {
 
 	Convey("give client.Do returns an error", t, func() {
 		expectedErr := errors.New("bork")
-
 		clienter := getClienterMock(nil, expectedErr)
 
-		codelistclient := &Client{url: testHost, cli: clienter}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
+			actual, err := codelistClient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -359,10 +373,11 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, 403)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{url: testHost, cli: clienter}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
+			actual, err := codelistClient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -389,10 +404,11 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, 200)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{url: testHost, cli: clienter}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
+			actual, err := codelistClient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -416,16 +432,15 @@ func TestClient_GetIDNameMap(t *testing.T) {
 	Convey("given unmarshalling the response body returns error", t, func() {
 		// return bytes incompatible with the expected return type
 		b := httpmocks.GetEntityBytes(t, []int{1, 2, 3, 4, 5, 6})
-
 		body := httpmocks.NewReadCloserMock(b, nil)
 		resp := httpmocks.NewResponseMock(body, 200)
-
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{url: testHost, cli: clienter}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
+			actual, err := codelistClient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldBeNil)
@@ -452,10 +467,11 @@ func TestClient_GetIDNameMap(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, 200)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{url: testHost, cli: clienter}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistClient.GetIDNameMap is called", func() {
-			actual, err := codelistclient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
+			actual, err := codelistClient.GetIDNameMap(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected ID Name map is returned", func() {
 				expected := map[string]string{"123": "Schwifty"}
@@ -487,13 +503,11 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 		expectedErr := errors.New("master master obey your master")
 		clienter := getClienterMock(nil, expectedErr)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistClient.GetGeographyCodeLists is called", func() {
-			actual, err := codelistclient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
+			actual, err := codelistClient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeListResults{})
@@ -515,13 +529,11 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, 500)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistClient.GetGeographyCodeLists is called", func() {
-			actual, err := codelistclient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
+			actual, err := codelistClient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeListResults{})
@@ -555,13 +567,11 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, 200)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistClient.GetGeographyCodeLists is called", func() {
-			actual, err := codelistclient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
+			actual, err := codelistClient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeListResults{})
@@ -589,13 +599,11 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, 200)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistClient.GetGeographyCodeLists is called", func() {
-			actual, err := codelistclient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
+			actual, err := codelistClient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeListResults{})
@@ -622,13 +630,11 @@ func TestClient_GetGeographyCodeLists(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, 200)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistClient.GetGeographyCodeLists is called", func() {
-			actual, err := codelistclient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
+			actual, err := codelistClient.GetGeographyCodeLists(nil, testUserAuthToken, testServiceAuthToken)
 
 			Convey("then the expected result is returned", func() {
 				So(actual, ShouldResemble, testCodeListResults)
@@ -658,13 +664,11 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 		expectedErr := errors.New("smashing through the boundaries lunacy has found me cannot stop the battery")
 		clienter := getClienterMock(nil, expectedErr)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeListEditions is called", func() {
-			actual, err := codelistclient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
+			actual, err := codelistClient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, EditionsListResults{})
@@ -692,13 +696,11 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, 400)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeListEditions is called", func() {
-			actual, err := codelistclient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
+			actual, err := codelistClient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, EditionsListResults{})
@@ -725,13 +727,11 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, 200)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeListEditions is called", func() {
-			actual, err := codelistclient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
+			actual, err := codelistClient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then client.Do should be called 1 time with the expected parameters", func() {
 				calls := clienter.DoCalls()
@@ -759,13 +759,11 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, 200)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeListEditions is called", func() {
-			actual, err := codelistclient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
+			actual, err := codelistClient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("then client.Do should be called 1 time with the expected parameters", func() {
 				calls := clienter.DoCalls()
@@ -792,13 +790,11 @@ func TestClient_GetCodeListEditions(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, 200)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeListEditions is called", func() {
-			actual, err := codelistclient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
+			actual, err := codelistClient.GetCodeListEditions(nil, testUserAuthToken, testServiceAuthToken, "666")
 
 			Convey("and client.Do should be called 1 time with the expected parameters", func() {
 				calls := clienter.DoCalls()
@@ -828,13 +824,11 @@ func TestClient_GetCodes(t *testing.T) {
 		expectedErr := errors.New("generals gathered in their masses, just like witches at black masses")
 		clienter := getClienterMock(nil, expectedErr)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodes is called", func() {
-			actual, err := codelistclient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
+			actual, err := codelistClient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodesResults{})
@@ -856,13 +850,11 @@ func TestClient_GetCodes(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, http.StatusInternalServerError)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodes is called", func() {
-			actual, err := codelistclient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
+			actual, err := codelistClient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodesResults{})
@@ -893,13 +885,11 @@ func TestClient_GetCodes(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodes is called", func() {
-			actual, err := codelistclient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
+			actual, err := codelistClient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodesResults{})
@@ -927,13 +917,11 @@ func TestClient_GetCodes(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodes is called", func() {
-			actual, err := codelistclient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
+			actual, err := codelistClient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodesResults{})
@@ -960,13 +948,11 @@ func TestClient_GetCodes(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodes is called", func() {
-			actual, err := codelistclient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
+			actual, err := codelistClient.GetCodes(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, codesResults)
@@ -996,13 +982,11 @@ func TestClient_GetCodeByID(t *testing.T) {
 		expectedErr := errors.New("quoth the raven 'nevermore'")
 		clienter := getClienterMock(nil, expectedErr)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistClient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeResult{})
@@ -1030,13 +1014,11 @@ func TestClient_GetCodeByID(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, http.StatusInternalServerError)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistClient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeResult{})
@@ -1064,13 +1046,11 @@ func TestClient_GetCodeByID(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistClient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeResult{})
@@ -1098,13 +1078,11 @@ func TestClient_GetCodeByID(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistClient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, CodeResult{})
@@ -1131,13 +1109,11 @@ func TestClient_GetCodeByID(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistClient.GetCodeByID(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, codeResult)
@@ -1167,13 +1143,11 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 		expectedErr := errors.New("murders in the rue morgue")
 		clienter := getClienterMock(nil, expectedErr)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistClient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, DatasetsResult{})
@@ -1201,13 +1175,11 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, http.StatusInternalServerError)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistClient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, DatasetsResult{})
@@ -1234,13 +1206,11 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistClient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, DatasetsResult{})
@@ -1268,13 +1238,11 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistClient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, DatasetsResult{})
@@ -1301,13 +1269,11 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
 		clienter := getClienterMock(resp, nil)
 
-		codelistclient := &Client{
-			url: testHost,
-			cli: clienter,
-		}
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when codelistclient.GetCodeByID is called", func() {
-			actual, err := codelistclient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
+			actual, err := codelistClient.GetDatasetsByCode(nil, testUserAuthToken, testServiceAuthToken, "foo", "bar", "1")
 
 			Convey("then the expected error is returned", func() {
 				So(actual, ShouldResemble, datasetsResult)
@@ -1333,10 +1299,12 @@ func TestClient_GetDatasetsByCode(t *testing.T) {
 func TestDoGetWithAuthHeaders(t *testing.T) {
 	Convey("given create new request returns an error", t, func() {
 		clienter := getClienterMock(nil, nil)
-		codelistclient := &Client{url: testHost, cli: clienter}
+
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when doGetWithAuthHeaders is called", func() {
-			resp, err := codelistclient.doGetWithAuthHeaders(nil, testUserAuthToken, testServiceAuthToken, "@£$%^&*()_")
+			resp, err := codelistClient.doGetWithAuthHeaders(nil, testUserAuthToken, testServiceAuthToken, "@£$%^&*()_")
 
 			Convey("then the expected error is returned", func() {
 				So(resp, ShouldBeNil)
@@ -1352,10 +1320,12 @@ func TestDoGetWithAuthHeaders(t *testing.T) {
 	Convey("given sending a request is unsuccessful", t, func() {
 		expectedErr := errors.New("im going off the rails on a crazy train")
 		clienter := getClienterMock(nil, expectedErr)
-		codelistclient := &Client{url: testHost, cli: clienter}
+
+		hcCli := health.NewClientWithClienter("", testHost, clienter)
+		codelistClient := NewWithHealthClient(hcCli)
 
 		Convey("when doGetWithAuthHeaders is called", func() {
-			resp, err := codelistclient.doGetWithAuthHeaders(nil, testUserAuthToken, testServiceAuthToken, "/foobar")
+			resp, err := codelistClient.doGetWithAuthHeaders(nil, testUserAuthToken, testServiceAuthToken, "/foobar")
 
 			Convey("then the expected error is returned", func() {
 				So(resp, ShouldBeNil)
@@ -1367,8 +1337,8 @@ func TestDoGetWithAuthHeaders(t *testing.T) {
 				So(calls, ShouldHaveLength, 1)
 
 				req := calls[0].Req
-				So(req.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
-				So(req.Header.Get(common.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
+				So(req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, dprequest.BearerPrefix+testServiceAuthToken)
+				So(req.Header.Get(dprequest.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
 			})
 		})
 	})
@@ -1424,6 +1394,11 @@ func getClienterMock(resp *http.Response, err error) *dphttp.ClienterMock {
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			return resp, err
 		},
+		GetPathsWithNoRetriesFunc: func() []string {
+			return []string{}
+		},
+		SetPathsWithNoRetriesFunc: func(paths []string) {
+		},
 	}
 }
 
@@ -1432,6 +1407,6 @@ func assertClienterDoCalls(actual *http.Request, uri string, host string) {
 	So(actual.URL.Host, ShouldEqual, host)
 	So(actual.Method, ShouldEqual, "GET")
 	So(actual.Body, ShouldBeNil)
-	So(actual.Header.Get(common.AuthHeaderKey), ShouldEqual, common.BearerPrefix+testServiceAuthToken)
-	So(actual.Header.Get(common.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
+	So(actual.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, dprequest.BearerPrefix+testServiceAuthToken)
+	So(actual.Header.Get(dprequest.FlorenceHeaderKey), ShouldEqual, testUserAuthToken)
 }
