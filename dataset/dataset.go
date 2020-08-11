@@ -14,7 +14,6 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/pkg/errors"
@@ -70,24 +69,21 @@ var _ error = ErrInvalidDatasetAPIResponse{}
 
 // Client is a dataset api client which can be used to make requests to the server
 type Client struct {
-	cli dphttp.Clienter
-	url string
-}
-
-// closeResponseBody closes the response body and logs an error containing the context if unsuccessful
-func closeResponseBody(ctx context.Context, resp *http.Response) {
-	if err := resp.Body.Close(); err != nil {
-		log.Event(ctx, "error closing http response body", log.ERROR, log.Error(err))
-	}
+	hcCli *healthcheck.Client
 }
 
 // NewAPIClient creates a new instance of Client with a given dataset api url and the relevant tokens
 func NewAPIClient(datasetAPIURL string) *Client {
-	hcClient := healthcheck.NewClient(service, datasetAPIURL)
-
 	return &Client{
-		cli: hcClient.Client,
-		url: datasetAPIURL,
+		healthcheck.NewClient(service, datasetAPIURL),
+	}
+}
+
+// NewWithHealthClient creates a new instance of Client,
+// reusing the URL and Clienter from the provided health check client.
+func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
+	return &Client{
+		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
 	}
 }
 
@@ -100,25 +96,18 @@ func NewAPIClientWithMaxRetries(datasetAPIURL string, maxRetries int) *Client {
 	}
 
 	return &Client{
-		cli: hcClient.Client,
-		url: datasetAPIURL,
+		hcClient,
 	}
 }
 
 // Checker calls dataset api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
-	hcClient := healthcheck.Client{
-		Client: c.cli,
-		URL:    c.url,
-		Name:   service,
-	}
-
-	return hcClient.Checker(ctx, check)
+	return c.hcCli.Checker(ctx, check)
 }
 
 // Get returns dataset level information for a given dataset id
 func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m DatasetDetails, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s", c.url, datasetID)
+	uri := fmt.Sprintf("%s/datasets/%s", c.hcCli.URL, datasetID)
 
 	clientlog.Do(ctx, "retrieving dataset", service, uri)
 
@@ -159,7 +148,7 @@ func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, colle
 
 // GetByPath returns dataset level information for a given dataset path
 func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, path string) (m DatasetDetails, err error) {
-	uri := fmt.Sprintf("%s/%s", c.url, strings.Trim(path, "/"))
+	uri := fmt.Sprintf("%s/%s", c.hcCli.URL, strings.Trim(path, "/"))
 
 	clientlog.Do(ctx, "retrieving data from dataset API", service, uri)
 
@@ -200,7 +189,7 @@ func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken,
 
 // GetDatasets returns the list of datasets
 func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string) (m List, err error) {
-	uri := fmt.Sprintf("%s/datasets", c.url)
+	uri := fmt.Sprintf("%s/datasets", c.hcCli.URL)
 
 	clientlog.Do(ctx, "retrieving datasets", service, uri)
 
@@ -229,7 +218,7 @@ func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToke
 
 // GetEdition retrieves a single edition document from a given datasetID and edition label
 func (c *Client) GetEdition(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition string) (m Edition, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s", c.url, datasetID, edition)
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s", c.hcCli.URL, datasetID, edition)
 
 	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
 
@@ -267,7 +256,7 @@ func (c *Client) GetEdition(ctx context.Context, userAuthToken, serviceAuthToken
 
 // GetEditions returns all editions for a dataset
 func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m []Edition, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions", c.url, datasetID)
+	uri := fmt.Sprintf("%s/datasets/%s/editions", c.hcCli.URL, datasetID)
 
 	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
 
@@ -315,7 +304,7 @@ func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToke
 
 // GetVersions gets all versions for an edition from the dataset api
 func (c *Client) GetVersions(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition string) (m []Version, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.url, datasetID, edition)
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.hcCli.URL, datasetID, edition)
 
 	clientlog.Do(ctx, "retrieving dataset versions", service, uri)
 
@@ -346,7 +335,7 @@ func (c *Client) GetVersions(ctx context.Context, userAuthToken, serviceAuthToke
 
 // GetVersion gets a specific version for an edition from the dataset api
 func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (m Version, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, datasetID, edition, version)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
 
@@ -383,7 +372,7 @@ func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToke
 
 // GetInstanceBytes returns an instance as bytes from the dataset api
 func (c *Client) GetInstanceBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string) (b []byte, err error) {
-	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
+	uri := fmt.Sprintf("%s/instances/%s", c.hcCli.URL, instanceID)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
 
@@ -408,7 +397,7 @@ func (c *Client) GetInstanceBytes(ctx context.Context, userAuthToken, serviceAut
 
 // GetInstanceDimensionsBytes returns a list of dimensions for an instance as bytes from the dataset api
 func (c *Client) GetInstanceDimensionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, instanceID string) (b []byte, err error) {
-	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.url, instanceID)
+	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
 
 	clientlog.Do(ctx, "retrieving instance dimensions", service, uri)
 
@@ -433,7 +422,7 @@ func (c *Client) GetInstanceDimensionsBytes(ctx context.Context, userAuthToken, 
 
 // GetInstances returns a list of all instances filtered by vars
 func (c *Client) GetInstances(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, vars url.Values) (m Instances, err error) {
-	uri := fmt.Sprintf("%s/instances", c.url)
+	uri := fmt.Sprintf("%s/instances", c.hcCli.URL)
 
 	clientlog.Do(ctx, "retrieving dataset version", service, uri)
 
@@ -464,7 +453,7 @@ func (c *Client) PutInstanceState(ctx context.Context, serviceAuthToken, instanc
 		return err
 	}
 
-	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
+	uri := fmt.Sprintf("%s/instances/%s", c.hcCli.URL, instanceID)
 
 	clientlog.Do(ctx, "putting state to instance", service, uri)
 
@@ -487,7 +476,7 @@ func (c *Client) PutInstanceData(ctx context.Context, serviceAuthToken, instance
 		return err
 	}
 
-	uri := fmt.Sprintf("%s/instances/%s", c.url, instanceID)
+	uri := fmt.Sprintf("%s/instances/%s", c.hcCli.URL, instanceID)
 
 	clientlog.Do(ctx, "putting data to instance", service, uri)
 
@@ -510,7 +499,7 @@ func (c *Client) PutInstanceImportTasks(ctx context.Context, serviceAuthToken, i
 		return err
 	}
 
-	uri := fmt.Sprintf("%s/instances/%s/import_tasks", c.url, instanceID)
+	uri := fmt.Sprintf("%s/instances/%s/import_tasks", c.hcCli.URL, instanceID)
 
 	clientlog.Do(ctx, "updating instance import_tasks", service, uri)
 
@@ -528,7 +517,7 @@ func (c *Client) PutInstanceImportTasks(ctx context.Context, serviceAuthToken, i
 
 // UpdateInstanceWithNewInserts increments the observation inserted count for an instance
 func (c *Client) UpdateInstanceWithNewInserts(ctx context.Context, serviceAuthToken, instanceID string, observationsInserted int32) error {
-	uri := fmt.Sprintf("%s/instances/%s/inserted_observations/%d", c.url, instanceID, observationsInserted)
+	uri := fmt.Sprintf("%s/instances/%s/inserted_observations/%d", c.hcCli.URL, instanceID, observationsInserted)
 
 	clientlog.Do(ctx, "updating instance inserted observations", service, uri)
 
@@ -546,7 +535,7 @@ func (c *Client) UpdateInstanceWithNewInserts(ctx context.Context, serviceAuthTo
 
 // GetInstanceDimensions performs a 'GET /instances/<id>/dimensions' and returns the marshalled Dimensions struct
 func (c *Client) GetInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string) (m Dimensions, err error) {
-	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.url, instanceID)
+	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
 
 	clientlog.Do(ctx, "retrieving instance dimensions", service, uri)
 
@@ -566,7 +555,7 @@ func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, i
 		return err
 	}
 
-	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.url, instanceID)
+	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
 
 	clientlog.Do(ctx, "posting options to instance dimensions", service, uri)
 
@@ -584,7 +573,7 @@ func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, i
 
 // PutInstanceDimensionOptionNodeID performs a 'PUT /instances/<id>/dimensions/<id>/options/<id>/node_id/<id>' to update the node_id of the specified dimension
 func (c *Client) PutInstanceDimensionOptionNodeID(ctx context.Context, serviceAuthToken, instanceID, dimensionID, optionID, nodeID string) error {
-	uri := fmt.Sprintf("%s/instances/%s/dimensions/%s/options/%s/node_id/%s", c.url, instanceID, dimensionID, optionID, nodeID)
+	uri := fmt.Sprintf("%s/instances/%s/dimensions/%s/options/%s/node_id/%s", c.hcCli.URL, instanceID, dimensionID, optionID, nodeID)
 
 	clientlog.Do(ctx, "updating instance dimension option node_id", service, uri)
 
@@ -602,7 +591,7 @@ func (c *Client) PutInstanceDimensionOptionNodeID(ctx context.Context, serviceAu
 
 // PutVersion update the version
 func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version string, v Version) error {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.url, datasetID, edition, version)
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, datasetID, edition, version)
 
 	clientlog.Do(ctx, "updating version", service, uri)
 
@@ -625,7 +614,7 @@ func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken
 
 // GetMetadataURL returns the URL for the metadata of a given dataset id, edition and version
 func (c *Client) GetMetadataURL(id, edition, version string) string {
-	return fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/metadata", c.url, id, edition, version)
+	return fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/metadata", c.hcCli.URL, id, edition, version)
 }
 
 // GetVersionMetadata returns the metadata for a given dataset id, edition and version
@@ -656,7 +645,7 @@ func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceA
 
 // GetVersionDimensions will return a list of dimensions for a given version of a dataset
 func (c *Client) GetVersionDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m VersionDimensions, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions", c.url, id, edition, version)
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions", c.hcCli.URL, id, edition, version)
 
 	clientlog.Do(ctx, "retrieving dataset version dimensions", service, uri)
 
@@ -687,7 +676,7 @@ func (c *Client) GetVersionDimensions(ctx context.Context, userAuthToken, servic
 
 // GetOptions will return the options for a dimension
 func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string) (m Options, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", c.url, id, edition, version, dimension)
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", c.hcCli.URL, id, edition, version, dimension)
 
 	clientlog.Do(ctx, "retrieving options for dimension", service, uri)
 
@@ -752,7 +741,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	addCollectionIDHeader(req, collectionID)
 	dprequest.AddFlorenceHeader(req, userAuthToken)
 	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
-	return c.cli.Do(ctx, req)
+	return c.hcCli.Client.Do(ctx, req)
 }
 
 func (c *Client) doPostWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, payload []byte) (*http.Response, error) {
@@ -764,7 +753,7 @@ func (c *Client) doPostWithAuthHeaders(ctx context.Context, userAuthToken, servi
 	addCollectionIDHeader(req, collectionID)
 	dprequest.AddFlorenceHeader(req, userAuthToken)
 	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
-	return c.cli.Do(ctx, req)
+	return c.hcCli.Client.Do(ctx, req)
 }
 
 func (c *Client) doPutWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, payload []byte) (*http.Response, error) {
@@ -776,7 +765,7 @@ func (c *Client) doPutWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	addCollectionIDHeader(req, collectionID)
 	dprequest.AddFlorenceHeader(req, userAuthToken)
 	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
-	return c.cli.Do(ctx, req)
+	return c.hcCli.Client.Do(ctx, req)
 }
 
 // doGetWithAuthHeadersAndWithDownloadToken executes clienter.Do setting the user and service authentication and download token token as a request header. Returns the http.Response and any error.
@@ -791,5 +780,12 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	dprequest.AddFlorenceHeader(req, userAuthToken)
 	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
 	dprequest.AddDownloadServiceTokenHeader(req, downloadserviceAuthToken)
-	return c.cli.Do(ctx, req)
+	return c.hcCli.Client.Do(ctx, req)
+}
+
+// closeResponseBody closes the response body and logs an error containing the context if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if err := resp.Body.Close(); err != nil {
+		log.Event(ctx, "error closing http response body", log.ERROR, log.Error(err))
+	}
 }

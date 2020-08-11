@@ -31,23 +31,11 @@ var (
 	initialState = health.CreateCheckState(service)
 )
 
-var checkResponseBase = func(mockdphttpCli *dphttp.ClienterMock, expectedMethod string, expectedUri string) {
-	So(len(mockdphttpCli.DoCalls()), ShouldEqual, 1)
-	So(mockdphttpCli.DoCalls()[0].Req.URL.RequestURI(), ShouldEqual, expectedUri)
-	So(mockdphttpCli.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
-	So(mockdphttpCli.DoCalls()[0].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
-}
-
-func createHTTPClientMock(retCode int, retBody interface{}) *dphttp.ClienterMock {
-	return &dphttp.ClienterMock{
-		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-			body, _ := json.Marshal(retBody)
-			return &http.Response{
-				StatusCode: retCode,
-				Body:       ioutil.NopCloser(bytes.NewReader(body)),
-			}, nil
-		},
-	}
+var checkResponseBase = func(httpClient *dphttp.ClienterMock, expectedMethod string, expectedUri string) {
+	So(len(httpClient.DoCalls()), ShouldEqual, 1)
+	So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldEqual, expectedUri)
+	So(httpClient.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
+	So(httpClient.DoCalls()[0].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
 }
 
 func TestClient_HealthChecker(t *testing.T) {
@@ -57,19 +45,8 @@ func TestClient_HealthChecker(t *testing.T) {
 
 	Convey("given clienter.Do returns an error", t, func() {
 		clientError := errors.New("disciples of the watch obey")
-
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{}, clientError
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		datasetClient := NewAPIClient(testHost)
-		datasetClient.cli = clienter
+		httpClient := createHTTPClientMockErr(clientError)
+		datasetClient := newDatasetClient(httpClient)
 		check := initialState
 
 		Convey("when datasetClient.Checker is called", func() {
@@ -87,7 +64,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
@@ -95,20 +72,8 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 500 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 500,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		datasetClient := NewAPIClient(testHost)
-		datasetClient.cli = clienter
+		httpClient := createHTTPClientMock(http.StatusInternalServerError, "")
+		datasetClient := newDatasetClient(httpClient)
 		check := initialState
 
 		Convey("when datasetClient.Checker is called", func() {
@@ -126,7 +91,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
@@ -134,20 +99,8 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 404 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 404,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		datasetClient := NewAPIClient(testHost)
-		datasetClient.cli = clienter
+		httpClient := createHTTPClientMock(http.StatusNotFound, "")
+		datasetClient := newDatasetClient(httpClient)
 		check := initialState
 
 		Convey("when datasetClient.Checker is called", func() {
@@ -165,7 +118,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 2)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 				So(doCalls[1].Req.URL.Path, ShouldEqual, "/healthcheck")
@@ -174,20 +127,8 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 429 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 429,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		datasetClient := NewAPIClient(testHost)
-		datasetClient.cli = clienter
+		httpClient := createHTTPClientMock(http.StatusTooManyRequests, "")
+		datasetClient := newDatasetClient(httpClient)
 		check := initialState
 
 		Convey("when datasetClient.Checker is called", func() {
@@ -205,7 +146,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
@@ -213,20 +154,8 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 200 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 200,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		datasetClient := NewAPIClient(testHost)
-		datasetClient.cli = clienter
+		httpClient := createHTTPClientMock(http.StatusOK, "")
+		datasetClient := newDatasetClient(httpClient)
 		check := initialState
 
 		Convey("when datasetClient.Checker is called", func() {
@@ -244,7 +173,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
@@ -254,11 +183,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 func TestClient_PutVersion(t *testing.T) {
 
-	checkResponse := func(mockdphttpCli *dphttp.ClienterMock, expectedVersion Version) {
+	checkResponse := func(httpClient *dphttp.ClienterMock, expectedVersion Version) {
 
-		checkResponseBase(mockdphttpCli, http.MethodPut, "/datasets/123/editions/2017/versions/1")
+		checkResponseBase(httpClient, http.MethodPut, "/datasets/123/editions/2017/versions/1")
 
-		actualBody, _ := ioutil.ReadAll(mockdphttpCli.DoCalls()[0].Req.Body)
+		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 
 		var actualVersion Version
 		json.Unmarshal(actualBody, &actualVersion)
@@ -266,37 +195,37 @@ func TestClient_PutVersion(t *testing.T) {
 	}
 
 	Convey("Given a valid version", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, "")
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, "")
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when put version is called", func() {
 			v := Version{ID: "666"}
-			err := cli.PutVersion(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "2017", "1", v)
+			err := datasetClient.PutVersion(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "2017", "1", v)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttp client is called one time with the expected parameters", func() {
-				checkResponse(mockdphttpCli, v)
+				checkResponse(httpClient, v)
 			})
 		})
 	})
 
 	Convey("Given no auth token has been configured", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, "")
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, "")
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when put version is called", func() {
 			v := Version{ID: "666"}
-			err := cli.PutVersion(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "2017", "1", v)
+			err := datasetClient.PutVersion(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "2017", "1", v)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttp client is called one time with the expected parameters", func() {
-				checkResponse(mockdphttpCli, v)
+				checkResponse(httpClient, v)
 			})
 
 		})
@@ -304,42 +233,37 @@ func TestClient_PutVersion(t *testing.T) {
 
 	Convey("given dphttpclient.do returns an error", t, func() {
 		mockErr := errors.New("spectacular explosion")
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return nil, mockErr
-			},
-		}
-
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMockErr(mockErr)
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when put version is called", func() {
 			v := Version{ID: "666"}
-			err := cli.PutVersion(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "2017", "1", v)
+			err := datasetClient.PutVersion(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "2017", "1", v)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Wrap(mockErr, "http client returned error while attempting to make request").Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
-				checkResponse(mockdphttpCli, v)
+				checkResponse(httpClient, v)
 			})
 		})
 	})
 
 	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusInternalServerError, "")
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusInternalServerError, "")
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when put version is called", func() {
 			v := Version{ID: "666"}
-			err := cli.PutVersion(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "2017", "1", v)
+			err := datasetClient.PutVersion(ctx, userAuthToken, serviceAuthToken, collectionID, "123", "2017", "1", v)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("incorrect http status, expected: 200, actual: 500, uri: http://localhost:8080/datasets/123/editions/2017/versions/1").Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
-				checkResponse(mockdphttpCli, v)
+				checkResponse(httpClient, v)
 			})
 		})
 	})
@@ -349,18 +273,17 @@ func TestClient_PutVersion(t *testing.T) {
 func TestClient_IncludeCollectionID(t *testing.T) {
 
 	Convey("Given a valid request", t, func() {
-
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, nil)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, "")
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when Collection-ID is present in the context", func() {
 			ctx = context.WithValue(ctx, dprequest.CollectionIDHeaderKey, collectionID)
 
 			Convey("and a request is made", func() {
-				_, _ = cli.GetDatasets(ctx, userAuthToken, serviceAuthToken, collectionID)
+				_, _ = datasetClient.GetDatasets(ctx, userAuthToken, serviceAuthToken, collectionID)
 
 				Convey("then the Collection-ID is present in the request headers", func() {
-					collectionIDFromRequest := mockdphttpCli.DoCalls()[0].Req.Header.Get(dprequest.CollectionIDHeaderKey)
+					collectionIDFromRequest := httpClient.DoCalls()[0].Req.Header.Get(dprequest.CollectionIDHeaderKey)
 					So(collectionIDFromRequest, ShouldEqual, collectionID)
 				})
 			})
@@ -368,18 +291,17 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 	})
 
 	Convey("Given a valid request", t, func() {
-
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, nil)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, "")
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when Collection-ID is not present in the context", func() {
 			ctx = context.Background()
 
 			Convey("and a request is made", func() {
-				_, _ = cli.GetDatasets(ctx, userAuthToken, serviceAuthToken, "")
+				_, _ = datasetClient.GetDatasets(ctx, userAuthToken, serviceAuthToken, "")
 
 				Convey("then no Collection-ID key is present in the request headers", func() {
-					for k := range mockdphttpCli.DoCalls()[0].Req.Header {
+					for k := range httpClient.DoCalls()[0].Req.Header {
 						So(k, ShouldNotEqual, "Collection-Id")
 					}
 				})
@@ -391,11 +313,11 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 func TestClient_GetInstance(t *testing.T) {
 
 	Convey("given a 200 status with valid empty body is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, Instance{})
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, Instance{})
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstance is called", func() {
-			instance, err := cli.GetInstance(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+			instance, err := datasetClient.GetInstance(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
 
 			Convey("a positive response is returned with empty instance", func() {
 				So(err, ShouldBeNil)
@@ -403,49 +325,55 @@ func TestClient_GetInstance(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/instances/123")
+				checkResponseBase(httpClient, http.MethodGet, "/instances/123")
 			})
 		})
 	})
 
 	Convey("given a 200 status with empty body is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, []byte{})
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstance is called", func() {
-			_, err := cli.GetInstance(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+			_, err := datasetClient.GetInstance(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldNotBeNil)
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/instances/123")
+				checkResponseBase(httpClient, http.MethodGet, "/instances/123")
 			})
 		})
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		mockdphttpCli := &dphttp.ClienterMock{
+		httpClient := &dphttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusNotFound,
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte("you aint seen me right"))),
 				}, nil
 			},
+			SetPathsWithNoRetriesFunc: func(paths []string) {
+				return
+			},
+			GetPathsWithNoRetriesFunc: func() []string {
+				return []string{"/healthcheck"}
+			},
 		}
 
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstance is called", func() {
-			_, err := cli.GetInstance(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+			_, err := datasetClient.GetInstance(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123, body: you aint seen me right").Error())
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/instances/123")
+				checkResponseBase(httpClient, http.MethodGet, "/instances/123")
 			})
 		})
 	})
@@ -454,51 +382,49 @@ func TestClient_GetInstance(t *testing.T) {
 func TestClient_GetInstanceDimensionsBytes(t *testing.T) {
 
 	Convey("given a 200 status is returned", t, func() {
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"buddy":"ok"}`))),
-				}, nil
-			},
-		}
-
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, "")
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensionsBytes is called", func() {
-			_, err := cli.GetInstanceDimensionsBytes(ctx, userAuthToken, serviceAuthToken, "123")
+			_, err := datasetClient.GetInstanceDimensionsBytes(ctx, userAuthToken, serviceAuthToken, "123")
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/instances/123/dimensions")
+				checkResponseBase(httpClient, http.MethodGet, "/instances/123/dimensions")
 			})
 		})
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		mockdphttpCli := &dphttp.ClienterMock{
+		httpClient := &dphttp.ClienterMock{
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: http.StatusNotFound,
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte("resource not found"))),
 				}, nil
 			},
+			SetPathsWithNoRetriesFunc: func(paths []string) {
+				return
+			},
+			GetPathsWithNoRetriesFunc: func() []string {
+				return []string{"/healthcheck"}
+			},
 		}
 
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensionsBytes is called", func() {
-			_, err := cli.GetInstanceDimensionsBytes(ctx, userAuthToken, serviceAuthToken, "123")
+			_, err := datasetClient.GetInstanceDimensionsBytes(ctx, userAuthToken, serviceAuthToken, "123")
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123/dimensions, body: resource not found").Error())
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/instances/123/dimensions")
+				checkResponseBase(httpClient, http.MethodGet, "/instances/123/dimensions")
 			})
 		})
 	})
@@ -507,23 +433,23 @@ func TestClient_GetInstanceDimensionsBytes(t *testing.T) {
 func TestClient_GetInstances(t *testing.T) {
 
 	Convey("given a 200 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, Instance{})
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, Instance{})
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstance is called", func() {
-			_, err := cli.GetInstances(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{})
+			_, err := datasetClient.GetInstances(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{})
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/instances")
+				checkResponseBase(httpClient, http.MethodGet, "/instances")
 			})
 		})
 
 		Convey("When GetInstance is called with filters", func() {
-			_, err := cli.GetInstances(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{
+			_, err := datasetClient.GetInstances(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{
 				"id":      []string{"123"},
 				"version": []string{"999"},
 			})
@@ -533,11 +459,10 @@ func TestClient_GetInstances(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected query parameters", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/instances?id=123&version=999")
+				checkResponseBase(httpClient, http.MethodGet, "/instances?id=123&version=999")
 			})
 		})
 	})
-
 }
 
 func Test_PutInstanceImportTasks(t *testing.T) {
@@ -545,32 +470,32 @@ func Test_PutInstanceImportTasks(t *testing.T) {
 	data := InstanceImportTasks{
 		ImportObservations: &ImportObservationsTask{State: StateSubmitted.String()},
 		BuildHierarchyTasks: []*BuildHierarchyTask{
-			&BuildHierarchyTask{DimensionName: "dimension1", State: StateCompleted.String()},
-			&BuildHierarchyTask{DimensionName: "dimension2", State: StateCreated.String()},
+			{DimensionName: "dimension1", State: StateCompleted.String()},
+			{DimensionName: "dimension2", State: StateCreated.String()},
 		},
 		BuildSearchIndexTasks: []*BuildSearchIndexTask{
-			&BuildSearchIndexTask{State: StateSubmitted.String()},
-			&BuildSearchIndexTask{State: StateCompleted.String()},
+			{State: StateSubmitted.String()},
+			{State: StateCompleted.String()},
 		},
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, nil)
+		httpClient := createHTTPClientMock(http.StatusOK, nil)
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
 
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when PutInstanceImportTasks is called", func() {
-			err := cli.PutInstanceImportTasks(ctx, serviceAuthToken, "123", data)
+			err := datasetClient.PutInstanceImportTasks(ctx, serviceAuthToken, "123", data)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPut, "/instances/123/import_tasks")
-				payload, err := ioutil.ReadAll(mockdphttpCli.DoCalls()[0].Req.Body)
+				checkResponseBase(httpClient, http.MethodPut, "/instances/123/import_tasks")
+				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
 			})
@@ -589,21 +514,21 @@ func TestClient_PostInstanceDimensions(t *testing.T) {
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, nil)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, nil)
+		datasetClient := newDatasetClient(httpClient)
 		expectedPayload, err := json.Marshal(optionsToPost)
 		So(err, ShouldBeNil)
 
 		Convey("when PostInstanceDimensions is called", func() {
-			err := cli.PostInstanceDimensions(ctx, serviceAuthToken, "123", optionsToPost)
+			err := datasetClient.PostInstanceDimensions(ctx, serviceAuthToken, "123", optionsToPost)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPost, "/instances/123/dimensions")
-				payload, err := ioutil.ReadAll(mockdphttpCli.DoCalls()[0].Req.Body)
+				checkResponseBase(httpClient, http.MethodPost, "/instances/123/dimensions")
+				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
 			})
@@ -611,21 +536,21 @@ func TestClient_PostInstanceDimensions(t *testing.T) {
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, "wrong!")
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusNotFound, "wrong!")
+		datasetClient := newDatasetClient(httpClient)
 		expectedPayload, err := json.Marshal(optionsToPost)
 		So(err, ShouldBeNil)
 
 		Convey("when PostInstanceDimensions is called", func() {
-			err := cli.PostInstanceDimensions(ctx, serviceAuthToken, "123", optionsToPost)
+			err := datasetClient.PostInstanceDimensions(ctx, serviceAuthToken, "123", optionsToPost)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123/dimensions, body: \"wrong!\"").Error())
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPost, "/instances/123/dimensions")
-				payload, err := ioutil.ReadAll(mockdphttpCli.DoCalls()[0].Req.Body)
+				checkResponseBase(httpClient, http.MethodPost, "/instances/123/dimensions")
+				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
 			})
@@ -640,21 +565,21 @@ func TestClient_PutInstanceState(t *testing.T) {
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, nil)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, nil)
+		datasetClient := newDatasetClient(httpClient)
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
 
 		Convey("when PutInstanceState is called", func() {
-			err := cli.PutInstanceState(ctx, serviceAuthToken, "123", StateCompleted)
+			err := datasetClient.PutInstanceState(ctx, serviceAuthToken, "123", StateCompleted)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPut, "/instances/123")
-				payload, err := ioutil.ReadAll(mockdphttpCli.DoCalls()[0].Req.Body)
+				checkResponseBase(httpClient, http.MethodPut, "/instances/123")
+				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
 			})
@@ -666,18 +591,18 @@ func TestClient_PutInstanceState(t *testing.T) {
 func Test_UpdateInstanceWithNewInserts(t *testing.T) {
 
 	Convey("given a 200 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, nil)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, nil)
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when UpdateInstanceWithNewInserts is called", func() {
-			err := cli.UpdateInstanceWithNewInserts(ctx, serviceAuthToken, "123", 999)
+			err := datasetClient.UpdateInstanceWithNewInserts(ctx, serviceAuthToken, "123", 999)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPut, "/instances/123/inserted_observations/999")
+				checkResponseBase(httpClient, http.MethodPut, "/instances/123/inserted_observations/999")
 			})
 		})
 	})
@@ -692,21 +617,21 @@ func TestClient_PutInstanceData(t *testing.T) {
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, nil)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, nil)
+		datasetClient := newDatasetClient(httpClient)
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
 
 		Convey("when PutInstanceData is called", func() {
-			err := cli.PutInstanceData(ctx, serviceAuthToken, "123", data)
+			err := datasetClient.PutInstanceData(ctx, serviceAuthToken, "123", data)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPut, "/instances/123")
-				payload, err := ioutil.ReadAll(mockdphttpCli.DoCalls()[0].Req.Body)
+				checkResponseBase(httpClient, http.MethodPut, "/instances/123")
+				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
 			})
@@ -714,21 +639,21 @@ func TestClient_PutInstanceData(t *testing.T) {
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, "wrong!")
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusNotFound, "wrong!")
+		datasetClient := newDatasetClient(httpClient)
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
 
 		Convey("when PutInstanceData is called", func() {
-			err := cli.PutInstanceData(ctx, serviceAuthToken, "123", data)
+			err := datasetClient.PutInstanceData(ctx, serviceAuthToken, "123", data)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123, body: \"wrong!\"").Error())
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPut, "/instances/123")
-				payload, err := ioutil.ReadAll(mockdphttpCli.DoCalls()[0].Req.Body)
+				checkResponseBase(httpClient, http.MethodPut, "/instances/123")
+				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
 			})
@@ -754,11 +679,11 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, data)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, data)
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensions is called", func() {
-			dimensions, err := cli.GetInstanceDimensions(ctx, serviceAuthToken, "123")
+			dimensions, err := datasetClient.GetInstanceDimensions(ctx, serviceAuthToken, "123")
 
 			Convey("a positive response with expected dimensions is returned", func() {
 				So(err, ShouldBeNil)
@@ -766,17 +691,17 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/instances/123/dimensions")
+				checkResponseBase(httpClient, http.MethodGet, "/instances/123/dimensions")
 			})
 		})
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, nil)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusNotFound, nil)
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensions is called", func() {
-			_, err := cli.GetInstanceDimensions(ctx, serviceAuthToken, "123")
+			_, err := datasetClient.GetInstanceDimensions(ctx, serviceAuthToken, "123")
 
 			Convey("then the expected error is returned", func() {
 				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
@@ -787,7 +712,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/instances/123/dimensions")
+				checkResponseBase(httpClient, http.MethodGet, "/instances/123/dimensions")
 			})
 		})
 	})
@@ -795,28 +720,28 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 
 func TestClient_PutInstanceDimensionOptionNodeID(t *testing.T) {
 	Convey("given a 200 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, nil)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, nil)
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when PutInstanceDimensionOptionNodeID is called", func() {
-			err := cli.PutInstanceDimensionOptionNodeID(ctx, serviceAuthToken, "123", "456", "789", "ABC")
+			err := datasetClient.PutInstanceDimensionOptionNodeID(ctx, serviceAuthToken, "123", "456", "789", "ABC")
 
 			Convey("a positive response with expected dimensions is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPut, "/instances/123/dimensions/456/options/789/node_id/ABC")
+				checkResponseBase(httpClient, http.MethodPut, "/instances/123/dimensions/456/options/789/node_id/ABC")
 			})
 		})
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, nil)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusNotFound, nil)
+		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when PutInstanceDimensionOptionNodeID is called", func() {
-			err := cli.PutInstanceDimensionOptionNodeID(ctx, serviceAuthToken, "123", "456", "789", "ABC")
+			err := datasetClient.PutInstanceDimensionOptionNodeID(ctx, serviceAuthToken, "123", "456", "789", "ABC")
 
 			Convey("then the expected error is returned", func() {
 				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
@@ -827,8 +752,46 @@ func TestClient_PutInstanceDimensionOptionNodeID(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
-				checkResponseBase(mockdphttpCli, http.MethodPut, "/instances/123/dimensions/456/options/789/node_id/ABC")
+				checkResponseBase(httpClient, http.MethodPut, "/instances/123/dimensions/456/options/789/node_id/ABC")
 			})
 		})
 	})
+}
+
+func newDatasetClient(httpClient *dphttp.ClienterMock) *Client {
+	healthClient := health.NewClientWithClienter("", testHost, httpClient)
+	datasetClient := NewWithHealthClient(healthClient)
+	return datasetClient
+}
+
+func createHTTPClientMock(retCode int, retBody interface{}) *dphttp.ClienterMock {
+	return &dphttp.ClienterMock{
+		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			body, _ := json.Marshal(retBody)
+			return &http.Response{
+				StatusCode: retCode,
+				Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			}, nil
+		},
+		SetPathsWithNoRetriesFunc: func(paths []string) {
+			return
+		},
+		GetPathsWithNoRetriesFunc: func() []string {
+			return []string{"/healthcheck"}
+		},
+	}
+}
+
+func createHTTPClientMockErr(err error) *dphttp.ClienterMock {
+	return &dphttp.ClienterMock{
+		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			return nil, err
+		},
+		SetPathsWithNoRetriesFunc: func(paths []string) {
+			return
+		},
+		GetPathsWithNoRetriesFunc: func() []string {
+			return []string{"/healthcheck"}
+		},
+	}
 }
