@@ -14,7 +14,6 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -52,29 +51,27 @@ var _ error = ErrInvalidFilterAPIResponse{}
 
 // Client is a filter api client which can be used to make requests to the server
 type Client struct {
-	cli dphttp.Clienter
-	url string
+	hcCli *healthcheck.Client
 }
 
 // New creates a new instance of Client with a given filter api url
 func New(filterAPIURL string) *Client {
-	hcClient := healthcheck.NewClient(service, filterAPIURL)
-
 	return &Client{
-		cli: hcClient.Client,
-		url: filterAPIURL,
+		healthcheck.NewClient(service, filterAPIURL),
+	}
+}
+
+// NewWithHealthClient creates a new instance of Client,
+// reusing the URL and Clienter from the provided health check client.
+func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
+	return &Client{
+		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
 	}
 }
 
 // Checker calls filter api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
-	hcClient := healthcheck.Client{
-		Client: c.cli,
-		URL:    c.url,
-		Name:   service,
-	}
-
-	return hcClient.Checker(ctx, check)
+	return c.hcCli.Checker(ctx, check)
 }
 
 // CloseResponseBody closes the response body and logs an error if unsuccessful
@@ -99,7 +96,7 @@ func (c *Client) GetOutput(ctx context.Context, userAuthToken, serviceAuthToken,
 
 // GetOutputBytes returns a filter output job for a given filter output id as a byte array
 func (c *Client) GetOutputBytes(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID string) ([]byte, error) {
-	uri := fmt.Sprintf("%s/filter-outputs/%s", c.url, filterOutputID)
+	uri := fmt.Sprintf("%s/filter-outputs/%s", c.hcCli.URL, filterOutputID)
 	clientlog.Do(ctx, "retrieving filter output", service, uri)
 
 	resp, err := c.doGetWithAuthHeadersAndWithDownloadToken(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, uri)
@@ -130,7 +127,7 @@ func (c *Client) UpdateFilterOutput(ctx context.Context, userAuthToken, serviceA
 
 // UpdateFilterOutputBytes performs a PUT operation to update the filter with the provided byte array
 func (c *Client) UpdateFilterOutputBytes(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, filterJobID string, b []byte) error {
-	uri := fmt.Sprintf("%s/filter-outputs/%s", c.url, filterJobID)
+	uri := fmt.Sprintf("%s/filter-outputs/%s", c.hcCli.URL, filterJobID)
 
 	clientlog.Do(ctx, "updating filter output", service, uri, log.Data{
 		"method": "PUT",
@@ -146,7 +143,7 @@ func (c *Client) UpdateFilterOutputBytes(ctx context.Context, userAuthToken, ser
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceToken)
 
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -171,7 +168,7 @@ func (c *Client) GetDimension(ctx context.Context, userAuthToken, serviceAuthTok
 
 // GetDimensionBytes returns information on a requested dimension name for a given filterID as a byte array
 func (c *Client) GetDimensionBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string) ([]byte, error) {
-	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
 	clientlog.Do(ctx, "retrieving dimension information", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
@@ -205,7 +202,7 @@ func (c *Client) GetDimensions(ctx context.Context, userAuthToken, serviceAuthTo
 
 // GetDimensionsBytes will return the dimensions associated with the provided filter id as a byte array
 func (c *Client) GetDimensionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID string) ([]byte, error) {
-	uri := fmt.Sprintf("%s/filters/%s/dimensions", c.url, filterID)
+	uri := fmt.Sprintf("%s/filters/%s/dimensions", c.hcCli.URL, filterID)
 	clientlog.Do(ctx, "retrieving all dimensions for given filter job", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
@@ -237,7 +234,7 @@ func (c *Client) GetDimensionOptions(ctx context.Context, userAuthToken, service
 
 // GetDimensionOptionsBytes retrieves a list of the dimension options as a byte array
 func (c *Client) GetDimensionOptionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string) ([]byte, error) {
-	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options", c.url, filterID, name)
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options", c.hcCli.URL, filterID, name)
 	clientlog.Do(ctx, "retrieving selected dimension options for filter job", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
@@ -279,7 +276,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return "", err
 	}
 
-	uri := c.url + "/filters"
+	uri := c.hcCli.URL + "/filters"
 	clientlog.Do(ctx, "attempting to create filter blueprint", service, uri, log.Data{
 		"method":    "POST",
 		"datasetID": datasetID,
@@ -297,7 +294,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceToken)
 
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return "", err
 	}
@@ -327,7 +324,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return m, err
 	}
 
-	uri := fmt.Sprintf("%s/filters/%s", c.url, m.FilterID)
+	uri := fmt.Sprintf("%s/filters/%s", c.hcCli.URL, m.FilterID)
 
 	if doSubmit {
 		uri = uri + "?submitted=true"
@@ -347,7 +344,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceToken)
 
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return m, err
 	}
@@ -372,7 +369,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 // AddDimensionValue adds a particular value to a filter job for a given filterID
 // and name
 func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name, value string) error {
-	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.url, filterID, name, value)
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.hcCli.URL, filterID, name, value)
 
 	clientlog.Do(ctx, "adding dimension option to filter job", service, uri, log.Data{
 		"method": "POST",
@@ -388,7 +385,7 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 	headers.SetUserAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -404,7 +401,7 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 // RemoveDimensionValue removes a particular value to a filter job for a given filterID
 // and name
 func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name, value string) error {
-	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.url, filterID, name, value)
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.hcCli.URL, filterID, name, value)
 	req, err := http.NewRequest("DELETE", uri, nil)
 	if err != nil {
 		return err
@@ -419,7 +416,7 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 	headers.SetUserAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -434,7 +431,7 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 
 // RemoveDimension removes a given dimension from a filter job
 func (c *Client) RemoveDimension(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string) error {
-	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
 
 	clientlog.Do(ctx, "removing dimension from filter job", service, uri, log.Data{
 		"method":    "DELETE",
@@ -450,7 +447,7 @@ func (c *Client) RemoveDimension(ctx context.Context, userAuthToken, serviceAuth
 	headers.SetUserAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -467,7 +464,7 @@ func (c *Client) RemoveDimension(ctx context.Context, userAuthToken, serviceAuth
 
 // AddDimension adds a new dimension to a filter job
 func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, name string) error {
-	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, id, name)
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, id, name)
 	clientlog.Do(ctx, "adding dimension to filter job", service, uri, log.Data{
 		"method":    "POST",
 		"dimension": name,
@@ -481,7 +478,7 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 	headers.SetUserAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -508,7 +505,7 @@ func (c *Client) GetJobState(ctx context.Context, userAuthToken, serviceAuthToke
 
 // GetJobStateBytes will return the current state of the filter job as a byte array
 func (c *Client) GetJobStateBytes(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterID string) ([]byte, error) {
-	uri := fmt.Sprintf("%s/filters/%s", c.url, filterID)
+	uri := fmt.Sprintf("%s/filters/%s", c.hcCli.URL, filterID)
 	clientlog.Do(ctx, "retrieving filter job state", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
@@ -528,7 +525,7 @@ func (c *Client) GetJobStateBytes(ctx context.Context, userAuthToken, serviceAut
 
 // AddDimensionValues adds many options to a filter job dimension
 func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, options []string) error {
-	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.url, filterID, name)
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
 
 	clientlog.Do(ctx, "adding multiple dimension values to filter job", service, uri, log.Data{
 		"method":  "POST",
@@ -555,7 +552,7 @@ func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceA
 	headers.SetUserAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -582,7 +579,7 @@ func (c *Client) GetPreview(ctx context.Context, userAuthToken, serviceAuthToken
 
 // GetPreviewBytes attempts to retrieve a preview for a given filterOutputID as a byte array
 func (c *Client) GetPreviewBytes(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID string) ([]byte, error) {
-	uri := fmt.Sprintf("%s/filter-outputs/%s/preview", c.url, filterOutputID)
+	uri := fmt.Sprintf("%s/filter-outputs/%s/preview", c.hcCli.URL, filterOutputID)
 	clientlog.Do(ctx, "retrieving preview for filter output job", service, uri, log.Data{
 		"method":   "GET",
 		"filterID": filterOutputID,
@@ -613,7 +610,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	headers.SetCollectionID(req, collectionID)
 	headers.SetUserAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
-	return c.cli.Do(ctx, req)
+	return c.hcCli.Client.Do(ctx, req)
 }
 
 // doGetWithAuthHeadersAndWithDownloadToken executes clienter.Do setting the user and service authentication and dwonload token token as a request header. Returns the http.Response and any error.
@@ -628,5 +625,5 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	headers.SetUserAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceAuthToken)
-	return c.cli.Do(ctx, req)
+	return c.hcCli.Client.Do(ctx, req)
 }

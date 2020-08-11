@@ -48,19 +48,11 @@ func TestClient_HealthChecker(t *testing.T) {
 
 	Convey("given clienter.Do returns an error", t, func() {
 		clientError := errors.New("disciples of the watch obey")
+		httpClient := newMockHTTPClient(&http.Response{}, clientError)
+		httpClient.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{}, clientError
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+		filterClient := newFilterClient(httpClient)
 
-		filterClient := New(testHost)
-		filterClient.cli = clienter
 		check := initialState
 
 		Convey("when filterClient.Checker is called", func() {
@@ -78,7 +70,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
@@ -86,20 +78,12 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 500 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 500,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: 500,
+		}, nil)
+		httpClient.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		filterClient := New(testHost)
-		filterClient.cli = clienter
+		filterClient := newFilterClient(httpClient)
 		check := initialState
 
 		Convey("when filterClient.Checker is called", func() {
@@ -117,7 +101,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
@@ -125,20 +109,12 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 404 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 404,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: 404,
+		}, nil)
+		httpClient.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		filterClient := New(testHost)
-		filterClient.cli = clienter
+		filterClient := newFilterClient(httpClient)
 		check := initialState
 
 		Convey("when filterClient.Checker is called", func() {
@@ -156,7 +132,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 2)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 				So(doCalls[1].Req.URL.Path, ShouldEqual, "/healthcheck")
@@ -165,20 +141,12 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 429 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 429,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: 429,
+		}, nil)
+		httpClient.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		filterClient := New(testHost)
-		filterClient.cli = clienter
+		filterClient := newFilterClient(httpClient)
 		check := initialState
 
 		Convey("when filterClient.Checker is called", func() {
@@ -196,7 +164,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
@@ -204,20 +172,12 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 200 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 200,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: 200,
+		}, nil)
+		httpClient.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		filterClient := New(testHost)
-		filterClient.cli = clienter
+		filterClient := newFilterClient(httpClient)
 		check := initialState
 
 		Convey("when filterClient.Checker is called", func() {
@@ -235,25 +195,12 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
 		})
 	})
-}
-
-func getMockfilterAPI(expectRequest http.Request, mockedHTTPResponse MockedHTTPResponse) *Client {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != expectRequest.Method {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("unexpected HTTP method used"))
-			return
-		}
-		w.WriteHeader(mockedHTTPResponse.StatusCode)
-		fmt.Fprintln(w, mockedHTTPResponse.Body)
-	}))
-	return New(ts.URL)
 }
 
 func TestClient_GetOutput(t *testing.T) {
@@ -267,7 +214,7 @@ func TestClient_GetOutput(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
-		mockedAPI.cli.SetMaxRetries(2)
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})
@@ -291,7 +238,7 @@ func TestClient_UpdateFilterOutput(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "PUT"}, MockedHTTPResponse{StatusCode: 500, Body: ""})
-		mockedAPI.cli.SetMaxRetries(2)
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		err := mockedAPI.UpdateFilterOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterJobID, &model)
 		So(err, ShouldNotBeNil)
 	})
@@ -318,7 +265,7 @@ func TestClient_GetDimension(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
-		mockedAPI.cli.SetMaxRetries(2)
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldNotBeNil)
 	})
@@ -349,7 +296,7 @@ func TestClient_GetDimensions(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
-		mockedAPI.cli.SetMaxRetries(2)
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})
@@ -379,7 +326,7 @@ func TestClient_GetDimensionOptions(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
-		mockedAPI.cli.SetMaxRetries(2)
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldNotBeNil)
 	})
@@ -403,62 +350,52 @@ func TestClient_CreateBlueprint(t *testing.T) {
 	version := "1"
 	names := []string{"quuz", "corge"}
 
-	checkResponse := func(mockdphttpCli *dphttp.ClienterMock, expectedFilterID string) {
-		So(len(mockdphttpCli.DoCalls()), ShouldEqual, 1)
+	checkResponse := func(httpClient *dphttp.ClienterMock, expectedFilterID string) {
+		So(len(httpClient.DoCalls()), ShouldEqual, 1)
 
-		actualBody, _ := ioutil.ReadAll(mockdphttpCli.DoCalls()[0].Req.Body)
+		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 		var actualVersion string
 		json.Unmarshal(actualBody, &actualVersion)
 		So(actualVersion, ShouldResemble, expectedFilterID)
 	}
 
 	Convey("Given a valid Blueprint is returned", t, func() {
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusCreated,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
-				}, nil
-			},
-		}
 
-		cli := Client{
-			cli: mockdphttpCli,
-			url: "http://localhost:8080",
-		}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusCreated,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := cli.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
+			bp, err := filterClient.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttp client is called one time with the expected parameters", func() {
-				checkResponse(mockdphttpCli, bp)
+				checkResponse(httpClient, bp)
 			})
 		})
 	})
 
 	Convey("given dphttpclient.do returns an error", t, func() {
 		mockErr := errors.New("foo")
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return nil, mockErr
-			},
-		}
+		httpClient := newMockHTTPClient(nil, mockErr)
 
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := cli.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
+			bp, err := filterClient.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
-				checkResponse(mockdphttpCli, bp)
+				checkResponse(httpClient, bp)
 			})
 		})
 	})
@@ -466,26 +403,22 @@ func TestClient_CreateBlueprint(t *testing.T) {
 	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
 		url := "http://localhost:8080"
 		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusCreated, 500, url + "/filters"}
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusInternalServerError,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
 
-		cli := Client{cli: mockdphttpCli, url: url}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := cli.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
+			bp, err := filterClient.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
-				checkResponse(mockdphttpCli, bp)
+				checkResponse(httpClient, bp)
 			})
 		})
 	})
@@ -507,10 +440,10 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 	}
 	doSubmit := true
 
-	checkResponse := func(mockdphttpCli *dphttp.ClienterMock, expectedModel Model) {
-		So(len(mockdphttpCli.DoCalls()), ShouldEqual, 1)
+	checkResponse := func(httpClient *dphttp.ClienterMock, expectedModel Model) {
+		So(len(httpClient.DoCalls()), ShouldEqual, 1)
 
-		actualBody, _ := ioutil.ReadAll(mockdphttpCli.DoCalls()[0].Req.Body)
+		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 		var actualModel Model
 
 		json.Unmarshal(actualBody, &actualModel)
@@ -518,52 +451,41 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 	}
 
 	Convey("Given a valid blueprint update is given", t, func() {
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
-				}, nil
-			},
-		}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
+		}, nil)
 
-		cli := Client{
-			cli: mockdphttpCli,
-			url: "http://localhost:8080",
-		}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := cli.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit)
+			bp, err := filterClient.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttp client is called one time with the expected parameters", func() {
-				checkResponse(mockdphttpCli, bp)
+				checkResponse(httpClient, bp)
 			})
 		})
 	})
 
 	Convey("given dphttpclient.do returns an error", t, func() {
 		mockErr := errors.New("foo")
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return nil, mockErr
-			},
-		}
+		httpClient := newMockHTTPClient(nil, mockErr)
 
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := cli.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit)
+			bp, err := filterClient.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
-				checkResponse(mockdphttpCli, bp)
+				checkResponse(httpClient, bp)
 			})
 		})
 	})
@@ -571,26 +493,22 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
 		url := "http://localhost:8080"
 		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusOK, 500, url + "/filters/?submitted=" + strconv.FormatBool(doSubmit)}
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusInternalServerError,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
 
-		cli := Client{cli: mockdphttpCli, url: url}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := cli.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit)
+			bp, err := filterClient.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
-				checkResponse(mockdphttpCli, bp)
+				checkResponse(httpClient, bp)
 			})
 		})
 	})
@@ -602,22 +520,15 @@ func TestClient_AddDimensionValue(t *testing.T) {
 	name := "quz"
 
 	Convey("Given a valid dimension value is added", t, func() {
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusCreated,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
-				}, nil
-			},
-		}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusCreated,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
+		}, nil)
 
-		cli := Client{
-			cli: mockdphttpCli,
-			url: "http://localhost:8080",
-		}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimensionValue is called", func() {
-			err := cli.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
+			err := filterClient.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -627,16 +538,12 @@ func TestClient_AddDimensionValue(t *testing.T) {
 
 	Convey("given dphttpclient.do returns an error", t, func() {
 		mockErr := errors.New("foo")
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return nil, mockErr
-			},
-		}
+		httpClient := newMockHTTPClient(nil, mockErr)
 
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimensionValue is called", func() {
-			err := cli.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
+			err := filterClient.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -649,19 +556,15 @@ func TestClient_AddDimensionValue(t *testing.T) {
 		url := "http://localhost:8080"
 		uri := url + "/filters/" + filterID + "/dimensions/" + name + "/options/filter-api"
 		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusCreated, 500, uri}
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusInternalServerError,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
 
-		cli := Client{cli: mockdphttpCli, url: url}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimensionValue is called", func() {
-			err := cli.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
+			err := filterClient.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -675,22 +578,15 @@ func TestClient_RemoveDimensionValue(t *testing.T) {
 	filterID := "baz"
 	name := "quz"
 	Convey("Given a dimension value is removed", t, func() {
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusNoContent,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
-				}, nil
-			},
-		}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusNoContent,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
+		}, nil)
 
-		cli := Client{
-			cli: mockdphttpCli,
-			url: "http://localhost:8080",
-		}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when RemoveDimensionValue is called", func() {
-			err := cli.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
+			err := filterClient.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -700,16 +596,12 @@ func TestClient_RemoveDimensionValue(t *testing.T) {
 
 	Convey("given dphttpclient.do returns an error", t, func() {
 		mockErr := errors.New("foo")
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return nil, mockErr
-			},
-		}
+		httpClient := newMockHTTPClient(nil, mockErr)
 
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when RemoveDimensionValue is called", func() {
-			err := cli.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
+			err := filterClient.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -722,19 +614,15 @@ func TestClient_RemoveDimensionValue(t *testing.T) {
 		url := "http://localhost:8080"
 		uri := url + "/filters/" + filterID + "/dimensions/" + name + "/options/filter-api"
 		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusNoContent, 500, uri}
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusInternalServerError,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
 
-		cli := Client{cli: mockdphttpCli, url: url}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when RemoveDimensionValue is called", func() {
-			err := cli.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
+			err := filterClient.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -749,22 +637,15 @@ func TestClient_AddDimension(t *testing.T) {
 	name := "quz"
 
 	Convey("Given a dimension is provided", t, func() {
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusCreated,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
-				}, nil
-			},
-		}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusCreated,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
+		}, nil)
 
-		cli := Client{
-			cli: mockdphttpCli,
-			url: "http://localhost:8080",
-		}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimension is called", func() {
-			err := cli.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+			err := filterClient.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -774,16 +655,12 @@ func TestClient_AddDimension(t *testing.T) {
 
 	Convey("given dphttpclient.do returns an error", t, func() {
 		mockErr := errors.New("foo")
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return nil, mockErr
-			},
-		}
+		httpClient := newMockHTTPClient(nil, mockErr)
 
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimension is called", func() {
-			err := cli.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+			err := filterClient.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -793,21 +670,16 @@ func TestClient_AddDimension(t *testing.T) {
 	})
 
 	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
-		url := "http://localhost:8080"
 		mockInvalidStatusCodeError := errors.New("invalid status from filter api")
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusInternalServerError,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
 
-		cli := Client{cli: mockdphttpCli, url: url}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimension is called", func() {
-			err := cli.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+			err := filterClient.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -835,7 +707,7 @@ func TestClient_GetJobState(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
-		mockedAPI.cli.SetMaxRetries(2)
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		m, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
 		So(err, ShouldNotBeNil)
 		So(m, ShouldResemble, Model{})
@@ -848,22 +720,15 @@ func TestClient_AddDimensionValues(t *testing.T) {
 	options := []string{"`quuz"}
 
 	Convey("Given a valid dimension and filter", t, func() {
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusCreated,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
-				}, nil
-			},
-		}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusCreated,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
+		}, nil)
 
-		cli := Client{
-			cli: mockdphttpCli,
-			url: "http://localhost:8080",
-		}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimensionValues is called", func() {
-			err := cli.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -873,21 +738,16 @@ func TestClient_AddDimensionValues(t *testing.T) {
 
 	Convey("given dphttpclient.do returns an error", t, func() {
 		mockErr := errors.New("foo")
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return nil, mockErr
-			},
-		}
+		httpClient := newMockHTTPClient(nil, mockErr)
 
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimensionValues is called", func() {
-			err := cli.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
 			})
-
 		})
 	})
 
@@ -895,24 +755,19 @@ func TestClient_AddDimensionValues(t *testing.T) {
 		url := "http://localhost:8080"
 		uri := url + "/filters/" + filterID + "/dimensions/" + name
 		mockInvalidStatusCodeError := &ErrInvalidFilterAPIResponse{http.StatusCreated, http.StatusInternalServerError, uri}
-		mockdphttpCli := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusInternalServerError,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil
-			},
-		}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
 
-		cli := Client{cli: mockdphttpCli, url: url}
+		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimensionValues is called", func() {
-			err := cli.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
 			})
-
 		})
 	})
 }
@@ -928,7 +783,7 @@ func TestClient_GetPreview(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
-		mockedAPI.cli.SetMaxRetries(2)
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetPreview(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})
@@ -939,4 +794,37 @@ func TestClient_GetPreview(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(p, ShouldResemble, Preview{})
 	})
+}
+
+func newMockHTTPClient(r *http.Response, err error) *dphttp.ClienterMock {
+	return &dphttp.ClienterMock{
+		SetPathsWithNoRetriesFunc: func(paths []string) {
+			return
+		},
+		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			return r, err
+		},
+		GetPathsWithNoRetriesFunc: func() []string {
+			return []string{"/healthcheck"}
+		},
+	}
+}
+
+func newFilterClient(clienter *dphttp.ClienterMock) *Client {
+	healthClient := health.NewClientWithClienter("", testHost, clienter)
+	filterClient := NewWithHealthClient(healthClient)
+	return filterClient
+}
+
+func getMockfilterAPI(expectRequest http.Request, mockedHTTPResponse MockedHTTPResponse) *Client {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != expectRequest.Method {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("unexpected HTTP method used"))
+			return
+		}
+		w.WriteHeader(mockedHTTPResponse.StatusCode)
+		fmt.Fprintln(w, mockedHTTPResponse.Body)
+	}))
+	return New(ts.URL)
 }
