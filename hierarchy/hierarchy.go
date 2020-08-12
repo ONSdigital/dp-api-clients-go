@@ -10,7 +10,6 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -42,8 +41,7 @@ var _ error = ErrInvalidHierarchyAPIResponse{}
 
 // Client is a hierarchy api client which can be used to make requests to the server
 type Client struct {
-	cli dphttp.Clienter
-	url string
+	hcCli *healthcheck.Client
 }
 
 // CloseResponseBody closes the response body and logs an error if unsuccessful
@@ -58,20 +56,21 @@ func New(hierarchyAPIURL string) *Client {
 	hcClient := healthcheck.NewClient(service, hierarchyAPIURL)
 
 	return &Client{
-		cli: hcClient.Client,
-		url: hierarchyAPIURL,
+		hcClient,
+	}
+}
+
+// NewWithHealthClient creates a new instance of Client,
+// reusing the URL and Clienter from the provided health check client.
+func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
+	return &Client{
+		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
 	}
 }
 
 // Checker calls hierarchy api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
-	hcClient := healthcheck.Client{
-		Client: c.cli,
-		URL:    c.url,
-		Name:   service,
-	}
-
-	return hcClient.Checker(ctx, check)
+	return c.hcCli.Checker(ctx, check)
 }
 
 // GetRoot returns the root hierarchy response from the hierarchy API
@@ -103,12 +102,12 @@ func (c *Client) GetChild(ctx context.Context, instanceID, name, code string) (M
 
 func (c *Client) getHierarchy(ctx context.Context, path string) (Model, error) {
 	var m Model
-	req, err := http.NewRequest("GET", c.url+path, nil)
+	req, err := http.NewRequest("GET", c.hcCli.URL+path, nil)
 	if err != nil {
 		return m, err
 	}
 
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return m, err
 	}

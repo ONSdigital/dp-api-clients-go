@@ -30,21 +30,10 @@ func TestClient_HealthChecker(t *testing.T) {
 	timePriorHealthCheck := time.Now()
 	path := "/health"
 
-	Convey("given clienter.Do returns an error", t, func() {
+	Convey("given the http client returns an error", t, func() {
 		clientError := errors.New("disciples of the watch obey")
-
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{}, clientError
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		hierarchyClient := New(testHost)
-		hierarchyClient.cli = clienter
+		httpClient := newMockHTTPClient(&http.Response{}, clientError)
+		hierarchyClient := newHierarchyClient(httpClient)
 		check := initialState
 
 		Convey("when hierarchyClient.Checker is called", func() {
@@ -62,28 +51,17 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
 		})
 	})
 
-	Convey("given clienter.Do returns 500 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 500,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+	Convey("given a 500 response", t, func() {
+		clienter := newMockHTTPClient(&http.Response{StatusCode: http.StatusInternalServerError}, nil)
 
-		hierarchyClient := New(testHost)
-		hierarchyClient.cli = clienter
+		hierarchyClient := newHierarchyClient(clienter)
 		check := initialState
 
 		Convey("when hierarchyClient.Checker is called", func() {
@@ -93,7 +71,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			Convey("then the expected check is returned", func() {
 				So(check.Name(), ShouldEqual, service)
 				So(check.Status(), ShouldEqual, healthcheck.StatusCritical)
-				So(check.StatusCode(), ShouldEqual, 500)
+				So(check.StatusCode(), ShouldEqual, http.StatusInternalServerError)
 				So(check.Message(), ShouldEqual, service+health.StatusMessage[healthcheck.StatusCritical])
 				So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess(), ShouldBeNil)
@@ -108,21 +86,9 @@ func TestClient_HealthChecker(t *testing.T) {
 		})
 	})
 
-	Convey("given clienter.Do returns 404 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 404,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		hierarchyClient := New(testHost)
-		hierarchyClient.cli = clienter
+	Convey("given a 404 response", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{StatusCode: http.StatusNotFound}, nil)
+		hierarchyClient := newHierarchyClient(httpClient)
 		check := initialState
 
 		Convey("when hierarchyClient.Checker is called", func() {
@@ -132,7 +98,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			Convey("then the expected check is returned", func() {
 				So(check.Name(), ShouldEqual, service)
 				So(check.Status(), ShouldEqual, healthcheck.StatusCritical)
-				So(check.StatusCode(), ShouldEqual, 404)
+				So(check.StatusCode(), ShouldEqual, http.StatusNotFound)
 				So(check.Message(), ShouldEqual, service+health.StatusMessage[healthcheck.StatusCritical])
 				So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess(), ShouldBeNil)
@@ -140,7 +106,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 2)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 				So(doCalls[1].Req.URL.Path, ShouldEqual, "/healthcheck")
@@ -148,21 +114,9 @@ func TestClient_HealthChecker(t *testing.T) {
 		})
 	})
 
-	Convey("given clienter.Do returns 429 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 429,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		hierarchyClient := New(testHost)
-		hierarchyClient.cli = clienter
+	Convey("given a 429 response", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{StatusCode: http.StatusTooManyRequests}, nil)
+		hierarchyClient := newHierarchyClient(httpClient)
 		check := initialState
 
 		Convey("when hierarchyClient.Checker is called", func() {
@@ -172,7 +126,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			Convey("then the expected check is returned", func() {
 				So(check.Name(), ShouldEqual, service)
 				So(check.Status(), ShouldEqual, healthcheck.StatusWarning)
-				So(check.StatusCode(), ShouldEqual, 429)
+				So(check.StatusCode(), ShouldEqual, http.StatusTooManyRequests)
 				So(check.Message(), ShouldEqual, service+health.StatusMessage[healthcheck.StatusWarning])
 				So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
 				So(check.LastSuccess(), ShouldBeNil)
@@ -180,28 +134,16 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
 		})
 	})
 
-	Convey("given clienter.Do returns 200 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 200,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		hierarchyClient := New(testHost)
-		hierarchyClient.cli = clienter
+	Convey("given a 200 response", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{StatusCode: http.StatusOK}, nil)
+		hierarchyClient := newHierarchyClient(httpClient)
 		check := initialState
 
 		Convey("when hierarchyClient.Checker is called", func() {
@@ -211,7 +153,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			Convey("then the expected check is returned", func() {
 				So(check.Name(), ShouldEqual, service)
 				So(check.Status(), ShouldEqual, healthcheck.StatusOK)
-				So(check.StatusCode(), ShouldEqual, 200)
+				So(check.StatusCode(), ShouldEqual, http.StatusOK)
 				So(check.Message(), ShouldEqual, service+health.StatusMessage[healthcheck.StatusOK])
 				So(*check.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
 				So(*check.LastSuccess(), ShouldHappenAfter, timePriorHealthCheck)
@@ -219,7 +161,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
@@ -253,7 +195,7 @@ func TestClient_GetRoot(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
-		mockedAPI.cli.SetMaxRetries(2)
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetRoot(ctx, instanceID, name)
 		So(err, ShouldNotBeNil)
 		ts.Close()
@@ -281,7 +223,7 @@ func TestClient_GetChild(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
-		mockedAPI.cli.SetMaxRetries(2)
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetChild(ctx, instanceID, name, code)
 		So(err, ShouldNotBeNil)
 		ts.Close()
@@ -294,6 +236,7 @@ func TestClient_GetChild(t *testing.T) {
 		ts.Close()
 	})
 }
+
 func TestClient_GetHierarchy(t *testing.T) {
 	path := "/hierarchies/foo/bar"
 	model := `{"label":"","has_data":true}`
@@ -307,7 +250,7 @@ func TestClient_GetHierarchy(t *testing.T) {
 
 	Convey("When server error is returned", t, func() {
 		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
-		mockedAPI.cli.SetMaxRetries(2)
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.getHierarchy(ctx, path)
 		So(err, ShouldNotBeNil)
 		ts.Close()
@@ -319,5 +262,24 @@ func TestClient_GetHierarchy(t *testing.T) {
 		So(err, ShouldBeNil)
 		ts.Close()
 	})
+}
 
+func newMockHTTPClient(r *http.Response, err error) *dphttp.ClienterMock {
+	return &dphttp.ClienterMock{
+		SetPathsWithNoRetriesFunc: func(paths []string) {
+			return
+		},
+		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			return r, err
+		},
+		GetPathsWithNoRetriesFunc: func() []string {
+			return []string{"/healthcheck"}
+		},
+	}
+}
+
+func newHierarchyClient(httpClient *dphttp.ClienterMock) *Client {
+	healthClient := health.NewClientWithClienter("", testHost, httpClient)
+	hierarchyClient := NewWithHealthClient(healthClient)
+	return hierarchyClient
 }
