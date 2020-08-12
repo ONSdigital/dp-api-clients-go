@@ -16,7 +16,6 @@ import (
 
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -25,8 +24,7 @@ const service = "zebedee"
 
 // Client represents a zebedee client
 type Client struct {
-	cli dphttp.Clienter
-	url string
+	hcCli *healthcheck.Client
 }
 
 // ErrInvalidZebedeeResponse is returned when zebedee does not respond
@@ -63,20 +61,21 @@ func New(zebedeeURL string) *Client {
 	hcClient.Client.SetTimeout(time.Duration(timeout) * time.Second)
 
 	return &Client{
-		cli: hcClient.Client,
-		url: zebedeeURL,
+		hcClient,
+	}
+}
+
+// NewWithHealthClient creates a new instance of Client,
+// reusing the URL and Clienter from the provided health check client.
+func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
+	return &Client{
+		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
 	}
 }
 
 // Checker calls zebedee health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
-	hcClient := healthcheck.Client{
-		Client: c.cli,
-		URL:    c.url,
-		Name:   service,
-	}
-
-	return hcClient.Checker(ctx, check)
+	return c.hcCli.Checker(ctx, check)
 }
 
 // Get returns a response for the requested uri in zebedee
@@ -135,14 +134,14 @@ func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, pat
 }
 
 func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte, http.Header, error) {
-	req, err := http.NewRequest("GET", c.url+path, nil)
+	req, err := http.NewRequest("GET", c.hcCli.URL+path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	dprequest.AddFlorenceHeader(req, userAccessToken)
 
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return nil, nil, err
 	}

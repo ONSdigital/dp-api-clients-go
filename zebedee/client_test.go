@@ -198,19 +198,8 @@ func TestClient_HealthChecker(t *testing.T) {
 
 	Convey("given clienter.Do returns an error", t, func() {
 		clientError := errors.New("disciples of the watch obey")
-
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{}, clientError
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		zebedeeClient := New(testHost)
-		zebedeeClient.cli = clienter
+		httpClient := newMockHTTPClient(&http.Response{}, clientError)
+		zebedeeClient := newZebedeeClient(httpClient)
 		check := initialState
 
 		Convey("when zebedeeClient.Checker is called", func() {
@@ -228,28 +217,16 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
 		})
 	})
 
-	Convey("given clienter.Do returns 500 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 500,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		zebedeeClient := New(testHost)
-		zebedeeClient.cli = clienter
+	Convey("given a 500 response", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{StatusCode: http.StatusInternalServerError}, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
 		check := initialState
 
 		Convey("when zebedeeClient.Checker is called", func() {
@@ -267,28 +244,16 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
 		})
 	})
 
-	Convey("given clienter.Do returns 404 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 404,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		zebedeeClient := New(testHost)
-		zebedeeClient.cli = clienter
+	Convey("given a 404 response", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{StatusCode: http.StatusNotFound}, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
 		check := initialState
 
 		Convey("when zebedeeClient.Checker is called", func() {
@@ -306,7 +271,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 2)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 				So(doCalls[1].Req.URL.Path, ShouldEqual, "/healthcheck")
@@ -314,21 +279,11 @@ func TestClient_HealthChecker(t *testing.T) {
 		})
 	})
 
-	Convey("given clienter.Do returns 429 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 429,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
+	Convey("given a 429 response", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{StatusCode: http.StatusTooManyRequests}, nil)
+		httpClient.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		zebedeeClient := New(testHost)
-		zebedeeClient.cli = clienter
+		zebedeeClient := newZebedeeClient(httpClient)
 		check := initialState
 
 		Convey("when zebedeeClient.Checker is called", func() {
@@ -346,28 +301,16 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
 		})
 	})
 
-	Convey("given clienter.Do returns 200 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 200,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		zebedeeClient := New(testHost)
-		zebedeeClient.cli = clienter
+	Convey("given a 200 response", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{StatusCode: http.StatusOK}, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
 		check := initialState
 
 		Convey("when zebedeeClient.Checker is called", func() {
@@ -385,10 +328,30 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
 		})
 	})
+}
+
+func newMockHTTPClient(r *http.Response, err error) *dphttp.ClienterMock {
+	return &dphttp.ClienterMock{
+		SetPathsWithNoRetriesFunc: func(paths []string) {
+			return
+		},
+		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			return r, err
+		},
+		GetPathsWithNoRetriesFunc: func() []string {
+			return []string{"/healthcheck"}
+		},
+	}
+}
+
+func newZebedeeClient(httpClient *dphttp.ClienterMock) *Client {
+	healthClient := health.NewClientWithClienter("", testHost, httpClient)
+	zebedeeClient := NewWithHealthClient(healthClient)
+	return zebedeeClient
 }
