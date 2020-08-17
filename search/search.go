@@ -11,7 +11,6 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
 )
 
@@ -55,29 +54,27 @@ var _ error = ErrInvalidSearchAPIResponse{}
 
 // Client is a search api client that can be used to make requests to the server
 type Client struct {
-	cli dphttp.Clienter
-	url string
+	hcCli *healthcheck.Client
 }
 
 // New creates a new instance of Client with a given search api url
 func New(searchAPIURL string) *Client {
-	hcClient := healthcheck.NewClient(service, searchAPIURL)
-
 	return &Client{
-		cli: hcClient.Client,
-		url: searchAPIURL,
+		healthcheck.NewClient(service, searchAPIURL),
+	}
+}
+
+// NewWithHealthClient creates a new instance of Client,
+// reusing the URL and Clienter from the provided health check client.
+func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
+	return &Client{
+		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
 	}
 }
 
 // Checker calls search api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
-	hcClient := healthcheck.Client{
-		Client: c.cli,
-		URL:    c.url,
-		Name:   service,
-	}
-
-	return hcClient.Checker(ctx, check)
+	return c.hcCli.Checker(ctx, check)
 }
 
 // Dimension allows the searching of a dimension for a specific dimension option, optionally
@@ -97,7 +94,7 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 	}
 
 	uri := fmt.Sprintf("%s/search/datasets/%s/editions/%s/versions/%s/dimensions/%s?",
-		c.url,
+		c.hcCli.URL,
 		datasetID,
 		edition,
 		version,
@@ -127,7 +124,7 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 		}
 	}
 
-	resp, err := c.cli.Do(ctx, req)
+	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return nil, err
 	}

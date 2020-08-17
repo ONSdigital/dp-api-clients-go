@@ -38,8 +38,8 @@ func TestSearchUnit(t *testing.T) {
 
 	Convey("test New creates a valid Client instance", t, func() {
 		cli := New("http://localhost:22000")
-		So(cli.url, ShouldEqual, "http://localhost:22000")
-		So(cli.cli, ShouldHaveSameTypeAs, dphttp.DefaultClient)
+		So(cli.hcCli.URL, ShouldEqual, "http://localhost:22000")
+		So(cli.hcCli.Client, ShouldHaveSameTypeAs, dphttp.DefaultClient)
 	})
 
 	Convey("test Dimension Method", t, func() {
@@ -49,6 +49,8 @@ func TestSearchUnit(t *testing.T) {
 		Convey("test Dimension successfully returns a model upon a 200 response from search api", func() {
 
 			mockClient := &dphttp.ClienterMock{
+				GetPathsWithNoRetriesFunc: func() []string { return []string{} },
+				SetPathsWithNoRetriesFunc: func([]string) {},
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return &http.Response{
 						StatusCode: http.StatusOK,
@@ -57,10 +59,8 @@ func TestSearchUnit(t *testing.T) {
 				},
 			}
 
-			searchCli := &Client{
-				cli: mockClient,
-				url: "http://localhost:22000",
-			}
+			hcCli := health.NewClientWithClienter(service, "http://localhost:22000", mockClient)
+			searchCli := NewWithHealthClient(hcCli)
 
 			ctx := context.Background()
 
@@ -87,15 +87,15 @@ func TestSearchUnit(t *testing.T) {
 
 		Convey("test Dimension returns error from HTTPClient if it throws an error", func() {
 			mockClient := &dphttp.ClienterMock{
+				GetPathsWithNoRetriesFunc: func() []string { return []string{} },
+				SetPathsWithNoRetriesFunc: func([]string) {},
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return nil, errors.New(clientErrText)
 				},
 			}
 
-			searchCli := &Client{
-				cli: mockClient,
-				url: "http://localhost:22000",
-			}
+			hcCli := health.NewClientWithClienter(service, "http://localhost:22000", mockClient)
+			searchCli := NewWithHealthClient(hcCli)
 
 			m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
 			So(err.Error(), ShouldEqual, clientErrText)
@@ -106,15 +106,15 @@ func TestSearchUnit(t *testing.T) {
 
 			searchErr := errors.New("invalid response from search api - should be: 200, got: 400, path: http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=1&offset=1&q=Newport")
 			mockClient := &dphttp.ClienterMock{
+				GetPathsWithNoRetriesFunc: func() []string { return []string{} },
+				SetPathsWithNoRetriesFunc: func([]string) {},
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return nil, searchErr
 				},
 			}
 
-			searchCli := &Client{
-				cli: mockClient,
-				url: "http://localhost:22000",
-			}
+			hcCli := health.NewClientWithClienter(service, "http://localhost:22000", mockClient)
+			searchCli := NewWithHealthClient(hcCli)
 
 			m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Limit: &limit, Offset: &offset})
 			So(err, ShouldEqual, searchErr)
@@ -124,6 +124,8 @@ func TestSearchUnit(t *testing.T) {
 		Convey("test Dimension uses default search limit when no limit config provided", func() {
 
 			mockClient := &dphttp.ClienterMock{
+				GetPathsWithNoRetriesFunc: func() []string { return []string{} },
+				SetPathsWithNoRetriesFunc: func([]string) {},
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return &http.Response{
 						StatusCode: http.StatusOK,
@@ -132,10 +134,8 @@ func TestSearchUnit(t *testing.T) {
 				},
 			}
 
-			searchCli := &Client{
-				cli: mockClient,
-				url: "http://localhost:22000",
-			}
+			hcCli := health.NewClientWithClienter(service, "http://localhost:22000", mockClient)
+			searchCli := NewWithHealthClient(hcCli)
 
 			Convey("when dimension search is called", func() {
 				m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Offset: &offset})
@@ -172,15 +172,15 @@ func TestSearchUnit(t *testing.T) {
 		Convey("test Dimension no limit returns error from HTTPClient if it throws an error", func() {
 
 			mockClient := &dphttp.ClienterMock{
+				GetPathsWithNoRetriesFunc: func() []string { return []string{} },
+				SetPathsWithNoRetriesFunc: func([]string) {},
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return nil, errors.New(clientErrText)
 				},
 			}
 
-			searchCli := &Client{
-				cli: mockClient,
-				url: "http://localhost:22000",
-			}
+			hcCli := health.NewClientWithClienter(service, "http://localhost:22000", mockClient)
+			searchCli := NewWithHealthClient(hcCli)
 
 			Convey("when search is called", func() {
 				m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Offset: &offset})
@@ -203,6 +203,8 @@ func TestSearchUnit(t *testing.T) {
 
 			expectedError := &ErrInvalidSearchAPIResponse{http.StatusOK, http.StatusTeapot, "http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=50&offset=1&q=Newport"}
 			mockClient := &dphttp.ClienterMock{
+				GetPathsWithNoRetriesFunc: func() []string { return []string{} },
+				SetPathsWithNoRetriesFunc: func([]string) {},
 				DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 					return &http.Response{
 						StatusCode: http.StatusTeapot,
@@ -211,10 +213,8 @@ func TestSearchUnit(t *testing.T) {
 				},
 			}
 
-			searchCli := &Client{
-				cli: mockClient,
-				url: "http://localhost:22000",
-			}
+			hcCli := health.NewClientWithClienter(service, "http://localhost:22000", mockClient)
+			searchCli := NewWithHealthClient(hcCli)
 
 			Convey("when search is called", func() {
 				m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Offset: &offset})
@@ -245,6 +245,7 @@ func TestClient_HealthChecker(t *testing.T) {
 		clientError := errors.New("disciples of the watch obey")
 
 		clienter := &dphttp.ClienterMock{
+			GetPathsWithNoRetriesFunc: func() []string { return []string{} },
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -254,8 +255,9 @@ func TestClient_HealthChecker(t *testing.T) {
 		}
 		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		searchClient := New(testHost)
-		searchClient.cli = clienter
+		hcCli := health.NewClientWithClienter(service, testHost, clienter)
+		searchClient := NewWithHealthClient(hcCli)
+
 		check := initialState
 
 		Convey("when searchClient.Checker is called", func() {
@@ -282,6 +284,7 @@ func TestClient_HealthChecker(t *testing.T) {
 
 	Convey("given clienter.Do returns 500 response", t, func() {
 		clienter := &dphttp.ClienterMock{
+			GetPathsWithNoRetriesFunc: func() []string { return []string{} },
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -293,8 +296,9 @@ func TestClient_HealthChecker(t *testing.T) {
 		}
 		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		searchClient := New(testHost)
-		searchClient.cli = clienter
+		hcCli := health.NewClientWithClienter(service, testHost, clienter)
+		searchClient := NewWithHealthClient(hcCli)
+
 		check := initialState
 
 		Convey("when searchClient.Checker is called", func() {
@@ -321,6 +325,7 @@ func TestClient_HealthChecker(t *testing.T) {
 
 	Convey("given clienter.Do returns 404 response", t, func() {
 		clienter := &dphttp.ClienterMock{
+			GetPathsWithNoRetriesFunc: func() []string { return []string{} },
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -332,8 +337,9 @@ func TestClient_HealthChecker(t *testing.T) {
 		}
 		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		searchClient := New(testHost)
-		searchClient.cli = clienter
+		hcCli := health.NewClientWithClienter(service, testHost, clienter)
+		searchClient := NewWithHealthClient(hcCli)
+
 		check := initialState
 
 		Convey("when searchClient.Checker is called", func() {
@@ -361,6 +367,7 @@ func TestClient_HealthChecker(t *testing.T) {
 
 	Convey("given clienter.Do returns 429 response", t, func() {
 		clienter := &dphttp.ClienterMock{
+			GetPathsWithNoRetriesFunc: func() []string { return []string{} },
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -372,8 +379,9 @@ func TestClient_HealthChecker(t *testing.T) {
 		}
 		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		searchClient := New(testHost)
-		searchClient.cli = clienter
+		hcCli := health.NewClientWithClienter(service, testHost, clienter)
+		searchClient := NewWithHealthClient(hcCli)
+
 		check := initialState
 
 		Convey("when searchClient.Checker is called", func() {
@@ -400,6 +408,7 @@ func TestClient_HealthChecker(t *testing.T) {
 
 	Convey("given clienter.Do returns 200 response", t, func() {
 		clienter := &dphttp.ClienterMock{
+			GetPathsWithNoRetriesFunc: func() []string { return []string{} },
 			SetPathsWithNoRetriesFunc: func(paths []string) {
 				return
 			},
@@ -411,8 +420,9 @@ func TestClient_HealthChecker(t *testing.T) {
 		}
 		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
 
-		searchClient := New(testHost)
-		searchClient.cli = clienter
+		hcCli := health.NewClientWithClienter(service, testHost, clienter)
+		searchClient := NewWithHealthClient(hcCli)
+
 		check := initialState
 
 		Convey("when searchClient.Checker is called", func() {
