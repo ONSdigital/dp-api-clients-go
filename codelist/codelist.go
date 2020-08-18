@@ -128,7 +128,7 @@ func (c *Client) GetIDNameMap(ctx context.Context, userAuthToken string, service
 
 	idNames := make(map[string]string)
 	for _, val := range vals.Items {
-		idNames[val.ID] = val.Label
+		idNames[val.Code] = val.Label
 	}
 
 	return idNames, nil

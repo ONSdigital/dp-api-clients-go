@@ -66,7 +66,7 @@ type CodesResults struct {
 
 // Item represents an individual code item returned by the codelist api
 type Item struct {
-	ID    string    `json:"id"`
+	Code  string    `json:"code"`
 	Label string    `json:"label"`
 	Links CodeLinks `json:"links"`
 }

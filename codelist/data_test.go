@@ -26,7 +26,7 @@ var testCodeListResults = CodeListResults{
 var testDimensionValues = DimensionValues{
 	Items: []Item{
 		{
-			ID:    "123",
+			Code:  "123",
 			Label: "Schwifty",
 		},
 	},
@@ -61,7 +61,7 @@ var codesResults = CodesResults{
 	Limit:      1,
 	Items: []Item{
 		{
-			ID:    "foo",
+			Code:  "foo",
 			Label: "bar",
 			Links: CodeLinks{
 				Self: Link{
