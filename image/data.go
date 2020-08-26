@@ -14,6 +14,7 @@ type Images struct {
 // NewImage represents the fields required to create a new Image
 type NewImage struct {
 	CollectionId string  `json:"collection_id,omitempty"`
+	State        string  `json:"state,omitempty"`
 	Filename     string  `json:"filename,omitempty"`
 	License      License `json:"license,omitempty"`
 	Type         string  `json:"type,omitempty"`
@@ -42,9 +43,9 @@ type Image struct {
 	//- failed_publish
 	Filename string      `json:"filename,omitempty"`
 	License  License     `json:"license,omitempty"`
+	Links    *ImageLinks `json:"links,omitempty"`
 	Upload   ImageUpload `json:"upload,omitempty"`
 	Type     string      `json:"type,omitempty"`
-	Links    *ImageLinks `json:"links,omitempty"`
 }
 
 // ImageUpload represents the fields for an Image Upload
@@ -70,15 +71,15 @@ type ImageDownloads struct {
 // ImageDownload represents the fields for an Image Download
 type ImageDownload struct {
 	Id      string              `json:"id,omitempty"`
-	Size    int                 `json:"size,omitempty"`
+	Height  *int                `json:"height,omitempty"`
+	Href    string              `json:"href,omitempty"`
 	Palette string              `json:"palette,omitempty"`
+	Private string              `json:"private,omitempty"`
+	Public  bool                `json:"public,omitempty"`
+	Size    int                 `json:"size,omitempty"`
 	Type    string              `json:"type,omitempty"`
 	Width   *int                `json:"width,omitempty"`
-	Height  *int                `json:"height,omitempty"`
-	Public  bool                `json:"public,omitempty"`
-	Href    string              `json:"href,omitempty"`
 	Links   *ImageDownloadLinks `json:"links,omitempty"`
-	Private string              `json:"private,omitempty"`
 	State   string              `json:"state,omitempty"`
 	//enum:
 	//- pending
