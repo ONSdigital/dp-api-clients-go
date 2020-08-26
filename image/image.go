@@ -133,7 +133,7 @@ func (c *Client) PostImage(ctx context.Context, userAuthToken, serviceAuthToken,
 	}
 	defer closeResponseBody(ctx, resp)
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusCreated {
 		err = NewImageAPIResponse(resp, uri)
 		return
 	}

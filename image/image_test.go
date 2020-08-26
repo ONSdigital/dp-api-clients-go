@@ -330,11 +330,11 @@ func TestClient_PostImage(t *testing.T) {
 		Type: "animal",
 	}
 
-	Convey("given a 200 status is returned", t, func() {
+	Convey("given a 201 status is returned", t, func() {
 		searchResp, err := ioutil.ReadFile("./response_mocks/image.json")
 		So(err, ShouldBeNil)
 
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
+		mockdphttpCli := createHTTPClientMock(http.StatusCreated, searchResp)
 		cli := createImageAPIWithClienter(mockdphttpCli)
 		expectedPayload, err := json.Marshal(newImage)
 		So(err, ShouldBeNil)
