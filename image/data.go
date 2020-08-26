@@ -95,6 +95,20 @@ type ImageDownload struct {
 	PublishCompleted *time.Time `json:"publish_completed,omitempty"`
 }
 
+// ImageDownload represents the fields for an Image Download
+type NewImageDownload struct {
+	Id      string `json:"id,omitempty"`
+	Height  *int   `json:"height,omitempty"`
+	Palette string `json:"palette,omitempty"`
+	Size    int    `json:"size,omitempty"`
+	Type    string `json:"type,omitempty"`
+	Width   *int   `json:"width,omitempty"`
+	State   string `json:"state,omitempty"`
+	//enum:
+	//- importing
+	ImportStarted *time.Time `json:"import_started,omitempty"`
+}
+
 // ImageDownloadLinks represents the fields for the image download HATEOAS links
 type ImageDownloadLinks struct {
 	Self  string `json:"self"`

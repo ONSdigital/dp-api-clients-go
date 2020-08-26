@@ -584,6 +584,62 @@ func TestClient_GetDownloadVariants(t *testing.T) {
 	})
 }
 
+func TestClient_PostDownloadVariant(t *testing.T) {
+
+	newDownload := NewImageDownload{
+		Id: "original",
+	}
+	imageID := "12345"
+
+	Convey("given a 201 status is returned", t, func() {
+		searchResp, err := ioutil.ReadFile("./response_mocks/download.json")
+		So(err, ShouldBeNil)
+
+		mockdphttpCli := createHTTPClientMock(http.StatusCreated, searchResp)
+		cli := createImageAPIWithClienter(mockdphttpCli)
+		expectedPayload, err := json.Marshal(newDownload)
+		So(err, ShouldBeNil)
+
+		Convey("when PostInstanceDimensions is called", func() {
+			m, err := cli.PostDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, imageID, newDownload)
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+				So(m.Id, ShouldResemble, "original")
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockdphttpCli, http.MethodPost, "/images/12345/downloads")
+				payload, err := ioutil.ReadAll(mockdphttpCli.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		mockdphttpCli := createHTTPClientMock(http.StatusNotFound, []byte("wrong!"))
+		cli := createImageAPIWithClienter(mockdphttpCli)
+		expectedPayload, err := json.Marshal(newDownload)
+		So(err, ShouldBeNil)
+
+		Convey("when PostInstanceDimensions is called", func() {
+			_, err := cli.PostDownloadVariant(ctx, userAuthToken, serviceAuthToken, collectionID, imageID, newDownload)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from image api: http://localhost:8080/images/12345/downloads, body: wrong!").Error())
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(mockdphttpCli, http.MethodPost, "/images/12345/downloads")
+				payload, err := ioutil.ReadAll(mockdphttpCli.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
+			})
+		})
+	})
+}
+
 func TestClient_GetDownloadVariant(t *testing.T) {
 	Convey("given a 200 status is returned", t, func() {
 		searchResp, err := ioutil.ReadFile("./response_mocks/download.json")

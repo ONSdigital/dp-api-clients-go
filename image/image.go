@@ -242,6 +242,40 @@ func (c *Client) GetDownloadVariants(ctx context.Context, userAuthToken, service
 	return
 }
 
+// PostDownloadVariant adds a new download variant to the specified image
+func (c *Client) PostDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID string, data NewImageDownload) (m ImageDownload, err error) {
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+
+	uri := fmt.Sprintf("%s/images/%s/downloads", c.hcCli.URL, imageID)
+
+	clientlog.Do(ctx, "posting new image download variant", service, uri)
+
+	resp, err := c.doPostWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusCreated {
+		err = NewImageAPIResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(b, &m); err != nil {
+		return
+	}
+
+	return
+}
+
 // GetDownloadVariant returns a requested download variant for an image
 func (c *Client) GetDownloadVariant(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, imageID, variant string) (m ImageDownload, err error) {
 	uri := fmt.Sprintf("%s/images/%s/downloads/%s", c.hcCli.URL, imageID, variant)
