@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ONSdigital/dp-api-clients-go/headers"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	"github.com/ONSdigital/dp-mocking/httpmocks"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
@@ -30,8 +31,8 @@ func TestHandler_NoAuth(t *testing.T) {
 	Convey("Given a request with no auth headers", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-		httpClient := &dphttp.ClienterMock{}
-		idClient := NewAPIClient(httpClient, zebedeeURL)
+		httpClient := newMockHTTPClient()
+		idClient := NewWithHealthClient(healthcheck.NewClientWithClienter("", zebedeeURL, httpClient))
 
 		Convey("When CheckRequest is called", func() {
 
@@ -58,10 +59,9 @@ func TestHandler_IdentityServiceError(t *testing.T) {
 	Convey("Given a request with a florence token, and a mock client that returns an error", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-
 		expectedError := errors.New("broken")
 		httpClient := getClientReturningError(expectedError)
-		idClient := NewAPIClient(httpClient, zebedeeURL)
+		idClient := NewWithHealthClient(healthcheck.NewClientWithClienter("", zebedeeURL, httpClient))
 
 		Convey("When CheckRequest is called", func() {
 
@@ -90,13 +90,11 @@ func TestHandler_IdentityServiceErrorResponseCode(t *testing.T) {
 		req := httptest.NewRequest("GET", url, nil)
 		body := httpmocks.NewReadCloserMock([]byte{}, nil)
 		authResp := httpmocks.NewResponseMock(body, http.StatusNotFound)
-		httpClient := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return authResp, nil
-			},
+		httpClient := newMockHTTPClient()
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			return authResp, nil
 		}
-
-		idClient := NewAPIClient(httpClient, zebedeeURL)
+		idClient := NewWithHealthClient(healthcheck.NewClientWithClienter("", zebedeeURL, httpClient))
 
 		Convey("When CheckRequest is called", func() {
 
@@ -128,9 +126,8 @@ func TestHandler_florenceToken(t *testing.T) {
 	Convey("Given a request with a florence token, and mock client that returns 200", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-
 		httpClient, body, _ := getClientReturningIdentifier(t, userIdentifier)
-		idClient := NewAPIClient(httpClient, zebedeeURL)
+		idClient := NewWithHealthClient(healthcheck.NewClientWithClienter("", zebedeeURL, httpClient))
 
 		Convey("When CheckRequest is called", func() {
 
@@ -159,10 +156,10 @@ func TestHandler_florenceToken(t *testing.T) {
 	})
 
 	Convey("Given a request with a florence token as a cookie, and mock client that returns 200", t, func() {
-		req := httptest.NewRequest("GET", url, nil)
 
+		req := httptest.NewRequest("GET", url, nil)
 		httpClient, body, _ := getClientReturningIdentifier(t, userIdentifier)
-		idClient := NewAPIClient(httpClient, zebedeeURL)
+		idClient := NewWithHealthClient(healthcheck.NewClientWithClienter("", zebedeeURL, httpClient))
 
 		Convey("When CheckRequest is called", func() {
 
@@ -196,17 +193,14 @@ func TestHandler_InvalidIdentityResponse(t *testing.T) {
 	Convey("Given a request with a florence token, and mock client that returns invalid response JSON", t, func() {
 
 		req := httptest.NewRequest("GET", url, nil)
-
 		b := []byte("{ invalid JSON")
 		body := httpmocks.NewReadCloserMock(b, nil)
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
-
-		httpClient := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return resp, nil
-			},
+		httpClient := newMockHTTPClient()
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			return resp, nil
 		}
-		idClient := NewAPIClient(httpClient, zebedeeURL)
+		idClient := NewWithHealthClient(healthcheck.NewClientWithClienter("", zebedeeURL, httpClient))
 
 		Convey("When CheckRequest is called", func() {
 
@@ -243,13 +237,11 @@ func TestHandler_ReadBodyError(t *testing.T) {
 		expectedErr := errors.New("cause i'm tnt i'm dynamite tnt and i'll win the fight")
 		body := httpmocks.NewReadCloserMock(nil, expectedErr)
 		resp := httpmocks.NewResponseMock(body, http.StatusOK)
-
-		httpClient := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return resp, nil
-			},
+		httpClient := newMockHTTPClient()
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			return resp, nil
 		}
-		idClient := NewAPIClient(httpClient, zebedeeURL)
+		idClient := NewWithHealthClient(healthcheck.NewClientWithClienter("", zebedeeURL, httpClient))
 
 		Convey("When CheckRequest is called", func() {
 
@@ -277,13 +269,11 @@ func TestHandler_ReadBodyError(t *testing.T) {
 func TestHandler_NewAuthRequestError(t *testing.T) {
 	Convey("Given creating a new auth request returns an error", t, func() {
 		req := httptest.NewRequest("GET", url, nil)
-
-		httpClient := &dphttp.ClienterMock{
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return nil, nil
-			},
+		httpClient := newMockHTTPClient()
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			return nil, nil
 		}
-		idClient := NewAPIClient(httpClient, "£$%^&*(((((")
+		idClient := NewWithHealthClient(healthcheck.NewClientWithClienter("", "£$%^&*(((((", httpClient))
 
 		Convey("When CheckRequest is called", func() {
 
@@ -309,9 +299,8 @@ func TestHandler_authToken(t *testing.T) {
 		req.Header = map[string][]string{
 			dprequest.UserHeaderKey: {userIdentifier},
 		}
-
 		httpClient, body, _ := getClientReturningIdentifier(t, callerIdentifier)
-		idClient := NewAPIClient(httpClient, zebedeeURL)
+		idClient := NewWithHealthClient(healthcheck.NewClientWithClienter("", zebedeeURL, httpClient))
 
 		Convey("When CheckRequest is called", func() {
 
@@ -357,9 +346,8 @@ func TestHandler_bothTokens(t *testing.T) {
 			dprequest.FlorenceHeaderKey: {florenceToken},
 			dprequest.AuthHeaderKey:     {callerAuthToken},
 		}
-
 		httpClient, body, _ := getClientReturningIdentifier(t, userIdentifier)
-		idClient := NewAPIClient(httpClient, zebedeeURL)
+		idClient := NewWithHealthClient(healthcheck.NewClientWithClienter("", zebedeeURL, httpClient))
 
 		Convey("When CheckRequest is called", func() {
 
@@ -453,23 +441,32 @@ func TestSplitTokens(t *testing.T) {
 
 }
 
+func newMockHTTPClient() *dphttp.ClienterMock {
+	return &dphttp.ClienterMock{
+		SetPathsWithNoRetriesFunc: func(paths []string) {
+			return
+		},
+		GetPathsWithNoRetriesFunc: func() []string {
+			return []string{"/healthcheck"}
+		},
+	}
+}
+
 func getClientReturningIdentifier(t *testing.T, id string) (*dphttp.ClienterMock, *httpmocks.ReadCloserMock, *http.Response) {
 	b := httpmocks.GetEntityBytes(t, &dprequest.IdentityResponse{Identifier: id})
 	body := httpmocks.NewReadCloserMock(b, nil)
 	resp := httpmocks.NewResponseMock(body, http.StatusOK)
-	cli := &dphttp.ClienterMock{
-		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-			return resp, nil
-		},
+	cli := newMockHTTPClient()
+	cli.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+		return resp, nil
 	}
-
 	return cli, body, resp
 }
 
 func getClientReturningError(err error) *dphttp.ClienterMock {
-	return &dphttp.ClienterMock{
-		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-			return nil, err
-		},
+	cli := newMockHTTPClient()
+	cli.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+		return nil, err
 	}
+	return cli
 }

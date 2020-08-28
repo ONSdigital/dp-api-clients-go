@@ -7,14 +7,16 @@ import (
 	"net/http"
 	"strings"
 
-	clients "github.com/ONSdigital/dp-api-clients-go"
 	"github.com/ONSdigital/dp-api-clients-go/headers"
-	dphttp "github.com/ONSdigital/dp-net/http"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 
 	"github.com/pkg/errors"
 )
+
+const service = "identity"
 
 var errUnableToIdentifyRequest = errors.New("unable to determine the user or service making the request")
 
@@ -40,28 +42,37 @@ func (t TokenType) String() string {
 	return tokenTypes[t]
 }
 
-// Client is an alias to a generic/common api client structure
-type Client clients.APIClient
-
-// Clienter provides an interface to checking identity of incoming request
-type Clienter interface {
-	CheckRequest(req *http.Request) (context.Context, int, authFailure, error)
+// Client is an identity client which can be used to make requests to the server
+type Client struct {
+	hcCli *healthcheck.Client
 }
 
-// NewAPIClient returns a Client
-func NewAPIClient(cli dphttp.Clienter, url string) (api *Client) {
+// New creates a new instance of Identity Client with a given zebedee url
+func New(zebedeeURL string) *Client {
 	return &Client{
-		HTTPClient: cli,
-		BaseURL:    url,
+		healthcheck.NewClient(service, zebedeeURL),
 	}
 }
 
-// authFailure is an alias to an error type, this represents the failure to
+// NewWithHealthClient creates a new instance of Client,
+// reusing the URL and Clienter from the provided health check client.
+func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
+	return &Client{
+		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
+	}
+}
+
+// Checker calls zebedee api health endpoint and returns a check object to the caller.
+func (api Client) Checker(ctx context.Context, check *health.CheckState) error {
+	return api.hcCli.Checker(ctx, check)
+}
+
+// AuthFailure is an alias to an error type, this represents the failure to
 // authenticate request over a generic error from a http or marshalling error
-type authFailure error
+type AuthFailure error
 
 // CheckRequest calls the AuthAPI to check florenceToken or serviceAuthToken
-func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToken string) (context.Context, int, authFailure, error) {
+func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToken string) (context.Context, int, AuthFailure, error) {
 	ctx := req.Context()
 
 	isUserReq := len(florenceToken) > 0
@@ -81,7 +92,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 	// Check token identity (according to isUserReq or isServiceReq)
 	var tokenIdentityResp *dprequest.IdentityResponse
 	var errTokenIdentity error
-	var authFail authFailure
+	var authFail AuthFailure
 	var statusCode int
 	if isUserReq {
 		tokenIdentityResp, statusCode, authFail, errTokenIdentity = api.doCheckTokenIdentity(ctx, florenceToken, TokenTypeUser, logData)
@@ -126,9 +137,9 @@ func (api Client) CheckTokenIdentity(ctx context.Context, token string, tokenTyp
 	return idRes, err
 }
 
-func (api Client) doCheckTokenIdentity(ctx context.Context, token string, tokenType TokenType, logData log.Data) (*dprequest.IdentityResponse, int, authFailure, error) {
+func (api Client) doCheckTokenIdentity(ctx context.Context, token string, tokenType TokenType, logData log.Data) (*dprequest.IdentityResponse, int, AuthFailure, error) {
 
-	url := api.BaseURL + "/identity"
+	url := api.hcCli.URL + "/identity"
 	logData["url"] = url
 	log.Event(ctx, "calling AuthAPI to authenticate caller identity", log.INFO, logData)
 
@@ -146,15 +157,8 @@ func (api Client) doCheckTokenIdentity(ctx context.Context, token string, tokenT
 		return nil, http.StatusInternalServerError, nil, errCreatingReq
 	}
 
-	// Create client if it does not exist
-	if api.HTTPClient == nil {
-		api.Lock.Lock()
-		api.HTTPClient = dphttp.NewClient()
-		api.Lock.Unlock()
-	}
-
 	// 'GET /identity' request
-	resp, err := api.HTTPClient.Do(ctx, outboundAuthReq)
+	resp, err := api.hcCli.Client.Do(ctx, outboundAuthReq)
 	if err != nil {
 		log.Event(ctx, "HTTPClient.Do returned error making AuthAPI identity request", log.ERROR, logData, log.Error(err))
 		return nil, http.StatusInternalServerError, nil, err
