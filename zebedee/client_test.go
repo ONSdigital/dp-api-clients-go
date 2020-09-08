@@ -35,6 +35,7 @@ func TestUnitClient(t *testing.T) {
 	cli := New(fmt.Sprintf("http://localhost:%d", port))
 
 	ctx := context.Background()
+	testCollectionID := "test-collection"
 
 	Convey("test get()", t, func() {
 
@@ -59,14 +60,14 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test getLanding successfully returns a landing model", t, func() {
-		m, err := cli.GetDatasetLandingPage(ctx, testAccessToken, "labour")
+		m, err := cli.GetDatasetLandingPage(ctx, testAccessToken, "", "", "labour")
 		So(err, ShouldBeNil)
 		So(m, ShouldNotBeEmpty)
 		So(m.Type, ShouldEqual, "dataset_landing_page")
 	})
 
 	Convey("GetHomepageContent() returns a homepage model", t, func() {
-		m, err := cli.GetHomepageContent(ctx, testAccessToken, "/")
+		m, err := cli.GetHomepageContent(ctx, testAccessToken, "", "", "/")
 		So(err, ShouldBeNil)
 		So(m, ShouldNotBeEmpty)
 		So(m.Intro.Title, ShouldEqual, "Welcome to the Office for National Statistics")
@@ -78,45 +79,41 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test get dataset details", t, func() {
-		d, err := cli.GetDataset(ctx, testAccessToken, "12345")
+		d, err := cli.GetDataset(ctx, testAccessToken, "", "", "12345")
 		So(err, ShouldBeNil)
 		So(d.URI, ShouldEqual, "www.google.com")
 		So(d.SupplementaryFiles[0].Title, ShouldEqual, "helloworld")
 	})
 
 	Convey("test getFileSize returns human readable filesize", t, func() {
-		fs, err := cli.GetFileSize(ctx, testAccessToken, "filesize")
+		fs, err := cli.GetFileSize(ctx, testAccessToken, "", "", "filesize")
 		So(err, ShouldBeNil)
 		So(fs.Size, ShouldEqual, 5242880)
 	})
 
 	Convey("test getPageTitle returns a correctly formatted page title", t, func() {
-		t, err := cli.GetPageTitle(ctx, testAccessToken, "pageTitle")
+		t, err := cli.GetPageTitle(ctx, testAccessToken, "", "", "pageTitle")
 		So(err, ShouldBeNil)
 		So(t.Title, ShouldEqual, "baby-names")
 		So(t.Edition, ShouldEqual, "2017")
 	})
 
 	Convey("test createRequestURL", t, func() {
-		Convey("test collection ID is added to URL when collection ID is present in context", func() {
-			ctx := context.WithValue(ctx, dprequest.CollectionIDHeaderKey, "test1234567")
-			url := cli.createRequestURL(ctx, "/data", "uri=/test/path/123")
-			So(url, ShouldEqual, "/data/test1234567?uri=%2Ftest%2Fpath%2F123")
+		Convey("test collection ID is added to URL when collection ID is passed", func() {
+			url := cli.createRequestURL(ctx, testCollectionID, "", "/data", "uri=/test/path/123")
+			So(url, ShouldEqual, "/data/test-collection?uri=%2Ftest%2Fpath%2F123")
 		})
-		Convey("test collection ID is not added to URL when collection ID is not present in context", func() {
-			url := cli.createRequestURL(ctx, "/data", "uri=/test/path/123")
+		Convey("test collection ID is not added to URL when empty collection ID is passed", func() {
+			url := cli.createRequestURL(ctx, "", "", "/data", "uri=/test/path/123")
 			So(url, ShouldEqual, "/data?uri=%2Ftest%2Fpath%2F123")
 		})
-		Convey("test lang query parameter is added to URL when locale code is present in context", func() {
-			ctx := context.WithValue(ctx, dprequest.LocaleHeaderKey, "cy")
-			url := cli.createRequestURL(ctx, "/data", "uri=/test/path/123")
+		Convey("test lang query parameter is added to URL when locale code is passed", func() {
+			url := cli.createRequestURL(ctx, "", "cy", "/data", "uri=/test/path/123")
 			So(url, ShouldEqual, "/data?uri=%2Ftest%2Fpath%2F123&lang=cy")
 		})
-		Convey("test collection ID and lang query parameter are added to URL when collection ID and locale code are present in context", func() {
-			ctx := context.WithValue(ctx, dprequest.CollectionIDHeaderKey, "test1234567")
-			ctx = context.WithValue(ctx, dprequest.LocaleHeaderKey, "cy")
-			url := cli.createRequestURL(ctx, "/data", "uri=/test/path/123")
-			So(url, ShouldEqual, "/data/test1234567?uri=%2Ftest%2Fpath%2F123&lang=cy")
+		Convey("test collection ID and lang query parameter are added to URL when collection ID and locale code are present", func() {
+			url := cli.createRequestURL(ctx, testCollectionID, "cy", "/data", "uri=/test/path/123")
+			So(url, ShouldEqual, "/data/test-collection?uri=%2Ftest%2Fpath%2F123&lang=cy")
 		})
 	})
 }
