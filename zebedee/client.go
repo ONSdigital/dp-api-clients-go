@@ -17,7 +17,6 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
-	"github.com/ONSdigital/log.go/log"
 )
 
 const service = "zebedee"
@@ -91,8 +90,8 @@ func (c *Client) GetWithHeaders(ctx context.Context, userAccessToken, path strin
 
 // GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
 // is returned there is a chance that a partly completed DatasetLandingPage is returned
-func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, path string) (DatasetLandingPage, error) {
-	reqURL := c.createRequestURL(ctx, "/data", "uri="+path)
+func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, collectionID, lang, path string) (DatasetLandingPage, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+path)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
 		return DatasetLandingPage{}, err
@@ -123,7 +122,7 @@ func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, pat
 					<-sem
 					wg.Done()
 				}()
-				t, _ := c.GetPageTitle(ctx, userAccessToken, e.URI)
+				t, _ := c.GetPageTitle(ctx, userAccessToken, collectionID, lang, e.URI)
 				element[i].Title = t.Title
 			}(i, e, element)
 		}
@@ -157,7 +156,7 @@ func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte,
 }
 
 // GetBreadcrumb returns a Breadcrumb
-func (c *Client) GetBreadcrumb(ctx context.Context, userAccessToken, uri string) ([]Breadcrumb, error) {
+func (c *Client) GetBreadcrumb(ctx context.Context, userAccessToken, collectionID, lang, uri string) ([]Breadcrumb, error) {
 	b, _, err := c.get(ctx, userAccessToken, "/parents?uri="+uri)
 	if err != nil {
 		return nil, err
@@ -172,8 +171,8 @@ func (c *Client) GetBreadcrumb(ctx context.Context, userAccessToken, uri string)
 }
 
 // GetDataset returns details about a dataset from zebedee
-func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (Dataset, error) {
-	reqURL := c.createRequestURL(ctx, "/data", "uri="+uri)
+func (c *Client) GetDataset(ctx context.Context, userAccessToken, collectionID, lang, uri string) (Dataset, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 
 	if err != nil {
@@ -188,7 +187,7 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (D
 	downloads := make([]Download, 0)
 
 	for _, v := range d.Downloads {
-		fs, err := c.GetFileSize(ctx, userAccessToken, uri+"/"+v.File)
+		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+v.File)
 		if err != nil {
 			return d, err
 		}
@@ -203,7 +202,7 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (D
 
 	supplementaryFiles := make([]SupplementaryFile, 0)
 	for _, v := range d.SupplementaryFiles {
-		fs, err := c.GetFileSize(ctx, userAccessToken, uri+"/"+v.File)
+		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+v.File)
 		if err != nil {
 			return d, err
 		}
@@ -220,8 +219,8 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, uri string) (D
 	return d, nil
 }
 
-func (c *Client) GetHomepageContent(ctx context.Context, userAccessToken, path string) (HomepageContent, error) {
-	reqURL := c.createRequestURL(ctx, "/data", "uri="+path)
+func (c *Client) GetHomepageContent(ctx context.Context, userAccessToken, collectionID, lang, path string) (HomepageContent, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+path)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
 		return HomepageContent{}, err
@@ -236,8 +235,8 @@ func (c *Client) GetHomepageContent(ctx context.Context, userAccessToken, path s
 }
 
 // GetFileSize retrieves a given filesize from zebedee
-func (c *Client) GetFileSize(ctx context.Context, userAccessToken, uri string) (FileSize, error) {
-	reqURL := c.createRequestURL(ctx, "/filesize", "uri="+uri)
+func (c *Client) GetFileSize(ctx context.Context, userAccessToken, collectionID, lang, uri string) (FileSize, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/filesize", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
 		return FileSize{}, err
@@ -252,8 +251,8 @@ func (c *Client) GetFileSize(ctx context.Context, userAccessToken, uri string) (
 }
 
 // GetPageTitle retrieves a page title from zebedee
-func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, uri string) (PageTitle, error) {
-	reqURL := c.createRequestURL(ctx, "/data", "uri="+uri+"&title")
+func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, collectionID, lang, uri string) (PageTitle, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri+"&title")
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
 		return PageTitle{}, err
@@ -267,8 +266,8 @@ func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, uri string) 
 	return pt, nil
 }
 
-func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, uri string) (TimeseriesMainFigure, error) {
-	reqURL := c.createRequestURL(ctx, "/data", "uri="+uri)
+func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, collectionID, lang, uri string) (TimeseriesMainFigure, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 
 	if err != nil {
@@ -283,25 +282,15 @@ func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, u
 	return ts, nil
 }
 
-func (c *Client) createRequestURL(ctx context.Context, path, query string) string {
-	// Check if collection ID is set in context
-	if ctx.Value(dprequest.CollectionIDHeaderKey) != nil {
-		collectionID, ok := ctx.Value(dprequest.CollectionIDHeaderKey).(string)
-		if !ok {
-			log.Event(ctx, "unable to find collection ID header key", log.ERROR, log.Error(errCastingCollectionID))
-		}
+func (c *Client) createRequestURL(ctx context.Context, collectionID, lang, path, query string) string {
+	if len(collectionID) > 0 {
 		path += "/" + collectionID
 	}
 
 	path += "?" + url.PathEscape(query)
 
-	// Check if locale code is set in context and add lang query param to url
-	if ctx.Value(dprequest.LocaleHeaderKey) != nil {
-		localeCode, ok := ctx.Value(dprequest.LocaleHeaderKey).(string)
-		if !ok {
-			log.Event(ctx, "unable to find local header key", log.ERROR, log.Error(errCastingLocalCode))
-		}
-		path += "&lang=" + localeCode
+	if len(lang) > 0 {
+		path += "&lang=" + lang
 	}
 
 	return path
