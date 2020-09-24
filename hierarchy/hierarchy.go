@@ -125,7 +125,6 @@ func (c *Client) getHierarchy(ctx context.Context, path string) (Model, error) {
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
-		//return m, &ErrInvalidHierarchyAPIResponse{http.StatusOK, resp.StatusCode, path}
 		return m, NewErrInvalidHierarchyAPIResponse(http.StatusOK, resp.StatusCode, path)
 	}
 
