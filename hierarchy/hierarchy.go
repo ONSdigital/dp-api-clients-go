@@ -23,6 +23,15 @@ type ErrInvalidHierarchyAPIResponse struct {
 	uri          string
 }
 
+// NewErrInvalidHierarchyAPIResponse construct a new ErrInvalidHierarchyAPIResponse from the values provided.
+func NewErrInvalidHierarchyAPIResponse(expectedCode, actualCode int, uri string) error {
+	return &ErrInvalidHierarchyAPIResponse{
+		expectedCode: expectedCode,
+		actualCode:   actualCode,
+		uri:          uri,
+	}
+}
+
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidHierarchyAPIResponse) Error() string {
 	return fmt.Sprintf("invalid response from hierarchy api - should be: %d, got: %d, path: %s",
@@ -73,7 +82,8 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
 
-// GetRoot returns the root hierarchy response from the hierarchy API
+// GetRoot returns the root hierarchy response from the hierarchy API. Returns a ErrInvalidHierarchyAPIResponse if the
+// hierarchy API response status code is not as expected.
 func (c *Client) GetRoot(ctx context.Context, instanceID, name string) (Model, error) {
 	path := fmt.Sprintf("/hierarchies/%s/%s", instanceID, name)
 
@@ -115,7 +125,7 @@ func (c *Client) getHierarchy(ctx context.Context, path string) (Model, error) {
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
-		return m, &ErrInvalidHierarchyAPIResponse{http.StatusOK, resp.StatusCode, path}
+		return m, NewErrInvalidHierarchyAPIResponse(http.StatusOK, resp.StatusCode, path)
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
