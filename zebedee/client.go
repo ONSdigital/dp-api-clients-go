@@ -29,15 +29,15 @@ type Client struct {
 // ErrInvalidZebedeeResponse is returned when zebedee does not respond
 // with a valid status
 type ErrInvalidZebedeeResponse struct {
-	actualCode int
-	uri        string
+	ActualCode int
+	URI        string
 }
 
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidZebedeeResponse) Error() string {
 	return fmt.Sprintf("invalid response from zebedee - should be 2.x.x or 3.x.x, got: %d, path: %s",
-		e.actualCode,
-		e.uri,
+		e.ActualCode,
+		e.URI,
 	)
 }
 
@@ -280,6 +280,14 @@ func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, c
 	}
 
 	return ts, nil
+}
+
+func (c *Client) GetResourceBody(ctx context.Context, userAccessToken, collectionID, lang, uri string) ([]byte, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/resource", "uri="+uri)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
+
+	return b, err
+
 }
 
 func (c *Client) createRequestURL(ctx context.Context, collectionID, lang, path, query string) string {
