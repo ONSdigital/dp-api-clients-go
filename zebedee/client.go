@@ -282,6 +282,7 @@ func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, c
 	return ts, nil
 }
 
+// GetResourceBody returns body of a resource e.g. JSON definition of a table
 func (c *Client) GetResourceBody(ctx context.Context, userAccessToken, collectionID, lang, uri string) ([]byte, error) {
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/resource", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
