@@ -8,6 +8,7 @@ type Response struct {
 	Suggestions  []string      `json:"suggestions,omitempty"`
 }
 
+// ContentType represents the specific content type for the search results with its respective count
 type ContentType struct {
 	Type  string `json:"type"`
 	Count int    `json:"count"`
