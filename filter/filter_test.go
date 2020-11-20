@@ -768,7 +768,7 @@ func TestClient_AddDimensionValues(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimensionValues is called", func() {
-			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{}, batchSize)
+			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{"abc"}, batchSize)
 
 			Convey("then the expected error is returned", func() {
 				So(err, ShouldNotBeNil)
@@ -786,7 +786,7 @@ func TestClient_AddDimensionValues(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimensionValues is called", func() {
-			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{}, batchSize)
+			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{"abc"}, batchSize)
 
 			Convey("then the expected error is returned", func() {
 				expectedErr := ErrInvalidFilterAPIResponse{
