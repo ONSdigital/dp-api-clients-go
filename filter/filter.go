@@ -401,6 +401,7 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 
 // AddDimensionValues creates a
 func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, values []string) error {
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
 
 	patchBody := request.Patch{
 		Op:    request.OpAdd.String(),
@@ -408,29 +409,14 @@ func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceA
 		Value: values,
 	}
 
-	b, err := json.Marshal(patchBody)
-	if err != nil {
-		return err
-	}
-
-	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
-	req, err := http.NewRequest(http.MethodPatch, uri, bytes.NewBuffer(b))
-	if err != nil {
-		return err
-	}
-
-	clientlog.Do(ctx, "attempting to patch a dimension options list", service, uri, log.Data{
+	clientlog.Do(ctx, "attempting to patch (add) a dimension options list", service, uri, log.Data{
 		"method":         http.MethodPatch,
 		"collection_id":  collectionID,
 		"filter_id":      filterID,
 		"dimension_name": name,
 	})
 
-	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
-
-	resp, err := c.hcCli.Client.Do(ctx, req)
+	resp, err := c.doPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, patchBody)
 	if err != nil {
 		return err
 	}
@@ -449,6 +435,8 @@ func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceA
 	// - We loop through this slice and make the PATCH request to the Filter API
 	// - If any request fails, return err to controller
 }
+
+// TODO create generic batch processing method, to be used by both add and remove patches.
 
 // RemoveDimensionValue removes a particular value to a filter job for a given filterID
 // and name
@@ -477,6 +465,35 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 
 	if resp.StatusCode != http.StatusNoContent {
 		return &ErrInvalidFilterAPIResponse{http.StatusNoContent, resp.StatusCode, uri}
+	}
+	return nil
+}
+
+func (c *Client) RemoveDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, values []string) error {
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
+
+	patchBody := request.Patch{
+		Op:    request.OpRemove.String(),
+		Path:  "/options/-",
+		Value: values,
+	}
+
+	clientlog.Do(ctx, "attempting to patch (remove) a dimension options list", service, uri, log.Data{
+		"method":         http.MethodPatch,
+		"collection_id":  collectionID,
+		"filter_id":      filterID,
+		"dimension_name": name,
+	})
+
+	resp, err := c.doPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, patchBody)
+	if err != nil {
+		return err
+	}
+
+	defer CloseResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
 	return nil
 }
@@ -677,5 +694,32 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	headers.SetUserAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceAuthToken)
+	return c.hcCli.Client.Do(ctx, req)
+}
+
+// doPatchWithAuthHeaders executes a PATCH request by using clienter.Do for the provided URI and patchBody.
+// It sets the user and service authentication and coollectionID as a request header. Returns the http.Response and any error.
+// It is the callers responsibility to ensure response.Body is closed on completion.
+func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, patchBody request.Patch) (*http.Response, error) {
+
+	// marshal the reuest body, as an array with the provided patch operation (http patch always accepts a list of patch operations)
+	body := []request.Patch{patchBody}
+	b, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	// create requets
+	req, err := http.NewRequest(http.MethodPatch, uri, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
+	// set headers
+	headers.SetCollectionID(req, collectionID)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
+
+	// do the request
 	return c.hcCli.Client.Do(ctx, req)
 }

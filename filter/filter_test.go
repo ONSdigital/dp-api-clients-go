@@ -17,6 +17,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -35,6 +36,13 @@ var (
 	client = &dphttp.Client{HTTPClient: &http.Client{}}
 	ctx    = context.Background()
 )
+
+func checkResponseBase(httpClient *dphttp.ClienterMock, expectedMethod, expectedURI, serviceAuthToken string) {
+	So(len(httpClient.DoCalls()), ShouldEqual, 1)
+	So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldEqual, expectedURI)
+	So(httpClient.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
+	So(httpClient.DoCalls()[0].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
+}
 
 type MockedHTTPResponse struct {
 	StatusCode int
@@ -707,6 +715,23 @@ func TestClient_AddDimensionValues(t *testing.T) {
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
 			})
+
+			Convey("The expected PATCH body is generated and sent to the API", func() {
+				checkResponseBase(httpClient, http.MethodPatch, "/filters/"+filterID+"/dimensions/"+name, testServiceToken)
+				expectedBody := []dprequest.Patch{
+					{
+						Op:    dprequest.OpAdd.String(),
+						Path:  "/options/-",
+						Value: options,
+					},
+				}
+				sentPayload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				var sentBody []dprequest.Patch
+				err = json.Unmarshal(sentPayload, &sentBody)
+				So(err, ShouldBeNil)
+				So(sentBody, ShouldResemble, expectedBody)
+			})
 		})
 	})
 
@@ -735,6 +760,82 @@ func TestClient_AddDimensionValues(t *testing.T) {
 
 		Convey("when AddDimensionValues is called", func() {
 			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+
+			Convey("then the expected error is returned", func() {
+				expectedErr := ErrInvalidFilterAPIResponse{
+					ExpectedCode: http.StatusOK,
+					ActualCode:   http.StatusInternalServerError,
+					URI:          "http://localhost:8080/filters/baz/dimensions/quz",
+				}
+				So(err.Error(), ShouldResemble, expectedErr.Error())
+			})
+		})
+	})
+}
+
+func TestClient_RemoveDimensionValues(t *testing.T) {
+	filterID := "baz"
+	name := "quz"
+	options := []string{"abc", "def", "ghi", "jkl"}
+
+	Convey("Given a dimension is provided", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when RemoveDimensionValues is called", func() {
+			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("The expected URI and PATCH body is generated and sent to the API", func() {
+				checkResponseBase(httpClient, http.MethodPatch, "/filters/"+filterID+"/dimensions/"+name, testServiceToken)
+				expectedBody := []dprequest.Patch{
+					{
+						Op:    dprequest.OpRemove.String(),
+						Path:  "/options/-",
+						Value: options,
+					},
+				}
+				sentPayload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				var sentBody []dprequest.Patch
+				err = json.Unmarshal(sentPayload, &sentBody)
+				So(err, ShouldBeNil)
+				So(sentBody, ShouldResemble, expectedBody)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("foo")
+		httpClient := newMockHTTPClient(nil, mockErr)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when RemoveDimensionValues is called", func() {
+			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when RemoveDimensionValues is called", func() {
+			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
 
 			Convey("then the expected error is returned", func() {
 				expectedErr := ErrInvalidFilterAPIResponse{
