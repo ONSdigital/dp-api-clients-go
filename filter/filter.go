@@ -400,32 +400,46 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 }
 
 // AddDimensionValues creates a
-func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, values []string) error {
+func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, values []string, batchSize int) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
 
-	patchBody := request.Patch{
-		Op:    request.OpAdd.String(),
-		Path:  "/options/-",
-		Value: values,
-	}
-
-	clientlog.Do(ctx, "attempting to patch (add) a dimension options list", service, uri, log.Data{
+	clientlog.Do(ctx, "attempting to patch (add) a dimension options list in batches", service, uri, log.Data{
 		"method":         http.MethodPatch,
 		"collection_id":  collectionID,
 		"filter_id":      filterID,
 		"dimension_name": name,
+		"batch_size":     batchSize,
 	})
 
-	resp, err := c.doPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, patchBody)
+	// do a patch request for a batch
+	doPatchCall := func(batch []string) error {
+		patchBody := request.Patch{
+			Op:    request.OpAdd.String(),
+			Path:  "/options/-",
+			Value: batch,
+		}
+
+		resp, err := c.doPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, patchBody)
+		if err != nil {
+			return err
+		}
+
+		defer CloseResponseBody(ctx, resp)
+
+		if resp.StatusCode != http.StatusOK {
+			return &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		}
+		return nil
+	}
+
+	// split the provided values in batches (if needed) and perform the PATCH calls for each one
+	numChunks, err := processInBatches(values, doPatchCall, batchSize)
 	if err != nil {
+		log.Event(ctx, "error sending PATCH operations in batches", log.ERROR, log.Data{"num_successful_batches": numChunks}, log.Error(err))
 		return err
 	}
 
-	defer CloseResponseBody(ctx, resp)
-
-	if resp.StatusCode != http.StatusOK {
-		return &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
-	}
+	log.Event(ctx, "successfully sent PATCH operations in batches", log.INFO, log.Data{"num_successful_batches": numChunks})
 	return nil
 
 	// 1. In the frontend filter dataset controller, we send a list of Dimension options to a method that calls the PATCH
