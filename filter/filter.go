@@ -15,6 +15,7 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/dp-net/request"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -399,22 +400,32 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 	return nil
 }
 
-// AddDimensionValues creates a
+// AddDimensionValues adds the provided values to a dimension option list. This is performed in batches of size up to batchSize
 func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, values []string, batchSize int) error {
+	return c.patchDimensionValues(ctx, dprequest.OpAdd, userAuthToken, serviceAuthToken, collectionID, filterID, name, values, batchSize)
+}
+
+// RemoveDimensionValues removes the provided values from a dimension option list. This is performed with PATCH operations in batches of size up to batchSize.
+func (c *Client) RemoveDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, values []string, batchSize int) error {
+	return c.patchDimensionValues(ctx, dprequest.OpRemove, userAuthToken, serviceAuthToken, collectionID, filterID, name, values, batchSize)
+}
+
+func (c *Client) patchDimensionValues(ctx context.Context, patchOp dprequest.PatchOp, userAuthToken, serviceAuthToken, collectionID, filterID, name string, values []string, batchSize int) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
 
-	clientlog.Do(ctx, "attempting to patch (add) a dimension options list in batches", service, uri, log.Data{
-		"method":         http.MethodPatch,
-		"collection_id":  collectionID,
-		"filter_id":      filterID,
-		"dimension_name": name,
-		"batch_size":     batchSize,
+	clientlog.Do(ctx, "attempting to patch a dimension options list in batches", service, uri, log.Data{
+		"method":          http.MethodPatch,
+		"collection_id":   collectionID,
+		"filter_id":       filterID,
+		"dimension_name":  name,
+		"batch_size":      batchSize,
+		"patch_operation": patchOp.String(),
 	})
 
 	// do a patch request for a batch
 	doPatchCall := func(batch []string) error {
-		patchBody := request.Patch{
-			Op:    request.OpAdd.String(),
+		patchBody := dprequest.Patch{
+			Op:    patchOp.String(),
 			Path:  "/options/-",
 			Value: batch,
 		}
@@ -435,25 +446,17 @@ func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceA
 	// split the provided values in batches (if needed) and perform the PATCH calls for each one
 	numChunks, err := processInBatches(values, doPatchCall, batchSize)
 	if err != nil {
-		log.Event(ctx, "error sending PATCH operations in batches", log.ERROR, log.Data{"num_successful_batches": numChunks}, log.Error(err))
+		log.Event(ctx, "error sending PATCH operations in batches", log.ERROR,
+			log.Data{"num_successful_batches": numChunks, "patch_operation": patchOp.String()}, log.Error(err))
 		return err
 	}
 
-	log.Event(ctx, "successfully sent PATCH operations in batches", log.INFO, log.Data{"num_successful_batches": numChunks})
+	log.Event(ctx, "successfully sent PATCH operations in batches", log.INFO,
+		log.Data{"num_successful_batches": numChunks, "patch_operation": patchOp.String()})
 	return nil
-
-	// 1. In the frontend filter dataset controller, we send a list of Dimension options to a method that calls the PATCH
-	// 2. In this method:
-	// - We iterate the provided list, and create batches, then for each batch we build the PATCH request body
-	// - The batches are stored in a slice of batches
-	// - We loop through this slice and make the PATCH request to the Filter API
-	// - If any request fails, return err to controller
 }
 
-// TODO create generic batch processing method, to be used by both add and remove patches.
-
-// RemoveDimensionValue removes a particular value to a filter job for a given filterID
-// and name
+// RemoveDimensionValue removes a particular value to a filter job for a given filterID and name
 func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name, value string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.hcCli.URL, filterID, name, value)
 	req, err := http.NewRequest("DELETE", uri, nil)
@@ -479,35 +482,6 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 
 	if resp.StatusCode != http.StatusNoContent {
 		return &ErrInvalidFilterAPIResponse{http.StatusNoContent, resp.StatusCode, uri}
-	}
-	return nil
-}
-
-func (c *Client) RemoveDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, values []string) error {
-	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
-
-	patchBody := request.Patch{
-		Op:    request.OpRemove.String(),
-		Path:  "/options/-",
-		Value: values,
-	}
-
-	clientlog.Do(ctx, "attempting to patch (remove) a dimension options list", service, uri, log.Data{
-		"method":         http.MethodPatch,
-		"collection_id":  collectionID,
-		"filter_id":      filterID,
-		"dimension_name": name,
-	})
-
-	resp, err := c.doPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, patchBody)
-	if err != nil {
-		return err
-	}
-
-	defer CloseResponseBody(ctx, resp)
-
-	if resp.StatusCode != http.StatusOK {
-		return &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
 	return nil
 }
@@ -714,7 +688,7 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 // doPatchWithAuthHeaders executes a PATCH request by using clienter.Do for the provided URI and patchBody.
 // It sets the user and service authentication and coollectionID as a request header. Returns the http.Response and any error.
 // It is the callers responsibility to ensure response.Body is closed on completion.
-func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, patchBody request.Patch) (*http.Response, error) {
+func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, patchBody dprequest.Patch) (*http.Response, error) {
 
 	// marshal the reuest body, as an array with the provided patch operation (http patch always accepts a list of patch operations)
 	body := []request.Patch{patchBody}

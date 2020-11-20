@@ -698,13 +698,13 @@ func TestClient_AddDimension(t *testing.T) {
 }
 
 // utility func to validate request method, uri and body
-func checkReq(httpClient *dphttp.ClienterMock, callIndex int, expectedURI string, expectedPatchValues []string) {
+func checkRequest(httpClient *dphttp.ClienterMock, callIndex int, expectedURI string, expectedPatchOp dprequest.PatchOp, expectedPatchValues []string) {
 	So(httpClient.DoCalls()[callIndex].Req.URL.RequestURI(), ShouldEqual, expectedURI)
 	So(httpClient.DoCalls()[callIndex].Req.Method, ShouldEqual, http.MethodPatch)
 	So(httpClient.DoCalls()[callIndex].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+testServiceToken)
 	expectedBody := []dprequest.Patch{
 		{
-			Op:    dprequest.OpAdd.String(),
+			Op:    expectedPatchOp.String(),
 			Path:  "/options/-",
 			Value: expectedPatchValues,
 		},
@@ -739,7 +739,7 @@ func TestClient_AddDimensionValues(t *testing.T) {
 
 			Convey("The expected PATCH body is generated and sent to the API", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
-				checkReq(httpClient, 0, "/filters/"+filterID+"/dimensions/"+name, options)
+				checkRequest(httpClient, 0, "/filters/"+filterID+"/dimensions/"+name, dprequest.OpAdd, options)
 			})
 		})
 
@@ -755,8 +755,8 @@ func TestClient_AddDimensionValues(t *testing.T) {
 				expectedURI := "/filters/" + filterID + "/dimensions/" + name
 
 				So(len(httpClient.DoCalls()), ShouldEqual, 2)
-				checkReq(httpClient, 0, expectedURI, []string{"abc", "def", "ghi", "jkl", "000"})
-				checkReq(httpClient, 1, expectedURI, []string{"111", "222"})
+				checkRequest(httpClient, 0, expectedURI, dprequest.OpAdd, []string{"abc", "def", "ghi", "jkl", "000"})
+				checkRequest(httpClient, 1, expectedURI, dprequest.OpAdd, []string{"111", "222"})
 			})
 		})
 	})
@@ -803,7 +803,7 @@ func TestClient_AddDimensionValues(t *testing.T) {
 func TestClient_RemoveDimensionValues(t *testing.T) {
 	filterID := "baz"
 	name := "quz"
-	options := []string{"abc", "def", "ghi", "jkl"}
+	batchSize := 5
 
 	Convey("Given a dimension is provided", t, func() {
 		httpClient := newMockHTTPClient(&http.Response{
@@ -813,7 +813,8 @@ func TestClient_RemoveDimensionValues(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when RemoveDimensionValues is called", func() {
-			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+			options := []string{"abc", "def", "ghi", "jkl"}
+			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, batchSize)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -821,19 +822,27 @@ func TestClient_RemoveDimensionValues(t *testing.T) {
 
 			Convey("The expected URI and PATCH body is generated and sent to the API", func() {
 				checkResponseBase(httpClient, http.MethodPatch, "/filters/"+filterID+"/dimensions/"+name, testServiceToken)
-				expectedBody := []dprequest.Patch{
-					{
-						Op:    dprequest.OpRemove.String(),
-						Path:  "/options/-",
-						Value: options,
-					},
-				}
-				sentPayload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+				Convey("The expected PATCH body is generated and sent to the API", func() {
+					So(len(httpClient.DoCalls()), ShouldEqual, 1)
+					checkRequest(httpClient, 0, "/filters/"+filterID+"/dimensions/"+name, dprequest.OpRemove, options)
+				})
+			})
+		})
+
+		Convey("when RemoveDimensionValues is called, where total options are more than the batch size", func() {
+			options := []string{"abc", "def", "ghi", "jkl", "000", "111", "222"}
+			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, batchSize)
+
+			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
-				var sentBody []dprequest.Patch
-				err = json.Unmarshal(sentPayload, &sentBody)
-				So(err, ShouldBeNil)
-				So(sentBody, ShouldResemble, expectedBody)
+			})
+
+			Convey("The expected PATCH body is generated and sent to the API in 2 batches", func() {
+				expectedURI := "/filters/" + filterID + "/dimensions/" + name
+
+				So(len(httpClient.DoCalls()), ShouldEqual, 2)
+				checkRequest(httpClient, 0, expectedURI, dprequest.OpRemove, []string{"abc", "def", "ghi", "jkl", "000"})
+				checkRequest(httpClient, 1, expectedURI, dprequest.OpRemove, []string{"111", "222"})
 			})
 		})
 	})
@@ -845,7 +854,7 @@ func TestClient_RemoveDimensionValues(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when RemoveDimensionValues is called", func() {
-			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{"abc"}, batchSize)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -862,7 +871,7 @@ func TestClient_RemoveDimensionValues(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when RemoveDimensionValues is called", func() {
-			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{"abc"}, batchSize)
 
 			Convey("then the expected error is returned", func() {
 				expectedErr := ErrInvalidFilterAPIResponse{
