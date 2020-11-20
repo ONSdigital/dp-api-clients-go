@@ -14,6 +14,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
+	"github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -398,6 +399,57 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 	return nil
 }
 
+// AddDimensionValues creates a
+func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, values []string) error {
+
+	patchBody := request.Patch{
+		Op:    request.OpAdd.String(),
+		Path:  "/options/-",
+		Value: values,
+	}
+
+	b, err := json.Marshal(patchBody)
+	if err != nil {
+		return err
+	}
+
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
+	req, err := http.NewRequest(http.MethodPatch, uri, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+
+	clientlog.Do(ctx, "attempting to patch a dimension options list", service, uri, log.Data{
+		"method":         http.MethodPatch,
+		"collection_id":  collectionID,
+		"filter_id":      filterID,
+		"dimension_name": name,
+	})
+
+	headers.SetCollectionID(req, collectionID)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	defer CloseResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+	}
+	return nil
+
+	// 1. In the frontend filter dataset controller, we send a list of Dimension options to a method that calls the PATCH
+	// 2. In this method:
+	// - We iterate the provided list, and create batches, then for each batch we build the PATCH request body
+	// - The batches are stored in a slice of batches
+	// - We loop through this slice and make the PATCH request to the Filter API
+	// - If any request fails, return err to controller
+}
+
 // RemoveDimensionValue removes a particular value to a filter job for a given filterID
 // and name
 func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name, value string) error {
@@ -523,8 +575,8 @@ func (c *Client) GetJobStateBytes(ctx context.Context, userAuthToken, serviceAut
 	return ioutil.ReadAll(resp.Body)
 }
 
-// AddDimensionValues adds many options to a filter job dimension
-func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, options []string) error {
+// SetDimensionValues creates or overwrites the options for a filter job dimension
+func (c *Client) SetDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, options []string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
 
 	clientlog.Do(ctx, "adding multiple dimension values to filter job", service, uri, log.Data{

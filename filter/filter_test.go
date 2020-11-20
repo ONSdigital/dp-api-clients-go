@@ -689,40 +689,14 @@ func TestClient_AddDimension(t *testing.T) {
 	})
 }
 
-func TestClient_GetJobState(t *testing.T) {
-	filterID := "foo"
-	mockJobStateBody := `{
-		"jobState": "www.ons.gov.uk"}`
-	Convey("When a state is returned", t, func() {
-
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: mockJobStateBody})
-		_, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
-		So(err, ShouldBeNil)
-	})
-	Convey("When bad request is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
-		So(err, ShouldNotBeNil)
-	})
-
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
-		mockedAPI.hcCli.Client.SetMaxRetries(2)
-		m, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
-		So(err, ShouldNotBeNil)
-		So(m, ShouldResemble, Model{})
-	})
-}
-
 func TestClient_AddDimensionValues(t *testing.T) {
 	filterID := "baz"
 	name := "quz"
-	options := []string{"`quuz"}
+	options := []string{"abc", "def", "ghi", "jkl"}
 
-	Convey("Given a valid dimension and filter", t, func() {
+	Convey("Given a dimension is provided", t, func() {
 		httpClient := newMockHTTPClient(&http.Response{
-			StatusCode: http.StatusCreated,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
+			StatusCode: http.StatusOK,
 		}, nil)
 
 		filterClient := newFilterClient(httpClient)
@@ -752,6 +726,91 @@ func TestClient_AddDimensionValues(t *testing.T) {
 	})
 
 	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when AddDimensionValues is called", func() {
+			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+
+			Convey("then the expected error is returned", func() {
+				expectedErr := ErrInvalidFilterAPIResponse{
+					ExpectedCode: http.StatusOK,
+					ActualCode:   http.StatusInternalServerError,
+					URI:          "http://localhost:8080/filters/baz/dimensions/quz",
+				}
+				So(err.Error(), ShouldResemble, expectedErr.Error())
+			})
+		})
+	})
+}
+
+func TestClient_GetJobState(t *testing.T) {
+	filterID := "foo"
+	mockJobStateBody := `{
+		"jobState": "www.ons.gov.uk"}`
+	Convey("When a state is returned", t, func() {
+
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: mockJobStateBody})
+		_, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
+		So(err, ShouldBeNil)
+	})
+	Convey("When bad request is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
+		_, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		m, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
+		So(err, ShouldNotBeNil)
+		So(m, ShouldResemble, Model{})
+	})
+}
+
+func TestClient_SetDimensionValues(t *testing.T) {
+	filterID := "baz"
+	name := "quz"
+	options := []string{"`quuz"}
+
+	Convey("Given a valid dimension and filter", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusCreated,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when SetDimensionValues is called", func() {
+			err := filterClient.SetDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("foo")
+		httpClient := newMockHTTPClient(nil, mockErr)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when SetDimensionValues is called", func() {
+			err := filterClient.SetDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
 		url := "http://localhost:8080"
 		uri := url + "/filters/" + filterID + "/dimensions/" + name
 		mockInvalidStatusCodeError := &ErrInvalidFilterAPIResponse{http.StatusCreated, http.StatusInternalServerError, uri}
@@ -762,8 +821,8 @@ func TestClient_AddDimensionValues(t *testing.T) {
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when AddDimensionValues is called", func() {
-			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+		Convey("when SetDimensionValues is called", func() {
+			err := filterClient.SetDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
