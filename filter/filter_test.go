@@ -344,7 +344,7 @@ func TestClient_GetDimensionOptions(t *testing.T) {
 		opts, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldBeNil)
 		So(opts, ShouldResemble, []DimensionOption{
-			DimensionOption{
+			{
 				DimensionOptionsURL: "quux",
 				Option:              "quuz",
 			},
@@ -717,6 +717,30 @@ func checkRequest(httpClient *dphttp.ClienterMock, callIndex int, expectedURI st
 	So(sentBody, ShouldResemble, expectedBody)
 }
 
+func checkRequestTwoOps(httpClient *dphttp.ClienterMock, callIndex int, expectedURI string, expectedPatchOp1, expectedPatchOp2 dprequest.PatchOp, expectedPatchValues1, expectedPatchValues2 []string) {
+	So(httpClient.DoCalls()[callIndex].Req.URL.RequestURI(), ShouldEqual, expectedURI)
+	So(httpClient.DoCalls()[callIndex].Req.Method, ShouldEqual, http.MethodPatch)
+	So(httpClient.DoCalls()[callIndex].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+testServiceToken)
+	expectedBody := []dprequest.Patch{
+		{
+			Op:    expectedPatchOp1.String(),
+			Path:  "/options/-",
+			Value: expectedPatchValues1,
+		},
+		{
+			Op:    expectedPatchOp2.String(),
+			Path:  "/options/-",
+			Value: expectedPatchValues2,
+		},
+	}
+	sentPayload, err := ioutil.ReadAll(httpClient.DoCalls()[callIndex].Req.Body)
+	So(err, ShouldBeNil)
+	var sentBody []dprequest.Patch
+	err = json.Unmarshal(sentPayload, &sentBody)
+	So(err, ShouldBeNil)
+	So(sentBody, ShouldResemble, expectedBody)
+}
+
 func TestClient_AddDimensionValues(t *testing.T) {
 	filterID := "baz"
 	name := "quz"
@@ -759,6 +783,18 @@ func TestClient_AddDimensionValues(t *testing.T) {
 				checkRequest(httpClient, 1, expectedURI, dprequest.OpAdd, []string{"111", "222"})
 			})
 		})
+
+		Convey("When AddDimensionValues is called with an empty list of options", func() {
+			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{}, batchSize)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then no PATCH operation is sent", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
 	})
 
 	Convey("given dphttpclient.do returns an error", t, func() {
@@ -767,8 +803,18 @@ func TestClient_AddDimensionValues(t *testing.T) {
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when AddDimensionValues is called", func() {
+		Convey("when AddDimensionValues is called, where total options are less than the batch size", func() {
 			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{"abc"}, batchSize)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+		})
+
+		Convey("when AddDimensionValues is called, where total options are more than the batch size", func() {
+			options := []string{"abc", "def", "ghi", "jkl", "000", "111", "222"}
+			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, batchSize)
 
 			Convey("then the expected error is returned", func() {
 				So(err, ShouldNotBeNil)
@@ -845,6 +891,18 @@ func TestClient_RemoveDimensionValues(t *testing.T) {
 				checkRequest(httpClient, 1, expectedURI, dprequest.OpRemove, []string{"111", "222"})
 			})
 		})
+
+		Convey("When RemoveDimensionValues is called with an empty list of options", func() {
+			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{}, batchSize)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then no PATCH operation is sent", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
 	})
 
 	Convey("given dphttpclient.do returns an error", t, func() {
@@ -857,6 +915,16 @@ func TestClient_RemoveDimensionValues(t *testing.T) {
 			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{"abc"}, batchSize)
 
 			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+		})
+
+		Convey("when RemoveDimensionValues is called, where total options are more than the batch size", func() {
+			options := []string{"abc", "def", "ghi", "jkl", "000", "111", "222"}
+			err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, batchSize)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldResemble, mockErr.Error())
 			})
 		})
@@ -880,6 +948,68 @@ func TestClient_RemoveDimensionValues(t *testing.T) {
 					URI:          "http://localhost:8080/filters/baz/dimensions/quz",
 				}
 				So(err.Error(), ShouldResemble, expectedErr.Error())
+			})
+		})
+	})
+}
+
+func TestClient_PatchDimensionValues(t *testing.T) {
+	filterID := "baz"
+	name := "quz"
+	batchSize := 5
+
+	Convey("Given a dimension is provided", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when PatchDimensionValues is called", func() {
+			optionsAdd := []string{"abc", "def"}
+			optionsRemove := []string{"ghi", "jkl"}
+			err := filterClient.PatchDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, optionsAdd, optionsRemove, batchSize)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("The expected URI and PATCH body is generated and sent to the API", func() {
+				checkResponseBase(httpClient, http.MethodPatch, "/filters/"+filterID+"/dimensions/"+name, testServiceToken)
+				Convey("The expected PATCH body is generated and sent to the API", func() {
+					So(len(httpClient.DoCalls()), ShouldEqual, 1)
+					checkRequestTwoOps(httpClient, 0, "/filters/"+filterID+"/dimensions/"+name, dprequest.OpAdd, dprequest.OpRemove, optionsAdd, optionsRemove)
+				})
+			})
+		})
+
+		Convey("when PatchDimensionValues is called, where total options are more than the batch size", func() {
+			optionsAdd := []string{"abc", "def", "ghi"}
+			optionsRemove := []string{"000", "111", "222"}
+			err := filterClient.PatchDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, optionsAdd, optionsRemove, batchSize)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("The expected PATCH body is generated and sent to the API in 2 batches", func() {
+				expectedURI := "/filters/" + filterID + "/dimensions/" + name
+
+				So(len(httpClient.DoCalls()), ShouldEqual, 2)
+				checkRequest(httpClient, 0, expectedURI, dprequest.OpAdd, []string{"abc", "def", "ghi"})
+				checkRequest(httpClient, 1, expectedURI, dprequest.OpRemove, []string{"000", "111", "222"})
+			})
+		})
+
+		Convey("When PatchDimensionValues is called with an empty list of options", func() {
+			err := filterClient.PatchDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{}, []string{}, batchSize)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then no PATCH operation is sent", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 			})
 		})
 	})
