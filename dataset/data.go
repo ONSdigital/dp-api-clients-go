@@ -244,7 +244,11 @@ type Dimensions struct {
 
 // Options represents a list of options from the dataset api
 type Options struct {
-	Items []Option `json:"items"`
+	Items      []Option `json:"items"`
+	Count      int      `json:"count"`
+	Offset     int      `json:"offset"`
+	Limit      int      `json:"limit"`
+	TotalCount int      `json:"total_count"`
 }
 
 // Option represents a response model for an option
