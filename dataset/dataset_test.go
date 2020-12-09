@@ -785,7 +785,7 @@ func TestClient_GetOptions(t *testing.T) {
 		httpClient := createHTTPClientMock(http.StatusOK, testOptions)
 		datasetClient := newDatasetClient(httpClient)
 
-		Convey("when GetOptions is called", func() {
+		Convey("when GetOptions is called with valid values for limit and offset", func() {
 			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, offset, limit)
 
 			Convey("a positive response is returned, with the expected options", func() {
@@ -797,6 +797,26 @@ func TestClient_GetOptions(t *testing.T) {
 				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?offset=%d&limit=%d",
 					instanceID, edition, version, dimension, offset, limit)
 				checkResponseBase(httpClient, http.MethodGet, expectedURI)
+			})
+		})
+
+		Convey("when GetOptions is called with negative offset", func() {
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, -1, limit)
+
+			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
+				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
+				So(options, ShouldResemble, Options{})
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
+
+		Convey("when GetOptions is called with negative limit", func() {
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, offset, -1)
+
+			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
+				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
+				So(options, ShouldResemble, Options{})
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 			})
 		})
 	})
