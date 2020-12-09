@@ -323,31 +323,68 @@ func TestClient_GetDimensions(t *testing.T) {
 }
 
 func TestClient_GetDimensionOptions(t *testing.T) {
+
 	filterOutputID := "foo"
-	dimensionBody := `[{"dimension_option_url":"quux","option": "quuz"}]`
+	dimensionBody := `{"items": [{"dimension_option_url":"quux","option": "quuz"}], "count":1, "offset":2, "limit": 10, "total_count": 3}`
 	name := "corge"
-	Convey("When bad request is returned", t, func() {
+	offset := 2
+	limit := 10
+
+	Convey("Given a 400 BadRequest response is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
-		So(err, ShouldNotBeNil)
+
+		Convey("then GetDimensionOptions returns the expected error", func() {
+			_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, offset, limit)
+			So(err, ShouldResemble, &ErrInvalidFilterAPIResponse{
+				ActualCode:   400,
+				ExpectedCode: 200,
+				URI:          fmt.Sprintf("%s/filters/%s/dimensions/%s/options?offset=%d&limit=%d", mockedAPI.hcCli.URL, filterOutputID, name, offset, limit),
+			})
+		})
 	})
 
-	Convey("When server error is returned", t, func() {
+	Convey("Given a 500 InternalServerError is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
-		_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
-		So(err, ShouldNotBeNil)
+
+		Convey("then GetDimensionOptions returns the expected error", func() {
+			_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, offset, limit)
+			So(err, ShouldResemble, &ErrInvalidFilterAPIResponse{
+				ActualCode:   500,
+				ExpectedCode: 200,
+				URI:          fmt.Sprintf("%s/filters/%s/dimensions/%s/options?offset=%d&limit=%d", mockedAPI.hcCli.URL, filterOutputID, name, offset, limit),
+			})
+		})
 	})
 
-	Convey("When a dimension option is returned", t, func() {
+	Convey("When a 200 OK status is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
-		opts, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
-		So(err, ShouldBeNil)
-		So(opts, ShouldResemble, []DimensionOption{
-			{
-				DimensionOptionsURL: "quux",
-				Option:              "quuz",
-			},
+
+		Convey("then GetDimensionOptions returns the expected Options", func() {
+			opts, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, offset, limit)
+			So(err, ShouldBeNil)
+			So(opts, ShouldResemble, DimensionOptions{
+				Items: []DimensionOption{
+					{
+						DimensionOptionsURL: "quux",
+						Option:              "quuz",
+					},
+				},
+				Count:      1,
+				TotalCount: 3,
+				Limit:      10,
+				Offset:     2,
+			})
+		})
+
+		Convey("then GetDimensionOptions returns the expected error when a negative offset is provided", func() {
+			_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, -1, limit)
+			So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
+		})
+
+		Convey("then GetDimensionOptions returns the expected error when a negative limit is provided", func() {
+			_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, offset, -1)
+			So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
 		})
 	})
 }

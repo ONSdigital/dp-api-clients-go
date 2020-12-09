@@ -223,8 +223,12 @@ func (c *Client) GetDimensionsBytes(ctx context.Context, userAuthToken, serviceA
 }
 
 // GetDimensionOptions retrieves a list of the dimension options unmarshalled as an array of DimensionOption structs
-func (c *Client) GetDimensionOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string) (opts []DimensionOption, err error) {
-	b, err := c.GetDimensionOptionsBytes(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name)
+func (c *Client) GetDimensionOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, offset, limit int) (opts DimensionOptions, err error) {
+	if offset < 0 || limit < 0 {
+		return DimensionOptions{}, errors.New("negative offsets or limits are not allowed")
+	}
+
+	b, err := c.GetDimensionOptionsBytes(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name, offset, limit)
 	if err != nil {
 		return opts, err
 	}
@@ -234,8 +238,8 @@ func (c *Client) GetDimensionOptions(ctx context.Context, userAuthToken, service
 }
 
 // GetDimensionOptionsBytes retrieves a list of the dimension options as a byte array
-func (c *Client) GetDimensionOptionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string) ([]byte, error) {
-	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options", c.hcCli.URL, filterID, name)
+func (c *Client) GetDimensionOptionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, offset, limit int) ([]byte, error) {
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options?offset=%d&limit=%d", c.hcCli.URL, filterID, name, offset, limit)
 	clientlog.Do(ctx, "retrieving selected dimension options for filter job", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)

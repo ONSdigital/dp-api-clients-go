@@ -12,6 +12,15 @@ type DimensionOption struct {
 	Option              string `json:"option"`
 }
 
+// DimensionOptions represents a list of dimension options from the filter api
+type DimensionOptions struct {
+	Items      []DimensionOption `json:"items"`
+	Count      int               `json:"count"`
+	Offset     int               `json:"offset"`
+	Limit      int               `json:"limit"`
+	TotalCount int               `json:"total_count"`
+}
+
 // CreateBlueprint represents the fields required to create a filter blueprint
 type CreateBlueprint struct {
 	Dataset    Dataset          `json:"dataset"`
