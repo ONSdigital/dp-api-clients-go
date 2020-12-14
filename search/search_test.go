@@ -104,7 +104,7 @@ func TestSearchUnit(t *testing.T) {
 
 		Convey("test Dimension returns error if HTTP Status code is not 200", func() {
 
-			searchErr := errors.New("invalid response from search api - should be: 200, got: 400, path: http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=1&offset=1&q=Newport")
+			searchErr := errors.New("invalid response from search api - should be: 200, got: 400, path: http://localhost:22000/dimension-search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=1&offset=1&q=Newport")
 			mockClient := &dphttp.ClienterMock{
 				GetPathsWithNoRetriesFunc: func() []string { return []string{} },
 				SetPathsWithNoRetriesFunc: func([]string) {},
@@ -201,7 +201,7 @@ func TestSearchUnit(t *testing.T) {
 
 		Convey("test Dimension no limit returns error if HTTP Status code is not 200", func() {
 
-			expectedError := &ErrInvalidSearchAPIResponse{http.StatusOK, http.StatusTeapot, "http://localhost:22000/search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=50&offset=1&q=Newport"}
+			expectedError := &ErrInvalidSearchAPIResponse{http.StatusOK, http.StatusTeapot, "http://localhost:22000/dimension-search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=50&offset=1&q=Newport"}
 			mockClient := &dphttp.ClienterMock{
 				GetPathsWithNoRetriesFunc: func() []string { return []string{} },
 				SetPathsWithNoRetriesFunc: func([]string) {},

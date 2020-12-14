@@ -14,6 +14,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -222,8 +223,12 @@ func (c *Client) GetDimensionsBytes(ctx context.Context, userAuthToken, serviceA
 }
 
 // GetDimensionOptions retrieves a list of the dimension options unmarshalled as an array of DimensionOption structs
-func (c *Client) GetDimensionOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string) (opts []DimensionOption, err error) {
-	b, err := c.GetDimensionOptionsBytes(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name)
+func (c *Client) GetDimensionOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, offset, limit int) (opts DimensionOptions, err error) {
+	if offset < 0 || limit < 0 {
+		return DimensionOptions{}, errors.New("negative offsets or limits are not allowed")
+	}
+
+	b, err := c.GetDimensionOptionsBytes(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name, offset, limit)
 	if err != nil {
 		return opts, err
 	}
@@ -233,8 +238,8 @@ func (c *Client) GetDimensionOptions(ctx context.Context, userAuthToken, service
 }
 
 // GetDimensionOptionsBytes retrieves a list of the dimension options as a byte array
-func (c *Client) GetDimensionOptionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string) ([]byte, error) {
-	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options", c.hcCli.URL, filterID, name)
+func (c *Client) GetDimensionOptionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, offset, limit int) ([]byte, error) {
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options?offset=%d&limit=%d", c.hcCli.URL, filterID, name, offset, limit)
 	clientlog.Do(ctx, "retrieving selected dimension options for filter job", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
@@ -398,8 +403,126 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 	return nil
 }
 
-// RemoveDimensionValue removes a particular value to a filter job for a given filterID
-// and name
+// AddDimensionValues adds the provided values to a dimension option list. This is performed in batches of size up to batchSize
+func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, values []string, batchSize int) error {
+	return c.PatchDimensionValues(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name, values, []string{}, batchSize)
+}
+
+// RemoveDimensionValues removes the provided values from a dimension option list. This is performed with PATCH operations in batches of size up to batchSize.
+func (c *Client) RemoveDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, values []string, batchSize int) error {
+	return c.PatchDimensionValues(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name, []string{}, values, batchSize)
+}
+
+// PatchDimensionValues adds and removes values from a dimension option list. If the same item is provided in the add and remove list, it will be removed. Duplicates in the same list will have no effect.
+func (c *Client) PatchDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, addValues, removeValues []string, batchSize int) error {
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
+
+	clientlog.Do(ctx, "attempting to patch a dimension options list in batches", service, uri, log.Data{
+		"method":            http.MethodPatch,
+		"collection_id":     collectionID,
+		"filter_id":         filterID,
+		"dimension_name":    name,
+		"batch_size":        batchSize,
+		"num_add_values":    len(addValues),
+		"num_remove_values": len(removeValues),
+	})
+
+	// func to perform a provided PATCH call and handle errors and status code
+	doPatchCall := func(patchBody []dprequest.Patch) error {
+		resp, err := c.doPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, patchBody)
+		if err != nil {
+			return err
+		}
+		defer CloseResponseBody(ctx, resp)
+
+		// check response code
+		if resp.StatusCode != http.StatusOK {
+			return &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		}
+		return nil
+	}
+
+	if len(addValues)+len(removeValues) <= batchSize {
+
+		// abort if no data is provided
+		if len(addValues)+len(removeValues) == 0 {
+			log.Event(ctx, "no PATCH operation has been sent because there aren't values to modify", log.INFO)
+			return nil
+		}
+
+		// we have less than a single batch size. We can do the add + remove operations in a single PATCH call
+		patchBody := []dprequest.Patch{}
+		if len(addValues) > 0 {
+			patchBody = append(patchBody,
+				dprequest.Patch{
+					Op:    dprequest.OpAdd.String(),
+					Path:  "/options/-",
+					Value: addValues,
+				})
+		}
+		if len(removeValues) > 0 {
+			patchBody = append(patchBody,
+				dprequest.Patch{
+					Op:    dprequest.OpRemove.String(),
+					Path:  "/options/-",
+					Value: removeValues,
+				})
+		}
+
+		if err := doPatchCall(patchBody); err != nil {
+			log.Event(ctx, "error sending PATCH operation", log.ERROR, log.Error(err))
+			return err
+		}
+
+		log.Event(ctx, "successfully sent PATCH operation", log.INFO)
+		return nil
+	}
+
+	// func to perform an 'add' PATCH operation for a batch
+	processAddPatch := func(items []string) error {
+		patchBody := []dprequest.Patch{
+			{
+				Op:    dprequest.OpAdd.String(),
+				Path:  "/options/-",
+				Value: items,
+			},
+		}
+		return doPatchCall(patchBody)
+	}
+
+	// func to perform a 'remove' PATCH operation for a batch
+	processRemovePatch := func(items []string) error {
+		patchBody := []dprequest.Patch{
+			{
+				Op:    dprequest.OpRemove.String(),
+				Path:  "/options/-",
+				Value: items,
+			},
+		}
+		return doPatchCall(patchBody)
+	}
+
+	// perform batched patches for add values
+	numChunks, err := processInBatches(addValues, processAddPatch, batchSize)
+	logData := log.Data{"num_successful_batches_added": numChunks}
+	if err != nil {
+		log.Event(ctx, "error sending PATCH operations in batches", log.ERROR, logData, log.Error(err))
+		return err
+	}
+
+	// perform batched patches for remove values
+	numChunks, err = processInBatches(removeValues, processRemovePatch, batchSize)
+	logData["num_successful_batches_removed"] = numChunks
+	if err != nil {
+		log.Event(ctx, "error sending PATCH operations in batches", log.ERROR, logData, log.Error(err))
+		return err
+	}
+
+	log.Event(ctx, "successfully sent PATCH operations in batches", log.INFO, logData)
+	return nil
+}
+
+// RemoveDimensionValue removes a particular value to a filter job for a given filterID and name
 func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name, value string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.hcCli.URL, filterID, name, value)
 	req, err := http.NewRequest("DELETE", uri, nil)
@@ -523,8 +646,8 @@ func (c *Client) GetJobStateBytes(ctx context.Context, userAuthToken, serviceAut
 	return ioutil.ReadAll(resp.Body)
 }
 
-// AddDimensionValues adds many options to a filter job dimension
-func (c *Client) AddDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, options []string) error {
+// SetDimensionValues creates or overwrites the options for a filter job dimension
+func (c *Client) SetDimensionValues(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, options []string) error {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, filterID, name)
 
 	clientlog.Do(ctx, "adding multiple dimension values to filter job", service, uri, log.Data{
@@ -625,5 +748,31 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	headers.SetUserAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceAuthToken)
+	return c.hcCli.Client.Do(ctx, req)
+}
+
+// doPatchWithAuthHeaders executes a PATCH request by using clienter.Do for the provided URI and patchBody.
+// It sets the user and service authentication and coollectionID as a request header. Returns the http.Response and any error.
+// It is the callers responsibility to ensure response.Body is closed on completion.
+func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, patchBody []dprequest.Patch) (*http.Response, error) {
+
+	// marshal the reuest body, as an array with the provided patch operation (http patch always accepts a list of patch operations)
+	b, err := json.Marshal(patchBody)
+	if err != nil {
+		return nil, err
+	}
+
+	// create requets
+	req, err := http.NewRequest(http.MethodPatch, uri, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
+	// set headers
+	headers.SetCollectionID(req, collectionID)
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
+
+	// do the request
 	return c.hcCli.Client.Do(ctx, req)
 }

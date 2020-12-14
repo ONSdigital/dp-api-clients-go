@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -753,6 +754,93 @@ func TestClient_PutInstanceDimensionOptionNodeID(t *testing.T) {
 
 			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
 				checkResponseBase(httpClient, http.MethodPut, "/instances/123/dimensions/456/options/789/node_id/ABC")
+			})
+		})
+	})
+}
+
+func TestClient_GetOptions(t *testing.T) {
+
+	instanceID := "testInstance"
+	edition := "testEdition"
+	version := "tetVersion"
+	dimension := "testDimension"
+	offset := 1
+	limit := 10
+
+	Convey("given a 200 status is returned", t, func() {
+		testOptions := Options{
+			Items: []Option{
+				{
+					DimensionID: dimension,
+					Label:       "optionLabel",
+					Option:      "testOption",
+				},
+			},
+			Count:      1,
+			Offset:     offset,
+			Limit:      limit,
+			TotalCount: 1,
+		}
+		httpClient := createHTTPClientMock(http.StatusOK, testOptions)
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetOptions is called with valid values for limit and offset", func() {
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, offset, limit)
+
+			Convey("a positive response is returned, with the expected options", func() {
+				So(err, ShouldBeNil)
+				So(options, ShouldResemble, testOptions)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
+				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?offset=%d&limit=%d",
+					instanceID, edition, version, dimension, offset, limit)
+				checkResponseBase(httpClient, http.MethodGet, expectedURI)
+			})
+		})
+
+		Convey("when GetOptions is called with negative offset", func() {
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, -1, limit)
+
+			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
+				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
+				So(options, ShouldResemble, Options{})
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
+
+		Convey("when GetOptions is called with negative limit", func() {
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, offset, -1)
+
+			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
+				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
+				So(options, ShouldResemble, Options{})
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		httpClient := createHTTPClientMock(http.StatusNotFound, Options{})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetOptions is called", func() {
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, offset, limit)
+
+			Convey("the expected error response is returned, with an empty options struct", func() {
+				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
+					actualCode: 404,
+					uri:        fmt.Sprintf("http://localhost:8080/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?offset=%d&limit=%d", instanceID, edition, version, dimension, offset, limit),
+					body:       "{\"items\":null,\"count\":0,\"offset\":0,\"limit\":0,\"total_count\":0}",
+				})
+				So(options, ShouldResemble, Options{})
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
+				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?offset=%d&limit=%d",
+					instanceID, edition, version, dimension, offset, limit)
+				checkResponseBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})
 	})

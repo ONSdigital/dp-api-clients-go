@@ -93,7 +93,7 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 		}
 	}
 
-	uri := fmt.Sprintf("%s/search/datasets/%s/editions/%s/versions/%s/dimensions/%s?",
+	uri := fmt.Sprintf("%s/dimension-search/datasets/%s/editions/%s/versions/%s/dimensions/%s?",
 		c.hcCli.URL,
 		datasetID,
 		edition,

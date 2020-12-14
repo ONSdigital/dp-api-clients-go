@@ -721,9 +721,12 @@ func (c *Client) GetVersionDimensions(ctx context.Context, userAuthToken, servic
 }
 
 // GetOptions will return the options for a dimension
-func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string) (m Options, err error) {
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", c.hcCli.URL, id, edition, version, dimension)
+func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string, offset, limit int) (m Options, err error) {
+	if offset < 0 || limit < 0 {
+		return Options{}, errors.New("negative offsets or limits are not allowed")
+	}
 
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?offset=%d&limit=%d", c.hcCli.URL, id, edition, version, dimension, offset, limit)
 	clientlog.Do(ctx, "retrieving options for dimension", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
