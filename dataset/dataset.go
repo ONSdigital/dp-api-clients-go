@@ -234,7 +234,7 @@ func (c *Client) PutDataset(ctx context.Context, userAuthToken, serviceAuthToken
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("incorrect http status, expected: 200, actual: %d, uri: %s", resp.StatusCode, uri)
+		return NewDatasetAPIResponse(resp, uri)
 	}
 	return nil
 }
@@ -487,7 +487,7 @@ func (c *Client) PutInstance(ctx context.Context, userAuthToken, serviceAuthToke
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("incorrect http status, expected: 200, actual: %d, uri: %s", resp.StatusCode, uri)
+		return NewDatasetAPIResponse(resp, uri)
 	}
 	return nil
 }
