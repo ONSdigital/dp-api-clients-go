@@ -1,9 +1,9 @@
 package zebedee
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
@@ -88,6 +90,15 @@ func (c *Client) GetWithHeaders(ctx context.Context, userAccessToken, path strin
 	return c.get(ctx, userAccessToken, path)
 }
 
+// Put updates a resource in zebedee
+func (c *Client) Put(ctx context.Context, userAccessToken, path string, payload []byte) (*http.Response, error) {
+	resp, err := c.put(ctx, userAccessToken, path, payload)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
 // is returned there is a chance that a partly completed DatasetLandingPage is returned
 func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, collectionID, lang, path string) (DatasetLandingPage, error) {
@@ -153,6 +164,23 @@ func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte,
 
 	b, err := ioutil.ReadAll(resp.Body)
 	return b, resp.Header, err
+}
+
+func (c *Client) put(ctx context.Context, userAccessToken, path string, payload []byte) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPut, path, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	dprequest.AddFlorenceHeader(req, userAccessToken)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return resp, nil
 }
 
 // GetBreadcrumb returns a Breadcrumb
@@ -280,6 +308,38 @@ func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, c
 	}
 
 	return ts, nil
+}
+
+func (c *Client) PutDatasetInCollection(ctx context.Context, userAccessToken, collectionID, lang, datasetID, state string) error {
+	uri := fmt.Sprintf("%s/collections/%s/datasets/%s", c.hcCli.URL, collectionID, datasetID)
+
+	payload, err := json.Marshal(state)
+	if err != nil {
+		return errors.Wrap(err, "error while attempting to marshall version")
+	}
+
+	_, err = c.put(ctx, userAccessToken, uri, payload)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) PutDatasetVersionInCollection(ctx context.Context, userAccessToken, collectionID, lang, datasetID, edition, version, state string) error {
+	uri := fmt.Sprintf("%s/collections/%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, collectionID, datasetID, edition, version)
+
+	payload, err := json.Marshal(state)
+	if err != nil {
+		return errors.Wrap(err, "error while attempting to marshall version")
+	}
+
+	_, err = c.put(ctx, userAccessToken, uri, payload)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetResourceBody returns body of a resource e.g. JSON definition of a table

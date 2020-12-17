@@ -166,3 +166,7 @@ type HomepageDescription struct {
 	PreUnit         string   `json:"preUnit"`
 	Source          string   `json:"source"`
 }
+
+type CollectionState struct {
+	State string `json: state`
+}

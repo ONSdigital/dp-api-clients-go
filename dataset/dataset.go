@@ -216,6 +216,29 @@ func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToke
 	return
 }
 
+// PutDataset update the dataset
+func (c *Client) PutDataset(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string, d DatasetDetails) error {
+	uri := fmt.Sprintf("%s/datasets/%s", c.hcCli.URL, datasetID)
+
+	clientlog.Do(ctx, "updating dataset", service, uri)
+
+	payload, err := json.Marshal(d)
+	if err != nil {
+		return errors.Wrap(err, "error while attempting to marshall dataset")
+	}
+
+	resp, err := c.doPutWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload)
+	if err != nil {
+		return errors.Wrap(err, "http client returned error while attempting to make request")
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewDatasetAPIResponse(resp, uri)
+	}
+	return nil
+}
+
 // GetEdition retrieves a single edition document from a given datasetID and edition label
 func (c *Client) GetEdition(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition string) (m Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s", c.hcCli.URL, datasetID, edition)
@@ -444,6 +467,29 @@ func (c *Client) GetInstances(ctx context.Context, userAuthToken, serviceAuthTok
 
 	json.Unmarshal(b, &m)
 	return
+}
+
+// PutInstance updates an instance
+func (c *Client) PutInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string, i Instance) error {
+	uri := fmt.Sprintf("%s/instances/%s", c.hcCli.URL, instanceID)
+
+	clientlog.Do(ctx, "updating dataset version", service, uri)
+
+	payload, err := json.Marshal(i)
+	if err != nil {
+		return errors.Wrap(err, "error while attempting to marshall instance")
+	}
+
+	resp, err := c.doPutWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload)
+	if err != nil {
+		return errors.Wrap(err, "http client returned error while attempting to make request")
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewDatasetAPIResponse(resp, uri)
+	}
+	return nil
 }
 
 // PutInstanceState performs a PUT '/instances/<id>' with the string representation of the provided state
