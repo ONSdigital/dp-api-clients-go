@@ -34,7 +34,7 @@ var (
 
 var checkResponseBase = func(httpClient *dphttp.ClienterMock, expectedMethod string, expectedUri string) {
 	So(len(httpClient.DoCalls()), ShouldEqual, 1)
-	So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldEqual, expectedUri)
+	So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldResemble, expectedUri)
 	So(httpClient.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
 	So(httpClient.DoCalls()[0].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
 }
@@ -666,14 +666,14 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 
 	data := Dimensions{
 		Items: []Dimension{
-			Dimension{
+			{
 				DimensionID: "dimension1",
 				InstanceID:  "instance1",
 				NodeID:      "node1",
 				Label:       "label",
 				Option:      "option",
 			},
-			Dimension{
+			{
 				DimensionID: "dimension2",
 			},
 		},
@@ -786,7 +786,8 @@ func TestClient_GetOptions(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetOptions is called with valid values for limit and offset", func() {
-			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, offset, limit)
+			q := QueryParams{offset, limit, []string{}}
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
 
 			Convey("a positive response is returned, with the expected options", func() {
 				So(err, ShouldBeNil)
@@ -801,7 +802,8 @@ func TestClient_GetOptions(t *testing.T) {
 		})
 
 		Convey("when GetOptions is called with negative offset", func() {
-			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, -1, limit)
+			q := QueryParams{-1, limit, []string{}}
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
 
 			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
 				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
@@ -811,12 +813,29 @@ func TestClient_GetOptions(t *testing.T) {
 		})
 
 		Convey("when GetOptions is called with negative limit", func() {
-			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, offset, -1)
+			q := QueryParams{offset, -1, []string{}}
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
 
 			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
 				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
 				So(options, ShouldResemble, Options{})
 				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
+
+		Convey("when GetOptions is called with a list of IDs containing an existing ID, along with offset and limit", func() {
+			q := QueryParams{offset, limit, []string{"testOption", "somethingElse"}}
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
+
+			Convey("a positive response is returned, with the expected options", func() {
+				So(err, ShouldBeNil)
+				So(options, ShouldResemble, testOptions)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected URI, providing the list of IDs and no offset or limit", func() {
+				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?ids=testOption,somethingElse",
+					instanceID, edition, version, dimension)
+				checkResponseBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})
 	})
@@ -826,7 +845,8 @@ func TestClient_GetOptions(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetOptions is called", func() {
-			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, offset, limit)
+			q := QueryParams{offset, limit, []string{}}
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
 
 			Convey("the expected error response is returned, with an empty options struct", func() {
 				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
