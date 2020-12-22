@@ -21,7 +21,12 @@ import (
 
 const service = "dataset-api"
 
-const maxIDs = 1000
+const maxIDs = 200
+
+// MaxIDs returns the maximum number of IDs acceptable in a list
+var MaxIDs = func() int {
+	return maxIDs
+}
 
 // State - iota enum of possible states
 type State int
@@ -86,8 +91,8 @@ func (q QueryParams) Validate() error {
 	if q.Offset < 0 || q.Limit < 0 {
 		return errors.New("negative offsets or limits are not allowed")
 	}
-	if len(q.IDs) > maxIDs {
-		return fmt.Errorf("too many query parameters have been provided. Maximum allowed: %d", maxIDs)
+	if len(q.IDs) > MaxIDs() {
+		return fmt.Errorf("too many query parameters have been provided. Maximum allowed: %d", MaxIDs())
 	}
 	return nil
 }

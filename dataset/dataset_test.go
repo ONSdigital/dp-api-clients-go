@@ -767,6 +767,7 @@ func TestClient_GetOptions(t *testing.T) {
 	dimension := "testDimension"
 	offset := 1
 	limit := 10
+	MaxIDs = func() int { return 5 }
 
 	Convey("given a 200 status is returned", t, func() {
 		testOptions := Options{
@@ -836,6 +837,20 @@ func TestClient_GetOptions(t *testing.T) {
 				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?ids=testOption,somethingElse",
 					instanceID, edition, version, dimension)
 				checkResponseBase(httpClient, http.MethodGet, expectedURI)
+			})
+		})
+
+		Convey("when GetOptions is called with a list of IDs containing more items than the maximum allowed", func() {
+			q := QueryParams{offset, limit, []string{"op1", "op2", "op3", "op4", "op5", "op6"}}
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
+
+			Convey("an error is returned, with the expected options", func() {
+				So(err.Error(), ShouldResemble, "too many query parameters have been provided. Maximum allowed: 5")
+				So(options, ShouldResemble, Options{})
+			})
+
+			Convey("and dphttpclient.Do is not called", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 			})
 		})
 	})
