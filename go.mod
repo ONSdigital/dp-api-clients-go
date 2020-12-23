@@ -9,7 +9,6 @@ require (
 	github.com/ONSdigital/log.go v1.0.1
 	github.com/golang/mock v1.4.4
 	github.com/gorilla/mux v1.8.0
-	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/smartystreets/goconvey v1.6.4
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
