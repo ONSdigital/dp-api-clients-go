@@ -21,6 +21,13 @@ import (
 
 const service = "dataset-api"
 
+const maxIDs = 200
+
+// MaxIDs returns the maximum number of IDs acceptable in a list
+var MaxIDs = func() int {
+	return maxIDs
+}
+
 // State - iota enum of possible states
 type State int
 
@@ -70,6 +77,24 @@ var _ error = ErrInvalidDatasetAPIResponse{}
 // Client is a dataset api client which can be used to make requests to the server
 type Client struct {
 	hcCli *healthcheck.Client
+}
+
+// QueryParams represents the possible query parameters that a caller can provide
+type QueryParams struct {
+	Offset int
+	Limit  int
+	IDs    []string
+}
+
+// Validate validates tht no negative values are provided for limit or offset, and that the length of IDs is lower than the maximum
+func (q QueryParams) Validate() error {
+	if q.Offset < 0 || q.Limit < 0 {
+		return errors.New("negative offsets or limits are not allowed")
+	}
+	if len(q.IDs) > MaxIDs() {
+		return fmt.Errorf("too many query parameters have been provided. Maximum allowed: %d", MaxIDs())
+	}
+	return nil
 }
 
 // NewAPIClient creates a new instance of Client with a given dataset api url and the relevant tokens
@@ -721,12 +746,18 @@ func (c *Client) GetVersionDimensions(ctx context.Context, userAuthToken, servic
 }
 
 // GetOptions will return the options for a dimension
-func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string, offset, limit int) (m Options, err error) {
-	if offset < 0 || limit < 0 {
-		return Options{}, errors.New("negative offsets or limits are not allowed")
+func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string, q QueryParams) (m Options, err error) {
+	if err := q.Validate(); err != nil {
+		return Options{}, err
 	}
 
-	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?offset=%d&limit=%d", c.hcCli.URL, id, edition, version, dimension, offset, limit)
+	var uri string
+	if len(q.IDs) > 0 {
+		uri = fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?ids=%s", c.hcCli.URL, id, edition, version, dimension, strings.Join(q.IDs, ","))
+	} else {
+		uri = fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?offset=%d&limit=%d", c.hcCli.URL, id, edition, version, dimension, q.Offset, q.Limit)
+	}
+
 	clientlog.Do(ctx, "retrieving options for dimension", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
