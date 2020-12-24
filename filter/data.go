@@ -1,5 +1,14 @@
 package filter
 
+// Dimensions represents a dimensions response from the filter api
+type Dimensions struct {
+	Items      []Dimension `json:"items"`
+	Count      int         `json:"count"`
+	Offset     int         `json:"offset"`
+	Limit      int         `json:"limit"`
+	TotalCount int         `json:"total_count"`
+}
+
 // Dimension represents a dimension response from the filter api
 type Dimension struct {
 	Name string `json:"name"`

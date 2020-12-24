@@ -55,6 +55,20 @@ type Client struct {
 	hcCli *healthcheck.Client
 }
 
+// QueryParams represents the possible query parameters that a caller can provide
+type QueryParams struct {
+	Offset int
+	Limit  int
+}
+
+// Validate validates tht no negative values are provided for limit or offset
+func (q QueryParams) Validate() error {
+	if q.Offset < 0 || q.Limit < 0 {
+		return errors.New("negative offsets or limits are not allowed")
+	}
+	return nil
+}
+
 // New creates a new instance of Client with a given filter api url
 func New(filterAPIURL string) *Client {
 	return &Client{
@@ -191,8 +205,8 @@ func (c *Client) GetDimensionBytes(ctx context.Context, userAuthToken, serviceAu
 }
 
 // GetDimensions will return the dimensions associated with the provided filter id as an array of Dimension structs
-func (c *Client) GetDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID string) (dims []Dimension, err error) {
-	b, err := c.GetDimensionsBytes(ctx, userAuthToken, serviceAuthToken, collectionID, filterID)
+func (c *Client) GetDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID string, q QueryParams) (dims Dimensions, err error) {
+	b, err := c.GetDimensionsBytes(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, q)
 	if err != nil {
 		return dims, err
 	}
@@ -202,8 +216,13 @@ func (c *Client) GetDimensions(ctx context.Context, userAuthToken, serviceAuthTo
 }
 
 // GetDimensionsBytes will return the dimensions associated with the provided filter id as a byte array
-func (c *Client) GetDimensionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID string) ([]byte, error) {
-	uri := fmt.Sprintf("%s/filters/%s/dimensions", c.hcCli.URL, filterID)
+func (c *Client) GetDimensionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID string, q QueryParams) ([]byte, error) {
+	if err := q.Validate(); err != nil {
+		return nil, err
+	}
+
+	uri := fmt.Sprintf("%s/filters/%s/dimensions?offset=%d&limit=%d", c.hcCli.URL, filterID, q.Offset, q.Limit)
+
 	clientlog.Do(ctx, "retrieving all dimensions for given filter job", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)

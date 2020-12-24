@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -291,34 +292,65 @@ func TestClient_GetDimension(t *testing.T) {
 
 func TestClient_GetDimensions(t *testing.T) {
 	filterOutputID := "foo"
-	dimensionBody := `[{
-		"dimension_url": "www.ons.gov.uk",
-		"name": "quuz",
-		"options": ["corge"]}]`
+	dimensionBody := `{
+		"items": [
+			{ "dimension_url": "www.ons.gov.uk/dim1", "name": "DimensionOne" },
+			{ "dimension_url": "www.ons.gov.uk/dim2", "name": "DimensionTwo" }],
+		"count": 2,
+		"offset": 1,
+		"limit": 10,
+		"total_count": 3
+	}`
 
-	Convey("When bad request is returned", t, func() {
+	Convey("When bad request is returned then the expected ErrInvalidFilterAPIResponse is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID)
-		So(err, ShouldNotBeNil)
+		q := QueryParams{}
+		_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, q)
+		So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+		So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+		So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "/filters/foo/dimensions?offset=0&limit=0"), ShouldBeTrue)
 	})
 
-	Convey("When server error is returned", t, func() {
+	Convey("When server error is returned then the expected ErrInvalidFilterAPIResponse is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
-		_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID)
-		So(err, ShouldNotBeNil)
+		q := QueryParams{}
+		_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, q)
+		So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+		So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusInternalServerError)
+		So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "/filters/foo/dimensions?offset=0&limit=0"), ShouldBeTrue)
 	})
 
-	Convey("When a dimension-instance is returned", t, func() {
+	Convey("When a dimension-instance json is returned by the api then the corresponding Dimensions struct is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
-		dims, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID)
-		So(err, ShouldBeNil)
-		So(dims, ShouldResemble, []Dimension{
-			Dimension{
-				Name: "quuz",
-				URI:  "www.ons.gov.uk",
-			},
+
+		Convey("Then a request with valid query parameterse returns the expected Dimensions struct", func() {
+			q := QueryParams{1, 10}
+			dims, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, q)
+			So(err, ShouldBeNil)
+			So(dims, ShouldResemble, Dimensions{
+				Items: []Dimension{
+					{URI: "www.ons.gov.uk/dim1", Name: "DimensionOne"},
+					{URI: "www.ons.gov.uk/dim2", Name: "DimensionTwo"}},
+				Count:      2,
+				Offset:     1,
+				Limit:      10,
+				TotalCount: 3,
+			})
 		})
+
+		Convey("Then a request with invalid offset query paratmers returns a validation error", func() {
+			q := QueryParams{-1, 0}
+			_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, q)
+			So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
+		})
+
+		Convey("Then a request with invalid limit query paratmers returns a validation error", func() {
+			q := QueryParams{0, -1}
+			_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, q)
+			So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
+		})
+
 	})
 }
 
