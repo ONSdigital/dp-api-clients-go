@@ -834,7 +834,7 @@ func TestClient_GetOptions(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI, providing the list of IDs and no offset or limit", func() {
-				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?ids=testOption,somethingElse",
+				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?id=testOption,somethingElse",
 					instanceID, edition, version, dimension)
 				checkResponseBase(httpClient, http.MethodGet, expectedURI)
 			})

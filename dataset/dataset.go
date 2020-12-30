@@ -753,7 +753,7 @@ func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken
 
 	var uri string
 	if len(q.IDs) > 0 {
-		uri = fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?ids=%s", c.hcCli.URL, id, edition, version, dimension, strings.Join(q.IDs, ","))
+		uri = fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?id=%s", c.hcCli.URL, id, edition, version, dimension, strings.Join(q.IDs, ","))
 	} else {
 		uri = fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?offset=%d&limit=%d", c.hcCli.URL, id, edition, version, dimension, q.Offset, q.Limit)
 	}
