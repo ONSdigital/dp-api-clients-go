@@ -532,10 +532,19 @@ func TestClient_GetDimensionOptionsInBatches(t *testing.T) {
 	maxWorkers := 1
 
 	Convey("When a 200 OK status is returned in 2 consecutive calls", t, func() {
+
+		// mockedAPI is a HTTP mock
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
 			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody0},
 			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody1},
 		)
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []DimensionOptions{}
+		var testProcess DimensionOptionsBatchProcessor = func(batch DimensionOptions) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
 
 		Convey("then GetDimensionOptionsInBatches succeeds and returns the accumulated items from all the batches", func() {
 			opts, err := mockedAPI.GetDimensionOptionsInBatches(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, batchSize, maxWorkers)
@@ -552,15 +561,97 @@ func TestClient_GetDimensionOptionsInBatches(t *testing.T) {
 				Offset:     0,
 			})
 		})
+
+		Convey("then GetDimensionOptionsBatchProcess calls the batchProcessor function twice, with the expected baches", func() {
+			err := mockedAPI.GetDimensionOptionsBatchProcess(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, testProcess, batchSize, maxWorkers)
+			So(err, ShouldBeNil)
+			So(processedBatches, ShouldResemble, []DimensionOptions{
+				{
+					Items: []DimensionOption{
+						{DimensionOptionsURL: "http://op1.co.uk", Option: "op1"},
+						{DimensionOptionsURL: "http://op2.co.uk", Option: "op2"},
+					},
+					Count:      2,
+					TotalCount: 3,
+					Limit:      2,
+					Offset:     0,
+				},
+				{
+					Items: []DimensionOption{
+						{DimensionOptionsURL: "http://op3.co.uk", Option: "op3"},
+					},
+					Count:      1,
+					TotalCount: 3,
+					Limit:      2,
+					Offset:     2,
+				},
+			})
+		})
 	})
 
-	Convey("When a 500 error status is returned in the first call", t, func() {
+	Convey("When a 400 error status is returned in the first call", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
-			MockedHTTPResponse{StatusCode: 500, Body: "someError"})
+			MockedHTTPResponse{StatusCode: 400, Body: ""})
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []DimensionOptions{}
+		var testProcess DimensionOptionsBatchProcessor = func(batch DimensionOptions) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetDimensionOptionsInBatches fails with the expected error and the process is aborted", func() {
+			_, err := mockedAPI.GetDimensionOptionsInBatches(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, batchSize, maxWorkers)
+			So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+			So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+			So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "filters/foo/dimensions/corge/options?offset=0&limit=2"), ShouldBeTrue)
+		})
+
+		Convey("then GetDimensionOptionsBatchProcess fails with the expected error and doesn't call the batchProcessor", func() {
+			err := mockedAPI.GetDimensionOptionsBatchProcess(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, testProcess, batchSize, maxWorkers)
+			So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+			So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+			So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "filters/foo/dimensions/corge/options?offset=0&limit=2"), ShouldBeTrue)
+			So(processedBatches, ShouldResemble, []DimensionOptions{})
+		})
+	})
+
+	Convey("When a 200 error status is returned in the first call and 400 error is returned in the second call", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody0},
+			MockedHTTPResponse{StatusCode: 400, Body: ""})
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []DimensionOptions{}
+		var testProcess DimensionOptionsBatchProcessor = func(batch DimensionOptions) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
 
 		Convey("then GetDimensionOptionsInBatches fails with the expected error", func() {
 			_, err := mockedAPI.GetDimensionOptionsInBatches(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, batchSize, maxWorkers)
-			So(err, ShouldNotBeNil)
+			So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+			So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+			So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "filters/foo/dimensions/corge/options?offset=2&limit=2"), ShouldBeTrue)
+		})
+
+		Convey("then GetDimensionOptionsBatchProcess fails with the expected error and calls the batchProcessor for the first batch only", func() {
+			err := mockedAPI.GetDimensionOptionsBatchProcess(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, testProcess, batchSize, maxWorkers)
+			So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+			So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+			So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "filters/foo/dimensions/corge/options?offset=2&limit=2"), ShouldBeTrue)
+			So(processedBatches, ShouldResemble, []DimensionOptions{
+				{
+					Items: []DimensionOption{
+						{DimensionOptionsURL: "http://op1.co.uk", Option: "op1"},
+						{DimensionOptionsURL: "http://op2.co.uk", Option: "op2"},
+					},
+					Count:      2,
+					TotalCount: 3,
+					Limit:      2,
+					Offset:     0,
+				},
+			})
 		})
 	})
 
