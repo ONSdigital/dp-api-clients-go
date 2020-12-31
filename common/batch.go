@@ -12,7 +12,7 @@ type GenericBatchProcessor func(batch interface{}) (abort bool, err error)
 func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch GenericBatchProcessor, batchSize, maxWorkers int) (err error) {
 	wg := sync.WaitGroup{}
 	chWait := make(chan struct{})
-	chErr := make(chan error)
+	chErr := make(chan error, maxWorkers)
 	chAbort := make(chan struct{})
 	chSemaphore := make(chan struct{}, maxWorkers)
 
@@ -30,62 +30,81 @@ func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch Generi
 		wg.Done()
 	}
 
-	// initial state of control variables
-	totalCount := 1
-	first := true
-	abort := false
+	// abort closes the abort channel if it's not already closed
+	abort := func() {
+		select {
+		case <-chAbort:
+		default:
+			close(chAbort)
+		}
+	}
+
+	// isAborting returns true if the abort channel is closed
+	isAborting := func() bool {
+		select {
+		case <-chAbort:
+			return true
+		default:
+			return false
+		}
+	}
 
 	// func executed in each go-routine to process the batch and send errors to the error channel
 	doProcessBatch := func(offset int) {
 		defer release()
 
 		// Abort if needed
-		if abort {
+		if isAborting() {
 			return
 		}
 
 		// get batch
-		batch, tc, err := getBatch(offset)
+		batch, _, err := getBatch(offset)
 		if err != nil {
 			chErr <- err
+			abort()
 			return
 		}
 
-		// lock for deterministic result manipulation
+		// lock to prevent concurrent result manipulation
 		lockResult.Lock()
 
-		// (first iteration only) - set totalCount
-		if first {
-			totalCount = tc
-			first = false
-		}
-
 		// process batch by calling the provided function
-		abort, err := processBatch(batch)
+		forceAbort, err := processBatch(batch)
 		if err != nil {
 			chErr <- err
+			abort()
 		}
-		if abort {
-			close(chAbort)
+		if forceAbort {
+			abort()
 		}
 
 		// unlock
 		lockResult.Unlock()
 	}
 
-	// execute first batch sequentially, so that we know the total count before triggering any go-routine
-	doProcessBatch(0)
+	// get first batch sequentially, so that we know the total count before triggering any further go-routine
+	batch, totalCount, err := getBatch(0)
+	if err != nil {
+		return err
+	}
 
-	// determine the total number of calls (considering that we have already performed the first call)
+	// process first batch by calling the provided function
+	forceAbort, err := processBatch(batch)
+	if forceAbort || err != nil {
+		return err
+	}
+
+	// determine the total number of remaining calls, considering that we have already performed the first one
 	numCalls := totalCount / batchSize
 	if (totalCount % batchSize) == 0 {
 		numCalls--
 	}
 
-	// process batches concurrently
+	// process remaining batches concurrently
 	for i := 0; i < numCalls; i++ {
 		acquire()
-		go doProcessBatch(i + 1)
+		go doProcessBatch((i + 1) * batchSize)
 	}
 
 	// func that will close wait channel when all go-routines complete their execution
@@ -98,11 +117,8 @@ func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch Generi
 	for {
 		select {
 		case err = <-chErr:
-			abort = true
-		case <-chAbort:
-			abort = true
 		case <-chWait:
-			return
+			return err
 		}
 	}
 }

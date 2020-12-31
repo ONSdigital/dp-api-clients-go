@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	"github.com/ONSdigital/dp-api-clients-go/common"
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
@@ -33,6 +34,9 @@ type Config struct {
 	InternalToken string
 	FlorenceToken string
 }
+
+// DimensionOptionsBatchProcessor is the type corresponding to a batch processing function for filter DimensionOptions
+type DimensionOptionsBatchProcessor func(DimensionOptions) (abort bool, err error)
 
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidFilterAPIResponse) Error() string {
@@ -277,6 +281,51 @@ func (c *Client) GetDimensionOptionsBytes(ctx context.Context, userAuthToken, se
 	}
 
 	return ioutil.ReadAll(resp.Body)
+}
+
+// GetDimensionOptionsInBatches retrieves a list of the dimension options in concurrent batches and accumulates the results
+func (c *Client) GetDimensionOptionsInBatches(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, batchSize, maxWorkers int) (opts DimensionOptions, err error) {
+
+	// function to aggregate items. The first received batch will initialise the structure with items with a fixed size
+	// and items are aggregated in order even if batches are received in the wrong order (e.g. due to concurrent calls)
+	var processBatch DimensionOptionsBatchProcessor = func(batch DimensionOptions) (abort bool, err error) {
+		if len(opts.Items) == 0 {
+			opts.TotalCount = batch.TotalCount
+			opts.Items = make([]DimensionOption, batch.TotalCount)
+			opts.Count = batch.TotalCount
+		}
+		for i := 0; i < len(batch.Items); i++ {
+			opts.Items[i+batch.Offset] = batch.Items[i]
+		}
+		return false, nil
+	}
+
+	// call filter API GetOptions in batches and aggregate the responses
+	if err := c.GetDimensionOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name, processBatch, batchSize, maxWorkers); err != nil {
+		return DimensionOptions{}, err
+	}
+	return opts, nil
+}
+
+// GetDimensionOptionsBatchProcess gets the filter options for a dimension from filter API in batches, and calls the provided function for each batch.
+func (c *Client) GetDimensionOptionsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, processBatch DimensionOptionsBatchProcessor, batchSize, maxWorkers int) (err error) {
+
+	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit
+	batchGetter := func(offset int) (interface{}, int, error) {
+		batch, err := c.GetDimensionOptions(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name, QueryParams{Offset: offset, Limit: batchSize})
+		return batch, batch.TotalCount, err
+	}
+
+	// cast and process the batch according to the provided method
+	batchProcessor := func(batch interface{}) (abort bool, err error) {
+		v, ok := batch.(DimensionOptions)
+		if !ok {
+			return true, errors.New("wrong type")
+		}
+		return processBatch(v)
+	}
+
+	return common.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
 }
 
 // CreateBlueprint creates a filter blueprint and returns the associated filterID
