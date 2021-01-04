@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
+	"github.com/ONSdigital/dp-api-clients-go/common"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
@@ -57,6 +58,9 @@ type ErrInvalidDatasetAPIResponse struct {
 	uri        string
 	body       string
 }
+
+// OptionsBatchProcessor is the type corresponding to a batch processing function for dataset Options
+type OptionsBatchProcessor func(Options) (abort bool, err error)
 
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidDatasetAPIResponse) Error() string {
@@ -778,6 +782,51 @@ func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken
 
 	err = json.Unmarshal(b, &m)
 	return
+}
+
+// GetOptionsInBatches retrieves a list of the dimension options in concurrent batches and accumulates the results
+func (c *Client) GetOptionsInBatches(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string, batchSize, maxWorkers int) (opts Options, err error) {
+
+	// function to aggregate items. The first received batch will initialise the structure with items with a fixed size
+	// and items are aggregated in order even if batches are received in the wrong order (e.g. due to concurrent calls)
+	var processBatch OptionsBatchProcessor = func(batch Options) (abort bool, err error) {
+		if len(opts.Items) == 0 {
+			opts.TotalCount = batch.TotalCount
+			opts.Items = make([]Option, batch.TotalCount)
+			opts.Count = batch.TotalCount
+		}
+		for i := 0; i < len(batch.Items); i++ {
+			opts.Items[i+batch.Offset] = batch.Items[i]
+		}
+		return false, nil
+	}
+
+	// call dataset API GetOptions in batches and aggregate the responses
+	if err := c.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension, processBatch, batchSize, maxWorkers); err != nil {
+		return Options{}, err
+	}
+	return opts, nil
+}
+
+// GetOptionsBatchProcess gets the dataset options for a dimension from dataset API in batches, and calls the provided function for each batch.
+func (c *Client) GetOptionsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string, processBatch OptionsBatchProcessor, batchSize, maxWorkers int) (err error) {
+
+	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit
+	batchGetter := func(offset int) (interface{}, int, error) {
+		batch, err := c.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension, QueryParams{Offset: offset, Limit: batchSize})
+		return batch, batch.TotalCount, err
+	}
+
+	// cast and process the batch according to the provided method
+	batchProcessor := func(batch interface{}) (abort bool, err error) {
+		v, ok := batch.(Options)
+		if !ok {
+			return true, errors.New("wrong type")
+		}
+		return processBatch(v)
+	}
+
+	return common.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
 }
 
 // NewDatasetAPIResponse creates an error response, optionally adding body to e when status is 404
