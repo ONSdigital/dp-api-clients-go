@@ -888,7 +888,7 @@ func TestClient_GetOptions(t *testing.T) {
 	})
 }
 
-func TestClient_GetDimensionOptionsInBatches(t *testing.T) {
+func TestClient_GetOptionsInBatches(t *testing.T) {
 
 	instanceID := "testInstance"
 	edition := "testEdition"
