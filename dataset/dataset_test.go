@@ -947,9 +947,25 @@ func TestClient_GetOptionsInBatches(t *testing.T) {
 		})
 
 		Convey("then GetOptionsBatchProcess calls the batchProcessor function twice, with the expected baches", func() {
-			err := datasetClient.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, testProcess, batchSize, maxWorkers)
+			err := datasetClient.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, nil, testProcess, batchSize, maxWorkers)
 			So(err, ShouldBeNil)
 			So(processedBatches, ShouldResemble, []Options{opts0, opts1})
+			So(httpClient.DoCalls(), ShouldHaveLength, 2)
+			So(httpClient.DoCalls()[0].Req.URL.String(), ShouldResemble,
+				"http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?offset=0&limit=2")
+			So(httpClient.DoCalls()[1].Req.URL.String(), ShouldResemble,
+				"http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?offset=2&limit=2")
+		})
+
+		Convey("and a list of IDs is provided, then GetOptionsBatchProcess calls the batchProcessor function for the expected baches of IDs", func() {
+			err := datasetClient.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, &[]string{"op1", "op3", "op5"}, testProcess, batchSize, maxWorkers)
+			So(err, ShouldBeNil)
+			So(processedBatches, ShouldHaveLength, 2)
+			So(httpClient.DoCalls(), ShouldHaveLength, 2)
+			So(httpClient.DoCalls()[0].Req.URL.String(), ShouldResemble,
+				"http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?id=op1,op3")
+			So(httpClient.DoCalls()[1].Req.URL.String(), ShouldResemble,
+				"http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?id=op5")
 		})
 	})
 
@@ -972,7 +988,7 @@ func TestClient_GetOptionsInBatches(t *testing.T) {
 		})
 
 		Convey("then GetOptionsBatchProcess fails with the expected error and doesn't call the batchProcessor", func() {
-			err := datasetClient.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, testProcess, batchSize, maxWorkers)
+			err := datasetClient.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, nil, testProcess, batchSize, maxWorkers)
 			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
 			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?offset=0&limit=2")
 			So(processedBatches, ShouldResemble, []Options{})
@@ -999,7 +1015,7 @@ func TestClient_GetOptionsInBatches(t *testing.T) {
 		})
 
 		Convey("then GetOptionsBatchProcess fails with the expected error and calls the batchProcessor for the first batch only", func() {
-			err := datasetClient.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, testProcess, batchSize, maxWorkers)
+			err := datasetClient.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, nil, testProcess, batchSize, maxWorkers)
 			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
 			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?offset=2&limit=2")
 			So(processedBatches, ShouldResemble, []Options{opts0})

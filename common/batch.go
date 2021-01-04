@@ -122,3 +122,11 @@ func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch Generi
 		}
 	}
 }
+
+// Min returns the lowest value
+func Min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
+}

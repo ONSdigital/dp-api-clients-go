@@ -23,7 +23,7 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 			return func(offset int) (interface{}, int, error) {
 				numCall := len(batchGetterCalls)
 				batchGetterCalls = append(batchGetterCalls, offset)
-				end := min(offset+batchSize, len(full))
+				end := Min(offset+batchSize, len(full))
 				batch := full[offset:end]
 				return batch, len(full), retErrorByCall[numCall]
 			}
@@ -169,11 +169,4 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 
 	})
 
-}
-
-func min(x, y int) int {
-	if x < y {
-		return x
-	}
-	return y
 }

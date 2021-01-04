@@ -802,18 +802,28 @@ func (c *Client) GetOptionsInBatches(ctx context.Context, userAuthToken, service
 	}
 
 	// call dataset API GetOptions in batches and aggregate the responses
-	if err := c.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension, processBatch, batchSize, maxWorkers); err != nil {
+	if err := c.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension, nil, processBatch, batchSize, maxWorkers); err != nil {
 		return Options{}, err
 	}
 	return opts, nil
 }
 
 // GetOptionsBatchProcess gets the dataset options for a dimension from dataset API in batches, and calls the provided function for each batch.
-func (c *Client) GetOptionsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string, processBatch OptionsBatchProcessor, batchSize, maxWorkers int) (err error) {
+// If optionIDs is provided, only the options with the provided IDs will be requested
+func (c *Client) GetOptionsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string, optionIDs *[]string, processBatch OptionsBatchProcessor, batchSize, maxWorkers int) (err error) {
 
-	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit
+	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit,
+	// or the subste of IDs according to the provided offset, if a list of optionIDs was provided
 	batchGetter := func(offset int) (interface{}, int, error) {
-		batch, err := c.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension, QueryParams{Offset: offset, Limit: batchSize})
+		var batch Options
+		if optionIDs != nil {
+			// get batch of option IDs to obtain
+			bachEnd := common.Min((len(*optionIDs)), offset+batchSize)
+			batchOptionIDs := (*optionIDs)[offset:bachEnd]
+			batch, err = c.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension, QueryParams{IDs: batchOptionIDs})
+			return batch, len(*optionIDs), err
+		}
+		batch, err = c.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension, QueryParams{Offset: offset, Limit: batchSize})
 		return batch, batch.TotalCount, err
 	}
 
