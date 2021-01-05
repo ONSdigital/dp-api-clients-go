@@ -18,13 +18,13 @@ func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch Generi
 
 	lockResult := sync.Mutex{}
 
-	// worker add delta to workgroup and acquire semaphore
+	// worker add delta to workers WaitGroup and acquire semaphore
 	acquire := func() {
 		wg.Add(1)
 		chSemaphore <- struct{}{}
 	}
 
-	// worker release semaphore and workgroup delta
+	// worker release semaphore and workers WaitGroup delta
 	release := func() {
 		<-chSemaphore
 		wg.Done()

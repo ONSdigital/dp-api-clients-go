@@ -55,6 +55,22 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 			})
 		})
 
+		Convey("A batch size of 5 and successful batch getter and processor mocks and 2 workers", func() {
+			batchSize := 5
+			maxWorkers := 2
+			getter := batchGetter(batchSize, []error{nil, nil})
+			processor := batchProcessor([]bool{false, false}, []error{nil, nil})
+
+			Convey("Then processing in batches results in the methods being called twice with the expected offsets and batches", func() {
+				err := ProcessInConcurrentBatches(getter, processor, batchSize, maxWorkers)
+				So(err, ShouldBeNil)
+				So(batchGetterCalls, ShouldResemble, []int{0, 5})
+				So(batchProcessorCalls, ShouldResemble, []interface{}{
+					[]string{"0", "1", "2", "3", "4"},
+					[]string{"5", "6", "7", "8", "9"}})
+			})
+		})
+
 		Convey("A batch size of 3 and successful batch getter and processor mocks", func() {
 			batchSize := 3
 			maxWorkers := 1
