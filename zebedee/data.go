@@ -168,15 +168,15 @@ type HomepageDescription struct {
 }
 
 type Collection struct {
-	ID              string         `json:"id"`
-	Name            string         `json:"name"`
-	Inprogress      CollectionItem `json:"inProgress"`
-	Complete        CollectionItem `json:"complete"`
-	Reviewed        CollectionItem `json:"reviewed"`
-	Datasets        CollectionItem `json:"datasets"`
-	DatasetVersions CollectionItem `json:"datasetVersions"`
-	ApprovalStatus  string         `json:"approvalStatus"`
-	Type            string         `json:"type"`
+	ID              string           `json:"id"`
+	Name            string           `json:"name"`
+	Inprogress      []CollectionItem `json:"inProgress"`
+	Complete        []CollectionItem `json:"complete"`
+	Reviewed        []CollectionItem `json:"reviewed"`
+	Datasets        []CollectionItem `json:"datasets"`
+	DatasetVersions []CollectionItem `json:"datasetVersions"`
+	ApprovalStatus  string           `json:"approvalStatus"`
+	Type            string           `json:"type"`
 }
 
 type CollectionItem struct {
