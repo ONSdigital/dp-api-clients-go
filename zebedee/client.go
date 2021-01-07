@@ -18,6 +18,7 @@ import (
 
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
 )
 
@@ -60,6 +61,19 @@ func New(zebedeeURL string) *Client {
 	}
 	hcClient := healthcheck.NewClient(service, zebedeeURL)
 	hcClient.Client.SetTimeout(time.Duration(timeout) * time.Second)
+
+	return &Client{
+		hcClient,
+	}
+}
+
+// NewWithSetTimeoutAndMaxRetry creates a new Zebedee Client, with a configurable timeout and maximum number of retries
+func NewWithSetTimeoutAndMaxRetry(zebedeeURL string, timeout, retry int) *Client {
+	hcClienter := dphttp.NewClient()
+
+	hcClient := healthcheck.NewClientWithClienter(service, zebedeeURL, hcClienter)
+	hcClient.Client.SetTimeout(time.Duration(timeout) * time.Second)
+	hcClient.Client.SetMaxRetries(retry)
 
 	return &Client{
 		hcClient,
