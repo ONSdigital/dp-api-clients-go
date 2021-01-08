@@ -68,12 +68,8 @@ func New(zebedeeURL string) *Client {
 }
 
 // NewWithSetTimeoutAndMaxRetry creates a new Zebedee Client, with a configurable timeout and maximum number of retries
-func NewWithSetTimeoutAndMaxRetry(zebedeeURL string, timeout, retry int) *Client {
-	hcClienter := dphttp.NewClient()
-
-	hcClient := healthcheck.NewClientWithClienter(service, zebedeeURL, hcClienter)
-	hcClient.Client.SetTimeout(time.Duration(timeout) * time.Second)
-	hcClient.Client.SetMaxRetries(retry)
+func NewClientWithClienter(zebedeeURL string, clienter dphttp.Clienter) *Client {
+	hcClient := healthcheck.NewClientWithClienter(service, zebedeeURL, clienter)
 
 	return &Client{
 		hcClient,
