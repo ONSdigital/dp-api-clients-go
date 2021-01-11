@@ -342,6 +342,22 @@ func (c *Client) PutDatasetVersionInCollection(ctx context.Context, userAccessTo
 	return nil
 }
 
+func (c *Client) GetCollection(ctx context.Context, userAccessToken, collectionID string) (Collection, error) {
+	reqURL := fmt.Sprintf("collections/%s", collectionID)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
+
+	if err != nil {
+		return Collection{}, err
+	}
+
+	var collection Collection
+	if err = json.Unmarshal(b, &collection); err != nil {
+		return collection, err
+	}
+
+	return collection, nil
+}
+
 // GetResourceBody returns body of a resource e.g. JSON definition of a table
 func (c *Client) GetResourceBody(ctx context.Context, userAccessToken, collectionID, lang, uri string) ([]byte, error) {
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/resource", "uri="+uri)
