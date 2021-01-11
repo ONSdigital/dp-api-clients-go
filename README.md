@@ -45,7 +45,7 @@ Or you may create it providing a Healthcheck client:
 
 Each method in each client corresponds to a single call against one endpoint of an API, except for the Batch processing calls, which may trigger multiple concurrent calls.
 
-The batch processing logic is implemented in the common package  as a generic method (`ProcessInConcurrentBatches`) that can be used by multiple client implementations to handle the processing of paginated responses.
+The batch processing logic is implemented in the batch package as a generic method (`ProcessInConcurrentBatches`) that can be used by multiple client implementations to handle the processing of paginated responses.
 
 For each batch, a parallel go-routine will trigger the provided getter method (`GenericBatchGetter`). Once the getter method returns, the resulting batch is provided to the processor method (`GenericBatchProcessor`) after acquiring a lock to guarantee mutually exclusive execution of processors.
 

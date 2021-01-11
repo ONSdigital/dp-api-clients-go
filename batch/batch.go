@@ -1,4 +1,4 @@
-package common
+package batch
 
 import "sync"
 
@@ -68,6 +68,7 @@ func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch Generi
 
 		// lock to prevent concurrent result manipulation
 		lockResult.Lock()
+		defer lockResult.Unlock()
 
 		// process batch by calling the provided function
 		forceAbort, err := processBatch(batch)
@@ -78,9 +79,6 @@ func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch Generi
 		if forceAbort {
 			abort()
 		}
-
-		// unlock
-		lockResult.Unlock()
 	}
 
 	// get first batch sequentially, so that we know the total count before triggering any further go-routine
