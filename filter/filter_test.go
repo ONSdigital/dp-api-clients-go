@@ -221,11 +221,24 @@ func TestClient_GetOutput(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("When server error is returned in all attempts then the expected error is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
 		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned in first attempt but 200 OK is returned in the first retry then the corresponding Output is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 200, Body: filterOutputBody})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		model, err := mockedAPI.GetOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
+		So(err, ShouldBeNil)
+		So(model, ShouldResemble, Model{FilterID: filterOutputID})
 	})
 
 	Convey("When a filter-instance is returned", t, func() {
@@ -245,11 +258,23 @@ func TestClient_UpdateFilterOutput(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "PUT"}, MockedHTTPResponse{StatusCode: 500, Body: ""})
+	Convey("When server error is returned in all attempts", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "PUT"},
+			MockedHTTPResponse{StatusCode: 500, Body: ""},
+			MockedHTTPResponse{StatusCode: 500, Body: ""},
+			MockedHTTPResponse{StatusCode: 500, Body: ""})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		err := mockedAPI.UpdateFilterOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterJobID, &model)
 		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "PUT"},
+			MockedHTTPResponse{StatusCode: 500, Body: ""},
+			MockedHTTPResponse{StatusCode: 200, Body: ""})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		err := mockedAPI.UpdateFilterOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterJobID, &model)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("When server returns 200 OK", t, func() {
@@ -272,11 +297,27 @@ func TestClient_GetDimension(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("When server error is returned in all attempts", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		dim, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
+		So(err, ShouldBeNil)
+		So(dim, ShouldResemble, Dimension{
+			Name: "quuz",
+			URI:  "www.ons.gov.uk",
+		})
 	})
 
 	Convey("When a dimension-instance is returned", t, func() {
@@ -311,14 +352,36 @@ func TestClient_GetDimensions(t *testing.T) {
 		So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "/filters/foo/dimensions?offset=0&limit=0"), ShouldBeTrue)
 	})
 
-	Convey("When server error is returned then the expected ErrInvalidFilterAPIResponse is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("When server error is returned in all attempts then the expected ErrInvalidFilterAPIResponse is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		q := QueryParams{}
 		_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, q)
 		So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
 		So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusInternalServerError)
 		So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "/filters/foo/dimensions?offset=0&limit=0"), ShouldBeTrue)
+	})
+
+	Convey("When server error is returned in first attempt but 200 OK is returned in the first retry then the corresponding Dimensions struct is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		q := QueryParams{}
+		dims, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, q)
+		So(err, ShouldBeNil)
+		So(dims, ShouldResemble, Dimensions{
+			Items: []Dimension{
+				{URI: "www.ons.gov.uk/dim1", Name: "DimensionOne"},
+				{URI: "www.ons.gov.uk/dim2", Name: "DimensionTwo"}},
+			Count:      2,
+			Offset:     1,
+			Limit:      10,
+			TotalCount: 3,
+		})
 	})
 
 	Convey("When a dimension-instance json is returned by the api then the corresponding Dimensions struct is returned", t, func() {
@@ -376,8 +439,11 @@ func TestClient_GetDimensionOptions(t *testing.T) {
 		})
 	})
 
-	Convey("Given a 500 InternalServerError is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("Given a 500 InternalServerError is returned in all attempts", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 
 		Convey("then GetDimensionOptions returns the expected error", func() {
@@ -387,6 +453,31 @@ func TestClient_GetDimensionOptions(t *testing.T) {
 				ActualCode:   500,
 				ExpectedCode: 200,
 				URI:          fmt.Sprintf("%s/filters/%s/dimensions/%s/options?offset=%d&limit=%d", mockedAPI.hcCli.URL, filterOutputID, name, offset, limit),
+			})
+		})
+	})
+
+	Convey("Given a 500 InternalServerError is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+
+		Convey("then GetDimensionOptions returns the expected Options", func() {
+			q := QueryParams{offset, limit}
+			opts, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, q)
+			So(err, ShouldBeNil)
+			So(opts, ShouldResemble, DimensionOptions{
+				Items: []DimensionOption{
+					{
+						DimensionOptionsURL: "quux",
+						Option:              "quuz",
+					},
+				},
+				Count:      1,
+				TotalCount: 3,
+				Limit:      10,
+				Offset:     2,
 			})
 		})
 	})
@@ -424,6 +515,146 @@ func TestClient_GetDimensionOptions(t *testing.T) {
 			So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
 		})
 	})
+}
+
+func TestClient_GetDimensionOptionsInBatches(t *testing.T) {
+
+	filterOutputID := "foo"
+	dimensionBody0 := `{"items": [
+		{"dimension_option_url":"http://op1.co.uk", "option": "op1"},
+		{"dimension_option_url":"http://op2.co.uk", "option": "op2"}
+		], "offset": 0, "limit": 2, "count": 2, "total_count": 3}`
+	dimensionBody1 := `{"items": [
+		{"dimension_option_url":"http://op3.co.uk", "option": "op3"}
+		], "offset": 2, "limit": 2, "count": 1, "total_count": 3}`
+	name := "corge"
+	batchSize := 2
+	maxWorkers := 1
+
+	Convey("When a 200 OK status is returned in 2 consecutive calls", t, func() {
+
+		// mockedAPI is a HTTP mock
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody0},
+			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody1},
+		)
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []DimensionOptions{}
+		var testProcess DimensionOptionsBatchProcessor = func(batch DimensionOptions) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetDimensionOptionsInBatches succeeds and returns the accumulated items from all the batches", func() {
+			opts, err := mockedAPI.GetDimensionOptionsInBatches(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, batchSize, maxWorkers)
+			So(err, ShouldBeNil)
+			So(opts, ShouldResemble, DimensionOptions{
+				Items: []DimensionOption{
+					{DimensionOptionsURL: "http://op1.co.uk", Option: "op1"},
+					{DimensionOptionsURL: "http://op2.co.uk", Option: "op2"},
+					{DimensionOptionsURL: "http://op3.co.uk", Option: "op3"},
+				},
+				Count:      3,
+				TotalCount: 3,
+				Limit:      0,
+				Offset:     0,
+			})
+		})
+
+		Convey("then GetDimensionOptionsBatchProcess calls the batchProcessor function twice, with the expected baches", func() {
+			err := mockedAPI.GetDimensionOptionsBatchProcess(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, testProcess, batchSize, maxWorkers)
+			So(err, ShouldBeNil)
+			So(processedBatches, ShouldResemble, []DimensionOptions{
+				{
+					Items: []DimensionOption{
+						{DimensionOptionsURL: "http://op1.co.uk", Option: "op1"},
+						{DimensionOptionsURL: "http://op2.co.uk", Option: "op2"},
+					},
+					Count:      2,
+					TotalCount: 3,
+					Limit:      2,
+					Offset:     0,
+				},
+				{
+					Items: []DimensionOption{
+						{DimensionOptionsURL: "http://op3.co.uk", Option: "op3"},
+					},
+					Count:      1,
+					TotalCount: 3,
+					Limit:      2,
+					Offset:     2,
+				},
+			})
+		})
+	})
+
+	Convey("When a 400 error status is returned in the first call", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 400, Body: ""})
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []DimensionOptions{}
+		var testProcess DimensionOptionsBatchProcessor = func(batch DimensionOptions) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetDimensionOptionsInBatches fails with the expected error and the process is aborted", func() {
+			_, err := mockedAPI.GetDimensionOptionsInBatches(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, batchSize, maxWorkers)
+			So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+			So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+			So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "filters/foo/dimensions/corge/options?offset=0&limit=2"), ShouldBeTrue)
+		})
+
+		Convey("then GetDimensionOptionsBatchProcess fails with the expected error and doesn't call the batchProcessor", func() {
+			err := mockedAPI.GetDimensionOptionsBatchProcess(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, testProcess, batchSize, maxWorkers)
+			So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+			So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+			So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "filters/foo/dimensions/corge/options?offset=0&limit=2"), ShouldBeTrue)
+			So(processedBatches, ShouldResemble, []DimensionOptions{})
+		})
+	})
+
+	Convey("When a 200 error status is returned in the first call and 400 error is returned in the second call", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody0},
+			MockedHTTPResponse{StatusCode: 400, Body: ""})
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []DimensionOptions{}
+		var testProcess DimensionOptionsBatchProcessor = func(batch DimensionOptions) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetDimensionOptionsInBatches fails with the expected error", func() {
+			_, err := mockedAPI.GetDimensionOptionsInBatches(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, batchSize, maxWorkers)
+			So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+			So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+			So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "filters/foo/dimensions/corge/options?offset=2&limit=2"), ShouldBeTrue)
+		})
+
+		Convey("then GetDimensionOptionsBatchProcess fails with the expected error and calls the batchProcessor for the first batch only", func() {
+			err := mockedAPI.GetDimensionOptionsBatchProcess(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, testProcess, batchSize, maxWorkers)
+			So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+			So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+			So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "filters/foo/dimensions/corge/options?offset=2&limit=2"), ShouldBeTrue)
+			So(processedBatches, ShouldResemble, []DimensionOptions{
+				{
+					Items: []DimensionOption{
+						{DimensionOptionsURL: "http://op1.co.uk", Option: "op1"},
+						{DimensionOptionsURL: "http://op2.co.uk", Option: "op2"},
+					},
+					Count:      2,
+					TotalCount: 3,
+					Limit:      2,
+					Offset:     0,
+				},
+			})
+		})
+	})
+
 }
 
 func TestClient_CreateBlueprint(t *testing.T) {
@@ -1094,7 +1325,6 @@ func TestClient_GetJobState(t *testing.T) {
 	mockJobStateBody := `{
 		"jobState": "www.ons.gov.uk"}`
 	Convey("When a state is returned", t, func() {
-
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: mockJobStateBody})
 		_, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
 		So(err, ShouldBeNil)
@@ -1105,12 +1335,24 @@ func TestClient_GetJobState(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("When server error is returned in all attempts", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		m, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
 		So(err, ShouldNotBeNil)
 		So(m, ShouldResemble, Model{})
+	})
+
+	Convey("When server error is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 200, Body: mockJobStateBody})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		_, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
+		So(err, ShouldBeNil)
 	})
 }
 
@@ -1181,11 +1423,24 @@ func TestClient_GetPreview(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("When server error is returned in all attempts", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetPreview(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
 		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 200, Body: previewBody})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		p, err := mockedAPI.GetPreview(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
+		So(err, ShouldBeNil)
+		So(p, ShouldResemble, Preview{})
 	})
 
 	Convey("When a preview is returned", t, func() {
@@ -1216,15 +1471,17 @@ func newFilterClient(clienter *dphttp.ClienterMock) *Client {
 	return filterClient
 }
 
-func getMockfilterAPI(expectRequest http.Request, mockedHTTPResponse MockedHTTPResponse) *Client {
+func getMockfilterAPI(expectRequest http.Request, mockedHTTPResponse ...MockedHTTPResponse) *Client {
+	numCall := 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != expectRequest.Method {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("unexpected HTTP method used"))
 			return
 		}
-		w.WriteHeader(mockedHTTPResponse.StatusCode)
-		fmt.Fprintln(w, mockedHTTPResponse.Body)
+		w.WriteHeader(mockedHTTPResponse[numCall].StatusCode)
+		fmt.Fprintln(w, mockedHTTPResponse[numCall].Body)
+		numCall++
 	}))
 	return New(ts.URL)
 }
