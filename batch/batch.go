@@ -1,6 +1,9 @@
 package batch
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
 
 // GenericBatchGetter defines the method signature for a batch getter to obtain a batch of some generic resource
 type GenericBatchGetter func(offset int) (batch interface{}, totalCount int, err error)
@@ -108,6 +111,7 @@ func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch Generi
 	// func that will close wait channel when all go-routines complete their execution
 	go func() {
 		wg.Wait()
+		time.Sleep(time.Millisecond)
 		close(chWait)
 	}()
 
