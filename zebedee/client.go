@@ -353,7 +353,7 @@ func (c *Client) PutDatasetVersionInCollection(ctx context.Context, userAccessTo
 }
 
 func (c *Client) GetCollection(ctx context.Context, userAccessToken, collectionID string) (Collection, error) {
-	reqURL := fmt.Sprintf("collections/%s", collectionID)
+	reqURL := fmt.Sprintf("/collectionDetails/%s", collectionID)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 
 	if err != nil {
