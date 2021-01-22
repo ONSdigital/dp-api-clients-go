@@ -799,7 +799,7 @@ func TestClient_GetOptions(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetOptions is called with valid values for limit and offset", func() {
-			q := QueryParams{offset, limit, []string{}}
+			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{}}
 			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
 
 			Convey("a positive response is returned, with the expected options", func() {
@@ -815,7 +815,7 @@ func TestClient_GetOptions(t *testing.T) {
 		})
 
 		Convey("when GetOptions is called with negative offset", func() {
-			q := QueryParams{-1, limit, []string{}}
+			q := QueryParams{Offset: -1, Limit: limit, IDs: []string{}}
 			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
 
 			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
@@ -826,7 +826,7 @@ func TestClient_GetOptions(t *testing.T) {
 		})
 
 		Convey("when GetOptions is called with negative limit", func() {
-			q := QueryParams{offset, -1, []string{}}
+			q := QueryParams{Offset: offset, Limit: -1, IDs: []string{}}
 			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
 
 			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
@@ -837,7 +837,7 @@ func TestClient_GetOptions(t *testing.T) {
 		})
 
 		Convey("when GetOptions is called with a list of IDs containing an existing ID, along with offset and limit", func() {
-			q := QueryParams{offset, limit, []string{"testOption", "somethingElse"}}
+			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{"testOption", "somethingElse"}}
 			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
 
 			Convey("a positive response is returned, with the expected options", func() {
@@ -853,7 +853,7 @@ func TestClient_GetOptions(t *testing.T) {
 		})
 
 		Convey("when GetOptions is called with a list of IDs containing an option with special characters", func() {
-			q := QueryParams{offset, limit, []string{"90+"}}
+			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{"90+"}}
 			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
 
 			Convey("a positive response is returned, with the expected options", func() {
@@ -869,7 +869,7 @@ func TestClient_GetOptions(t *testing.T) {
 		})
 
 		Convey("when GetOptions is called with a list of IDs containing more items than the maximum allowed", func() {
-			q := QueryParams{offset, limit, []string{"op1", "op2", "op3", "op4", "op5", "op6"}}
+			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{"op1", "op2", "op3", "op4", "op5", "op6"}}
 			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
 
 			Convey("an error is returned, with the expected options", func() {
@@ -888,7 +888,7 @@ func TestClient_GetOptions(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetOptions is called", func() {
-			q := QueryParams{offset, limit, []string{}}
+			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{}}
 			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
 
 			Convey("the expected error response is returned, with an empty options struct", func() {
