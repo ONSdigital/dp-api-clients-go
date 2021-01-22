@@ -91,13 +91,20 @@ type QueryParams struct {
 }
 
 // Validate validates tht no negative values are provided for limit or offset, and that the length of IDs is lower than the maximum
-func (q QueryParams) Validate() error {
+// Also escapes all IDs, so that they can be safely used as query paramters in requests
+func (q *QueryParams) Validate() error {
 	if q.Offset < 0 || q.Limit < 0 {
 		return errors.New("negative offsets or limits are not allowed")
 	}
+
 	if len(q.IDs) > MaxIDs() {
 		return fmt.Errorf("too many query parameters have been provided. Maximum allowed: %d", MaxIDs())
 	}
+
+	for i, id := range q.IDs {
+		q.IDs[i] = url.QueryEscape(id)
+	}
+
 	return nil
 }
 
