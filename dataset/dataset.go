@@ -817,23 +817,23 @@ func (c *Client) GetOptionsBatchProcess(ctx context.Context, userAuthToken, serv
 
 	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit,
 	// or the subste of IDs according to the provided offset, if a list of optionIDs was provided
-	batchGetter := func(offset int) (interface{}, int, error) {
+	batchGetter := func(offset int) (interface{}, int, string, error) {
 
 		// if a list of IDs is provided, then obtain only the options for that list in batches.
 		if optionIDs != nil {
 			batchEnd := batch.Min(len(*optionIDs), offset+batchSize)
 			batchOptionIDs := (*optionIDs)[offset:batchEnd]
 			b, err := c.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension, QueryParams{IDs: batchOptionIDs})
-			return b, len(*optionIDs), err
+			return b, len(*optionIDs), "", err
 		}
 
 		// otherwise obtain all the options in batches.
 		b, err := c.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension, QueryParams{Offset: offset, Limit: batchSize})
-		return b, b.TotalCount, err
+		return b, b.TotalCount, "", err
 	}
 
 	// cast and process the batch according to the provided method
-	batchProcessor := func(b interface{}) (abort bool, err error) {
+	batchProcessor := func(b interface{}, batchETag string) (abort bool, err error) {
 		v, ok := b.(Options)
 		if !ok {
 			return true, errors.New("wrong type")

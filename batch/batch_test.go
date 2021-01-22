@@ -7,6 +7,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+var testETag = "testETag"
+
 var (
 	errGetter    = errors.New("BatchGetter error")
 	errProcessor = errors.New("BatchProcessor error")
@@ -20,21 +22,23 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 		// batch getter mock generator and calls tracker
 		batchGetterCalls := []int{}
 		batchGetter := func(batchSize int, retErrorByCall []error) GenericBatchGetter {
-			return func(offset int) (interface{}, int, error) {
+			return func(offset int) (interface{}, int, string, error) {
 				numCall := len(batchGetterCalls)
 				batchGetterCalls = append(batchGetterCalls, offset)
 				end := Min(offset+batchSize, len(full))
 				batch := full[offset:end]
-				return batch, len(full), retErrorByCall[numCall]
+				return batch, len(full), testETag, retErrorByCall[numCall]
 			}
 		}
 
 		// batch processor mock generator and calls tracker
 		batchProcessorCalls := []interface{}{}
+		eTags := []string{}
 		batchProcessor := func(retAbortByCall []bool, retErrorByCall []error) GenericBatchProcessor {
-			return func(batch interface{}) (abort bool, err error) {
+			return func(batch interface{}, batchETag string) (abort bool, err error) {
 				numCall := len(batchProcessorCalls)
 				batchProcessorCalls = append(batchProcessorCalls, batch)
+				eTags = append(eTags, batchETag)
 				return retAbortByCall[numCall], retErrorByCall[numCall]
 			}
 		}
@@ -52,6 +56,7 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 				So(batchProcessorCalls, ShouldResemble, []interface{}{
 					[]string{"0", "1", "2", "3", "4"},
 					[]string{"5", "6", "7", "8", "9"}})
+				So(eTags, ShouldResemble, []string{testETag, testETag})
 			})
 		})
 
@@ -68,6 +73,7 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 				So(batchProcessorCalls, ShouldResemble, []interface{}{
 					[]string{"0", "1", "2", "3", "4"},
 					[]string{"5", "6", "7", "8", "9"}})
+				So(eTags, ShouldResemble, []string{testETag, testETag})
 			})
 		})
 
@@ -86,6 +92,7 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 					[]string{"3", "4", "5"},
 					[]string{"6", "7", "8"},
 					[]string{"9"}})
+				So(eTags, ShouldResemble, []string{testETag, testETag, testETag, testETag})
 			})
 		})
 
@@ -100,6 +107,7 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 				So(err, ShouldResemble, errGetter)
 				So(batchGetterCalls, ShouldResemble, []int{0})           // first call only
 				So(batchProcessorCalls, ShouldResemble, []interface{}{}) // no call
+				So(eTags, ShouldResemble, []string{})
 			})
 		})
 
@@ -115,6 +123,7 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 				So(batchGetterCalls, ShouldResemble, []int{0})         // first call only
 				So(batchProcessorCalls, ShouldResemble, []interface{}{ // first call only
 					[]string{"0", "1", "2"}})
+				So(eTags, ShouldResemble, []string{testETag})
 			})
 		})
 
@@ -130,6 +139,7 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 				So(batchGetterCalls, ShouldResemble, []int{0})         // first call only
 				So(batchProcessorCalls, ShouldResemble, []interface{}{ // first call only
 					[]string{"0", "1", "2"}})
+				So(eTags, ShouldResemble, []string{testETag})
 			})
 		})
 
@@ -146,6 +156,7 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 				So(batchProcessorCalls, ShouldResemble, []interface{}{ // 2 calls only
 					[]string{"0", "1", "2"},
 					[]string{"3", "4", "5"}})
+				So(eTags, ShouldResemble, []string{testETag, testETag})
 			})
 		})
 
@@ -163,6 +174,7 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 					[]string{"0", "1", "2"},
 					[]string{"3", "4", "5"},
 					[]string{"6", "7", "8"}})
+				So(eTags, ShouldResemble, []string{testETag, testETag, testETag})
 			})
 		})
 
@@ -180,9 +192,40 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 					[]string{"0", "1", "2"},
 					[]string{"3", "4", "5"},
 					[]string{"6", "7", "8"}})
+				So(eTags, ShouldResemble, []string{testETag, testETag, testETag})
 			})
 		})
-
 	})
+}
 
+func TestProcessInBatches(t *testing.T) {
+
+	Convey("Given an array of 10 items and a mock chunk processor function", t, func() {
+		items := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"}
+		processedChunks := [][]string{}
+		processor := func(chunk []string) error {
+			processedChunks = append(processedChunks, chunk)
+			return nil
+		}
+
+		Convey("Then processing in chunks of size 5 results in the function being called twice with the expected chunks", func() {
+			numChunks, err := ProcessInBatches(items, processor, 5)
+			So(err, ShouldBeNil)
+			So(numChunks, ShouldEqual, 2)
+			So(processedChunks, ShouldResemble, [][]string{
+				{"0", "1", "2", "3", "4"},
+				{"5", "6", "7", "8", "9"}})
+		})
+
+		Convey("Then processing in chunks of size 3 results in the function being called four times with the expected chunks, the last one being containing the remaining items", func() {
+			numChunks, err := ProcessInBatches(items, processor, 3)
+			So(err, ShouldBeNil)
+			So(numChunks, ShouldEqual, 4)
+			So(processedChunks, ShouldResemble, [][]string{
+				{"0", "1", "2"},
+				{"3", "4", "5"},
+				{"6", "7", "8"},
+				{"9"}})
+		})
+	})
 }

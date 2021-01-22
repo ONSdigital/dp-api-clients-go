@@ -6,10 +6,10 @@ import (
 )
 
 // GenericBatchGetter defines the method signature for a batch getter to obtain a batch of some generic resource
-type GenericBatchGetter func(offset int) (batch interface{}, totalCount int, err error)
+type GenericBatchGetter func(offset int) (batch interface{}, totalCount int, eTag string, err error)
 
 // GenericBatchProcessor defines the method signature for a batch processor to process a batch of some generic resource
-type GenericBatchProcessor func(batch interface{}) (abort bool, err error)
+type GenericBatchProcessor func(batch interface{}, batchETag string) (abort bool, err error)
 
 // ProcessInConcurrentBatches is a generic method to concurrently obtain some resource in batches and then process each batch
 func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch GenericBatchProcessor, batchSize, maxWorkers int) (err error) {
@@ -62,7 +62,7 @@ func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch Generi
 		}
 
 		// get batch
-		batch, _, err := getBatch(offset)
+		batch, _, batchETag, err := getBatch(offset)
 		if err != nil {
 			chErr <- err
 			abort()
@@ -74,7 +74,7 @@ func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch Generi
 		defer lockResult.Unlock()
 
 		// process batch by calling the provided function
-		forceAbort, err := processBatch(batch)
+		forceAbort, err := processBatch(batch, batchETag)
 		if err != nil {
 			chErr <- err
 			abort()
@@ -85,13 +85,13 @@ func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch Generi
 	}
 
 	// get first batch sequentially, so that we know the total count before triggering any further go-routine
-	batch, totalCount, err := getBatch(0)
+	batch, totalCount, batchETag, err := getBatch(0)
 	if err != nil {
 		return err
 	}
 
 	// process first batch by calling the provided function
-	forceAbort, err := processBatch(batch)
+	forceAbort, err := processBatch(batch, batchETag)
 	if forceAbort || err != nil {
 		return err
 	}
@@ -123,6 +123,32 @@ func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch Generi
 			return err
 		}
 	}
+}
+
+// ProcessInBatches is a generic method that splits the provided items in batches and calls processBatch for each batch
+func ProcessInBatches(items []string, processBatch func([]string) error, batchSize int) (processedBatches int, err error) {
+	// Get batch splits for provided items
+	numFullChunks := len(items) / batchSize
+	remainingSize := len(items) % batchSize
+	processedBatches = numFullChunks
+
+	// process full batches
+	for i := 0; i < numFullChunks; i++ {
+		chunk := items[i*batchSize : (i+1)*batchSize]
+		if err := processBatch(chunk); err != nil {
+			return i, err
+		}
+	}
+
+	// process any remaining
+	if remainingSize > 0 {
+		processedBatches = numFullChunks + 1
+		lastChunk := items[numFullChunks*batchSize : (numFullChunks*batchSize + remainingSize)]
+		if err := processBatch(lastChunk); err != nil {
+			return numFullChunks, err
+		}
+	}
+	return processedBatches, nil
 }
 
 // Min returns the lowest value

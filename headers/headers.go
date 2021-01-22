@@ -24,14 +24,25 @@ const (
 	// downloadServiceToken is the authorization header for the download service
 	downloadServiceTokenHeader = "X-Download-Service-Token"
 
-	// userIdentity is the user identity header used to forward a confirmed identity to another API.
+	// userIdentity is the user identity header used to forward a confirmed identity to another API
 	userIdentityHeader = "User-Identity"
 
-	// requestIDHeader is the unique request ID header name.
+	// requestIDHeader is the unique request ID header name
 	requestIDHeader = "X-Request-Id"
 
 	// localeCodeHeader is the locale code header name
 	localeCodeHeader = "LocaleCode"
+
+	// ifMatchHeader is the If-Match header name
+	ifMatchHeader = "If-Match"
+
+	// eTagHeader is the ETag header name
+	eTagHeader = "ETag"
+)
+
+const (
+	// IfMatchAnyETag is a wildchar value for If-Match header to ask the API to ignore the ETag check
+	IfMatchAnyETag = "*"
 )
 
 var (
@@ -43,6 +54,9 @@ var (
 
 	// ErrRequestNil return if SetX header function is called with a nil request
 	ErrRequestNil = errors.New("error setting request header request was nil")
+
+	// ErrResponseNil return if GetResponseX header function is called with a nil response
+	ErrResponseNil = errors.New("error getting request header, response was nil")
 )
 
 // IsErrNotFound return true if the err equal to ErrHeaderNotFound. Return false otherwise
@@ -99,10 +113,28 @@ func GetRequestID(req *http.Request) (string, error) {
 	return getRequestHeader(req, requestIDHeader)
 }
 
-// GetLocaleCode returns the value of the "LocaleCode" request header if it exists, returns ErrHeaderNotFound if
-// the header is not found.
+// GetLocaleCode returns the value of the "LocaleCode" request header if it exists, returns
+// ErrHeaderNotFound if the header is not found.
 func GetLocaleCode(req *http.Request) (string, error) {
 	return getRequestHeader(req, localeCodeHeader)
+}
+
+// GetIfMatch returns the value of the "If-Match" request header if it exists, returns
+// ErrHeaderNotFound if the header is not found.
+func GetIfMatch(req *http.Request) (string, error) {
+	return getRequestHeader(req, ifMatchHeader)
+}
+
+// GetETag returns the value of the "ETag" request header if it exists, returns
+// ErrHeaderNotFound if the header is not found.
+func GetETag(req *http.Request) (string, error) {
+	return getRequestHeader(req, eTagHeader)
+}
+
+// GetResponseETag returns the value of "ETag" response header if it exists, returns
+// ErrResponseNil if the header is not found.
+func GetResponseETag(resp *http.Response) (string, error) {
+	return getResponseHeader(resp, eTagHeader)
 }
 
 func getRequestHeader(req *http.Request, headerName string) (string, error) {
@@ -111,6 +143,19 @@ func getRequestHeader(req *http.Request, headerName string) (string, error) {
 	}
 
 	headerValue := req.Header.Get(headerName)
+	if len(headerValue) == 0 {
+		return "", ErrHeaderNotFound
+	}
+
+	return headerValue, nil
+}
+
+func getResponseHeader(resp *http.Response, headerName string) (string, error) {
+	if resp == nil {
+		return "", ErrResponseNil
+	}
+
+	headerValue := resp.Header.Get(headerName)
 	if len(headerValue) == 0 {
 		return "", ErrHeaderNotFound
 	}
@@ -170,6 +215,18 @@ func SetRequestID(req *http.Request, headerValue string) error {
 // will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
 func SetLocaleCode(req *http.Request, headerValue string) error {
 	return setRequestHeader(req, localeCodeHeader, headerValue)
+}
+
+// SetIfMatch set the If-Match header on the provided request. If this header is already present it
+// will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+func SetIfMatch(req *http.Request, headerValue string) error {
+	return setRequestHeader(req, ifMatchHeader, headerValue)
+}
+
+// SetETag set the ETag header on the provided request. If this header is already present it
+// will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+func SetETag(req *http.Request, headerValue string) error {
+	return setRequestHeader(req, eTagHeader, headerValue)
 }
 
 func setRequestHeader(req *http.Request, headerName string, headerValue string) error {
