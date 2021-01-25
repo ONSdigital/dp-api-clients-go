@@ -182,6 +182,37 @@ func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, colle
 	return
 }
 
+// GetDatasetCurrentAndNext returns dataset level information but contains both next and current documents
+func (c *Client) GetDatasetCurrentAndNext(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m Dataset, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s", c.hcCli.URL, datasetID)
+
+	clientlog.Do(ctx, "retrieving dataset", service, uri)
+
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewDatasetAPIResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	var body map[string]interface{}
+	if err = json.Unmarshal(b, &body); err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &m)
+	return
+}
+
 // GetByPath returns dataset level information for a given dataset path
 func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, path string) (m DatasetDetails, err error) {
 	uri := fmt.Sprintf("%s/%s", c.hcCli.URL, strings.Trim(path, "/"))
