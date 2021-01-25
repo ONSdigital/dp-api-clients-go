@@ -41,6 +41,7 @@ type Image struct {
 	//- deleted
 	//- failed_import
 	//- failed_publish
+	Error    string      `json:"error,omitempty"`
 	Filename string      `json:"filename,omitempty"`
 	License  License     `json:"license,omitempty"`
 	Links    *ImageLinks `json:"links,omitempty"`

@@ -96,6 +96,6 @@ Run tests using `make test`
 
 ## Licence
 
-Copyright ©‎ 2019, Crown Copyright (Office for National Statistics) (https://www.ons.gov.uk)
+Copyright ©‎ 2021, Crown Copyright (Office for National Statistics) (https://www.ons.gov.uk)
 
 Released under MIT license, see [LICENSE](LICENSE.md) for details.
