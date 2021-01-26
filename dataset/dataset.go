@@ -204,12 +204,10 @@ func (c *Client) GetDatasetCurrentAndNext(ctx context.Context, userAuthToken, se
 		return
 	}
 
-	var body map[string]interface{}
-	if err = json.Unmarshal(b, &body); err != nil {
+	if err = json.Unmarshal(b, &m); err != nil {
 		return
 	}
 
-	err = json.Unmarshal(b, &m)
 	return
 }
 

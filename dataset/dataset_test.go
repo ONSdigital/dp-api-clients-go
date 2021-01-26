@@ -318,6 +318,45 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 	})
 }
 
+func TestClient_GetDatasetCurrentAndNext(t *testing.T) {
+
+	Convey("given a 200 status with valid empty body is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, Dataset{}})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetDatasetCurrentAndNext is called", func() {
+			instance, err := datasetClient.GetDatasetCurrentAndNext(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("a positive response is returned with empty instance", func() {
+				So(err, ShouldBeNil)
+				So(instance, ShouldResemble, Dataset{})
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/datasets/123")
+			})
+		})
+	})
+
+	Convey("given a 200 status with empty body is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, []byte{}})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetDatasetCurrentAndNext is called", func() {
+			_, err := datasetClient.GetDatasetCurrentAndNext(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/datasets/123")
+			})
+		})
+	})
+
+}
+
 func TestClient_GetInstance(t *testing.T) {
 
 	Convey("given a 200 status with valid empty body is returned", t, func() {
