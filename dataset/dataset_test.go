@@ -355,36 +355,6 @@ func TestClient_GetDatasetCurrentAndNext(t *testing.T) {
 		})
 	})
 
-	// Convey("given a 404 status is returned", t, func() {
-	// 	httpClient := &dphttp.ClienterMock{
-	// 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-	// 			return &http.Response{
-	// 				StatusCode: http.StatusNotFound,
-	// 				Body:       ioutil.NopCloser(bytes.NewReader([]byte("you aint seen me right"))),
-	// 			}, nil
-	// 		},
-	// 		SetPathsWithNoRetriesFunc: func(paths []string) {
-	// 			return
-	// 		},
-	// 		GetPathsWithNoRetriesFunc: func() []string {
-	// 			return []string{"/healthcheck"}
-	// 		},
-	// 	}
-
-	// 	datasetClient := newDatasetClient(httpClient)
-
-	// 	Convey("when GetInstance is called", func() {
-	// 		_, err := datasetClient.GetInstance(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
-
-	// 		Convey("then the expected error is returned", func() {
-	// 			So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123, body: you aint seen me right").Error())
-	// 		})
-
-	// 		Convey("and dphttpclient.Do is called 1 time", func() {
-	// 			checkResponseBase(httpClient, http.MethodGet, "/instances/123")
-	// 		})
-	// 	})
-	// })
 }
 
 func TestClient_GetInstance(t *testing.T) {
