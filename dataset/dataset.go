@@ -101,10 +101,6 @@ func (q *QueryParams) Validate() error {
 		return fmt.Errorf("too many query parameters have been provided. Maximum allowed: %d", MaxIDs())
 	}
 
-	for i, id := range q.IDs {
-		q.IDs[i] = url.QueryEscape(id)
-	}
-
 	return nil
 }
 

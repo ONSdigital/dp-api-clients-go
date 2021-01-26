@@ -891,22 +891,6 @@ func TestClient_GetOptions(t *testing.T) {
 			})
 		})
 
-		Convey("when GetOptions is called with a list of IDs containing an option with special characters", func() {
-			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{"90+"}}
-			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
-
-			Convey("a positive response is returned, with the expected options", func() {
-				So(err, ShouldBeNil)
-				So(options, ShouldResemble, testOptions)
-			})
-
-			Convey("and dphttpclient.Do is called 1 time with the expected URI, providing the list of escaped IDs as query paramters", func() {
-				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?id=90%%2B",
-					instanceID, edition, version, dimension)
-				checkResponseBase(httpClient, http.MethodGet, expectedURI)
-			})
-		})
-
 		Convey("when GetOptions is called with a list of IDs containing more items than the maximum allowed", func() {
 			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{"op1", "op2", "op3", "op4", "op5", "op6"}}
 			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
