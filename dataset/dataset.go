@@ -209,7 +209,6 @@ func (c *Client) GetDatasetCurrentAndNext(ctx context.Context, userAuthToken, se
 		return
 	}
 
-	err = json.Unmarshal(b, &m)
 	return
 }
 
