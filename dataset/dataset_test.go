@@ -318,6 +318,45 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 	})
 }
 
+func TestClient_GetDatasetCurrentAndNext(t *testing.T) {
+
+	Convey("given a 200 status with valid empty body is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, Dataset{}})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetDatasetCurrentAndNext is called", func() {
+			instance, err := datasetClient.GetDatasetCurrentAndNext(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("a positive response is returned with empty instance", func() {
+				So(err, ShouldBeNil)
+				So(instance, ShouldResemble, Dataset{})
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/datasets/123")
+			})
+		})
+	})
+
+	Convey("given a 200 status with empty body is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, []byte{}})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetDatasetCurrentAndNext is called", func() {
+			_, err := datasetClient.GetDatasetCurrentAndNext(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/datasets/123")
+			})
+		})
+	})
+
+}
+
 func TestClient_GetInstance(t *testing.T) {
 
 	Convey("given a 200 status with valid empty body is returned", t, func() {
@@ -847,22 +886,6 @@ func TestClient_GetOptions(t *testing.T) {
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI, providing the list of IDs and no offset or limit", func() {
 				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?id=testOption,somethingElse",
-					instanceID, edition, version, dimension)
-				checkResponseBase(httpClient, http.MethodGet, expectedURI)
-			})
-		})
-
-		Convey("when GetOptions is called with a list of IDs containing an option with special characters", func() {
-			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{"90+"}}
-			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
-
-			Convey("a positive response is returned, with the expected options", func() {
-				So(err, ShouldBeNil)
-				So(options, ShouldResemble, testOptions)
-			})
-
-			Convey("and dphttpclient.Do is called 1 time with the expected URI, providing the list of escaped IDs as query paramters", func() {
-				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?id=90%%2B",
 					instanceID, edition, version, dimension)
 				checkResponseBase(httpClient, http.MethodGet, expectedURI)
 			})

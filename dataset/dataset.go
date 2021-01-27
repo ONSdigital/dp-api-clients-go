@@ -101,10 +101,6 @@ func (q *QueryParams) Validate() error {
 		return fmt.Errorf("too many query parameters have been provided. Maximum allowed: %d", MaxIDs())
 	}
 
-	for i, id := range q.IDs {
-		q.IDs[i] = url.QueryEscape(id)
-	}
-
 	return nil
 }
 
@@ -204,12 +200,10 @@ func (c *Client) GetDatasetCurrentAndNext(ctx context.Context, userAuthToken, se
 		return
 	}
 
-	var body map[string]interface{}
-	if err = json.Unmarshal(b, &body); err != nil {
+	if err = json.Unmarshal(b, &m); err != nil {
 		return
 	}
 
-	err = json.Unmarshal(b, &m)
 	return
 }
 
