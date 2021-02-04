@@ -14,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
@@ -326,7 +325,6 @@ func (c *Client) PutDatasetInCollection(ctx context.Context, userAccessToken, co
 
 	zebedeeState := CollectionState{State: state}
 	payload, err := json.Marshal(zebedeeState)
-	spew.Dump(zebedeeState)
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to marshall version")
 	}
@@ -343,8 +341,6 @@ func (c *Client) PutDatasetVersionInCollection(ctx context.Context, userAccessTo
 	uri := fmt.Sprintf("%s/collections/%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, collectionID, datasetID, edition, version)
 
 	zebedeeState := CollectionState{State: state}
-	payload, err := json.Marshal(zebedeeState)
-	spew.Dump(zebedeeState)
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to marshall version")
 	}
