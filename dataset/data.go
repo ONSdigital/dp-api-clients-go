@@ -64,6 +64,24 @@ type Version struct {
 	CSVHeader            []string             `json:"headers,omitempty"`
 }
 
+type UpdateInstance struct {
+	Alerts               *[]Alert             `json:"alerts"`
+	CollectionID         string               `json:"collection_id"`
+	Downloads            map[string]Download  `json:"downloads"`
+	Edition              string               `json:"edition"`
+	Dimensions           []VersionDimension   `json:"dimensions"`
+	ID                   string               `json:"id"`
+	InstanceID           string               `json:"instance_id"`
+	LatestChanges        []Change             `json:"latest_changes"`
+	ReleaseDate          string               `json:"release_date"`
+	State                string               `json:"state"`
+	Temporal             []Temporal           `json:"temporal"`
+	Version              int                  `json:"version"`
+	NumberOfObservations int64                `json:"total_observations,omitempty"`
+	ImportTasks          *InstanceImportTasks `json:"import_tasks,omitempty"`
+	CSVHeader            []string             `json:"headers,omitempty"`
+}
+
 // VersionDimension represents a dimension model nested in the Version model
 type VersionDimension struct {
 	ID          string `json:"id"`
