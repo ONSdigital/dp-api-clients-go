@@ -341,6 +341,7 @@ func (c *Client) PutDatasetVersionInCollection(ctx context.Context, userAccessTo
 	uri := fmt.Sprintf("%s/collections/%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, collectionID, datasetID, edition, version)
 
 	zebedeeState := CollectionState{State: state}
+	payload, err := json.Marshal(zebedeeState)
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to marshall version")
 	}
