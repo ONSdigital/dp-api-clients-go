@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
@@ -323,7 +324,9 @@ func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, c
 func (c *Client) PutDatasetInCollection(ctx context.Context, userAccessToken, collectionID, lang, datasetID, state string) error {
 	uri := fmt.Sprintf("%s/collections/%s/datasets/%s", c.hcCli.URL, collectionID, datasetID)
 
-	payload, err := json.Marshal(state)
+	zebedeeState := CollectionState{State: state}
+	payload, err := json.Marshal(zebedeeState)
+	spew.Dump(zebedeeState)
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to marshall version")
 	}
@@ -339,7 +342,9 @@ func (c *Client) PutDatasetInCollection(ctx context.Context, userAccessToken, co
 func (c *Client) PutDatasetVersionInCollection(ctx context.Context, userAccessToken, collectionID, lang, datasetID, edition, version, state string) error {
 	uri := fmt.Sprintf("%s/collections/%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, collectionID, datasetID, edition, version)
 
-	payload, err := json.Marshal(state)
+	zebedeeState := CollectionState{State: state}
+	payload, err := json.Marshal(zebedeeState)
+	spew.Dump(zebedeeState)
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to marshall version")
 	}
