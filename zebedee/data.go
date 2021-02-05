@@ -190,5 +190,5 @@ type CollectionItem struct {
 }
 
 type CollectionState struct {
-	State string `json: state`
+	State string `json:"state"`
 }
