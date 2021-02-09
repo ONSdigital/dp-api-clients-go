@@ -72,7 +72,7 @@ type QueryParams struct {
 	Limit  int
 }
 
-// Validate validates tht no negative values are provided for limit or offset
+// Validate validates that no negative values are provided for limit or offset
 func (q QueryParams) Validate() error {
 	if q.Offset < 0 || q.Limit < 0 {
 		return ErrInvalidPaginationQuery
@@ -222,7 +222,7 @@ func (c *Client) GetDimensionBytes(ctx context.Context, userAuthToken, serviceAu
 }
 
 // GetDimensions will return the dimensions associated with the provided filter id as an array of Dimension structs
-func (c *Client) GetDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID string, q QueryParams) (dims Dimensions, eTag string, err error) {
+func (c *Client) GetDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID string, q *QueryParams) (dims Dimensions, eTag string, err error) {
 	b, eTag, err := c.GetDimensionsBytes(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, q)
 	if err != nil {
 		return dims, "", err
@@ -233,12 +233,15 @@ func (c *Client) GetDimensions(ctx context.Context, userAuthToken, serviceAuthTo
 }
 
 // GetDimensionsBytes will return the dimensions associated with the provided filter id as a byte array
-func (c *Client) GetDimensionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID string, q QueryParams) (body []byte, eTag string, err error) {
-	if err := q.Validate(); err != nil {
-		return nil, "", err
-	}
+func (c *Client) GetDimensionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID string, q *QueryParams) (body []byte, eTag string, err error) {
 
-	uri := fmt.Sprintf("%s/filters/%s/dimensions?offset=%d&limit=%d", c.hcCli.URL, filterID, q.Offset, q.Limit)
+	uri := fmt.Sprintf("%s/filters/%s/dimensions", c.hcCli.URL, filterID)
+	if q != nil {
+		if err := q.Validate(); err != nil {
+			return nil, "", err
+		}
+		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
+	}
 
 	clientlog.Do(ctx, "retrieving all dimensions for given filter job", service, uri)
 
@@ -265,7 +268,7 @@ func (c *Client) GetDimensionsBytes(ctx context.Context, userAuthToken, serviceA
 }
 
 // GetDimensionOptions retrieves a list of the dimension options unmarshalled as an array of DimensionOption structs
-func (c *Client) GetDimensionOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, q QueryParams) (opts DimensionOptions, eTag string, err error) {
+func (c *Client) GetDimensionOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, q *QueryParams) (opts DimensionOptions, eTag string, err error) {
 	b, eTag, err := c.GetDimensionOptionsBytes(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name, q)
 	if err != nil {
 		return opts, "", err
@@ -276,12 +279,15 @@ func (c *Client) GetDimensionOptions(ctx context.Context, userAuthToken, service
 }
 
 // GetDimensionOptionsBytes retrieves a list of the dimension options as a byte array
-func (c *Client) GetDimensionOptionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, q QueryParams) (body []byte, eTag string, err error) {
-	if err := q.Validate(); err != nil {
-		return nil, "", err
-	}
+func (c *Client) GetDimensionOptionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, q *QueryParams) (body []byte, eTag string, err error) {
 
-	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options?offset=%d&limit=%d", c.hcCli.URL, filterID, name, q.Offset, q.Limit)
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options", c.hcCli.URL, filterID, name)
+	if q != nil {
+		if err := q.Validate(); err != nil {
+			return nil, "", err
+		}
+		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
+	}
 	clientlog.Do(ctx, "retrieving selected dimension options for filter job", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
@@ -348,7 +354,7 @@ func (c *Client) GetDimensionOptionsBatchProcess(ctx context.Context, userAuthTo
 	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit.
 	// if any returned ETag is different from the previous one, an error is returned
 	batchGetter := func(offset int) (interface{}, int, string, error) {
-		b, newETag, err := c.GetDimensionOptions(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name, QueryParams{Offset: offset, Limit: batchSize})
+		b, newETag, err := c.GetDimensionOptions(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name, &QueryParams{Offset: offset, Limit: batchSize})
 		if checkETag && newETag != eTag && !isFirstGet {
 			return nil, 0, "", ErrBatchETagMismatch
 		}
