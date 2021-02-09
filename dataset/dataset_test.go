@@ -839,7 +839,7 @@ func TestClient_GetOptions(t *testing.T) {
 
 		Convey("when GetOptions is called with valid values for limit and offset", func() {
 			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{}}
-			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, &q)
 
 			Convey("a positive response is returned, with the expected options", func() {
 				So(err, ShouldBeNil)
@@ -855,7 +855,7 @@ func TestClient_GetOptions(t *testing.T) {
 
 		Convey("when GetOptions is called with negative offset", func() {
 			q := QueryParams{Offset: -1, Limit: limit, IDs: []string{}}
-			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, &q)
 
 			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
 				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
@@ -866,7 +866,7 @@ func TestClient_GetOptions(t *testing.T) {
 
 		Convey("when GetOptions is called with negative limit", func() {
 			q := QueryParams{Offset: offset, Limit: -1, IDs: []string{}}
-			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, &q)
 
 			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
 				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
@@ -877,7 +877,7 @@ func TestClient_GetOptions(t *testing.T) {
 
 		Convey("when GetOptions is called with a list of IDs containing an existing ID, along with offset and limit", func() {
 			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{"testOption", "somethingElse"}}
-			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, &q)
 
 			Convey("a positive response is returned, with the expected options", func() {
 				So(err, ShouldBeNil)
@@ -893,7 +893,7 @@ func TestClient_GetOptions(t *testing.T) {
 
 		Convey("when GetOptions is called with a list of IDs containing more items than the maximum allowed", func() {
 			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{"op1", "op2", "op3", "op4", "op5", "op6"}}
-			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, &q)
 
 			Convey("an error is returned, with the expected options", func() {
 				So(err.Error(), ShouldResemble, "too many query parameters have been provided. Maximum allowed: 5")
@@ -911,21 +911,19 @@ func TestClient_GetOptions(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetOptions is called", func() {
-			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{}}
-			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, q)
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, nil)
 
 			Convey("the expected error response is returned, with an empty options struct", func() {
 				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
 					actualCode: 404,
-					uri:        fmt.Sprintf("http://localhost:8080/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?offset=%d&limit=%d", instanceID, edition, version, dimension, offset, limit),
+					uri:        fmt.Sprintf("http://localhost:8080/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", instanceID, edition, version, dimension),
 					body:       "{\"items\":null,\"count\":0,\"offset\":0,\"limit\":0,\"total_count\":0}",
 				})
 				So(options, ShouldResemble, Options{})
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
-				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?offset=%d&limit=%d",
-					instanceID, edition, version, dimension, offset, limit)
+				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", instanceID, edition, version, dimension)
 				checkResponseBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})
