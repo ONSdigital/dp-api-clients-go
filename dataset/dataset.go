@@ -531,7 +531,7 @@ func (c *Client) GetInstances(ctx context.Context, userAuthToken, serviceAuthTok
 }
 
 // PutInstance updates an instance
-func (c *Client) PutInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string, i Instance) error {
+func (c *Client) PutInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string, i UpdateInstance) error {
 	uri := fmt.Sprintf("%s/instances/%s", c.hcCli.URL, instanceID)
 
 	clientlog.Do(ctx, "updating dataset version", service, uri)
