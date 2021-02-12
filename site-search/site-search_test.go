@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	testHost         = "http://localhost:8080"
+	testHost = "http://localhost:8080"
 )
 
 var (
@@ -227,7 +227,7 @@ func TestClient_GetSearch(t *testing.T) {
 			_, err := cli.GetSearch(ctx, v)
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-query - should be: 200, got: 400, path: "+testHost+"/search?limit=a").Error())
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 400, path: "+testHost+"/search?limit=a").Error())
 
 			})
 
@@ -247,7 +247,7 @@ func TestClient_GetSearch(t *testing.T) {
 			_, err := cli.GetSearch(ctx, v)
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-query - should be: 200, got: 500, path: "+testHost+"/search?limit=housing").Error())
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 500, path: "+testHost+"/search?limit=housing").Error())
 
 			})
 
@@ -257,4 +257,3 @@ func TestClient_GetSearch(t *testing.T) {
 		})
 	})
 }
-
