@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	service       = "search-api"
+	service       = "dimension-search-api"
 	defaultLimit  = 50
 	defaultOffset = 0
 )
@@ -28,7 +28,7 @@ type Config struct {
 	FlorenceToken string
 }
 
-// ErrInvalidSearchAPIResponse is returned when the search api does not respond
+// ErrInvalidSearchAPIResponse is returned when the dimension-search api does not respond
 // with a valid status
 type ErrInvalidSearchAPIResponse struct {
 	expectedCode int
@@ -38,14 +38,14 @@ type ErrInvalidSearchAPIResponse struct {
 
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidSearchAPIResponse) Error() string {
-	return fmt.Sprintf("invalid response from search api - should be: %d, got: %d, path: %s",
+	return fmt.Sprintf("invalid response from dimension-search api - should be: %d, got: %d, path: %s",
 		e.expectedCode,
 		e.actualCode,
 		e.uri,
 	)
 }
 
-// Code returns the status code received from search api if an error is returned
+// Code returns the status code received from dimension-search api if an error is returned
 func (e ErrInvalidSearchAPIResponse) Code() int {
 	return e.actualCode
 }
@@ -57,7 +57,7 @@ type Client struct {
 	hcCli *healthcheck.Client
 }
 
-// New creates a new instance of Client with a given search api url
+// New creates a new instance of Client with a given dimension-search api url
 func New(searchAPIURL string) *Client {
 	return &Client{
 		healthcheck.NewClient(service, searchAPIURL),
@@ -72,7 +72,7 @@ func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
 	}
 }
 
-// Checker calls search api health endpoint and returns a check object to the caller.
+// Checker calls dimension-search api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
