@@ -3,7 +3,6 @@ package search
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -67,7 +66,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 400 response", t, func() {
-		httpClient := createHTTPClientMock(http.StatusBadRequest, "")
+		httpClient := createHTTPClientMock(http.StatusBadRequest, []byte(""))
 		searchClient := newSearchClient(httpClient)
 		check := initialState
 
@@ -94,7 +93,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 500 response", t, func() {
-		httpClient := createHTTPClientMock(http.StatusInternalServerError, "")
+		httpClient := createHTTPClientMock(http.StatusInternalServerError, []byte(""))
 		searchClient := newSearchClient(httpClient)
 		check := initialState
 
@@ -219,10 +218,9 @@ func newSearchClient(httpClient *dphttp.ClienterMock) *Client {
 	return searchClient
 }
 
-func createHTTPClientMock(retCode int, retBody interface{}) *dphttp.ClienterMock {
+func createHTTPClientMock(retCode int, body []byte) *dphttp.ClienterMock {
 	return &dphttp.ClienterMock{
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-			body, _ := json.Marshal(retBody)
 			return &http.Response{
 				StatusCode: retCode,
 				Body:       ioutil.NopCloser(bytes.NewReader(body)),
