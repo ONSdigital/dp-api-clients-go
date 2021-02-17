@@ -28,16 +28,16 @@ type Config struct {
 	FlorenceToken string
 }
 
-// ErrInvalidSearchAPIResponse is returned when the dimension-search api does not respond
+// ErrInvalidDimensionSearchAPIResponse is returned when the dimension-search api does not respond
 // with a valid status
-type ErrInvalidSearchAPIResponse struct {
+type ErrInvalidDimensionSearchAPIResponse struct {
 	expectedCode int
 	actualCode   int
 	uri          string
 }
 
 // Error should be called by the user to print out the stringified version of the error
-func (e ErrInvalidSearchAPIResponse) Error() string {
+func (e ErrInvalidDimensionSearchAPIResponse) Error() string {
 	return fmt.Sprintf("invalid response from dimension-search api - should be: %d, got: %d, path: %s",
 		e.expectedCode,
 		e.actualCode,
@@ -46,11 +46,11 @@ func (e ErrInvalidSearchAPIResponse) Error() string {
 }
 
 // Code returns the status code received from dimension-search api if an error is returned
-func (e ErrInvalidSearchAPIResponse) Code() int {
+func (e ErrInvalidDimensionSearchAPIResponse) Code() int {
 	return e.actualCode
 }
 
-var _ error = ErrInvalidSearchAPIResponse{}
+var _ error = ErrInvalidDimensionSearchAPIResponse{}
 
 // Client is a search api client that can be used to make requests to the server
 type Client struct {
@@ -58,9 +58,9 @@ type Client struct {
 }
 
 // New creates a new instance of Client with a given dimension-search api url
-func New(searchAPIURL string) *Client {
+func New(dimensionSearchAPIURL string) *Client {
 	return &Client{
-		healthcheck.NewClient(service, searchAPIURL),
+		healthcheck.NewClient(service, dimensionSearchAPIURL),
 	}
 }
 
@@ -131,7 +131,7 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, &ErrInvalidSearchAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return nil, &ErrInvalidDimensionSearchAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(&m)

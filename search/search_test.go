@@ -29,7 +29,7 @@ const (
 	testHost      = "http://localhost:8080"
 )
 
-func TestSearchUnit(t *testing.T) {
+func TestDimensionSearchUnit(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -201,7 +201,7 @@ func TestSearchUnit(t *testing.T) {
 
 		Convey("test Dimension no limit returns error if HTTP Status code is not 200", func() {
 
-			expectedError := &ErrInvalidSearchAPIResponse{http.StatusOK, http.StatusTeapot, "http://localhost:22000/dimension-search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=50&offset=1&q=Newport"}
+			expectedError := &ErrInvalidDimensionSearchAPIResponse{http.StatusOK, http.StatusTeapot, "http://localhost:22000/dimension-search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=50&offset=1&q=Newport"}
 			mockClient := &dphttp.ClienterMock{
 				GetPathsWithNoRetriesFunc: func() []string { return []string{} },
 				SetPathsWithNoRetriesFunc: func([]string) {},
