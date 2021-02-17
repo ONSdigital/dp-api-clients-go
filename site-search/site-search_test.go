@@ -32,17 +32,6 @@ var checkResponseBase = func(mockdphttpCli *dphttp.ClienterMock, expectedMethod 
 	So(mockdphttpCli.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
 }
 
-func createHTTPClientMock(retCode int, body []byte) *dphttp.ClienterMock {
-	return &dphttp.ClienterMock{
-		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: retCode,
-				Body:       ioutil.NopCloser(bytes.NewReader(body)),
-			}, nil
-		},
-	}
-}
-
 func TestClient_HealthChecker(t *testing.T) {
 	ctx := context.Background()
 	timePriorHealthCheck := time.Now()
@@ -50,19 +39,8 @@ func TestClient_HealthChecker(t *testing.T) {
 
 	Convey("given clienter.Do returns an error", t, func() {
 		clientError := errors.New("disciples of the watch obey")
-
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{}, clientError
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		searchClient := NewClient(testHost)
-		searchClient.cli = clienter
+		httpClient := createHTTPClientMockErr(clientError)
+		searchClient := newSearchClient(httpClient)
 		check := initialState
 
 		Convey("when searchClient.Checker is called", func() {
@@ -80,7 +58,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
@@ -88,20 +66,8 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 400 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 400,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		searchClient := NewClient(testHost)
-		searchClient.cli = clienter
+		httpClient := createHTTPClientMock(http.StatusBadRequest, []byte(""))
+		searchClient := newSearchClient(httpClient)
 		check := initialState
 
 		Convey("when searchClient.Checker is called", func() {
@@ -119,7 +85,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
@@ -127,20 +93,8 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 500 response", t, func() {
-		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
-			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 500,
-				}, nil
-			},
-		}
-		clienter.SetPathsWithNoRetries([]string{path, "/healthcheck"})
-
-		searchClient := NewClient(testHost)
-		searchClient.cli = clienter
+		httpClient := createHTTPClientMock(http.StatusInternalServerError, []byte(""))
+		searchClient := newSearchClient(httpClient)
 		check := initialState
 
 		Convey("when searchClient.Checker is called", func() {
@@ -158,7 +112,7 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
-				doCalls := clienter.DoCalls()
+				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
@@ -171,13 +125,13 @@ func TestClient_GetSearch(t *testing.T) {
 		searchResp, err := ioutil.ReadFile("./response_mocks/empty_results.json")
 		So(err, ShouldBeNil)
 
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, searchResp)
+		searchClient := newSearchClient(httpClient)
 
 		Convey("when GetSearch is called", func() {
 			v := url.Values{}
 			v.Set("q", "a")
-			r, err := cli.GetSearch(ctx, v)
+			r, err := searchClient.GetSearch(ctx, v)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -187,7 +141,7 @@ func TestClient_GetSearch(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/search?q=a")
+				checkResponseBase(httpClient, http.MethodGet, "/search?q=a")
 			})
 		})
 	})
@@ -196,13 +150,13 @@ func TestClient_GetSearch(t *testing.T) {
 		searchResp, err := ioutil.ReadFile("./response_mocks/results.json")
 		So(err, ShouldBeNil)
 
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, searchResp)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusOK, searchResp)
+		searchClient := newSearchClient(httpClient)
 
 		Convey("when GetSearch is called", func() {
 			v := url.Values{}
 			v.Set("q", "housing")
-			r, err := cli.GetSearch(ctx, v)
+			r, err := searchClient.GetSearch(ctx, v)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -212,19 +166,19 @@ func TestClient_GetSearch(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/search?q=housing")
+				checkResponseBase(httpClient, http.MethodGet, "/search?q=housing")
 			})
 		})
 	})
 
 	Convey("given a 400 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusBadRequest, nil)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusBadRequest, nil)
+		searchClient := newSearchClient(httpClient)
 
 		Convey("when GetSearch is called", func() {
 			v := url.Values{}
 			v.Set("limit", "a")
-			_, err := cli.GetSearch(ctx, v)
+			_, err := searchClient.GetSearch(ctx, v)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 400, path: "+testHost+"/search?limit=a").Error())
@@ -232,19 +186,19 @@ func TestClient_GetSearch(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/search?limit=a")
+				checkResponseBase(httpClient, http.MethodGet, "/search?limit=a")
 			})
 		})
 	})
 
 	Convey("given a 500 status is returned", t, func() {
-		mockdphttpCli := createHTTPClientMock(http.StatusInternalServerError, nil)
-		cli := Client{cli: mockdphttpCli, url: "http://localhost:8080"}
+		httpClient := createHTTPClientMock(http.StatusInternalServerError, nil)
+		searchClient := newSearchClient(httpClient)
 
 		Convey("when GetSearch is called", func() {
 			v := url.Values{}
 			v.Set("limit", "housing")
-			_, err := cli.GetSearch(ctx, v)
+			_, err := searchClient.GetSearch(ctx, v)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 500, path: "+testHost+"/search?limit=housing").Error())
@@ -252,8 +206,45 @@ func TestClient_GetSearch(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(mockdphttpCli, http.MethodGet, "/search?limit=housing")
+				checkResponseBase(httpClient, http.MethodGet, "/search?limit=housing")
 			})
 		})
 	})
+}
+
+func newSearchClient(httpClient *dphttp.ClienterMock) *Client {
+	healthClient := health.NewClientWithClienter(service, testHost, httpClient)
+	searchClient := NewWithHealthClient(healthClient)
+	return searchClient
+}
+
+func createHTTPClientMock(retCode int, body []byte) *dphttp.ClienterMock {
+	return &dphttp.ClienterMock{
+		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: retCode,
+				Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			}, nil
+		},
+		SetPathsWithNoRetriesFunc: func(paths []string) {
+			return
+		},
+		GetPathsWithNoRetriesFunc: func() []string {
+			return []string{"/healthcheck"}
+		},
+	}
+}
+
+func createHTTPClientMockErr(err error) *dphttp.ClienterMock {
+	return &dphttp.ClienterMock{
+		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			return nil, err
+		},
+		SetPathsWithNoRetriesFunc: func(paths []string) {
+			return
+		},
+		GetPathsWithNoRetriesFunc: func() []string {
+			return []string{"/healthcheck"}
+		},
+	}
 }

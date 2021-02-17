@@ -11,7 +11,6 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -44,17 +43,21 @@ var _ error = ErrInvalidSearchResponse{}
 
 // Client is a dp-search-api client which can be used to make requests to the server
 type Client struct {
-	cli dphttp.Clienter
-	url string
+	hcCli *healthcheck.Client
 }
 
 // NewClient creates a new instance of Client with a given search-api url
 func NewClient(searchAPIURL string) *Client {
-	hcClient := healthcheck.NewClient(service, searchAPIURL)
-
 	return &Client{
-		cli: hcClient.Client,
-		url: searchAPIURL,
+		healthcheck.NewClient(service, searchAPIURL),
+	}
+}
+
+// NewWithHealthClient creates a new instance of Client,
+// reusing the URL and Clienter from the provided health check client.
+func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
+	return &Client{
+		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
 	}
 }
 
@@ -67,13 +70,7 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 
 // Checker calls search api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
-	hcClient := healthcheck.Client{
-		Client: c.cli,
-		URL:    c.url,
-		Name:   service,
-	}
-
-	return hcClient.Checker(ctx, check)
+	return c.hcCli.Checker(ctx, check)
 }
 
 // doGet executes clienter.Do GET for the provided uri
@@ -84,7 +81,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, uri string) (*http.Re
 	if err != nil {
 		return nil, err
 	}
-	return c.cli.Do(ctx, req)
+	return c.hcCli.Client.Do(ctx, req)
 }
 
 // NewSearchErrorResponse creates an error response
@@ -98,7 +95,7 @@ func NewSearchErrorResponse(resp *http.Response, uri string) (e *ErrInvalidSearc
 
 // GetSearch returns the search results
 func (c *Client) GetSearch(ctx context.Context, query url.Values) (r Response, err error) {
-	uri := fmt.Sprintf("%s/search", c.url)
+	uri := fmt.Sprintf("%s/search", c.hcCli.URL)
 	if query != nil {
 		uri = uri + "?" + query.Encode()
 	}
