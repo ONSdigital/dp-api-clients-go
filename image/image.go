@@ -352,7 +352,7 @@ func (c *Client) PublishImage(ctx context.Context, userAuthToken, serviceAuthTok
 	}
 	defer closeResponseBody(ctx, resp)
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusNoContent {
 		err = NewImageAPIResponse(resp, uri)
 		return
 	}

@@ -1,6 +1,6 @@
 package search
 
-// Response represents the fields for the search results as returned by dp-search-query
+// Response represents the fields for the search results as returned by dp-search-api
 type Response struct {
 	Count        int           `json:"count"`
 	ContentTypes []ContentType `json:"content_types"`

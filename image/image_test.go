@@ -492,9 +492,9 @@ func TestClient_PutImage(t *testing.T) {
 
 func TestClient_PublishImage(t *testing.T) {
 
-	Convey("given a 200 status is returned", t, func() {
+	Convey("given a 204 status is returned", t, func() {
 
-		mockdphttpCli := createHTTPClientMock(http.StatusOK, []byte{})
+		mockdphttpCli := createHTTPClientMock(http.StatusNoContent, []byte{})
 		cli := createImageAPIWithClienter(mockdphttpCli)
 
 		Convey("when PublishImage is called", func() {

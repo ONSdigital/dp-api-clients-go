@@ -4,19 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/log"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 )
 
-const service = "search-query"
+const service = "search-api"
 
-// ErrInvalidSearchResponse is returned when the dp-search-query does not respond
+// ErrInvalidSearchResponse is returned when the dp-search-api does not respond
 // with a valid status
 type ErrInvalidSearchResponse struct {
 	expectedCode int
@@ -26,14 +27,14 @@ type ErrInvalidSearchResponse struct {
 
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidSearchResponse) Error() string {
-	return fmt.Sprintf("invalid response from dp-search-query - should be: %d, got: %d, path: %s",
+	return fmt.Sprintf("invalid response from dp-search-api - should be: %d, got: %d, path: %s",
 		e.expectedCode,
 		e.actualCode,
 		e.uri,
 	)
 }
 
-// Code returns the status code received from dp-search-query if an error is returned
+// Code returns the status code received from dp-search-api if an error is returned
 func (e ErrInvalidSearchResponse) Code() int {
 	return e.actualCode
 }
@@ -41,13 +42,13 @@ func (e ErrInvalidSearchResponse) Code() int {
 // compile time check that ErrInvalidSearchResponse satisfies the error interface
 var _ error = ErrInvalidSearchResponse{}
 
-// Client is a dp-search-query client which can be used to make requests to the server
+// Client is a dp-search-api client which can be used to make requests to the server
 type Client struct {
 	cli dphttp.Clienter
 	url string
 }
 
-// NewClient creates a new instance of Client with a given search-query api url
+// NewClient creates a new instance of Client with a given search-api url
 func NewClient(searchAPIURL string) *Client {
 	hcClient := healthcheck.NewClient(service, searchAPIURL)
 
@@ -90,8 +91,8 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, uri string) (*http.Re
 func NewSearchErrorResponse(resp *http.Response, uri string) (e *ErrInvalidSearchResponse) {
 	return &ErrInvalidSearchResponse{
 		expectedCode: http.StatusOK,
-		actualCode: resp.StatusCode,
-		uri:        uri,
+		actualCode:   resp.StatusCode,
+		uri:          uri,
 	}
 }
 

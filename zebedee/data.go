@@ -166,3 +166,29 @@ type HomepageDescription struct {
 	PreUnit         string   `json:"preUnit"`
 	Source          string   `json:"source"`
 }
+
+type Collection struct {
+	ID              string           `json:"id"`
+	Name            string           `json:"name"`
+	Inprogress      []CollectionItem `json:"inProgress"`
+	Complete        []CollectionItem `json:"complete"`
+	Reviewed        []CollectionItem `json:"reviewed"`
+	Datasets        []CollectionItem `json:"datasets"`
+	DatasetVersions []CollectionItem `json:"datasetVersions"`
+	ApprovalStatus  string           `json:"approvalStatus"`
+	Type            string           `json:"type"`
+}
+
+type CollectionItem struct {
+	ID           string `json:"id"`
+	State        string `json:"state"`
+	LastEditedBy string `json:"lastEditedBy"`
+	Title        string `json:"title"`
+	URI          string `json:"uri"`
+	Edition      string `json:"edition,omitempty"`
+	Version      string `json:"version,omitempty"`
+}
+
+type CollectionState struct {
+	State string `json:"state"`
+}

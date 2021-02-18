@@ -1,9 +1,9 @@
 package zebedee
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,8 +14,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
 )
 
@@ -64,6 +67,15 @@ func New(zebedeeURL string) *Client {
 	}
 }
 
+// NewWithSetTimeoutAndMaxRetry creates a new Zebedee Client, with a configurable timeout and maximum number of retries
+func NewClientWithClienter(zebedeeURL string, clienter dphttp.Clienter) *Client {
+	hcClient := healthcheck.NewClientWithClienter(service, zebedeeURL, clienter)
+
+	return &Client{
+		hcClient,
+	}
+}
+
 // NewWithHealthClient creates a new instance of Client,
 // reusing the URL and Clienter from the provided health check client.
 func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
@@ -86,6 +98,15 @@ func (c *Client) Get(ctx context.Context, userAccessToken, path string) ([]byte,
 // GetWithHeaders returns a response for the requested uri in zebedee, providing the headers too
 func (c *Client) GetWithHeaders(ctx context.Context, userAccessToken, path string) ([]byte, http.Header, error) {
 	return c.get(ctx, userAccessToken, path)
+}
+
+// Put updates a resource in zebedee
+func (c *Client) Put(ctx context.Context, userAccessToken, path string, payload []byte) (*http.Response, error) {
+	resp, err := c.put(ctx, userAccessToken, path, payload)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
@@ -153,6 +174,23 @@ func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte,
 
 	b, err := ioutil.ReadAll(resp.Body)
 	return b, resp.Header, err
+}
+
+func (c *Client) put(ctx context.Context, userAccessToken, path string, payload []byte) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPut, path, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	dprequest.AddFlorenceHeader(req, userAccessToken)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return resp, nil
 }
 
 // GetBreadcrumb returns a Breadcrumb
@@ -280,6 +318,56 @@ func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, c
 	}
 
 	return ts, nil
+}
+
+func (c *Client) PutDatasetInCollection(ctx context.Context, userAccessToken, collectionID, lang, datasetID, state string) error {
+	uri := fmt.Sprintf("%s/collections/%s/datasets/%s", c.hcCli.URL, collectionID, datasetID)
+
+	zebedeeState := CollectionState{State: state}
+	payload, err := json.Marshal(zebedeeState)
+	if err != nil {
+		return errors.Wrap(err, "error while attempting to marshall version")
+	}
+
+	_, err = c.put(ctx, userAccessToken, uri, payload)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) PutDatasetVersionInCollection(ctx context.Context, userAccessToken, collectionID, lang, datasetID, edition, version, state string) error {
+	uri := fmt.Sprintf("%s/collections/%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, collectionID, datasetID, edition, version)
+
+	zebedeeState := CollectionState{State: state}
+	payload, err := json.Marshal(zebedeeState)
+	if err != nil {
+		return errors.Wrap(err, "error while attempting to marshall version")
+	}
+
+	_, err = c.put(ctx, userAccessToken, uri, payload)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) GetCollection(ctx context.Context, userAccessToken, collectionID string) (Collection, error) {
+	reqURL := fmt.Sprintf("/collectionDetails/%s", collectionID)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
+
+	if err != nil {
+		return Collection{}, err
+	}
+
+	var collection Collection
+	if err = json.Unmarshal(b, &collection); err != nil {
+		return collection, err
+	}
+
+	return collection, nil
 }
 
 // GetResourceBody returns body of a resource e.g. JSON definition of a table

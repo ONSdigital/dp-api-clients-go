@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -33,9 +34,14 @@ var (
 
 var checkResponseBase = func(httpClient *dphttp.ClienterMock, expectedMethod string, expectedUri string) {
 	So(len(httpClient.DoCalls()), ShouldEqual, 1)
-	So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldEqual, expectedUri)
+	So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldResemble, expectedUri)
 	So(httpClient.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
 	So(httpClient.DoCalls()[0].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
+}
+
+type MockedHTTPResponse struct {
+	StatusCode int
+	Body       interface{}
 }
 
 func TestClient_HealthChecker(t *testing.T) {
@@ -72,7 +78,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 500 response", t, func() {
-		httpClient := createHTTPClientMock(http.StatusInternalServerError, "")
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusInternalServerError, ""})
 		datasetClient := newDatasetClient(httpClient)
 		check := initialState
 
@@ -99,7 +105,9 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 404 response", t, func() {
-		httpClient := createHTTPClientMock(http.StatusNotFound, "")
+		httpClient := createHTTPClientMock(
+			MockedHTTPResponse{http.StatusNotFound, ""},
+			MockedHTTPResponse{http.StatusNotFound, ""})
 		datasetClient := newDatasetClient(httpClient)
 		check := initialState
 
@@ -127,7 +135,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 429 response", t, func() {
-		httpClient := createHTTPClientMock(http.StatusTooManyRequests, "")
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusTooManyRequests, ""})
 		datasetClient := newDatasetClient(httpClient)
 		check := initialState
 
@@ -154,7 +162,7 @@ func TestClient_HealthChecker(t *testing.T) {
 	})
 
 	Convey("given clienter.Do returns 200 response", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, "")
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, ""})
 		datasetClient := newDatasetClient(httpClient)
 		check := initialState
 
@@ -195,7 +203,7 @@ func TestClient_PutVersion(t *testing.T) {
 	}
 
 	Convey("Given a valid version", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, "")
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, ""})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when put version is called", func() {
@@ -213,7 +221,7 @@ func TestClient_PutVersion(t *testing.T) {
 	})
 
 	Convey("Given no auth token has been configured", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, "")
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, ""})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when put version is called", func() {
@@ -251,7 +259,7 @@ func TestClient_PutVersion(t *testing.T) {
 	})
 
 	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
-		httpClient := createHTTPClientMock(http.StatusInternalServerError, "")
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusInternalServerError, ""})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when put version is called", func() {
@@ -273,7 +281,7 @@ func TestClient_PutVersion(t *testing.T) {
 func TestClient_IncludeCollectionID(t *testing.T) {
 
 	Convey("Given a valid request", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, "")
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, ""})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when Collection-ID is present in the context", func() {
@@ -291,7 +299,7 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 	})
 
 	Convey("Given a valid request", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, "")
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, ""})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when Collection-ID is not present in the context", func() {
@@ -310,10 +318,49 @@ func TestClient_IncludeCollectionID(t *testing.T) {
 	})
 }
 
+func TestClient_GetDatasetCurrentAndNext(t *testing.T) {
+
+	Convey("given a 200 status with valid empty body is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, Dataset{}})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetDatasetCurrentAndNext is called", func() {
+			instance, err := datasetClient.GetDatasetCurrentAndNext(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("a positive response is returned with empty instance", func() {
+				So(err, ShouldBeNil)
+				So(instance, ShouldResemble, Dataset{})
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/datasets/123")
+			})
+		})
+	})
+
+	Convey("given a 200 status with empty body is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, []byte{}})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetDatasetCurrentAndNext is called", func() {
+			_, err := datasetClient.GetDatasetCurrentAndNext(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/datasets/123")
+			})
+		})
+	})
+
+}
+
 func TestClient_GetInstance(t *testing.T) {
 
 	Convey("given a 200 status with valid empty body is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, Instance{})
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, Instance{}})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstance is called", func() {
@@ -331,7 +378,7 @@ func TestClient_GetInstance(t *testing.T) {
 	})
 
 	Convey("given a 200 status with empty body is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, []byte{})
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, []byte{}})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstance is called", func() {
@@ -382,7 +429,7 @@ func TestClient_GetInstance(t *testing.T) {
 func TestClient_GetInstanceDimensionsBytes(t *testing.T) {
 
 	Convey("given a 200 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, "")
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, ""})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensionsBytes is called", func() {
@@ -433,7 +480,7 @@ func TestClient_GetInstanceDimensionsBytes(t *testing.T) {
 func TestClient_GetInstances(t *testing.T) {
 
 	Convey("given a 200 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, Instance{})
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, Instance{}})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstance is called", func() {
@@ -480,7 +527,7 @@ func Test_PutInstanceImportTasks(t *testing.T) {
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, nil)
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, nil})
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
 
@@ -514,7 +561,7 @@ func TestClient_PostInstanceDimensions(t *testing.T) {
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, nil)
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, nil})
 		datasetClient := newDatasetClient(httpClient)
 		expectedPayload, err := json.Marshal(optionsToPost)
 		So(err, ShouldBeNil)
@@ -536,7 +583,7 @@ func TestClient_PostInstanceDimensions(t *testing.T) {
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusNotFound, "wrong!")
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, "wrong!"})
 		datasetClient := newDatasetClient(httpClient)
 		expectedPayload, err := json.Marshal(optionsToPost)
 		So(err, ShouldBeNil)
@@ -565,7 +612,7 @@ func TestClient_PutInstanceState(t *testing.T) {
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, nil)
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, nil})
 		datasetClient := newDatasetClient(httpClient)
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
@@ -591,7 +638,7 @@ func TestClient_PutInstanceState(t *testing.T) {
 func Test_UpdateInstanceWithNewInserts(t *testing.T) {
 
 	Convey("given a 200 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, nil)
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, nil})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when UpdateInstanceWithNewInserts is called", func() {
@@ -617,7 +664,7 @@ func TestClient_PutInstanceData(t *testing.T) {
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, nil)
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, nil})
 		datasetClient := newDatasetClient(httpClient)
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
@@ -639,7 +686,7 @@ func TestClient_PutInstanceData(t *testing.T) {
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusNotFound, "wrong!")
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, "wrong!"})
 		datasetClient := newDatasetClient(httpClient)
 		expectedPayload, err := json.Marshal(data)
 		So(err, ShouldBeNil)
@@ -665,21 +712,21 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 
 	data := Dimensions{
 		Items: []Dimension{
-			Dimension{
+			{
 				DimensionID: "dimension1",
 				InstanceID:  "instance1",
 				NodeID:      "node1",
 				Label:       "label",
 				Option:      "option",
 			},
-			Dimension{
+			{
 				DimensionID: "dimension2",
 			},
 		},
 	}
 
 	Convey("given a 200 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, data)
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, data})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensions is called", func() {
@@ -697,7 +744,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusNotFound, nil)
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, nil})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensions is called", func() {
@@ -720,7 +767,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 
 func TestClient_PutInstanceDimensionOptionNodeID(t *testing.T) {
 	Convey("given a 200 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusOK, nil)
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, nil})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when PutInstanceDimensionOptionNodeID is called", func() {
@@ -737,7 +784,7 @@ func TestClient_PutInstanceDimensionOptionNodeID(t *testing.T) {
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		httpClient := createHTTPClientMock(http.StatusNotFound, nil)
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, nil})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when PutInstanceDimensionOptionNodeID is called", func() {
@@ -758,18 +805,282 @@ func TestClient_PutInstanceDimensionOptionNodeID(t *testing.T) {
 	})
 }
 
+func TestClient_GetOptions(t *testing.T) {
+
+	instanceID := "testInstance"
+	edition := "testEdition"
+	version := "tetVersion"
+	dimension := "testDimension"
+	offset := 1
+	limit := 10
+	MaxIDs = func() int { return 5 }
+
+	Convey("given a 200 status is returned", t, func() {
+		testOptions := Options{
+			Items: []Option{
+				{
+					DimensionID: dimension,
+					Label:       "optionLabel",
+					Option:      "testOption",
+				},
+				{
+					DimensionID: dimension,
+					Label:       "OptionWithSpecialChars",
+					Option:      "90+",
+				},
+			},
+			Count:      2,
+			Offset:     offset,
+			Limit:      limit,
+			TotalCount: 3,
+		}
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, testOptions})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetOptions is called with valid values for limit and offset", func() {
+			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{}}
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, &q)
+
+			Convey("a positive response is returned, with the expected options", func() {
+				So(err, ShouldBeNil)
+				So(options, ShouldResemble, testOptions)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
+				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?offset=%d&limit=%d",
+					instanceID, edition, version, dimension, offset, limit)
+				checkResponseBase(httpClient, http.MethodGet, expectedURI)
+			})
+		})
+
+		Convey("when GetOptions is called with negative offset", func() {
+			q := QueryParams{Offset: -1, Limit: limit, IDs: []string{}}
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, &q)
+
+			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
+				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
+				So(options, ShouldResemble, Options{})
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
+
+		Convey("when GetOptions is called with negative limit", func() {
+			q := QueryParams{Offset: offset, Limit: -1, IDs: []string{}}
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, &q)
+
+			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
+				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
+				So(options, ShouldResemble, Options{})
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
+
+		Convey("when GetOptions is called with a list of IDs containing an existing ID, along with offset and limit", func() {
+			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{"testOption", "somethingElse"}}
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, &q)
+
+			Convey("a positive response is returned, with the expected options", func() {
+				So(err, ShouldBeNil)
+				So(options, ShouldResemble, testOptions)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected URI, providing the list of IDs and no offset or limit", func() {
+				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?id=testOption,somethingElse",
+					instanceID, edition, version, dimension)
+				checkResponseBase(httpClient, http.MethodGet, expectedURI)
+			})
+		})
+
+		Convey("when GetOptions is called with a list of IDs containing more items than the maximum allowed", func() {
+			q := QueryParams{Offset: offset, Limit: limit, IDs: []string{"op1", "op2", "op3", "op4", "op5", "op6"}}
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, &q)
+
+			Convey("an error is returned, with the expected options", func() {
+				So(err.Error(), ShouldResemble, "too many query parameters have been provided. Maximum allowed: 5")
+				So(options, ShouldResemble, Options{})
+			})
+
+			Convey("and dphttpclient.Do is not called", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, Options{}})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetOptions is called", func() {
+			options, err := datasetClient.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, nil)
+
+			Convey("the expected error response is returned, with an empty options struct", func() {
+				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
+					actualCode: 404,
+					uri:        fmt.Sprintf("http://localhost:8080/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", instanceID, edition, version, dimension),
+					body:       "{\"items\":null,\"count\":0,\"offset\":0,\"limit\":0,\"total_count\":0}",
+				})
+				So(options, ShouldResemble, Options{})
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
+				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", instanceID, edition, version, dimension)
+				checkResponseBase(httpClient, http.MethodGet, expectedURI)
+			})
+		})
+	})
+}
+
+func TestClient_GetOptionsInBatches(t *testing.T) {
+
+	instanceID := "testInstance"
+	edition := "testEdition"
+	version := "tetVersion"
+	dimension := "testDimension"
+
+	opts0 := Options{
+		Items: []Option{
+			{DimensionID: "testDimension", Label: "Option one", Option: "op1"},
+			{DimensionID: "testDimension", Label: "Option two", Option: "op2"}},
+		Count:      2,
+		TotalCount: 3,
+		Limit:      2,
+		Offset:     0,
+	}
+
+	opts1 := Options{
+		Items: []Option{
+			{DimensionID: "testDimension", Label: "Option three", Option: "op3"}},
+		Count:      1,
+		TotalCount: 3,
+		Limit:      2,
+		Offset:     2,
+	}
+	batchSize := 2
+	maxWorkers := 1
+
+	Convey("When a 200 OK status is returned in 2 consecutive calls", t, func() {
+
+		httpClient := createHTTPClientMock(
+			MockedHTTPResponse{http.StatusOK, opts0},
+			MockedHTTPResponse{http.StatusOK, opts1})
+		datasetClient := newDatasetClient(httpClient)
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []Options{}
+		var testProcess OptionsBatchProcessor = func(batch Options) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetOptionsInBatches succeeds and returns the accumulated items from all the batches", func() {
+			opts, err := datasetClient.GetOptionsInBatches(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, batchSize, maxWorkers)
+
+			So(err, ShouldBeNil)
+			So(opts, ShouldResemble, Options{
+				Items: []Option{
+					{DimensionID: "testDimension", Label: "Option one", Option: "op1"},
+					{DimensionID: "testDimension", Label: "Option two", Option: "op2"},
+					{DimensionID: "testDimension", Label: "Option three", Option: "op3"}},
+				Count:      3,
+				TotalCount: 3,
+				Limit:      0,
+				Offset:     0,
+			})
+		})
+
+		Convey("then GetOptionsBatchProcess calls the batchProcessor function twice, with the expected baches", func() {
+			err := datasetClient.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, nil, testProcess, batchSize, maxWorkers)
+			So(err, ShouldBeNil)
+			So(processedBatches, ShouldResemble, []Options{opts0, opts1})
+			So(httpClient.DoCalls(), ShouldHaveLength, 2)
+			So(httpClient.DoCalls()[0].Req.URL.String(), ShouldResemble,
+				"http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?offset=0&limit=2")
+			So(httpClient.DoCalls()[1].Req.URL.String(), ShouldResemble,
+				"http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?offset=2&limit=2")
+		})
+
+		Convey("and a list of IDs is provided, then GetOptionsBatchProcess calls the batchProcessor function for the expected baches of IDs", func() {
+			err := datasetClient.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, &[]string{"op1", "op3", "op5"}, testProcess, batchSize, maxWorkers)
+			So(err, ShouldBeNil)
+			So(processedBatches, ShouldHaveLength, 2)
+			So(httpClient.DoCalls(), ShouldHaveLength, 2)
+			So(httpClient.DoCalls()[0].Req.URL.String(), ShouldResemble,
+				"http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?id=op1,op3")
+			So(httpClient.DoCalls()[1].Req.URL.String(), ShouldResemble,
+				"http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?id=op5")
+		})
+	})
+
+	Convey("When a 400 error status is returned in the first call", t, func() {
+		httpClient := createHTTPClientMock(
+			MockedHTTPResponse{http.StatusBadRequest, ""})
+		datasetClient := newDatasetClient(httpClient)
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []Options{}
+		var testProcess OptionsBatchProcessor = func(batch Options) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetOptionsInBatches fails with the expected error and the process is aborted", func() {
+			_, err := datasetClient.GetOptionsInBatches(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, batchSize, maxWorkers)
+			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
+			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?offset=0&limit=2")
+		})
+
+		Convey("then GetOptionsBatchProcess fails with the expected error and doesn't call the batchProcessor", func() {
+			err := datasetClient.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, nil, testProcess, batchSize, maxWorkers)
+			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
+			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?offset=0&limit=2")
+			So(processedBatches, ShouldResemble, []Options{})
+		})
+	})
+
+	Convey("When a 200 error status is returned in the first call and 400 error is returned in the second call", t, func() {
+		httpClient := createHTTPClientMock(
+			MockedHTTPResponse{http.StatusOK, opts0},
+			MockedHTTPResponse{http.StatusBadRequest, ""})
+		datasetClient := newDatasetClient(httpClient)
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []Options{}
+		var testProcess OptionsBatchProcessor = func(batch Options) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetOptionsInBatches fails with the expected error, corresponding to the second batch, and the process is aborted", func() {
+			_, err := datasetClient.GetOptionsInBatches(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, batchSize, maxWorkers)
+			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
+			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?offset=2&limit=2")
+		})
+
+		Convey("then GetOptionsBatchProcess fails with the expected error and calls the batchProcessor for the first batch only", func() {
+			err := datasetClient.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, edition, version, dimension, nil, testProcess, batchSize, maxWorkers)
+			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
+			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/datasets/testInstance/editions/testEdition/versions/tetVersion/dimensions/testDimension/options?offset=2&limit=2")
+			So(processedBatches, ShouldResemble, []Options{opts0})
+		})
+	})
+
+}
+
 func newDatasetClient(httpClient *dphttp.ClienterMock) *Client {
 	healthClient := health.NewClientWithClienter("", testHost, httpClient)
 	datasetClient := NewWithHealthClient(healthClient)
 	return datasetClient
 }
 
-func createHTTPClientMock(retCode int, retBody interface{}) *dphttp.ClienterMock {
+func createHTTPClientMock(mockedHTTPResponse ...MockedHTTPResponse) *dphttp.ClienterMock {
+	numCall := 0
 	return &dphttp.ClienterMock{
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-			body, _ := json.Marshal(retBody)
+			body, _ := json.Marshal(mockedHTTPResponse[numCall].Body)
+			statusCode := mockedHTTPResponse[numCall].StatusCode
+			numCall++
 			return &http.Response{
-				StatusCode: retCode,
+				StatusCode: statusCode,
 				Body:       ioutil.NopCloser(bytes.NewReader(body)),
 			}, nil
 		},

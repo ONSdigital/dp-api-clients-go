@@ -18,6 +18,7 @@ type DatasetDetails struct {
 	Methodologies     *[]Methodology    `json:"methodologies,omitempty"`
 	NationalStatistic bool              `json:"national_statistic,omitempty"`
 	NextRelease       string            `json:"next_release,omitempty"`
+	NomisReferenceURL string            `json:"nomis_reference_url,omitempty"`
 	Publications      *[]Publication    `json:"publications,omitempty"`
 	Publisher         *Publisher        `json:"publisher,omitempty"`
 	QMI               Publication       `json:"qmi,omitempty"`
@@ -26,6 +27,7 @@ type DatasetDetails struct {
 	State             string            `json:"state,omitempty"`
 	Theme             string            `json:"theme,omitempty"`
 	Title             string            `json:"title,omitempty"`
+	Type              string            `json:"type,omitempty"`
 	UnitOfMeasure     string            `json:"unit_of_measure,omitempty"`
 	URI               string            `json:"uri,omitempty"`
 	UsageNotes        *[]UsageNote      `json:"usage_notes,omitempty"`
@@ -55,6 +57,25 @@ type Version struct {
 	InstanceID           string               `json:"instance_id"`
 	LatestChanges        []Change             `json:"latest_changes"`
 	Links                Links                `json:"links,omitempty"`
+	ReleaseDate          string               `json:"release_date"`
+	State                string               `json:"state"`
+	Temporal             []Temporal           `json:"temporal"`
+	Version              int                  `json:"version"`
+	NumberOfObservations int64                `json:"total_observations,omitempty"`
+	ImportTasks          *InstanceImportTasks `json:"import_tasks,omitempty"`
+	CSVHeader            []string             `json:"headers,omitempty"`
+	UsageNotes           *[]UsageNote         `json:"usage_notes,omitempty"`
+}
+
+type UpdateInstance struct {
+	Alerts               *[]Alert             `json:"alerts"`
+	CollectionID         string               `json:"collection_id"`
+	Downloads            map[string]Download  `json:"downloads"`
+	Edition              string               `json:"edition"`
+	Dimensions           []VersionDimension   `json:"dimensions"`
+	ID                   string               `json:"id"`
+	InstanceID           string               `json:"instance_id"`
+	LatestChanges        []Change             `json:"latest_changes"`
 	ReleaseDate          string               `json:"release_date"`
 	State                string               `json:"state"`
 	Temporal             []Temporal           `json:"temporal"`
@@ -244,7 +265,11 @@ type Dimensions struct {
 
 // Options represents a list of options from the dataset api
 type Options struct {
-	Items []Option `json:"items"`
+	Items      []Option `json:"items"`
+	Count      int      `json:"count"`
+	Offset     int      `json:"offset"`
+	Limit      int      `json:"limit"`
+	TotalCount int      `json:"total_count"`
 }
 
 // Option represents a response model for an option

@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/ONSdigital/dp-api-clients-go/batch"
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
@@ -20,6 +21,13 @@ import (
 )
 
 const service = "dataset-api"
+
+const maxIDs = 200
+
+// MaxIDs returns the maximum number of IDs acceptable in a list
+var MaxIDs = func() int {
+	return maxIDs
+}
 
 // State - iota enum of possible states
 type State int
@@ -51,6 +59,9 @@ type ErrInvalidDatasetAPIResponse struct {
 	body       string
 }
 
+// OptionsBatchProcessor is the type corresponding to a batch processing function for dataset Options
+type OptionsBatchProcessor func(Options) (abort bool, err error)
+
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidDatasetAPIResponse) Error() string {
 	return fmt.Sprintf("invalid response: %d from dataset api: %s, body: %s",
@@ -70,6 +81,27 @@ var _ error = ErrInvalidDatasetAPIResponse{}
 // Client is a dataset api client which can be used to make requests to the server
 type Client struct {
 	hcCli *healthcheck.Client
+}
+
+// QueryParams represents the possible query parameters that a caller can provide
+type QueryParams struct {
+	Offset int
+	Limit  int
+	IDs    []string
+}
+
+// Validate validates tht no negative values are provided for limit or offset, and that the length of IDs is lower than the maximum
+// Also escapes all IDs, so that they can be safely used as query paramters in requests
+func (q *QueryParams) Validate() error {
+	if q.Offset < 0 || q.Limit < 0 {
+		return errors.New("negative offsets or limits are not allowed")
+	}
+
+	if len(q.IDs) > MaxIDs() {
+		return fmt.Errorf("too many query parameters have been provided. Maximum allowed: %d", MaxIDs())
+	}
+
+	return nil
 }
 
 // NewAPIClient creates a new instance of Client with a given dataset api url and the relevant tokens
@@ -146,6 +178,35 @@ func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, colle
 	return
 }
 
+// GetDatasetCurrentAndNext returns dataset level information but contains both next and current documents
+func (c *Client) GetDatasetCurrentAndNext(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m Dataset, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s", c.hcCli.URL, datasetID)
+
+	clientlog.Do(ctx, "retrieving dataset", service, uri)
+
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewDatasetAPIResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(b, &m); err != nil {
+		return
+	}
+
+	return
+}
+
 // GetByPath returns dataset level information for a given dataset path
 func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, path string) (m DatasetDetails, err error) {
 	uri := fmt.Sprintf("%s/%s", c.hcCli.URL, strings.Trim(path, "/"))
@@ -214,6 +275,29 @@ func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToke
 	}
 
 	return
+}
+
+// PutDataset update the dataset
+func (c *Client) PutDataset(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string, d DatasetDetails) error {
+	uri := fmt.Sprintf("%s/datasets/%s", c.hcCli.URL, datasetID)
+
+	clientlog.Do(ctx, "updating dataset", service, uri)
+
+	payload, err := json.Marshal(d)
+	if err != nil {
+		return errors.Wrap(err, "error while attempting to marshall dataset")
+	}
+
+	resp, err := c.doPutWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload)
+	if err != nil {
+		return errors.Wrap(err, "http client returned error while attempting to make request")
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewDatasetAPIResponse(resp, uri)
+	}
+	return nil
 }
 
 // GetEdition retrieves a single edition document from a given datasetID and edition label
@@ -446,6 +530,29 @@ func (c *Client) GetInstances(ctx context.Context, userAuthToken, serviceAuthTok
 	return
 }
 
+// PutInstance updates an instance
+func (c *Client) PutInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string, i UpdateInstance) error {
+	uri := fmt.Sprintf("%s/instances/%s", c.hcCli.URL, instanceID)
+
+	clientlog.Do(ctx, "updating dataset version", service, uri)
+
+	payload, err := json.Marshal(i)
+	if err != nil {
+		return errors.Wrap(err, "error while attempting to marshall instance")
+	}
+
+	resp, err := c.doPutWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload)
+	if err != nil {
+		return errors.Wrap(err, "http client returned error while attempting to make request")
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewDatasetAPIResponse(resp, uri)
+	}
+	return nil
+}
+
 // PutInstanceState performs a PUT '/instances/<id>' with the string representation of the provided state
 func (c *Client) PutInstanceState(ctx context.Context, serviceAuthToken, instanceID string, state State) error {
 	payload, err := json.Marshal(stateData{State: state.String()})
@@ -675,8 +782,19 @@ func (c *Client) GetVersionDimensions(ctx context.Context, userAuthToken, servic
 }
 
 // GetOptions will return the options for a dimension
-func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string) (m Options, err error) {
+func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string, q *QueryParams) (m Options, err error) {
+
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", c.hcCli.URL, id, edition, version, dimension)
+	if q != nil {
+		if err := q.Validate(); err != nil {
+			return Options{}, err
+		}
+		if len(q.IDs) > 0 {
+			uri = fmt.Sprintf("%s?id=%s", uri, strings.Join(q.IDs, ","))
+		} else {
+			uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
+		}
+	}
 
 	clientlog.Do(ctx, "retrieving options for dimension", service, uri)
 
@@ -698,6 +816,66 @@ func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken
 
 	err = json.Unmarshal(b, &m)
 	return
+}
+
+// GetOptionsInBatches retrieves a list of the dimension options in concurrent batches and accumulates the results
+func (c *Client) GetOptionsInBatches(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string, batchSize, maxWorkers int) (opts Options, err error) {
+
+	// Function to aggregate items.
+	// For the first received batch, as we have the total count information, will initialise the final structure of items with a fixed size equal to TotalCount.
+	// This serves two purposes:
+	//   - We can guarantee, even with concurrent calls, that values are returned in the same order that the API defines, by offsetting the index.
+	//   - We do a single memory allocation for the final array, making the code more memory efficient.
+	var processBatch OptionsBatchProcessor = func(b Options) (abort bool, err error) {
+		if len(opts.Items) == 0 { // first batch response being handled
+			opts.TotalCount = b.TotalCount
+			opts.Items = make([]Option, b.TotalCount)
+			opts.Count = b.TotalCount
+		}
+		for i := 0; i < len(b.Items); i++ {
+			opts.Items[i+b.Offset] = b.Items[i]
+		}
+		return false, nil
+	}
+
+	// call dataset API GetOptions in batches and aggregate the responses
+	if err := c.GetOptionsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension, nil, processBatch, batchSize, maxWorkers); err != nil {
+		return Options{}, err
+	}
+	return opts, nil
+}
+
+// GetOptionsBatchProcess gets the dataset options for a dimension from dataset API in batches, and calls the provided function for each batch.
+// If optionIDs is provided, only the options with the provided IDs will be requested
+func (c *Client) GetOptionsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension string, optionIDs *[]string, processBatch OptionsBatchProcessor, batchSize, maxWorkers int) error {
+
+	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit,
+	// or the subste of IDs according to the provided offset, if a list of optionIDs was provided
+	batchGetter := func(offset int) (interface{}, int, string, error) {
+
+		// if a list of IDs is provided, then obtain only the options for that list in batches.
+		if optionIDs != nil {
+			batchEnd := batch.Min(len(*optionIDs), offset+batchSize)
+			batchOptionIDs := (*optionIDs)[offset:batchEnd]
+			b, err := c.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension, &QueryParams{IDs: batchOptionIDs})
+			return b, len(*optionIDs), "", err
+		}
+
+		// otherwise obtain all the options in batches.
+		b, err := c.GetOptions(ctx, userAuthToken, serviceAuthToken, collectionID, id, edition, version, dimension, &QueryParams{Offset: offset, Limit: batchSize})
+		return b, b.TotalCount, "", err
+	}
+
+	// cast and process the batch according to the provided method
+	batchProcessor := func(b interface{}, batchETag string) (abort bool, err error) {
+		v, ok := b.(Options)
+		if !ok {
+			return true, errors.New("wrong type")
+		}
+		return processBatch(v)
+	}
+
+	return batch.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
 }
 
 // NewDatasetAPIResponse creates an error response, optionally adding body to e when status is 404

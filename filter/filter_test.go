@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -26,6 +28,8 @@ const (
 	testUserAuthToken        = "grault"
 	testCollectionID         = "garply"
 	testHost                 = "http://localhost:8080"
+	testETag                 = "1cf582ea0f9266de2686d6e246a243d15feacda3"
+	testETag2                = "17f20b6965501e27adcd46c674f65eeb17abb7b9"
 )
 
 var initialState = health.CreateCheckState(service)
@@ -36,9 +40,17 @@ var (
 	ctx    = context.Background()
 )
 
+func checkResponseBase(httpClient *dphttp.ClienterMock, expectedMethod, expectedURI, serviceAuthToken string) {
+	So(len(httpClient.DoCalls()), ShouldEqual, 1)
+	So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldEqual, expectedURI)
+	So(httpClient.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
+	So(httpClient.DoCalls()[0].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
+}
+
 type MockedHTTPResponse struct {
 	StatusCode int
 	Body       string
+	ETag       string
 }
 
 func TestClient_HealthChecker(t *testing.T) {
@@ -206,17 +218,31 @@ func TestClient_HealthChecker(t *testing.T) {
 func TestClient_GetOutput(t *testing.T) {
 	filterOutputID := "foo"
 	filterOutputBody := `{"filter_id":"` + filterOutputID + `"}`
+
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
 		_, err := mockedAPI.GetOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("When server error is returned in all attempts then the expected error is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
 		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned in first attempt but 200 OK is returned in the first retry then the corresponding Output is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 200, Body: filterOutputBody})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		model, err := mockedAPI.GetOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
+		So(err, ShouldBeNil)
+		So(model, ShouldResemble, Model{FilterID: filterOutputID})
 	})
 
 	Convey("When a filter-instance is returned", t, func() {
@@ -236,11 +262,23 @@ func TestClient_UpdateFilterOutput(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "PUT"}, MockedHTTPResponse{StatusCode: 500, Body: ""})
+	Convey("When server error is returned in all attempts", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "PUT"},
+			MockedHTTPResponse{StatusCode: 500, Body: ""},
+			MockedHTTPResponse{StatusCode: 500, Body: ""},
+			MockedHTTPResponse{StatusCode: 500, Body: ""})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		err := mockedAPI.UpdateFilterOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterJobID, &model)
 		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "PUT"},
+			MockedHTTPResponse{StatusCode: 500, Body: ""},
+			MockedHTTPResponse{StatusCode: 200, Body: ""})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		err := mockedAPI.UpdateFilterOutput(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterJobID, &model)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("When server returns 200 OK", t, func() {
@@ -259,87 +297,463 @@ func TestClient_GetDimension(t *testing.T) {
 		"options": ["corge"]}`
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
+		_, _, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("When server error is returned in all attempts", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
-		_, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
+		_, _, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("When a dimension-instance is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
-		dim, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
+	Convey("When server error is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody, ETag: testETag})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		dim, eTag, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldBeNil)
 		So(dim, ShouldResemble, Dimension{
 			Name: "quuz",
 			URI:  "www.ons.gov.uk",
 		})
+		So(eTag, ShouldResemble, testETag)
+	})
+
+	Convey("When a dimension-instance is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody, ETag: testETag})
+		dim, eTag, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
+		So(err, ShouldBeNil)
+		So(dim, ShouldResemble, Dimension{
+			Name: "quuz",
+			URI:  "www.ons.gov.uk",
+		})
+		So(eTag, ShouldResemble, testETag)
 	})
 }
 
 func TestClient_GetDimensions(t *testing.T) {
 	filterOutputID := "foo"
-	dimensionBody := `[{
-		"dimension_url": "www.ons.gov.uk",
-		"name": "quuz",
-		"options": ["corge"]}]`
+	dimensionBody := `{
+		"items": [
+			{ "dimension_url": "www.ons.gov.uk/dim1", "name": "DimensionOne" },
+			{ "dimension_url": "www.ons.gov.uk/dim2", "name": "DimensionTwo" }],
+		"count": 2,
+		"offset": 1,
+		"limit": 20,
+		"total_count": 3
+	}`
 
-	Convey("When bad request is returned", t, func() {
+	Convey("When bad request is returned then the expected ErrInvalidFilterAPIResponse is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID)
-		So(err, ShouldNotBeNil)
+		_, _, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, nil)
+		So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+		So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+		So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "/filters/foo/dimensions"), ShouldBeTrue)
 	})
 
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("When server error is returned in all attempts then the expected ErrInvalidFilterAPIResponse is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
-		_, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID)
-		So(err, ShouldNotBeNil)
+		_, _, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, nil)
+		So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+		So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusInternalServerError)
+		So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "/filters/foo/dimensions"), ShouldBeTrue)
 	})
 
-	Convey("When a dimension-instance is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
-		dims, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID)
+	Convey("When server error is returned in first attempt but 200 OK is returned in the first retry then the corresponding Dimensions struct is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody, ETag: testETag})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		dims, eTag, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, nil)
 		So(err, ShouldBeNil)
-		So(dims, ShouldResemble, []Dimension{
-			Dimension{
-				Name: "quuz",
-				URI:  "www.ons.gov.uk",
-			},
+		So(dims, ShouldResemble, Dimensions{
+			Items: []Dimension{
+				{URI: "www.ons.gov.uk/dim1", Name: "DimensionOne"},
+				{URI: "www.ons.gov.uk/dim2", Name: "DimensionTwo"}},
+			Count:      2,
+			Offset:     1,
+			Limit:      20,
+			TotalCount: 3,
+		})
+		So(eTag, ShouldResemble, testETag)
+	})
+
+	Convey("When a dimension-instance json is returned by the api then the corresponding Dimensions struct is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody, ETag: testETag})
+
+		Convey("Then a request with valid query parameterse returns the expected Dimensions struct", func() {
+			q := QueryParams{Offset: 1, Limit: 20}
+			dims, eTag, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, &q)
+			So(err, ShouldBeNil)
+			So(dims, ShouldResemble, Dimensions{
+				Items: []Dimension{
+					{URI: "www.ons.gov.uk/dim1", Name: "DimensionOne"},
+					{URI: "www.ons.gov.uk/dim2", Name: "DimensionTwo"}},
+				Count:      2,
+				Offset:     1,
+				Limit:      20,
+				TotalCount: 3,
+			})
+			So(eTag, ShouldResemble, testETag)
+		})
+
+		Convey("Then a request with invalid offset query paratmers returns a validation error", func() {
+			q := QueryParams{Offset: -1, Limit: 0}
+			_, _, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, &q)
+			So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
+		})
+
+		Convey("Then a request with invalid limit query paratmers returns a validation error", func() {
+			q := QueryParams{Offset: 0, Limit: -1}
+			_, _, err := mockedAPI.GetDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, &q)
+			So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
 		})
 	})
 }
 
 func TestClient_GetDimensionOptions(t *testing.T) {
+
 	filterOutputID := "foo"
-	dimensionBody := `[{"dimension_option_url":"quux","option": "quuz"}]`
+	dimensionBody := `{"items": [{"dimension_option_url":"quux","option": "quuz"}], "count":1, "offset":2, "limit": 10, "total_count": 3}`
 	name := "corge"
-	Convey("When bad request is returned", t, func() {
+	offset := 2
+	limit := 10
+
+	Convey("Given a 400 BadRequest response is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
-		So(err, ShouldNotBeNil)
+
+		Convey("then GetDimensionOptions returns the expected error", func() {
+			_, _, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, nil)
+			So(err, ShouldResemble, &ErrInvalidFilterAPIResponse{
+				ActualCode:   400,
+				ExpectedCode: 200,
+				URI:          fmt.Sprintf("%s/filters/%s/dimensions/%s/options", mockedAPI.hcCli.URL, filterOutputID, name),
+			})
+		})
 	})
 
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("Given a 500 InternalServerError is returned in all attempts", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
-		_, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
-		So(err, ShouldNotBeNil)
+
+		Convey("then GetDimensionOptions returns the expected error", func() {
+			_, _, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, nil)
+			So(err, ShouldResemble, &ErrInvalidFilterAPIResponse{
+				ActualCode:   500,
+				ExpectedCode: 200,
+				URI:          fmt.Sprintf("%s/filters/%s/dimensions/%s/options", mockedAPI.hcCli.URL, filterOutputID, name),
+			})
+		})
 	})
 
-	Convey("When a dimension option is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody})
-		opts, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
-		So(err, ShouldBeNil)
-		So(opts, ShouldResemble, []DimensionOption{
-			DimensionOption{
-				DimensionOptionsURL: "quux",
-				Option:              "quuz",
-			},
+	Convey("Given a 500 InternalServerError is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody, ETag: testETag})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+
+		Convey("then GetDimensionOptions returns the expected Options", func() {
+			q := QueryParams{Offset: offset, Limit: limit}
+			opts, eTag, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, &q)
+			So(err, ShouldBeNil)
+			So(opts, ShouldResemble, DimensionOptions{
+				Items: []DimensionOption{
+					{
+						DimensionOptionsURL: "quux",
+						Option:              "quuz",
+					},
+				},
+				Count:      1,
+				TotalCount: 3,
+				Limit:      10,
+				Offset:     2,
+			})
+			So(eTag, ShouldResemble, testETag)
+		})
+	})
+
+	Convey("When a 200 OK status is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: dimensionBody, ETag: testETag})
+
+		Convey("then GetDimensionOptions returns the expected Options", func() {
+			q := QueryParams{Offset: offset, Limit: limit}
+			opts, eTag, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, &q)
+			So(err, ShouldBeNil)
+			So(opts, ShouldResemble, DimensionOptions{
+				Items: []DimensionOption{
+					{
+						DimensionOptionsURL: "quux",
+						Option:              "quuz",
+					},
+				},
+				Count:      1,
+				TotalCount: 3,
+				Limit:      10,
+				Offset:     2,
+			})
+			So(eTag, ShouldResemble, testETag)
+		})
+
+		Convey("then GetDimensionOptions returns the expected error when a negative offset is provided", func() {
+			q := QueryParams{Offset: -1, Limit: limit}
+			_, _, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, &q)
+			So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
+		})
+
+		Convey("then GetDimensionOptions returns the expected error when a negative limit is provided", func() {
+			q := QueryParams{Offset: offset, Limit: -1}
+			_, _, err := mockedAPI.GetDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, &q)
+			So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
+		})
+	})
+}
+
+func TestClient_GetDimensionOptionsInBatches(t *testing.T) {
+
+	filterOutputID := "foo"
+	dimensionBody0 := `{"items": [
+		{"dimension_option_url":"http://op1.co.uk", "option": "op1"},
+		{"dimension_option_url":"http://op2.co.uk", "option": "op2"}
+		], "offset": 0, "limit": 2, "count": 2, "total_count": 3}`
+	dimensionBody1 := `{"items": [
+		{"dimension_option_url":"http://op3.co.uk", "option": "op3"}
+		], "offset": 2, "limit": 2, "count": 1, "total_count": 3}`
+	name := "corge"
+	batchSize := 2
+	maxWorkers := 1
+
+	Convey("Given a mocked batch processor", t, func() {
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []DimensionOptions{}
+		processedETags := []string{}
+		var testProcess DimensionOptionsBatchProcessor = func(batch DimensionOptions, eTag string) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			processedETags = append(processedETags, eTag)
+			return false, nil
+		}
+
+		Convey("When 200 OK is returned in 2 consecutive calls, with the same eTag value", func() {
+
+			// mockedAPI is a HTTP mock
+			mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+				MockedHTTPResponse{StatusCode: 200, Body: dimensionBody0, ETag: testETag},
+				MockedHTTPResponse{StatusCode: 200, Body: dimensionBody1, ETag: testETag},
+			)
+
+			Convey("Then GetDimensionOptionsInBatches succeeds and returns the accumulated items from all the batches along with the expected eTag", func() {
+				opts, eTag, err := mockedAPI.GetDimensionOptionsInBatches(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, batchSize, maxWorkers)
+				So(err, ShouldBeNil)
+				So(opts, ShouldResemble, DimensionOptions{
+					Items: []DimensionOption{
+						{DimensionOptionsURL: "http://op1.co.uk", Option: "op1"},
+						{DimensionOptionsURL: "http://op2.co.uk", Option: "op2"},
+						{DimensionOptionsURL: "http://op3.co.uk", Option: "op3"},
+					},
+					Count:      3,
+					TotalCount: 3,
+					Limit:      0,
+					Offset:     0,
+				})
+				So(eTag, ShouldResemble, testETag)
+			})
+
+			Convey("Then GetDimensionOptionsBatchProcess, with eTag validation enabled, calls the batchProcessor function twice, with the expected baches and ETags", func() {
+				eTag, err := mockedAPI.GetDimensionOptionsBatchProcess(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, testProcess, batchSize, maxWorkers, true)
+				So(err, ShouldBeNil)
+				So(processedBatches, ShouldResemble, []DimensionOptions{
+					{
+						Items: []DimensionOption{
+							{DimensionOptionsURL: "http://op1.co.uk", Option: "op1"},
+							{DimensionOptionsURL: "http://op2.co.uk", Option: "op2"},
+						},
+						Count:      2,
+						TotalCount: 3,
+						Limit:      2,
+						Offset:     0,
+					},
+					{
+						Items: []DimensionOption{
+							{DimensionOptionsURL: "http://op3.co.uk", Option: "op3"},
+						},
+						Count:      1,
+						TotalCount: 3,
+						Limit:      2,
+						Offset:     2,
+					},
+				})
+				So(processedETags, ShouldResemble, []string{testETag, testETag})
+				So(eTag, ShouldResemble, testETag)
+			})
+
+			Convey("Then GetDimensionOptionsBatchProcess, with eTag validation disabled, calls the batchProcessor function twice, with the expected baches and ETags", func() {
+				eTag, err := mockedAPI.GetDimensionOptionsBatchProcess(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, testProcess, batchSize, maxWorkers, false)
+				So(err, ShouldBeNil)
+				So(processedBatches, ShouldResemble, []DimensionOptions{
+					{
+						Items: []DimensionOption{
+							{DimensionOptionsURL: "http://op1.co.uk", Option: "op1"},
+							{DimensionOptionsURL: "http://op2.co.uk", Option: "op2"},
+						},
+						Count:      2,
+						TotalCount: 3,
+						Limit:      2,
+						Offset:     0,
+					},
+					{
+						Items: []DimensionOption{
+							{DimensionOptionsURL: "http://op3.co.uk", Option: "op3"},
+						},
+						Count:      1,
+						TotalCount: 3,
+						Limit:      2,
+						Offset:     2,
+					},
+				})
+				So(processedETags, ShouldResemble, []string{testETag, testETag})
+				So(eTag, ShouldResemble, testETag)
+			})
+		})
+
+		Convey("When 200 OK is returned in 2 consecutive calls, with different eTag values", func() {
+
+			// mockedAPI is a HTTP mock
+			mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+				MockedHTTPResponse{StatusCode: 200, Body: dimensionBody0, ETag: testETag},
+				MockedHTTPResponse{StatusCode: 200, Body: dimensionBody1, ETag: testETag2},
+			)
+
+			Convey("Then GetDimensionOptionsInBatches fails due to the eTag mismatch between batches", func() {
+				_, _, err := mockedAPI.GetDimensionOptionsInBatches(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, batchSize, maxWorkers)
+				So(err, ShouldResemble, ErrBatchETagMismatch)
+			})
+
+			Convey("Then GetDimensionOptionsBatchProcess, with eTag validation enabled, fails due to the eTag mismatch between batches, and only the first batch is processed", func() {
+				_, err := mockedAPI.GetDimensionOptionsBatchProcess(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, testProcess, batchSize, maxWorkers, true)
+				So(err, ShouldResemble, ErrBatchETagMismatch)
+				So(processedBatches, ShouldResemble, []DimensionOptions{
+					{
+						Items: []DimensionOption{
+							{DimensionOptionsURL: "http://op1.co.uk", Option: "op1"},
+							{DimensionOptionsURL: "http://op2.co.uk", Option: "op2"},
+						},
+						Count:      2,
+						TotalCount: 3,
+						Limit:      2,
+						Offset:     0,
+					},
+				})
+				So(processedETags, ShouldResemble, []string{testETag})
+			})
+
+			Convey("Then GetDimensionOptionsBatchProcess, with eTag validation disabled, calls the batchProcessor function twice, with the expected baches and ETags", func() {
+				eTag, err := mockedAPI.GetDimensionOptionsBatchProcess(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, testProcess, batchSize, maxWorkers, false)
+				So(err, ShouldBeNil)
+				So(processedBatches, ShouldResemble, []DimensionOptions{
+					{
+						Items: []DimensionOption{
+							{DimensionOptionsURL: "http://op1.co.uk", Option: "op1"},
+							{DimensionOptionsURL: "http://op2.co.uk", Option: "op2"},
+						},
+						Count:      2,
+						TotalCount: 3,
+						Limit:      2,
+						Offset:     0,
+					},
+					{
+						Items: []DimensionOption{
+							{DimensionOptionsURL: "http://op3.co.uk", Option: "op3"},
+						},
+						Count:      1,
+						TotalCount: 3,
+						Limit:      2,
+						Offset:     2,
+					},
+				})
+				So(processedETags, ShouldResemble, []string{testETag, testETag2})
+				So(eTag, ShouldResemble, testETag2)
+			})
+		})
+	})
+
+	Convey("When a 400 error status is returned in the first call", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 400, Body: ""})
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []DimensionOptions{}
+		var testProcess DimensionOptionsBatchProcessor = func(batch DimensionOptions, batchETag string) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetDimensionOptionsInBatches fails with the expected error and the process is aborted", func() {
+			_, _, err := mockedAPI.GetDimensionOptionsInBatches(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, batchSize, maxWorkers)
+			So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+			So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+			So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "filters/foo/dimensions/corge/options?offset=0&limit=2"), ShouldBeTrue)
+		})
+
+		Convey("then GetDimensionOptionsBatchProcess fails with the expected error and doesn't call the batchProcessor", func() {
+			_, err := mockedAPI.GetDimensionOptionsBatchProcess(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, testProcess, batchSize, maxWorkers, true)
+			So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+			So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+			So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "filters/foo/dimensions/corge/options?offset=0&limit=2"), ShouldBeTrue)
+			So(processedBatches, ShouldResemble, []DimensionOptions{})
+		})
+	})
+
+	Convey("When a 200 error status is returned in the first call and 400 error is returned in the second call", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 200, Body: dimensionBody0},
+			MockedHTTPResponse{StatusCode: 400, Body: ""})
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []DimensionOptions{}
+		processedETags := []string{}
+		var testProcess DimensionOptionsBatchProcessor = func(batch DimensionOptions, batchEtag string) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			processedETags = append(processedETags, batchEtag)
+			return false, nil
+		}
+
+		Convey("Then GetDimensionOptionsInBatches fails with the expected error", func() {
+			_, _, err := mockedAPI.GetDimensionOptionsInBatches(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, batchSize, maxWorkers)
+			So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+			So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+			So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "filters/foo/dimensions/corge/options?offset=2&limit=2"), ShouldBeTrue)
+		})
+
+		Convey("then GetDimensionOptionsBatchProcess fails with the expected error and calls the batchProcessor for the first batch only", func() {
+			_, err := mockedAPI.GetDimensionOptionsBatchProcess(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name, testProcess, batchSize, maxWorkers, true)
+			So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+			So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusBadRequest)
+			So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "filters/foo/dimensions/corge/options?offset=2&limit=2"), ShouldBeTrue)
+			So(processedBatches, ShouldResemble, []DimensionOptions{
+				{
+					Items: []DimensionOption{
+						{DimensionOptionsURL: "http://op1.co.uk", Option: "op1"},
+						{DimensionOptionsURL: "http://op2.co.uk", Option: "op2"},
+					},
+					Count:      2,
+					TotalCount: 3,
+					Limit:      2,
+					Offset:     0,
+				},
+			})
 		})
 	})
 }
@@ -350,7 +764,7 @@ func TestClient_CreateBlueprint(t *testing.T) {
 	version := "1"
 	names := []string{"quuz", "corge"}
 
-	checkResponse := func(httpClient *dphttp.ClienterMock, expectedFilterID string) {
+	checkRequest := func(httpClient *dphttp.ClienterMock, expectedFilterID string) {
 		So(len(httpClient.DoCalls()), ShouldEqual, 1)
 
 		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
@@ -360,23 +774,26 @@ func TestClient_CreateBlueprint(t *testing.T) {
 	}
 
 	Convey("Given a valid Blueprint is returned", t, func() {
-
-		httpClient := newMockHTTPClient(&http.Response{
+		r := &http.Response{
 			StatusCode: http.StatusCreated,
 			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
-		}, nil)
+			Header:     http.Header{},
+		}
+		r.Header.Set("ETag", testETag)
+		httpClient := newMockHTTPClient(r, nil)
 
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := filterClient.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
+			bp, eTag, err := filterClient.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
 
-			Convey("then no error is returned", func() {
+			Convey("then the expected eTag is returned, with no error", func() {
 				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, testETag)
 			})
 
 			Convey("and dphttp client is called one time with the expected parameters", func() {
-				checkResponse(httpClient, bp)
+				checkRequest(httpClient, bp)
 			})
 		})
 	})
@@ -388,14 +805,14 @@ func TestClient_CreateBlueprint(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := filterClient.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
+			bp, _, err := filterClient.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
-				checkResponse(httpClient, bp)
+				checkRequest(httpClient, bp)
 			})
 		})
 	})
@@ -411,14 +828,14 @@ func TestClient_CreateBlueprint(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := filterClient.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
+			bp, _, err := filterClient.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
-				checkResponse(httpClient, bp)
+				checkRequest(httpClient, bp)
 			})
 		})
 	})
@@ -440,7 +857,7 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 	}
 	doSubmit := true
 
-	checkResponse := func(httpClient *dphttp.ClienterMock, expectedModel Model) {
+	checkRequest := func(httpClient *dphttp.ClienterMock, expectedModel Model, expectedIfMatch string) {
 		So(len(httpClient.DoCalls()), ShouldEqual, 1)
 
 		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
@@ -448,25 +865,33 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 
 		json.Unmarshal(actualBody, &actualModel)
 		So(actualModel, ShouldResemble, expectedModel)
+
+		actualIfMatch := httpClient.DoCalls()[0].Req.Header.Get("If-Match")
+		So(actualIfMatch, ShouldResemble, expectedIfMatch)
 	}
 
 	Convey("Given a valid blueprint update is given", t, func() {
-		httpClient := newMockHTTPClient(&http.Response{
+		newETag := "eb31e352f140b8a965d008f5505153bc6c4f5b48"
+		r := &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
-		}, nil)
+			Header:     http.Header{},
+		}
+		r.Header.Set("ETag", newETag)
+		httpClient := newMockHTTPClient(r, nil)
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when CreateBlueprint is called", func() {
-			bp, err := filterClient.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit)
+		Convey("when UpdateBlueprint is called with the expected ifMatch value", func() {
+			bp, eTag, err := filterClient.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit, testETag)
 
-			Convey("then no error is returned", func() {
+			Convey("then the new eTag is returned without error", func() {
 				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETag)
 			})
 
 			Convey("and dphttp client is called one time with the expected parameters", func() {
-				checkResponse(httpClient, bp)
+				checkRequest(httpClient, bp, testETag)
 			})
 		})
 	})
@@ -478,14 +903,14 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := filterClient.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit)
+			bp, _, err := filterClient.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit, testETag)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
-				checkResponse(httpClient, bp)
+				checkRequest(httpClient, bp, testETag)
 			})
 		})
 	})
@@ -501,37 +926,51 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprint is called", func() {
-			bp, err := filterClient.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit)
+			bp, _, err := filterClient.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit, testETag)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
-				checkResponse(httpClient, bp)
+				checkRequest(httpClient, bp, testETag)
 			})
 		})
 	})
-
 }
 
 func TestClient_AddDimensionValue(t *testing.T) {
 	filterID := "baz"
 	name := "quz"
+	newETag := "eb31e352f140b8a965d008f5505153bc6c4f5b48"
+
+	checkRequest := func(httpClient *dphttp.ClienterMock, expectedIfMatch string) {
+		So(len(httpClient.DoCalls()), ShouldEqual, 1)
+		actualIfMatch := httpClient.DoCalls()[0].Req.Header.Get("If-Match")
+		So(actualIfMatch, ShouldResemble, expectedIfMatch)
+	}
 
 	Convey("Given a valid dimension value is added", t, func() {
-		httpClient := newMockHTTPClient(&http.Response{
+		r := &http.Response{
 			StatusCode: http.StatusCreated,
 			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
-		}, nil)
+			Header:     http.Header{},
+		}
+		r.Header.Set("ETag", newETag)
+		httpClient := newMockHTTPClient(r, nil)
 
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimensionValue is called", func() {
-			err := filterClient.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
+			eTag, err := filterClient.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service, testETag)
 
-			Convey("then no error is returned", func() {
+			Convey("then the new eTag is returned without error", func() {
 				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETag)
+			})
+
+			Convey("then the expected ifMatch value is sent", func() {
+				checkRequest(httpClient, testETag)
 			})
 		})
 	})
@@ -543,7 +982,7 @@ func TestClient_AddDimensionValue(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimensionValue is called", func() {
-			err := filterClient.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
+			_, err := filterClient.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service, testETag)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -564,12 +1003,11 @@ func TestClient_AddDimensionValue(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimensionValue is called", func() {
-			err := filterClient.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
+			_, err := filterClient.AddDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service, testETag)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
 			})
-
 		})
 	})
 }
@@ -577,19 +1015,35 @@ func TestClient_AddDimensionValue(t *testing.T) {
 func TestClient_RemoveDimensionValue(t *testing.T) {
 	filterID := "baz"
 	name := "quz"
+	newETag := "eb31e352f140b8a965d008f5505153bc6c4f5b48"
+
+	checkRequest := func(httpClient *dphttp.ClienterMock, expectedIfMatch string) {
+		So(len(httpClient.DoCalls()), ShouldEqual, 1)
+		actualIfMatch := httpClient.DoCalls()[0].Req.Header.Get("If-Match")
+		So(actualIfMatch, ShouldResemble, expectedIfMatch)
+	}
+
 	Convey("Given a dimension value is removed", t, func() {
-		httpClient := newMockHTTPClient(&http.Response{
+		r := &http.Response{
 			StatusCode: http.StatusNoContent,
 			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
-		}, nil)
+			Header:     http.Header{},
+		}
+		r.Header.Set("ETag", newETag)
+		httpClient := newMockHTTPClient(r, nil)
 
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when RemoveDimensionValue is called", func() {
-			err := filterClient.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
+			eTag, err := filterClient.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service, testETag)
 
-			Convey("then no error is returned", func() {
+			Convey("then the new eTag is returned without error", func() {
 				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETag)
+			})
+
+			Convey("then the expected ifMatch value is sent", func() {
+				checkRequest(httpClient, testETag)
 			})
 		})
 	})
@@ -601,7 +1055,7 @@ func TestClient_RemoveDimensionValue(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when RemoveDimensionValue is called", func() {
-			err := filterClient.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
+			_, err := filterClient.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service, testETag)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -622,7 +1076,7 @@ func TestClient_RemoveDimensionValue(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when RemoveDimensionValue is called", func() {
-			err := filterClient.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service)
+			_, err := filterClient.RemoveDimensionValue(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, service, testETag)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -635,20 +1089,35 @@ func TestClient_RemoveDimensionValue(t *testing.T) {
 func TestClient_AddDimension(t *testing.T) {
 	filterID := "baz"
 	name := "quz"
+	newETag := "eb31e352f140b8a965d008f5505153bc6c4f5b48"
+
+	checkRequest := func(httpClient *dphttp.ClienterMock, expectedIfMatch string) {
+		So(len(httpClient.DoCalls()), ShouldEqual, 1)
+		actualIfMatch := httpClient.DoCalls()[0].Req.Header.Get("If-Match")
+		So(actualIfMatch, ShouldResemble, expectedIfMatch)
+	}
 
 	Convey("Given a dimension is provided", t, func() {
-		httpClient := newMockHTTPClient(&http.Response{
+		r := &http.Response{
 			StatusCode: http.StatusCreated,
 			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
-		}, nil)
+			Header:     http.Header{},
+		}
+		r.Header.Set("ETag", newETag)
+		httpClient := newMockHTTPClient(r, nil)
 
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimension is called", func() {
-			err := filterClient.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+			eTag, err := filterClient.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, testETag)
 
-			Convey("then no error is returned", func() {
+			Convey("then the expected eTag is returned without returned", func() {
 				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETag)
+			})
+
+			Convey("then the expected ifMatch value is sent", func() {
+				checkRequest(httpClient, testETag)
 			})
 		})
 	})
@@ -660,7 +1129,7 @@ func TestClient_AddDimension(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimension is called", func() {
-			err := filterClient.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+			_, err := filterClient.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, testETag)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -670,7 +1139,6 @@ func TestClient_AddDimension(t *testing.T) {
 	})
 
 	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
-		mockInvalidStatusCodeError := errors.New("invalid status from filter api")
 		httpClient := newMockHTTPClient(&http.Response{
 			StatusCode: http.StatusInternalServerError,
 			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
@@ -679,59 +1147,129 @@ func TestClient_AddDimension(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when AddDimension is called", func() {
-			err := filterClient.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+			_, err := filterClient.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, testETag)
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
+				So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusCreated)
+				So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusInternalServerError)
+				So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "http://localhost:8080/filters/baz/dimensions/quz"), ShouldBeTrue)
 			})
-
 		})
 	})
 }
 
-func TestClient_GetJobState(t *testing.T) {
-	filterID := "foo"
-	mockJobStateBody := `{
-		"jobState": "www.ons.gov.uk"}`
-	Convey("When a state is returned", t, func() {
+// utility func to validate request method, uri, body and headers
+func checkRequest(httpClient *dphttp.ClienterMock, callIndex int, expectedURI string, expectedPatchOp dprequest.PatchOp, expectedPatchValues []string, expectedIfMatch string) {
+	So(httpClient.DoCalls()[callIndex].Req.URL.RequestURI(), ShouldEqual, expectedURI)
+	So(httpClient.DoCalls()[callIndex].Req.Method, ShouldEqual, http.MethodPatch)
+	So(httpClient.DoCalls()[callIndex].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+testServiceToken)
+	expectedBody := []dprequest.Patch{
+		{
+			Op:    expectedPatchOp.String(),
+			Path:  "/options/-",
+			Value: expectedPatchValues,
+		},
+	}
+	sentPayload, err := ioutil.ReadAll(httpClient.DoCalls()[callIndex].Req.Body)
+	So(err, ShouldBeNil)
+	var sentBody []dprequest.Patch
+	err = json.Unmarshal(sentPayload, &sentBody)
+	So(err, ShouldBeNil)
+	So(sentBody, ShouldResemble, expectedBody)
+	actualIfMatch := httpClient.DoCalls()[callIndex].Req.Header.Get("If-Match")
+	So(actualIfMatch, ShouldResemble, expectedIfMatch)
+}
 
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: mockJobStateBody})
-		_, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
-		So(err, ShouldBeNil)
-	})
-	Convey("When bad request is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
-		_, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
-		So(err, ShouldNotBeNil)
-	})
-
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
-		mockedAPI.hcCli.Client.SetMaxRetries(2)
-		m, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
-		So(err, ShouldNotBeNil)
-		So(m, ShouldResemble, Model{})
-	})
+func checkRequestTwoOps(httpClient *dphttp.ClienterMock, callIndex int, expectedURI string, expectedPatchOp1, expectedPatchOp2 dprequest.PatchOp, expectedPatchValues1, expectedPatchValues2 []string, expectedIfMatch string) {
+	So(httpClient.DoCalls()[callIndex].Req.URL.RequestURI(), ShouldEqual, expectedURI)
+	So(httpClient.DoCalls()[callIndex].Req.Method, ShouldEqual, http.MethodPatch)
+	So(httpClient.DoCalls()[callIndex].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+testServiceToken)
+	expectedBody := []dprequest.Patch{
+		{
+			Op:    expectedPatchOp1.String(),
+			Path:  "/options/-",
+			Value: expectedPatchValues1,
+		},
+		{
+			Op:    expectedPatchOp2.String(),
+			Path:  "/options/-",
+			Value: expectedPatchValues2,
+		},
+	}
+	sentPayload, err := ioutil.ReadAll(httpClient.DoCalls()[callIndex].Req.Body)
+	So(err, ShouldBeNil)
+	var sentBody []dprequest.Patch
+	err = json.Unmarshal(sentPayload, &sentBody)
+	So(err, ShouldBeNil)
+	So(sentBody, ShouldResemble, expectedBody)
+	actualIfMatch := httpClient.DoCalls()[0].Req.Header.Get("If-Match")
+	So(actualIfMatch, ShouldResemble, expectedIfMatch)
 }
 
 func TestClient_AddDimensionValues(t *testing.T) {
 	filterID := "baz"
 	name := "quz"
-	options := []string{"`quuz"}
+	batchSize := 5
+	newETags := []string{
+		"eb31e352f140b8a965d008f5505153bc6c4f5b48",
+		"84798def3a75c8783b09e946d2fbf85e8a1dcce5"}
 
-	Convey("Given a valid dimension and filter", t, func() {
-		httpClient := newMockHTTPClient(&http.Response{
-			StatusCode: http.StatusCreated,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
-		}, nil)
+	Convey("Given a dimension is provided", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			r.Header.Set("ETag", newETags[len(httpClient.DoCalls())-1])
+			return r, nil
+		}
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when AddDimensionValues is called", func() {
-			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+		Convey("when AddDimensionValues is called, where total options are less than the batch size", func() {
+			options := []string{"abc", "def", "ghi", "jkl"}
+			eTag, err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, batchSize, testETag)
 
-			Convey("then no error is returned", func() {
+			Convey("then the expected eTag is returned without error", func() {
 				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETags[0])
+			})
+
+			Convey("The expected PATCH body is generated and sent to the API along with the expected If-Match header", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 1)
+				checkRequest(httpClient, 0, "/filters/"+filterID+"/dimensions/"+name, dprequest.OpAdd, options, testETag)
+			})
+		})
+
+		Convey("when AddDimensionValues is called, where total options are more than the batch size", func() {
+			options := []string{"abc", "def", "ghi", "jkl", "000", "111", "222"}
+			eTag, err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, batchSize, testETag)
+
+			Convey("then the expected latest eTag is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETags[1])
+			})
+
+			Convey("The expected PATCH body is generated and sent to the API in 2 batches", func() {
+				expectedURI := "/filters/" + filterID + "/dimensions/" + name
+
+				So(len(httpClient.DoCalls()), ShouldEqual, 2)
+				checkRequest(httpClient, 0, expectedURI, dprequest.OpAdd, []string{"abc", "def", "ghi", "jkl", "000"}, testETag)
+				checkRequest(httpClient, 1, expectedURI, dprequest.OpAdd, []string{"111", "222"}, newETags[0])
+			})
+		})
+
+		Convey("When AddDimensionValues is called with an empty list of options", func() {
+			eTag, err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{}, batchSize, testETag)
+
+			Convey("then the provided eTag is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, testETag)
+			})
+
+			Convey("Then no PATCH operation is sent", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 			})
 		})
 	})
@@ -742,8 +1280,318 @@ func TestClient_AddDimensionValues(t *testing.T) {
 
 		filterClient := newFilterClient(httpClient)
 
+		Convey("when AddDimensionValues is called, where total options are less than the batch size", func() {
+			_, err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{"abc"}, batchSize, testETag)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+		})
+
+		Convey("when AddDimensionValues is called, where total options are more than the batch size", func() {
+			options := []string{"abc", "def", "ghi", "jkl", "000", "111", "222"}
+			_, err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, batchSize, testETag)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
 		Convey("when AddDimensionValues is called", func() {
-			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+			_, err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{"abc"}, batchSize, testETag)
+
+			Convey("then the expected error is returned", func() {
+				expectedErr := ErrInvalidFilterAPIResponse{
+					ExpectedCode: http.StatusOK,
+					ActualCode:   http.StatusInternalServerError,
+					URI:          "http://localhost:8080/filters/baz/dimensions/quz",
+				}
+				So(err.Error(), ShouldResemble, expectedErr.Error())
+			})
+		})
+	})
+}
+
+func TestClient_RemoveDimensionValues(t *testing.T) {
+	filterID := "baz"
+	name := "quz"
+	batchSize := 5
+	newETags := []string{
+		"eb31e352f140b8a965d008f5505153bc6c4f5b48",
+		"84798def3a75c8783b09e946d2fbf85e8a1dcce5"}
+
+	Convey("Given a dimension is provided", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			r.Header.Set("ETag", newETags[len(httpClient.DoCalls())-1])
+			return r, nil
+		}
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when RemoveDimensionValues is called", func() {
+			options := []string{"abc", "def", "ghi", "jkl"}
+			eTag, err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, batchSize, testETag)
+
+			Convey("then the new eTag is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETags[0])
+			})
+
+			Convey("The expected URI and PATCH body is generated and sent to the API", func() {
+				checkResponseBase(httpClient, http.MethodPatch, "/filters/"+filterID+"/dimensions/"+name, testServiceToken)
+				Convey("The expected PATCH body is generated and sent to the API", func() {
+					So(len(httpClient.DoCalls()), ShouldEqual, 1)
+					checkRequest(httpClient, 0, "/filters/"+filterID+"/dimensions/"+name, dprequest.OpRemove, options, testETag)
+				})
+			})
+		})
+
+		Convey("when RemoveDimensionValues is called, where total options are more than the batch size", func() {
+			options := []string{"abc", "def", "ghi", "jkl", "000", "111", "222"}
+			eTag, err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, batchSize, testETag)
+
+			Convey("then the latest eTag, obtained from the last call in the batch, is returned", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETags[1])
+			})
+
+			Convey("The expected PATCH body is generated and sent to the API in 2 batches, each with its expected ifMatch value", func() {
+				expectedURI := "/filters/" + filterID + "/dimensions/" + name
+
+				So(len(httpClient.DoCalls()), ShouldEqual, 2)
+				checkRequest(httpClient, 0, expectedURI, dprequest.OpRemove, []string{"abc", "def", "ghi", "jkl", "000"}, testETag)
+				checkRequest(httpClient, 1, expectedURI, dprequest.OpRemove, []string{"111", "222"}, newETags[0])
+			})
+		})
+
+		Convey("When RemoveDimensionValues is called with an empty list of options", func() {
+			eTag, err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{}, batchSize, testETag)
+
+			Convey("then the original eTag is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, testETag)
+			})
+
+			Convey("Then no PATCH operation is sent", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("foo")
+		httpClient := newMockHTTPClient(nil, mockErr)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when RemoveDimensionValues is called", func() {
+			_, err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{"abc"}, batchSize, testETag)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+		})
+
+		Convey("when RemoveDimensionValues is called, where total options are more than the batch size", func() {
+			options := []string{"abc", "def", "ghi", "jkl", "000", "111", "222"}
+			_, err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, batchSize, testETag)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when RemoveDimensionValues is called", func() {
+			_, err := filterClient.RemoveDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{"abc"}, batchSize, testETag)
+
+			Convey("then the expected error is returned", func() {
+				expectedErr := ErrInvalidFilterAPIResponse{
+					ExpectedCode: http.StatusOK,
+					ActualCode:   http.StatusInternalServerError,
+					URI:          "http://localhost:8080/filters/baz/dimensions/quz",
+				}
+				So(err.Error(), ShouldResemble, expectedErr.Error())
+			})
+		})
+	})
+}
+
+func TestClient_PatchDimensionValues(t *testing.T) {
+	filterID := "baz"
+	name := "quz"
+	batchSize := 5
+	newETags := []string{
+		"eb31e352f140b8a965d008f5505153bc6c4f5b48",
+		"84798def3a75c8783b09e946d2fbf85e8a1dcce5"}
+
+	Convey("Given a dimension is provided", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			r.Header.Set("ETag", newETags[len(httpClient.DoCalls())-1])
+			return r, nil
+		}
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when PatchDimensionValues is called", func() {
+			optionsAdd := []string{"abc", "def"}
+			optionsRemove := []string{"ghi", "jkl"}
+			eTag, err := filterClient.PatchDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, optionsAdd, optionsRemove, batchSize, testETag)
+
+			Convey("then the expected eTag is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETags[0])
+			})
+
+			Convey("The expected URI and PATCH body is generated and sent to the API", func() {
+				checkResponseBase(httpClient, http.MethodPatch, "/filters/"+filterID+"/dimensions/"+name, testServiceToken)
+				Convey("The expected PATCH body is generated and sent to the API", func() {
+					So(len(httpClient.DoCalls()), ShouldEqual, 1)
+					checkRequestTwoOps(httpClient, 0, "/filters/"+filterID+"/dimensions/"+name, dprequest.OpAdd, dprequest.OpRemove, optionsAdd, optionsRemove, testETag)
+				})
+			})
+		})
+
+		Convey("when PatchDimensionValues is called, where total options are more than the batch size", func() {
+			optionsAdd := []string{"abc", "def", "ghi"}
+			optionsRemove := []string{"000", "111", "222"}
+			eTag, err := filterClient.PatchDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, optionsAdd, optionsRemove, batchSize, testETag)
+
+			Convey("then the latest eTag, obtained from the last call in the batch, is returned", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETags[1])
+			})
+
+			Convey("The expected PATCH body is generated and sent to the API in 2 batches, each with its expected ifMatch value", func() {
+				expectedURI := "/filters/" + filterID + "/dimensions/" + name
+
+				So(len(httpClient.DoCalls()), ShouldEqual, 2)
+				checkRequest(httpClient, 0, expectedURI, dprequest.OpAdd, []string{"abc", "def", "ghi"}, testETag)
+				checkRequest(httpClient, 1, expectedURI, dprequest.OpRemove, []string{"000", "111", "222"}, newETags[0])
+			})
+		})
+
+		Convey("When PatchDimensionValues is called with an empty list of options", func() {
+			eTag, err := filterClient.PatchDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, []string{}, []string{}, batchSize, testETag)
+
+			Convey("then the original eTag is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, testETag)
+			})
+
+			Convey("Then no PATCH operation is sent", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
+	})
+}
+
+func TestClient_GetJobState(t *testing.T) {
+	filterID := "foo"
+	mockJobStateBody := `{
+		"jobState": "www.ons.gov.uk"}`
+
+	Convey("When a state is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 200, Body: mockJobStateBody, ETag: testETag})
+		_, eTag, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
+		So(err, ShouldBeNil)
+		So(eTag, ShouldResemble, testETag)
+	})
+
+	Convey("When bad request is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
+		_, _, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned in all attempts", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		m, _, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
+		So(err, ShouldNotBeNil)
+		So(m, ShouldResemble, Model{})
+	})
+
+	Convey("When server error is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 200, Body: mockJobStateBody, ETag: testETag})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		_, eTag, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
+		So(err, ShouldBeNil)
+		So(eTag, ShouldResemble, testETag)
+	})
+}
+
+func TestClient_SetDimensionValues(t *testing.T) {
+	filterID := "baz"
+	name := "quz"
+	options := []string{"`quuz"}
+	newETag := "eb31e352f140b8a965d008f5505153bc6c4f5b48"
+
+	Convey("Given a valid dimension and filter", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusCreated,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
+			Header:     http.Header{},
+		}
+		r.Header.Set("ETag", newETag)
+		httpClient := newMockHTTPClient(r, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when SetDimensionValues is called", func() {
+			eTag, err := filterClient.SetDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, testETag)
+
+			Convey("then the new eTag is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETag)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("foo")
+		httpClient := newMockHTTPClient(nil, mockErr)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when SetDimensionValues is called", func() {
+			_, err := filterClient.SetDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, testETag)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -762,8 +1610,8 @@ func TestClient_AddDimensionValues(t *testing.T) {
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when AddDimensionValues is called", func() {
-			err := filterClient.AddDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options)
+		Convey("when SetDimensionValues is called", func() {
+			_, err := filterClient.SetDimensionValues(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, testETag)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -781,11 +1629,24 @@ func TestClient_GetPreview(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("When server error is returned", t, func() {
-		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("When server error is returned in all attempts", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetPreview(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
 		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: 500, Body: "qux"},
+			MockedHTTPResponse{StatusCode: 200, Body: previewBody})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		p, err := mockedAPI.GetPreview(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterOutputID)
+		So(err, ShouldBeNil)
+		So(p, ShouldResemble, Preview{})
 	})
 
 	Convey("When a preview is returned", t, func() {
@@ -816,15 +1677,18 @@ func newFilterClient(clienter *dphttp.ClienterMock) *Client {
 	return filterClient
 }
 
-func getMockfilterAPI(expectRequest http.Request, mockedHTTPResponse MockedHTTPResponse) *Client {
+func getMockfilterAPI(expectRequest http.Request, mockedHTTPResponse ...MockedHTTPResponse) *Client {
+	numCall := 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != expectRequest.Method {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("unexpected HTTP method used"))
 			return
 		}
-		w.WriteHeader(mockedHTTPResponse.StatusCode)
-		fmt.Fprintln(w, mockedHTTPResponse.Body)
+		w.Header().Set("ETag", mockedHTTPResponse[numCall].ETag)
+		w.WriteHeader(mockedHTTPResponse[numCall].StatusCode)
+		fmt.Fprintln(w, mockedHTTPResponse[numCall].Body)
+		numCall++
 	}))
 	return New(ts.URL)
 }
