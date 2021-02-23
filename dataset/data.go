@@ -43,7 +43,11 @@ type Dataset struct {
 
 // List represents an object containing a list of datasets
 type List struct {
-	Items []Dataset `json:"items"`
+	Items      []Dataset `json:"items"`
+	Count      int       `json:"count"`
+	Offset     int       `json:"offset"`
+	Limit      int       `json:"limit"`
+	TotalCount int       `json:"total_count"`
 }
 
 // Version represents a version within a dataset

@@ -59,6 +59,9 @@ type ErrInvalidDatasetAPIResponse struct {
 	body       string
 }
 
+// DatasetsBatchProcessor is the type corresponding to a batch processing function for a dataset List.
+type DatasetsBatchProcessor func(List) (abort bool, err error)
+
 // OptionsBatchProcessor is the type corresponding to a batch processing function for dataset Options
 type OptionsBatchProcessor func(Options) (abort bool, err error)
 
@@ -91,7 +94,7 @@ type QueryParams struct {
 }
 
 // Validate validates tht no negative values are provided for limit or offset, and that the length of IDs is lower than the maximum
-// Also escapes all IDs, so that they can be safely used as query paramters in requests
+// Also escapes all IDs, so that they can be safely used as query parameters in requests
 func (q *QueryParams) Validate() error {
 	if q.Offset < 0 || q.Limit < 0 {
 		return errors.New("negative offsets or limits are not allowed")
@@ -249,8 +252,14 @@ func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken,
 }
 
 // GetDatasets returns the list of datasets
-func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string) (m List, err error) {
+func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, q *QueryParams) (m List, err error) {
 	uri := fmt.Sprintf("%s/datasets", c.hcCli.URL)
+	if q != nil {
+		if err := q.Validate(); err != nil {
+			return List{}, err
+		}
+		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
+	}
 
 	clientlog.Do(ctx, "retrieving datasets", service, uri)
 
@@ -275,6 +284,56 @@ func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToke
 	}
 
 	return
+}
+
+// GetDatasetsInBatches retrieves a list of datasets in concurrent batches and accumulates the results
+func (c *Client) GetDatasetsInBatches(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, batchSize, maxWorkers int) (datasets List, err error) {
+
+	// Function to aggregate items.
+	// For the first received batch, as we have the total count information, will initialise the final structure of items with a fixed size equal to TotalCount.
+	// This serves two purposes:
+	//   - We can guarantee, even with concurrent calls, that values are returned in the same order that the API defines, by offsetting the index.
+	//   - We do a single memory allocation for the final array, making the code more memory efficient.
+	var processBatch DatasetsBatchProcessor = func(b List) (abort bool, err error) {
+		if len(datasets.Items) == 0 { // first batch response being handled
+			datasets.TotalCount = b.TotalCount
+			datasets.Items = make([]Dataset, b.TotalCount)
+			datasets.Count = b.TotalCount
+		}
+		for i := 0; i < len(b.Items); i++ {
+			datasets.Items[i+b.Offset] = b.Items[i]
+		}
+		return false, nil
+	}
+
+	// call dataset API GetOptions in batches and aggregate the responses
+	if err := c.GetDatasetsBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, processBatch, batchSize, maxWorkers); err != nil {
+		return List{}, err
+	}
+
+	return datasets, nil
+}
+
+// GetDatasetsBatchProcess gets the datasets from the dataset API in batches, calling the provided function for each batch.
+func (c *Client) GetDatasetsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, processBatch DatasetsBatchProcessor, batchSize, maxWorkers int) error {
+
+	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit,
+	// or the subste of IDs according to the provided offset, if a list of optionIDs was provided
+	batchGetter := func(offset int) (interface{}, int, string, error) {
+		b, err := c.GetDatasets(ctx, userAuthToken, serviceAuthToken, collectionID, &QueryParams{Offset: offset, Limit: batchSize})
+		return b, b.TotalCount, "", err
+	}
+
+	// cast and process the batch according to the provided method
+	batchProcessor := func(b interface{}, batchETag string) (abort bool, err error) {
+		v, ok := b.(List)
+		if !ok {
+			return true, errors.New("wrong type")
+		}
+		return processBatch(v)
+	}
+
+	return batch.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
 }
 
 // PutDataset update the dataset
