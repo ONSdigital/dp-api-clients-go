@@ -32,11 +32,21 @@ var (
 	initialState = health.CreateCheckState(service)
 )
 
-var checkResponseBase = func(httpClient *dphttp.ClienterMock, expectedMethod string, expectedUri string) {
+var checkRequestBase = func(httpClient *dphttp.ClienterMock, expectedMethod string, expectedUri string) {
 	So(len(httpClient.DoCalls()), ShouldEqual, 1)
 	So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldResemble, expectedUri)
 	So(httpClient.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
 	So(httpClient.DoCalls()[0].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
+}
+
+// getRequestPatchBody returns the patch request body sent with the provided httpClient in iteration callIndex
+var getRequestPatchBody = func(httpClient *dphttp.ClienterMock, callIndex int) []dprequest.Patch {
+	sentPayload, err := ioutil.ReadAll(httpClient.DoCalls()[callIndex].Req.Body)
+	So(err, ShouldBeNil)
+	var sentBody []dprequest.Patch
+	err = json.Unmarshal(sentPayload, &sentBody)
+	So(err, ShouldBeNil)
+	return sentBody
 }
 
 type MockedHTTPResponse struct {
@@ -193,7 +203,7 @@ func TestClient_PutVersion(t *testing.T) {
 
 	checkResponse := func(httpClient *dphttp.ClienterMock, expectedVersion Version) {
 
-		checkResponseBase(httpClient, http.MethodPut, "/datasets/123/editions/2017/versions/1")
+		checkRequestBase(httpClient, http.MethodPut, "/datasets/123/editions/2017/versions/1")
 
 		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 
@@ -308,7 +318,7 @@ func TestClient_GetDatasets(t *testing.T) {
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
 				expectedURI := fmt.Sprintf("/datasets?offset=%d&limit=%d", offset, limit)
-				checkResponseBase(httpClient, http.MethodGet, expectedURI)
+				checkRequestBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})
 
@@ -353,7 +363,7 @@ func TestClient_GetDatasets(t *testing.T) {
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
 				expectedURI := fmt.Sprintf("/datasets")
-				checkResponseBase(httpClient, http.MethodGet, expectedURI)
+				checkRequestBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})
 	})
@@ -525,7 +535,7 @@ func TestClient_GetDatasetCurrentAndNext(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodGet, "/datasets/123")
+				checkRequestBase(httpClient, http.MethodGet, "/datasets/123")
 			})
 		})
 	})
@@ -542,7 +552,7 @@ func TestClient_GetDatasetCurrentAndNext(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodGet, "/datasets/123")
+				checkRequestBase(httpClient, http.MethodGet, "/datasets/123")
 			})
 		})
 	})
@@ -564,7 +574,7 @@ func TestClient_GetInstance(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodGet, "/instances/123")
+				checkRequestBase(httpClient, http.MethodGet, "/instances/123")
 			})
 		})
 	})
@@ -581,7 +591,7 @@ func TestClient_GetInstance(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodGet, "/instances/123")
+				checkRequestBase(httpClient, http.MethodGet, "/instances/123")
 			})
 		})
 	})
@@ -612,7 +622,7 @@ func TestClient_GetInstance(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodGet, "/instances/123")
+				checkRequestBase(httpClient, http.MethodGet, "/instances/123")
 			})
 		})
 	})
@@ -632,7 +642,7 @@ func TestClient_GetInstanceDimensionsBytes(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodGet, "/instances/123/dimensions")
+				checkRequestBase(httpClient, http.MethodGet, "/instances/123/dimensions")
 			})
 		})
 	})
@@ -663,7 +673,7 @@ func TestClient_GetInstanceDimensionsBytes(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodGet, "/instances/123/dimensions")
+				checkRequestBase(httpClient, http.MethodGet, "/instances/123/dimensions")
 			})
 		})
 	})
@@ -683,7 +693,7 @@ func TestClient_GetInstances(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodGet, "/instances")
+				checkRequestBase(httpClient, http.MethodGet, "/instances")
 			})
 		})
 
@@ -698,7 +708,7 @@ func TestClient_GetInstances(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected query parameters", func() {
-				checkResponseBase(httpClient, http.MethodGet, "/instances?id=123&version=999")
+				checkRequestBase(httpClient, http.MethodGet, "/instances?id=123&version=999")
 			})
 		})
 	})
@@ -733,7 +743,7 @@ func Test_PutInstanceImportTasks(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodPut, "/instances/123/import_tasks")
+				checkRequestBase(httpClient, http.MethodPut, "/instances/123/import_tasks")
 				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
@@ -766,7 +776,7 @@ func TestClient_PostInstanceDimensions(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodPost, "/instances/123/dimensions")
+				checkRequestBase(httpClient, http.MethodPost, "/instances/123/dimensions")
 				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
@@ -788,7 +798,7 @@ func TestClient_PostInstanceDimensions(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodPost, "/instances/123/dimensions")
+				checkRequestBase(httpClient, http.MethodPost, "/instances/123/dimensions")
 				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
@@ -817,7 +827,7 @@ func TestClient_PutInstanceState(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodPut, "/instances/123")
+				checkRequestBase(httpClient, http.MethodPut, "/instances/123")
 				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
@@ -841,7 +851,7 @@ func Test_UpdateInstanceWithNewInserts(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodPut, "/instances/123/inserted_observations/999")
+				checkRequestBase(httpClient, http.MethodPut, "/instances/123/inserted_observations/999")
 			})
 		})
 	})
@@ -869,7 +879,7 @@ func TestClient_PutInstanceData(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodPut, "/instances/123")
+				checkRequestBase(httpClient, http.MethodPut, "/instances/123")
 				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
@@ -891,7 +901,7 @@ func TestClient_PutInstanceData(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
-				checkResponseBase(httpClient, http.MethodPut, "/instances/123")
+				checkRequestBase(httpClient, http.MethodPut, "/instances/123")
 				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
@@ -930,7 +940,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodGet, "/instances/123/dimensions")
+				checkRequestBase(httpClient, http.MethodGet, "/instances/123/dimensions")
 			})
 		})
 	})
@@ -951,26 +961,84 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
-				checkResponseBase(httpClient, http.MethodGet, "/instances/123/dimensions")
+				checkRequestBase(httpClient, http.MethodGet, "/instances/123/dimensions")
 			})
 		})
 	})
 }
 
-func TestClient_PutInstanceDimensionOptionNodeID(t *testing.T) {
+func TestClient_PatchInstanceDimensionOption(t *testing.T) {
+
+	testNodeID := "ABC"
+	testOrder := 1
+
 	Convey("given a 200 status is returned", t, func() {
 		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, nil})
 		datasetClient := newDatasetClient(httpClient)
 
-		Convey("when PutInstanceDimensionOptionNodeID is called", func() {
-			err := datasetClient.PutInstanceDimensionOptionNodeID(ctx, serviceAuthToken, "123", "456", "789", "ABC")
+		Convey("when PatchInstanceDimensionOption is called with valid updates for nodeID and order", func() {
+			err := datasetClient.PatchInstanceDimensionOption(ctx, serviceAuthToken, "123", "456", "789", testNodeID, &testOrder)
 
 			Convey("a positive response with expected dimensions is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
-			Convey("and dphttpclient.Do is called 1 time", func() {
-				checkResponseBase(httpClient, http.MethodPut, "/instances/123/dimensions/456/options/789/node_id/ABC")
+			Convey("and dphttpclient.Do is called 1 time with the expected patch body", func() {
+				checkRequestBase(httpClient, http.MethodPatch, "/instances/123/dimensions/456/options/789")
+				sentPatches := getRequestPatchBody(httpClient, 0)
+				So(sentPatches, ShouldHaveLength, 2)
+				So(sentPatches[0].Op, ShouldEqual, dprequest.OpAdd.String())
+				So(sentPatches[0].Path, ShouldEqual, "/node_id")
+				So(sentPatches[0].Value, ShouldEqual, testNodeID)
+				So(sentPatches[1].Op, ShouldEqual, dprequest.OpAdd.String())
+				So(sentPatches[1].Path, ShouldEqual, "/order")
+				So(sentPatches[1].Value, ShouldEqual, testOrder)
+			})
+		})
+
+		Convey("when PatchInstanceDimensionOption is called with a valid update for nodeID only", func() {
+			err := datasetClient.PatchInstanceDimensionOption(ctx, serviceAuthToken, "123", "456", "789", testNodeID, nil)
+
+			Convey("a positive response with expected dimensions is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected patch body", func() {
+				checkRequestBase(httpClient, http.MethodPatch, "/instances/123/dimensions/456/options/789")
+				sentPatches := getRequestPatchBody(httpClient, 0)
+				So(sentPatches, ShouldHaveLength, 1)
+				So(sentPatches[0].Op, ShouldEqual, dprequest.OpAdd.String())
+				So(sentPatches[0].Path, ShouldEqual, "/node_id")
+				So(sentPatches[0].Value, ShouldEqual, testNodeID)
+			})
+		})
+
+		Convey("when PatchInstanceDimensionOption is called with a valid update for order", func() {
+			err := datasetClient.PatchInstanceDimensionOption(ctx, serviceAuthToken, "123", "456", "789", "", &testOrder)
+
+			Convey("a positive response with expected dimensions is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected patch body", func() {
+				checkRequestBase(httpClient, http.MethodPatch, "/instances/123/dimensions/456/options/789")
+				sentPatches := getRequestPatchBody(httpClient, 0)
+				So(sentPatches, ShouldHaveLength, 1)
+				So(sentPatches[0].Op, ShouldEqual, dprequest.OpAdd.String())
+				So(sentPatches[0].Path, ShouldEqual, "/order")
+				So(sentPatches[0].Value, ShouldEqual, testOrder)
+			})
+		})
+
+		Convey("when PatchInstanceDimensionOption is called without any update", func() {
+			err := datasetClient.PatchInstanceDimensionOption(ctx, serviceAuthToken, "123", "456", "789", "", nil)
+
+			Convey("a positive response with expected dimensions is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and dphttpclient.Do call is skipped because nothing needed to be updated", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 			})
 		})
 	})
@@ -979,19 +1047,19 @@ func TestClient_PutInstanceDimensionOptionNodeID(t *testing.T) {
 		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, nil})
 		datasetClient := newDatasetClient(httpClient)
 
-		Convey("when PutInstanceDimensionOptionNodeID is called", func() {
-			err := datasetClient.PutInstanceDimensionOptionNodeID(ctx, serviceAuthToken, "123", "456", "789", "ABC")
+		Convey("when PatchInstanceDimensionOption is called", func() {
+			err := datasetClient.PatchInstanceDimensionOption(ctx, serviceAuthToken, "123", "456", "789", testNodeID, &testOrder)
 
 			Convey("then the expected error is returned", func() {
 				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
 					actualCode: http.StatusNotFound,
-					uri:        "http://localhost:8080/instances/123/dimensions/456/options/789/node_id/ABC",
+					uri:        "http://localhost:8080/instances/123/dimensions/456/options/789",
 					body:       "null",
 				})
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
-				checkResponseBase(httpClient, http.MethodPut, "/instances/123/dimensions/456/options/789/node_id/ABC")
+				checkRequestBase(httpClient, http.MethodPatch, "/instances/123/dimensions/456/options/789")
 			})
 		})
 	})
@@ -1041,7 +1109,7 @@ func TestClient_GetOptions(t *testing.T) {
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
 				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?offset=%d&limit=%d",
 					instanceID, edition, version, dimension, offset, limit)
-				checkResponseBase(httpClient, http.MethodGet, expectedURI)
+				checkRequestBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})
 
@@ -1079,7 +1147,7 @@ func TestClient_GetOptions(t *testing.T) {
 			Convey("and dphttpclient.Do is called 1 time with the expected URI, providing the list of IDs and no offset or limit", func() {
 				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options?id=testOption,somethingElse",
 					instanceID, edition, version, dimension)
-				checkResponseBase(httpClient, http.MethodGet, expectedURI)
+				checkRequestBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})
 
@@ -1116,7 +1184,7 @@ func TestClient_GetOptions(t *testing.T) {
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
 				expectedURI := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/dimensions/%s/options", instanceID, edition, version, dimension)
-				checkResponseBase(httpClient, http.MethodGet, expectedURI)
+				checkRequestBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})
 	})

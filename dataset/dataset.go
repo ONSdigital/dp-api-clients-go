@@ -737,13 +737,34 @@ func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, i
 	return nil
 }
 
-// PutInstanceDimensionOptionNodeID performs a 'PUT /instances/<id>/dimensions/<id>/options/<id>/node_id/<id>' to update the node_id of the specified dimension
-func (c *Client) PutInstanceDimensionOptionNodeID(ctx context.Context, serviceAuthToken, instanceID, dimensionID, optionID, nodeID string) error {
-	uri := fmt.Sprintf("%s/instances/%s/dimensions/%s/options/%s/node_id/%s", c.hcCli.URL, instanceID, dimensionID, optionID, nodeID)
+// PatchInstanceDimensionOption performs a 'PATCH /instances/<id>/dimensions/<id>/options/<id>' to update the node_id and/or order of the specified dimension
+func (c *Client) PatchInstanceDimensionOption(ctx context.Context, serviceAuthToken, instanceID, dimensionID, optionID, nodeID string, order *int) error {
+	uri := fmt.Sprintf("%s/instances/%s/dimensions/%s/options/%s", c.hcCli.URL, instanceID, dimensionID, optionID)
 
-	clientlog.Do(ctx, "updating instance dimension option node_id", service, uri)
+	if nodeID == "" && order == nil {
+		log.Event(ctx, "skipping patch call because no update was provided", log.INFO, log.Data{"uri": uri})
+		return nil
+	}
 
-	resp, err := c.doPutWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, nil)
+	patchBody := []dprequest.Patch{}
+	if nodeID != "" {
+		patchBody = append(patchBody, dprequest.Patch{
+			Op:    dprequest.OpAdd.String(),
+			Path:  "/node_id",
+			Value: nodeID,
+		})
+	}
+	if order != nil {
+		patchBody = append(patchBody, dprequest.Patch{
+			Op:    dprequest.OpAdd.String(),
+			Path:  "/order",
+			Value: order,
+		})
+	}
+
+	clientlog.Do(ctx, "updating instance dimension option node_id and/or order", service, uri, log.Data{"patch_body": patchBody})
+
+	resp, err := c.doPatchWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, patchBody)
 	if err != nil {
 		return errors.Wrap(err, "http client returned error while attempting to make request")
 	}
@@ -962,7 +983,8 @@ func addCollectionIDHeader(r *http.Request, collectionID string) {
 	}
 }
 
-// doGetWithAuthHeaders executes clienter.Do setting the user and service authentication token as a request header. Returns the http.Response and any error.
+// doGetWithAuthHeaders executes a GET request by using clienter.Do for the provided URI and payload body.
+// It sets the user and service authentication and collectionID as a request header. Returns the http.Response and any error.
 // It is the callers responsibility to ensure response.Body is closed on completion.
 // If url.Values are provided, they will be added as query parameters in the URL.
 func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, values url.Values) (*http.Response, error) {
@@ -981,6 +1003,9 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	return c.hcCli.Client.Do(ctx, req)
 }
 
+// doPostWithAuthHeaders executes a POST request by using clienter.Do for the provided URI and payload body.
+// It sets the user and service authentication and collectionID as a request header. Returns the http.Response and any error.
+// It is the callers responsibility to ensure response.Body is closed on completion.
 func (c *Client) doPostWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, payload []byte) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewReader(payload))
 	if err != nil {
@@ -993,8 +1018,31 @@ func (c *Client) doPostWithAuthHeaders(ctx context.Context, userAuthToken, servi
 	return c.hcCli.Client.Do(ctx, req)
 }
 
+// doPutWithAuthHeaders executes a PUT request by using clienter.Do for the provided URI and payload body.
+// It sets the user and service authentication and collectionID as a request header. Returns the http.Response and any error.
+// It is the callers responsibility to ensure response.Body is closed on completion.
 func (c *Client) doPutWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, payload []byte) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPut, uri, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	addCollectionIDHeader(req, collectionID)
+	dprequest.AddFlorenceHeader(req, userAuthToken)
+	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
+	return c.hcCli.Client.Do(ctx, req)
+}
+
+// doPatchWithAuthHeaders executes a PATCH request by using clienter.Do for the provided URI and patchBody.
+// It sets the user and service authentication and collectionID as a request header. Returns the http.Response and any error.
+// It is the callers responsibility to ensure response.Body is closed on completion.
+func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, patchBody []dprequest.Patch) (*http.Response, error) {
+	b, err := json.Marshal(patchBody)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, uri, bytes.NewBuffer(b))
 	if err != nil {
 		return nil, err
 	}

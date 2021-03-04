@@ -40,11 +40,23 @@ var (
 	ctx    = context.Background()
 )
 
-func checkResponseBase(httpClient *dphttp.ClienterMock, expectedMethod, expectedURI, serviceAuthToken string) {
-	So(len(httpClient.DoCalls()), ShouldEqual, 1)
-	So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldEqual, expectedURI)
-	So(httpClient.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
-	So(httpClient.DoCalls()[0].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
+// checkRequest validates request method, uri and headers
+func checkRequest(httpClient *dphttp.ClienterMock, callIndex int, expectedMethod, expectedURI string, expectedIfMatch string) {
+	So(httpClient.DoCalls()[callIndex].Req.URL.RequestURI(), ShouldEqual, expectedURI)
+	So(httpClient.DoCalls()[callIndex].Req.Method, ShouldEqual, http.MethodPatch)
+	So(httpClient.DoCalls()[callIndex].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+testServiceToken)
+	actualIfMatch := httpClient.DoCalls()[callIndex].Req.Header.Get("If-Match")
+	So(actualIfMatch, ShouldResemble, expectedIfMatch)
+}
+
+// getRequestPatchBody returns the patch request body sent with the provided httpClient in iteration callIndex
+var getRequestPatchBody = func(httpClient *dphttp.ClienterMock, callIndex int) []dprequest.Patch {
+	sentPayload, err := ioutil.ReadAll(httpClient.DoCalls()[callIndex].Req.Body)
+	So(err, ShouldBeNil)
+	var sentBody []dprequest.Patch
+	err = json.Unmarshal(sentPayload, &sentBody)
+	So(err, ShouldBeNil)
+	return sentBody
 }
 
 type MockedHTTPResponse struct {
@@ -1158,54 +1170,6 @@ func TestClient_AddDimension(t *testing.T) {
 	})
 }
 
-// utility func to validate request method, uri, body and headers
-func checkRequest(httpClient *dphttp.ClienterMock, callIndex int, expectedURI string, expectedPatchOp dprequest.PatchOp, expectedPatchValues []string, expectedIfMatch string) {
-	So(httpClient.DoCalls()[callIndex].Req.URL.RequestURI(), ShouldEqual, expectedURI)
-	So(httpClient.DoCalls()[callIndex].Req.Method, ShouldEqual, http.MethodPatch)
-	So(httpClient.DoCalls()[callIndex].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+testServiceToken)
-	expectedBody := []dprequest.Patch{
-		{
-			Op:    expectedPatchOp.String(),
-			Path:  "/options/-",
-			Value: expectedPatchValues,
-		},
-	}
-	sentPayload, err := ioutil.ReadAll(httpClient.DoCalls()[callIndex].Req.Body)
-	So(err, ShouldBeNil)
-	var sentBody []dprequest.Patch
-	err = json.Unmarshal(sentPayload, &sentBody)
-	So(err, ShouldBeNil)
-	So(sentBody, ShouldResemble, expectedBody)
-	actualIfMatch := httpClient.DoCalls()[callIndex].Req.Header.Get("If-Match")
-	So(actualIfMatch, ShouldResemble, expectedIfMatch)
-}
-
-func checkRequestTwoOps(httpClient *dphttp.ClienterMock, callIndex int, expectedURI string, expectedPatchOp1, expectedPatchOp2 dprequest.PatchOp, expectedPatchValues1, expectedPatchValues2 []string, expectedIfMatch string) {
-	So(httpClient.DoCalls()[callIndex].Req.URL.RequestURI(), ShouldEqual, expectedURI)
-	So(httpClient.DoCalls()[callIndex].Req.Method, ShouldEqual, http.MethodPatch)
-	So(httpClient.DoCalls()[callIndex].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+testServiceToken)
-	expectedBody := []dprequest.Patch{
-		{
-			Op:    expectedPatchOp1.String(),
-			Path:  "/options/-",
-			Value: expectedPatchValues1,
-		},
-		{
-			Op:    expectedPatchOp2.String(),
-			Path:  "/options/-",
-			Value: expectedPatchValues2,
-		},
-	}
-	sentPayload, err := ioutil.ReadAll(httpClient.DoCalls()[callIndex].Req.Body)
-	So(err, ShouldBeNil)
-	var sentBody []dprequest.Patch
-	err = json.Unmarshal(sentPayload, &sentBody)
-	So(err, ShouldBeNil)
-	So(sentBody, ShouldResemble, expectedBody)
-	actualIfMatch := httpClient.DoCalls()[0].Req.Header.Get("If-Match")
-	So(actualIfMatch, ShouldResemble, expectedIfMatch)
-}
-
 func TestClient_AddDimensionValues(t *testing.T) {
 	filterID := "baz"
 	name := "quz"
@@ -1238,7 +1202,12 @@ func TestClient_AddDimensionValues(t *testing.T) {
 
 			Convey("The expected PATCH body is generated and sent to the API along with the expected If-Match header", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
-				checkRequest(httpClient, 0, "/filters/"+filterID+"/dimensions/"+name, dprequest.OpAdd, options, testETag)
+				checkRequest(httpClient, 0, http.MethodPatch, "/filters/"+filterID+"/dimensions/"+name, testETag)
+				sentPatches := getRequestPatchBody(httpClient, 0)
+				So(sentPatches, ShouldHaveLength, 1)
+				So(sentPatches[0].Op, ShouldEqual, dprequest.OpAdd.String())
+				So(sentPatches[0].Path, ShouldEqual, "/options/-")
+				So(sentPatches[0].Value, ShouldResemble, []interface{}{"abc", "def", "ghi", "jkl"})
 			})
 		})
 
@@ -1253,10 +1222,21 @@ func TestClient_AddDimensionValues(t *testing.T) {
 
 			Convey("The expected PATCH body is generated and sent to the API in 2 batches", func() {
 				expectedURI := "/filters/" + filterID + "/dimensions/" + name
-
 				So(len(httpClient.DoCalls()), ShouldEqual, 2)
-				checkRequest(httpClient, 0, expectedURI, dprequest.OpAdd, []string{"abc", "def", "ghi", "jkl", "000"}, testETag)
-				checkRequest(httpClient, 1, expectedURI, dprequest.OpAdd, []string{"111", "222"}, newETags[0])
+
+				checkRequest(httpClient, 0, http.MethodPatch, expectedURI, testETag)
+				sentPatches := getRequestPatchBody(httpClient, 0)
+				So(sentPatches, ShouldHaveLength, 1)
+				So(sentPatches[0].Op, ShouldEqual, dprequest.OpAdd.String())
+				So(sentPatches[0].Path, ShouldEqual, "/options/-")
+				So(sentPatches[0].Value, ShouldResemble, []interface{}{"abc", "def", "ghi", "jkl", "000"})
+
+				checkRequest(httpClient, 1, http.MethodPatch, expectedURI, newETags[0])
+				sentPatches = getRequestPatchBody(httpClient, 1)
+				So(sentPatches, ShouldHaveLength, 1)
+				So(sentPatches[0].Op, ShouldEqual, dprequest.OpAdd.String())
+				So(sentPatches[0].Path, ShouldEqual, "/options/-")
+				So(sentPatches[0].Value, ShouldResemble, []interface{}{"111", "222"})
 			})
 		})
 
@@ -1354,11 +1334,13 @@ func TestClient_RemoveDimensionValues(t *testing.T) {
 			})
 
 			Convey("The expected URI and PATCH body is generated and sent to the API", func() {
-				checkResponseBase(httpClient, http.MethodPatch, "/filters/"+filterID+"/dimensions/"+name, testServiceToken)
-				Convey("The expected PATCH body is generated and sent to the API", func() {
-					So(len(httpClient.DoCalls()), ShouldEqual, 1)
-					checkRequest(httpClient, 0, "/filters/"+filterID+"/dimensions/"+name, dprequest.OpRemove, options, testETag)
-				})
+				So(len(httpClient.DoCalls()), ShouldEqual, 1)
+				checkRequest(httpClient, 0, http.MethodPatch, "/filters/"+filterID+"/dimensions/"+name, testETag)
+				sentPatches := getRequestPatchBody(httpClient, 0)
+				So(sentPatches, ShouldHaveLength, 1)
+				So(sentPatches[0].Op, ShouldEqual, dprequest.OpRemove.String())
+				So(sentPatches[0].Path, ShouldEqual, "/options/-")
+				So(sentPatches[0].Value, ShouldResemble, []interface{}{"abc", "def", "ghi", "jkl"})
 			})
 		})
 
@@ -1373,10 +1355,21 @@ func TestClient_RemoveDimensionValues(t *testing.T) {
 
 			Convey("The expected PATCH body is generated and sent to the API in 2 batches, each with its expected ifMatch value", func() {
 				expectedURI := "/filters/" + filterID + "/dimensions/" + name
-
 				So(len(httpClient.DoCalls()), ShouldEqual, 2)
-				checkRequest(httpClient, 0, expectedURI, dprequest.OpRemove, []string{"abc", "def", "ghi", "jkl", "000"}, testETag)
-				checkRequest(httpClient, 1, expectedURI, dprequest.OpRemove, []string{"111", "222"}, newETags[0])
+
+				checkRequest(httpClient, 0, http.MethodPatch, expectedURI, testETag)
+				sentPatches := getRequestPatchBody(httpClient, 0)
+				So(sentPatches, ShouldHaveLength, 1)
+				So(sentPatches[0].Op, ShouldEqual, dprequest.OpRemove.String())
+				So(sentPatches[0].Path, ShouldEqual, "/options/-")
+				So(sentPatches[0].Value, ShouldResemble, []interface{}{"abc", "def", "ghi", "jkl", "000"})
+
+				checkRequest(httpClient, 1, http.MethodPatch, expectedURI, newETags[0])
+				sentPatches = getRequestPatchBody(httpClient, 1)
+				So(sentPatches, ShouldHaveLength, 1)
+				So(sentPatches[0].Op, ShouldEqual, dprequest.OpRemove.String())
+				So(sentPatches[0].Path, ShouldEqual, "/options/-")
+				So(sentPatches[0].Value, ShouldResemble, []interface{}{"111", "222"})
 			})
 		})
 
@@ -1474,11 +1467,17 @@ func TestClient_PatchDimensionValues(t *testing.T) {
 			})
 
 			Convey("The expected URI and PATCH body is generated and sent to the API", func() {
-				checkResponseBase(httpClient, http.MethodPatch, "/filters/"+filterID+"/dimensions/"+name, testServiceToken)
-				Convey("The expected PATCH body is generated and sent to the API", func() {
-					So(len(httpClient.DoCalls()), ShouldEqual, 1)
-					checkRequestTwoOps(httpClient, 0, "/filters/"+filterID+"/dimensions/"+name, dprequest.OpAdd, dprequest.OpRemove, optionsAdd, optionsRemove, testETag)
-				})
+				So(len(httpClient.DoCalls()), ShouldEqual, 1)
+				checkRequest(httpClient, 0, http.MethodPatch, "/filters/"+filterID+"/dimensions/"+name, testETag)
+				sentPatches := getRequestPatchBody(httpClient, 0)
+				So(sentPatches, ShouldHaveLength, 2)
+				So(sentPatches[0].Op, ShouldEqual, dprequest.OpAdd.String())
+				So(sentPatches[0].Path, ShouldEqual, "/options/-")
+				So(sentPatches[0].Value, ShouldResemble, []interface{}{"abc", "def"})
+
+				So(sentPatches[1].Op, ShouldEqual, dprequest.OpRemove.String())
+				So(sentPatches[1].Path, ShouldEqual, "/options/-")
+				So(sentPatches[1].Value, ShouldResemble, []interface{}{"ghi", "jkl"})
 			})
 		})
 
@@ -1494,10 +1493,21 @@ func TestClient_PatchDimensionValues(t *testing.T) {
 
 			Convey("The expected PATCH body is generated and sent to the API in 2 batches, each with its expected ifMatch value", func() {
 				expectedURI := "/filters/" + filterID + "/dimensions/" + name
-
 				So(len(httpClient.DoCalls()), ShouldEqual, 2)
-				checkRequest(httpClient, 0, expectedURI, dprequest.OpAdd, []string{"abc", "def", "ghi"}, testETag)
-				checkRequest(httpClient, 1, expectedURI, dprequest.OpRemove, []string{"000", "111", "222"}, newETags[0])
+
+				checkRequest(httpClient, 0, http.MethodPatch, expectedURI, testETag)
+				sentPatches := getRequestPatchBody(httpClient, 0)
+				So(sentPatches, ShouldHaveLength, 1)
+				So(sentPatches[0].Op, ShouldEqual, dprequest.OpAdd.String())
+				So(sentPatches[0].Path, ShouldEqual, "/options/-")
+				So(sentPatches[0].Value, ShouldResemble, []interface{}{"abc", "def", "ghi"})
+
+				checkRequest(httpClient, 1, http.MethodPatch, expectedURI, newETags[0])
+				sentPatches = getRequestPatchBody(httpClient, 1)
+				So(sentPatches, ShouldHaveLength, 1)
+				So(sentPatches[0].Op, ShouldEqual, dprequest.OpRemove.String())
+				So(sentPatches[0].Path, ShouldEqual, "/options/-")
+				So(sentPatches[0].Value, ShouldResemble, []interface{}{"000", "111", "222"})
 			})
 		})
 
