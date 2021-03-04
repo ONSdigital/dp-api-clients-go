@@ -291,6 +291,7 @@ type OptionPost struct {
 	Label    string `json:"label"`
 	Name     string `json:"dimension"`
 	Option   string `json:"option"`
+	Order    *int   `json:"order,omitempty"`
 }
 
 // JobInstance represents the details necessary to update (PUT) a job instance

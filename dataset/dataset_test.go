@@ -754,12 +754,14 @@ func Test_PutInstanceImportTasks(t *testing.T) {
 
 func TestClient_PostInstanceDimensions(t *testing.T) {
 
+	order := 1
 	optionsToPost := OptionPost{
 		Name:     "testName",
 		Option:   "testOption",
 		Label:    "testLabel",
 		CodeList: "testCodeList",
 		Code:     "testCode",
+		Order:    &order,
 	}
 
 	Convey("given a 200 status is returned", t, func() {
