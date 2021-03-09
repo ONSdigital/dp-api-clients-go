@@ -737,15 +737,7 @@ func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, i
 	return nil
 }
 
-// PatchInstanceDimensionOption performs a 'PATCH /instances/<id>/dimensions/<id>/options/<id>' to update the node_id and/or order of the specified dimension
-func (c *Client) PatchInstanceDimensionOption(ctx context.Context, serviceAuthToken, instanceID, dimensionID, optionID, nodeID string, order *int) error {
-	uri := fmt.Sprintf("%s/instances/%s/dimensions/%s/options/%s", c.hcCli.URL, instanceID, dimensionID, optionID)
-
-	if nodeID == "" && order == nil {
-		log.Event(ctx, "skipping patch call because no update was provided", log.INFO, log.Data{"uri": uri})
-		return nil
-	}
-
+func createInstanceDimensionOptionPatch(nodeID string, order *int) []dprequest.Patch {
 	patchBody := []dprequest.Patch{}
 	if nodeID != "" {
 		patchBody = append(patchBody, dprequest.Patch{
@@ -761,6 +753,18 @@ func (c *Client) PatchInstanceDimensionOption(ctx context.Context, serviceAuthTo
 			Value: order,
 		})
 	}
+	return patchBody
+}
+
+// PatchInstanceDimensionOption performs a 'PATCH /instances/<id>/dimensions/<id>/options/<id>' to update the node_id and/or order of the specified dimension
+func (c *Client) PatchInstanceDimensionOption(ctx context.Context, serviceAuthToken, instanceID, dimensionID, optionID, nodeID string, order *int) error {
+	uri := fmt.Sprintf("%s/instances/%s/dimensions/%s/options/%s", c.hcCli.URL, instanceID, dimensionID, optionID)
+
+	if nodeID == "" && order == nil {
+		log.Event(ctx, "skipping patch call because no update was provided", log.INFO, log.Data{"uri": uri})
+		return nil
+	}
+	patchBody := createInstanceDimensionOptionPatch(nodeID, order)
 
 	clientlog.Do(ctx, "updating instance dimension option node_id and/or order", service, uri, log.Data{"patch_body": patchBody})
 

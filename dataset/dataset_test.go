@@ -49,6 +49,16 @@ var getRequestPatchBody = func(httpClient *dphttp.ClienterMock, callIndex int) [
 	return sentBody
 }
 
+var validateRequestPatches = func(httpClient *dphttp.ClienterMock, callIndex int, expectedPatches []dprequest.Patch) {
+	sentPatches := getRequestPatchBody(httpClient, callIndex)
+	So(len(sentPatches), ShouldEqual, len(expectedPatches))
+	for i, patch := range expectedPatches {
+		So(sentPatches[i].Op, ShouldEqual, patch.Op)
+		So(sentPatches[i].Path, ShouldEqual, patch.Path)
+		So(sentPatches[i].Value, ShouldEqual, patch.Value)
+	}
+}
+
 type MockedHTTPResponse struct {
 	StatusCode int
 	Body       interface{}
@@ -987,14 +997,11 @@ func TestClient_PatchInstanceDimensionOption(t *testing.T) {
 
 			Convey("and dphttpclient.Do is called 1 time with the expected patch body", func() {
 				checkRequestBase(httpClient, http.MethodPatch, "/instances/123/dimensions/456/options/789")
-				sentPatches := getRequestPatchBody(httpClient, 0)
-				So(sentPatches, ShouldHaveLength, 2)
-				So(sentPatches[0].Op, ShouldEqual, dprequest.OpAdd.String())
-				So(sentPatches[0].Path, ShouldEqual, "/node_id")
-				So(sentPatches[0].Value, ShouldEqual, testNodeID)
-				So(sentPatches[1].Op, ShouldEqual, dprequest.OpAdd.String())
-				So(sentPatches[1].Path, ShouldEqual, "/order")
-				So(sentPatches[1].Value, ShouldEqual, testOrder)
+				expectedPatches := []dprequest.Patch{
+					{Op: dprequest.OpAdd.String(), Path: "/node_id", Value: testNodeID},
+					{Op: dprequest.OpAdd.String(), Path: "/order", Value: testOrder},
+				}
+				validateRequestPatches(httpClient, 0, expectedPatches)
 			})
 		})
 
@@ -1007,11 +1014,10 @@ func TestClient_PatchInstanceDimensionOption(t *testing.T) {
 
 			Convey("and dphttpclient.Do is called 1 time with the expected patch body", func() {
 				checkRequestBase(httpClient, http.MethodPatch, "/instances/123/dimensions/456/options/789")
-				sentPatches := getRequestPatchBody(httpClient, 0)
-				So(sentPatches, ShouldHaveLength, 1)
-				So(sentPatches[0].Op, ShouldEqual, dprequest.OpAdd.String())
-				So(sentPatches[0].Path, ShouldEqual, "/node_id")
-				So(sentPatches[0].Value, ShouldEqual, testNodeID)
+				expectedPatches := []dprequest.Patch{
+					{Op: dprequest.OpAdd.String(), Path: "/node_id", Value: testNodeID},
+				}
+				validateRequestPatches(httpClient, 0, expectedPatches)
 			})
 		})
 
@@ -1024,11 +1030,10 @@ func TestClient_PatchInstanceDimensionOption(t *testing.T) {
 
 			Convey("and dphttpclient.Do is called 1 time with the expected patch body", func() {
 				checkRequestBase(httpClient, http.MethodPatch, "/instances/123/dimensions/456/options/789")
-				sentPatches := getRequestPatchBody(httpClient, 0)
-				So(sentPatches, ShouldHaveLength, 1)
-				So(sentPatches[0].Op, ShouldEqual, dprequest.OpAdd.String())
-				So(sentPatches[0].Path, ShouldEqual, "/order")
-				So(sentPatches[0].Value, ShouldEqual, testOrder)
+				expectedPatches := []dprequest.Patch{
+					{Op: dprequest.OpAdd.String(), Path: "/order", Value: testOrder},
+				}
+				validateRequestPatches(httpClient, 0, expectedPatches)
 			})
 		})
 
