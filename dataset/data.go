@@ -50,6 +50,7 @@ type List struct {
 	TotalCount int       `json:"total_count"`
 }
 
+// VersionList represents an object containing a list of datasets
 type VersionsList struct {
 	Items      []Version `json:"items"`
 	Count      int       `json:"count"`
