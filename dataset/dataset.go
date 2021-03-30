@@ -452,8 +452,8 @@ func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToke
 func (c *Client) GetVersions(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition string, q *QueryParams) (m VersionsList, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.hcCli.URL, datasetID, edition)
 	if q != nil {
-		if err := q.Validate(); err != nil {
-			return VersionsList{}, err
+		if err = q.Validate(); err != nil {
+			return
 		}
 		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
 	}
@@ -504,8 +504,8 @@ func (c *Client) GetVersionsInBatches(ctx context.Context, userAuthToken, servic
 	}
 
 	// call dataset API GetOptions in batches and aggregate the responses
-	if err := c.GetVersionsBatchProcess(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, processBatch, batchSize, maxWorkers); err != nil {
-		return VersionsList{}, err
+	if err = c.GetVersionsBatchProcess(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, processBatch, batchSize, maxWorkers); err != nil {
+		return
 	}
 
 	return versions, nil
@@ -515,7 +515,7 @@ func (c *Client) GetVersionsInBatches(ctx context.Context, userAuthToken, servic
 func (c *Client) GetVersionsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition string, processBatch VersionsBatchProcessor, batchSize, maxWorkers int) error {
 
 	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit,
-	// or the subste of IDs according to the provided offset, if a list of optionIDs was provided
+	// or the subset of IDs according to the provided offset, if a list of optionIDs was provided
 	batchGetter := func(offset int) (interface{}, int, string, error) {
 		b, err := c.GetVersions(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, &QueryParams{Offset: offset, Limit: batchSize})
 		return b, b.TotalCount, "", err
