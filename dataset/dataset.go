@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -525,7 +526,9 @@ func (c *Client) GetVersionsBatchProcess(ctx context.Context, userAuthToken, ser
 	batchProcessor := func(b interface{}, batchETag string) (abort bool, err error) {
 		v, ok := b.(VersionsList)
 		if !ok {
-			return true, errors.New("wrong type")
+			t := reflect.TypeOf(b)
+			errMsg := fmt.Sprintf("version batch processor error wrong type received expected VersionList but was %v", t)
+			return true, errors.New(errMsg)
 		}
 		return processBatch(v)
 	}
