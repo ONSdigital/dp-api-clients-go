@@ -71,6 +71,7 @@ type ImageDownloads struct {
 
 // ImageDownload represents the fields for an Image Download
 type ImageDownload struct {
+	Alt     string              `json:"alt,omitempty"`
 	Id      string              `json:"id,omitempty"`
 	Height  *int                `json:"height,omitempty"`
 	Href    string              `json:"href,omitempty"`
