@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -61,6 +62,9 @@ type ErrInvalidDatasetAPIResponse struct {
 
 // DatasetsBatchProcessor is the type corresponding to a batch processing function for a dataset List.
 type DatasetsBatchProcessor func(List) (abort bool, err error)
+
+// VersionsBatchProcessor is the type corresponding to a batch processing function for a dataset List.
+type VersionsBatchProcessor func(VersionsList) (abort bool, err error)
 
 // OptionsBatchProcessor is the type corresponding to a batch processing function for dataset Options
 type OptionsBatchProcessor func(Options) (abort bool, err error)
@@ -446,8 +450,14 @@ func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToke
 }
 
 // GetVersions gets all versions for an edition from the dataset api
-func (c *Client) GetVersions(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition string) (m []Version, err error) {
+func (c *Client) GetVersions(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition string, q *QueryParams) (m VersionsList, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions", c.hcCli.URL, datasetID, edition)
+	if q != nil {
+		if err = q.Validate(); err != nil {
+			return
+		}
+		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
+	}
 
 	clientlog.Do(ctx, "retrieving dataset versions", service, uri)
 
@@ -467,13 +477,66 @@ func (c *Client) GetVersions(ctx context.Context, userAuthToken, serviceAuthToke
 		return
 	}
 
-	versions := struct {
-		Items []Version `json:"items"`
-	}{}
+	if err = json.Unmarshal(b, &m); err != nil {
+		return
+	}
 
-	err = json.Unmarshal(b, &versions)
-	m = versions.Items
 	return
+}
+
+// GetVersionsInBatches retrieves a list of datasets in concurrent batches and accumulates the results
+func (c *Client) GetVersionsInBatches(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition string, batchSize, maxWorkers int) (versions VersionsList, err error) {
+
+	// Function to aggregate items.
+	// For the first received batch, as we have the total count information, will initialise the final structure of items with a fixed size equal to TotalCount.
+	// This serves two purposes:
+	//   - We can guarantee, even with concurrent calls, that values are returned in the same order that the API defines, by offsetting the index.
+	//   - We do a single memory allocation for the final array, making the code more memory efficient.
+	var processBatch VersionsBatchProcessor = func(b VersionsList) (abort bool, err error) {
+		if len(versions.Items) == 0 { // first batch response being handled
+			versions.TotalCount = b.TotalCount
+			versions.Items = make([]Version, b.TotalCount)
+			versions.Count = b.TotalCount
+		}
+		if len(versions.Items) < len(b.Items)+b.Offset {
+			return false, fmt.Errorf("versions.Items offset index out of bounds error. Expected length: %d, actual length: %d", len(b.Items)+b.Offset, len(versions.Items))
+		}
+		for i := 0; i < len(b.Items); i++ {
+			versions.Items[i+b.Offset] = b.Items[i]
+		}
+		return false, nil
+	}
+
+	// call dataset API GetOptions in batches and aggregate the responses
+	if err = c.GetVersionsBatchProcess(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, processBatch, batchSize, maxWorkers); err != nil {
+		return
+	}
+
+	return versions, nil
+}
+
+// GetVersionsBatchProcess gets the datasets from the dataset API in batches, calling the provided function for each batch.
+func (c *Client) GetVersionsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition string, processBatch VersionsBatchProcessor, batchSize, maxWorkers int) error {
+
+	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit,
+	// or the subset of IDs according to the provided offset, if a list of optionIDs was provided
+	batchGetter := func(offset int) (interface{}, int, string, error) {
+		b, err := c.GetVersions(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, &QueryParams{Offset: offset, Limit: batchSize})
+		return b, b.TotalCount, "", err
+	}
+
+	// cast and process the batch according to the provided method
+	batchProcessor := func(b interface{}, batchETag string) (abort bool, err error) {
+		v, ok := b.(VersionsList)
+		if !ok {
+			t := reflect.TypeOf(b)
+			errMsg := fmt.Sprintf("version batch processor error wrong type received expected VersionList but was %v", t)
+			return true, errors.New(errMsg)
+		}
+		return processBatch(v)
+	}
+
+	return batch.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
 }
 
 // GetVersion gets a specific version for an edition from the dataset api
