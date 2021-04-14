@@ -499,7 +499,7 @@ func (c *Client) GetVersionsInBatches(ctx context.Context, userAuthToken, servic
 			versions.Count = b.TotalCount
 		}
 		if len(versions.Items) < len(b.Items)+b.Offset {
-			return false, fmt.Errorf("versions.Items offset index out of bounds error. Expected length: %d, actual length: %d", i+b.Offset, len(versions.Items))
+			return false, fmt.Errorf("versions.Items offset index out of bounds error. Expected length: %d, actual length: %d", len(b.Items)+b.Offset, len(versions.Items))
 		}
 		for i := 0; i < len(b.Items); i++ {
 			versions.Items[i+b.Offset] = b.Items[i]
