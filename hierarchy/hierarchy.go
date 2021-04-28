@@ -88,7 +88,7 @@ func (c *Client) GetRoot(ctx context.Context, instanceID, name string) (Model, e
 	path := fmt.Sprintf("/hierarchies/%s/%s", instanceID, name)
 
 	clientlog.Do(ctx, "retrieving hierarchy", service, path, log.Data{
-		"method":      "GET",
+		"method":      http.MethodGet,
 		"instance_id": instanceID,
 		"dimension":   name,
 	})
@@ -101,7 +101,7 @@ func (c *Client) GetChild(ctx context.Context, instanceID, name, code string) (M
 	path := fmt.Sprintf("/hierarchies/%s/%s/%s", instanceID, name, code)
 
 	clientlog.Do(ctx, "retrieving hierarchy", service, path, log.Data{
-		"method":      "GET",
+		"method":      http.MethodGet,
 		"instance_id": instanceID,
 		"dimension":   name,
 		"code":        code,
@@ -112,7 +112,7 @@ func (c *Client) GetChild(ctx context.Context, instanceID, name, code string) (M
 
 func (c *Client) getHierarchy(ctx context.Context, path string) (Model, error) {
 	var m Model
-	req, err := http.NewRequest("GET", c.hcCli.URL+path, nil)
+	req, err := http.NewRequest(http.MethodGet, c.hcCli.URL+path, nil)
 	if err != nil {
 		return m, err
 	}
