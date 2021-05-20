@@ -1,5 +1,7 @@
 package filter
 
+import "time"
+
 const (
 	EventFilterOutputQueryStart   = "FilterOutputQueryStart"
 	EventFilterOutputQueryEnd     = "FilterOutputQueryEnd"
@@ -100,7 +102,7 @@ type Download struct {
 // Event represents an event from a filter api response
 type Event struct {
 	Time time.Time `json:"time"`
-	Type string `json:"type"`
+	Type string    `json:"type"`
 }
 
 // Preview represents a preview document returned from the filter api
