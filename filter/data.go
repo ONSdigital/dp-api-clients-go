@@ -3,12 +3,10 @@ package filter
 import "time"
 
 const (
-	EventFilterOutputQueryStart   = "FilterOutputQueryStart"
-	EventFilterOutputQueryEnd     = "FilterOutputQueryEnd"
-	EventFilterOutputCSVGenStart  = "FilterOutputCSVGenStart"
-	EventFilterOutputCSVGenEnd    = "FilterOutputCSVGenEnd"
-	EventFilterOutputXLSXGenStart = "FilterOutputXLSXGenStart"
-	EventFilterOutputXLSXGenEnd   = "FilterOutputXLSXGenEnd"
+	EventFilterOutputQueryStart  = "FilterOutputQueryStart"
+	EventFilterOutputQueryEnd    = "FilterOutputQueryEnd"
+	EventFilterOutputCSVGenStart = "FilterOutputCSVGenStart"
+	EventFilterOutputCSVGenEnd   = "FilterOutputCSVGenEnd"
 )
 
 // Dimensions represents a dimensions response from the filter api
