@@ -99,7 +99,7 @@ type Download struct {
 
 // Event represents an event from a filter api response
 type Event struct {
-	Time string `json:"time"`
+	Time time.Time `json:"time"`
 	Type string `json:"type"`
 }
 
