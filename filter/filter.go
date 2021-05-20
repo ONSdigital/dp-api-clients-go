@@ -182,7 +182,7 @@ func (c *Client) UpdateFilterOutputBytes(ctx context.Context, userAuthToken, ser
 }
 
 // AddEvent performs a POST operation to update the filter with the provided event
-func (c *Client) AddEvent(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, filterJobID string, event Event) error {
+func (c *Client) AddEvent(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, filterJobID string, event *Event) error {
 	b, err := json.Marshal(event)
 	if err != nil {
 		return err
