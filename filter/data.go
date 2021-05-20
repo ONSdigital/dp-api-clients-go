@@ -1,14 +1,12 @@
 package filter
 
 const (
-	EventFilterOutputCreated      = "FilterOutputCreated"
 	EventFilterOutputQueryStart   = "FilterOutputQueryStart"
 	EventFilterOutputQueryEnd     = "FilterOutputQueryEnd"
 	EventFilterOutputCSVGenStart  = "FilterOutputCSVGenStart"
 	EventFilterOutputCSVGenEnd    = "FilterOutputCSVGenEnd"
 	EventFilterOutputXLSXGenStart = "FilterOutputXLSXGenStart"
 	EventFilterOutputXLSXGenEnd   = "FilterOutputXLSXGenEnd"
-	EventFilterOutputCompleted    = "FilterOutputCompleted"
 )
 
 // Dimensions represents a dimensions response from the filter api

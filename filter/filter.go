@@ -181,6 +181,42 @@ func (c *Client) UpdateFilterOutputBytes(ctx context.Context, userAuthToken, ser
 	return nil
 }
 
+// AddEvent performs a POST operation to update the filter with the provided event
+func (c *Client) AddEvent(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, filterJobID string, event Event) error {
+	b, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	uri := fmt.Sprintf("%s/filter-outputs/%s/events", c.hcCli.URL, filterJobID)
+
+	clientlog.Do(ctx, "adding event to filter output", service, uri, log.Data{
+		"method":   "POST",
+		"filterID": filterJobID,
+		"body":     string(b),
+	})
+
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+
+	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
+	headers.SetDownloadServiceToken(req, downloadServiceToken)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return err
+	}
+	defer CloseResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+	}
+	return nil
+}
+
 // GetDimension returns information on a requested dimension name for a given filterID unmarshalled as a Dimension struct
 func (c *Client) GetDimension(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string) (dim Dimension, eTag string, err error) {
 	b, eTag, err := c.GetDimensionBytes(ctx, userAuthToken, serviceAuthToken, collectionID, filterID, name)
