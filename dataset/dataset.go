@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/batch"
@@ -68,6 +69,12 @@ type VersionsBatchProcessor func(VersionsList) (abort bool, err error)
 
 // OptionsBatchProcessor is the type corresponding to a batch processing function for dataset Options
 type OptionsBatchProcessor func(Options) (abort bool, err error)
+
+// InstancesBatchProcessor is the type corresponding to a batch processing function for Instances
+type InstancesBatchProcessor func(Instances) (abort bool, err error)
+
+// InstancesBatchProcessor is the type corresponding to a batch processing function for Instances
+type InstanceDimensionsBatchProcessor func(Dimensions) (abort bool, err error)
 
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidDatasetAPIResponse) Error() string {
@@ -652,6 +659,57 @@ func (c *Client) GetInstances(ctx context.Context, userAuthToken, serviceAuthTok
 	return
 }
 
+func (c *Client) GetInstancesInBatches(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, vars url.Values, batchSize, maxWorkers int) (instances Instances, err error) {
+
+	// Function to aggregate items.
+	// For the first received batch, as we have the total count information, will initialise the final structure of items with a fixed size equal to TotalCount.
+	// This serves two purposes:
+	//   - We can guarantee, even with concurrent calls, that values are returned in the same order that the API defines, by offsetting the index.
+	//   - We do a single memory allocation for the final array, making the code more memory efficient.
+	var processBatch InstancesBatchProcessor = func(b Instances) (abort bool, err error) {
+		if len(instances.Items) == 0 { // first batch response being handled
+			instances.TotalCount = b.TotalCount
+			instances.Items = make([]Instance, b.TotalCount)
+			instances.Count = b.TotalCount
+		}
+		for i := 0; i < len(b.Items); i++ {
+			instances.Items[i+b.Offset] = b.Items[i]
+		}
+		return false, nil
+	}
+
+	// call dataset API GetInstances in batches and aggregate the responses
+	if err := c.GetInstancesBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, vars, processBatch, batchSize, maxWorkers); err != nil {
+		return Instances{}, err
+	}
+
+	return instances, nil
+}
+
+// GetInstancesBatchProcess gets the instances from the dataset API in batches, calling the provided function for each batch.
+func (c *Client) GetInstancesBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, vars url.Values, processBatch InstancesBatchProcessor, batchSize, maxWorkers int) error {
+
+	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit,
+	// or the subste of IDs according to the provided offset, if a list of optionIDs was provided
+	batchGetter := func(offset int) (interface{}, int, string, error) {
+		vars.Set("offset", strconv.Itoa(offset))
+		vars.Set("limit", strconv.Itoa(batchSize))
+		b, err := c.GetInstances(ctx, userAuthToken, serviceAuthToken, collectionID, vars)
+		return b, b.TotalCount, "", err
+	}
+
+	// cast and process the batch according to the provided method
+	batchProcessor := func(b interface{}, batchETag string) (abort bool, err error) {
+		v, ok := b.(Instances)
+		if !ok {
+			return true, errors.New("wrong type")
+		}
+		return processBatch(v)
+	}
+
+	return batch.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
+}
+
 // PutInstance updates an instance
 func (c *Client) PutInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string, i UpdateInstance) error {
 	uri := fmt.Sprintf("%s/instances/%s", c.hcCli.URL, instanceID)
@@ -763,8 +821,14 @@ func (c *Client) UpdateInstanceWithNewInserts(ctx context.Context, serviceAuthTo
 }
 
 // GetInstanceDimensions performs a 'GET /instances/<id>/dimensions' and returns the marshalled Dimensions struct
-func (c *Client) GetInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string) (m Dimensions, err error) {
+func (c *Client) GetInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string, q *QueryParams) (m Dimensions, err error) {
 	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
+	if q != nil {
+		if err := q.Validate(); err != nil {
+			return Dimensions{}, err
+		}
+		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
+	}
 
 	clientlog.Do(ctx, "retrieving instance dimensions", service, uri)
 
@@ -775,6 +839,59 @@ func (c *Client) GetInstanceDimensions(ctx context.Context, serviceAuthToken, in
 
 	json.Unmarshal(b, &m)
 	return
+}
+
+func (c *Client) GetInstanceDimensionsInBatches(ctx context.Context, userAuthToken, serviceAuthToken, instanceID string, batchSize, maxWorkers int) (dimensions Dimensions, err error) {
+
+	// Function to aggregate items.
+	// For the first received batch, as we have the total count information, will initialise the final structure of items with a fixed size equal to TotalCount.
+	// This serves two purposes:
+	//   - We can guarantee, even with concurrent calls, that values are returned in the same order that the API defines, by offsetting the index.
+	//   - We do a single memory allocation for the final array, making the code more memory efficient.
+	var processBatch InstanceDimensionsBatchProcessor = func(b Dimensions) (abort bool, err error) {
+		if len(dimensions.Items) == 0 { // first batch response being handled
+			dimensions.TotalCount = b.TotalCount
+			dimensions.Items = make([]Dimension, b.TotalCount)
+			dimensions.Count = b.TotalCount
+		}
+		for i := 0; i < len(b.Items); i++ {
+			dimensions.Items[i+b.Offset] = b.Items[i]
+		}
+		return false, nil
+	}
+
+	// call dataset API GetInstanceDimensions in batches and aggregate the responses
+	if err := c.GetInstanceDimensionsBatchProcess(ctx, userAuthToken, serviceAuthToken, instanceID, processBatch, batchSize, maxWorkers); err != nil {
+		return Dimensions{}, err
+	}
+
+	return dimensions, nil
+}
+
+// GetInstanceDimensionsBatchProcess gets the instance dimensions from the dataset API in batches, calling the provided function for each batch.
+func (c *Client) GetInstanceDimensionsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, instanceID string, processBatch InstanceDimensionsBatchProcessor, batchSize, maxWorkers int) error {
+
+	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit,
+	// or the subste of IDs according to the provided offset, if a list of optionIDs was provided
+	batchGetter := func(offset int) (interface{}, int, string, error) {
+		q := &QueryParams{
+			Offset: offset,
+			Limit:  batchSize,
+		}
+		b, err := c.GetInstanceDimensions(ctx, serviceAuthToken, instanceID, q)
+		return b, b.TotalCount, "", err
+	}
+
+	// cast and process the batch according to the provided method
+	batchProcessor := func(b interface{}, batchETag string) (abort bool, err error) {
+		v, ok := b.(Dimensions)
+		if !ok {
+			return true, errors.New("wrong type")
+		}
+		return processBatch(v)
+	}
+
+	return batch.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
 }
 
 // PostInstanceDimensions performs a 'POST /instances/<id>/dimensions' with the provided OptionPost

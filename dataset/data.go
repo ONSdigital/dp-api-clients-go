@@ -146,7 +146,11 @@ type stateData struct {
 
 // Instances represent a list of Instance objects
 type Instances struct {
-	Items []Instance `json:"items"`
+	Items      []Instance `json:"items"`
+	Count      int        `json:"count"`
+	Offset     int        `json:"offset"`
+	Limit      int        `json:"limit"`
+	TotalCount int        `json:"total_count"`
 }
 
 // Metadata is a combination of version and dataset model fields
@@ -273,7 +277,11 @@ type Dimension struct {
 
 // Dimensions represents a list of dimensions
 type Dimensions struct {
-	Items []Dimension `json:"items"`
+	Items      []Dimension `json:"items"`
+	Count      int         `json:"count"`
+	Offset     int         `json:"offset"`
+	Limit      int         `json:"limit"`
+	TotalCount int         `json:"total_count"`
 }
 
 // Options represents a list of options from the dataset api

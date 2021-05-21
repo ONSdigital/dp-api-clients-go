@@ -841,6 +841,120 @@ func TestClient_GetInstances(t *testing.T) {
 	})
 }
 
+func TestClient_GetInstancesInBatches(t *testing.T) {
+
+	versionsResponse1 := Instances{
+		Items:      []Instance{{Version: Version{}}},
+		TotalCount: 2, // Total count is read from the first response to determine how many batches are required
+		Offset:     0,
+		Count:      1,
+	}
+
+	versionsResponse2 := Instances{
+		Items:      []Instance{{Version: Version{}}},
+		TotalCount: 2,
+		Offset:     1,
+		Count:      1,
+	}
+
+	expectedDatasets := Instances{
+		Items: []Instance{
+			versionsResponse1.Items[0],
+			versionsResponse2.Items[0],
+		},
+		Count:      2,
+		TotalCount: 2,
+	}
+
+	batchSize := 1
+	maxWorkers := 1
+
+	Convey("When a 200 OK status is returned in 2 consecutive calls", t, func() {
+
+		httpClient := createHTTPClientMock(
+			MockedHTTPResponse{http.StatusOK, versionsResponse1},
+			MockedHTTPResponse{http.StatusOK, versionsResponse2})
+		datasetClient := newDatasetClient(httpClient)
+
+		processedBatches := []Instances{}
+		var testProcess InstancesBatchProcessor = func(batch Instances) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetInstancesInBatches succeeds and returns the accumulated items from all the batches", func() {
+			datasets, err := datasetClient.GetInstancesInBatches(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{}, batchSize, maxWorkers)
+
+			So(err, ShouldBeNil)
+			So(datasets, ShouldResemble, expectedDatasets)
+		})
+
+		Convey("then GetInstancesBatchProcess calls the batchProcessor function twice, with the expected batches", func() {
+			err := datasetClient.GetInstancesBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{}, testProcess, batchSize, maxWorkers)
+			So(err, ShouldBeNil)
+			So(processedBatches, ShouldResemble, []Instances{versionsResponse1, versionsResponse2})
+			So(httpClient.DoCalls(), ShouldHaveLength, 2)
+			So(httpClient.DoCalls()[0].Req.URL.String(), ShouldResemble,
+				"http://localhost:8080/instances?limit=1&offset=0")
+			So(httpClient.DoCalls()[1].Req.URL.String(), ShouldResemble,
+				"http://localhost:8080/instances?limit=1&offset=1")
+		})
+	})
+
+	Convey("When a 400 error status is returned in the first call", t, func() {
+		httpClient := createHTTPClientMock(
+			MockedHTTPResponse{http.StatusBadRequest, ""})
+		datasetClient := newDatasetClient(httpClient)
+
+		processedBatches := []Instances{}
+		var testProcess InstancesBatchProcessor = func(batch Instances) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetOptionsInBatches fails with the expected error and the process is aborted", func() {
+			_, err := datasetClient.GetInstancesInBatches(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{}, batchSize, maxWorkers)
+			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
+			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/instances")
+		})
+
+		Convey("then GetDatasetsBatchProcess fails with the expected error and doesn't call the batchProcessor", func() {
+			err := datasetClient.GetInstancesBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{}, testProcess, batchSize, maxWorkers)
+			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
+			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/instances")
+			So(processedBatches, ShouldResemble, []Instances{})
+		})
+	})
+
+	Convey("When a 200 error status is returned in the first call and 400 error is returned in the second call", t, func() {
+		httpClient := createHTTPClientMock(
+			MockedHTTPResponse{http.StatusOK, versionsResponse1},
+			MockedHTTPResponse{http.StatusBadRequest, ""})
+		datasetClient := newDatasetClient(httpClient)
+
+		// testProcess is a generic batch processor for testing
+		processedBatches := []Instances{}
+		var testProcess InstancesBatchProcessor = func(batch Instances) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetDatasetsInBatches fails with the expected error, corresponding to the second batch, and the process is aborted", func() {
+			_, err := datasetClient.GetInstancesInBatches(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{}, batchSize, maxWorkers)
+			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
+			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/instances")
+		})
+
+		Convey("then GetDatasetsBatchProcess fails with the expected error and calls the batchProcessor for the first batch only", func() {
+			err := datasetClient.GetInstancesBatchProcess(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{}, testProcess, batchSize, maxWorkers)
+			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
+			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/instances")
+			So(processedBatches, ShouldResemble, []Instances{versionsResponse1})
+		})
+	})
+
+}
+
 func Test_PutInstanceImportTasks(t *testing.T) {
 
 	data := InstanceImportTasks{
@@ -1061,7 +1175,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensions is called", func() {
-			dimensions, err := datasetClient.GetInstanceDimensions(ctx, serviceAuthToken, "123")
+			dimensions, err := datasetClient.GetInstanceDimensions(ctx, serviceAuthToken, "123", &QueryParams{})
 
 			Convey("a positive response with expected dimensions is returned", func() {
 				So(err, ShouldBeNil)
@@ -1079,7 +1193,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensions is called", func() {
-			_, err := datasetClient.GetInstanceDimensions(ctx, serviceAuthToken, "123")
+			_, err := datasetClient.GetInstanceDimensions(ctx, serviceAuthToken, "123", &QueryParams{})
 
 			Convey("then the expected error is returned", func() {
 				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
