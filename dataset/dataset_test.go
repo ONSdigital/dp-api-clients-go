@@ -857,7 +857,7 @@ func TestClient_GetInstancesInBatches(t *testing.T) {
 		Count:      1,
 	}
 
-	expectedDatasets := Instances{
+	expectedInstances := Instances{
 		Items: []Instance{
 			versionsResponse1.Items[0],
 			versionsResponse2.Items[0],
@@ -886,7 +886,7 @@ func TestClient_GetInstancesInBatches(t *testing.T) {
 			datasets, err := datasetClient.GetInstancesInBatches(ctx, userAuthToken, serviceAuthToken, collectionID, url.Values{}, batchSize, maxWorkers)
 
 			So(err, ShouldBeNil)
-			So(datasets, ShouldResemble, expectedDatasets)
+			So(datasets, ShouldResemble, expectedInstances)
 		})
 
 		Convey("then GetInstancesBatchProcess calls the batchProcessor function twice, with the expected batches", func() {

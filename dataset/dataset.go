@@ -73,7 +73,7 @@ type OptionsBatchProcessor func(Options) (abort bool, err error)
 // InstancesBatchProcessor is the type corresponding to a batch processing function for Instances
 type InstancesBatchProcessor func(Instances) (abort bool, err error)
 
-// InstancesBatchProcessor is the type corresponding to a batch processing function for Instances
+// InstanceDimensionsBatchProcessor is the type corresponding to a batch processing function for Instance dimensions
 type InstanceDimensionsBatchProcessor func(Dimensions) (abort bool, err error)
 
 // Error should be called by the user to print out the stringified version of the error
@@ -689,8 +689,7 @@ func (c *Client) GetInstancesInBatches(ctx context.Context, userAuthToken, servi
 // GetInstancesBatchProcess gets the instances from the dataset API in batches, calling the provided function for each batch.
 func (c *Client) GetInstancesBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, vars url.Values, processBatch InstancesBatchProcessor, batchSize, maxWorkers int) error {
 
-	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit,
-	// or the subste of IDs according to the provided offset, if a list of optionIDs was provided
+	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit
 	batchGetter := func(offset int) (interface{}, int, string, error) {
 		vars.Set("offset", strconv.Itoa(offset))
 		vars.Set("limit", strconv.Itoa(batchSize))
@@ -871,8 +870,7 @@ func (c *Client) GetInstanceDimensionsInBatches(ctx context.Context, userAuthTok
 // GetInstanceDimensionsBatchProcess gets the instance dimensions from the dataset API in batches, calling the provided function for each batch.
 func (c *Client) GetInstanceDimensionsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, instanceID string, processBatch InstanceDimensionsBatchProcessor, batchSize, maxWorkers int) error {
 
-	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit,
-	// or the subste of IDs according to the provided offset, if a list of optionIDs was provided
+	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit
 	batchGetter := func(offset int) (interface{}, int, string, error) {
 		q := &QueryParams{
 			Offset: offset,
