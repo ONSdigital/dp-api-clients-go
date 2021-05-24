@@ -310,6 +310,41 @@ func TestClient_UpdateFilterOutput(t *testing.T) {
 	})
 }
 
+func TestClient_AddEvent(t *testing.T) {
+	filterJobID := "filterID"
+	event := Event{Type: EventFilterOutputCSVGenEnd, Time: time.Now()}
+	Convey("When bad request is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "POST"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
+		err := mockedAPI.AddEvent(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterJobID, &event)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned in all attempts", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "PPOST"},
+			MockedHTTPResponse{StatusCode: 500, Body: ""},
+			MockedHTTPResponse{StatusCode: 500, Body: ""},
+			MockedHTTPResponse{StatusCode: 500, Body: ""})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		err := mockedAPI.AddEvent(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterJobID, &event)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "POST"},
+			MockedHTTPResponse{StatusCode: 500, Body: ""},
+			MockedHTTPResponse{StatusCode: 200, Body: ""})
+		mockedAPI.hcCli.Client.SetMaxRetries(2)
+		err := mockedAPI.AddEvent(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterJobID, &event)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("When server returns 200 OK", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "POST"}, MockedHTTPResponse{StatusCode: 200, Body: ""})
+		err := mockedAPI.AddEvent(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, filterJobID, &event)
+		So(err, ShouldBeNil)
+	})
+}
+
 func TestClient_GetDimension(t *testing.T) {
 	filterOutputID := "foo"
 	name := "corge"
