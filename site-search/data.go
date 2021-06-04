@@ -69,3 +69,20 @@ type MatchDetails struct {
 	Start int    `json:"start"`
 	End   int    `json:"end"`
 }
+
+// Department represents response from /departments/search end point
+type Department struct {
+	Count int                `json:"count"`
+	Items *[]DepartmentItems `json:"items"`
+}
+
+type DepartmentItems struct {
+	Code    string            `json:"code"`
+	Name    string            `json:"name"`
+	URL     string            `json:"url"`
+	Matches DepartmentMatches `json:"matches"`
+}
+
+type DepartmentMatches struct {
+	Terms *[]MatchDetails `json:"terms"`
+}
