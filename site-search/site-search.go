@@ -124,3 +124,35 @@ func (c *Client) GetSearch(ctx context.Context, query url.Values) (r Response, e
 
 	return
 }
+
+// GetDepartments returns the search results
+func (c *Client) GetDepartments(ctx context.Context, query url.Values) (d Department, err error) {
+	uri := fmt.Sprintf("%s/departments/search", c.hcCli.URL)
+	if query != nil {
+		uri = uri + "?" + query.Encode()
+	}
+
+	clientlog.Do(ctx, "retrieving departments search response", service, uri)
+
+	resp, err := c.doGetWithAuthHeaders(ctx, uri)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewSearchErrorResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(b, &d); err != nil {
+		return
+	}
+
+	return
+}
