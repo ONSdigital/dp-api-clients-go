@@ -33,6 +33,9 @@ func (c *Client) httpGet(ctx context.Context, path string) (*http.Response, erro
 		return nil, &Error{
 			err: fmt.Errorf("failed to parse url: %s", err),
 			statusCode: http.StatusBadRequest,
+			logData: log.Data{
+				"url": path,
+			},
 		}
 	}
 
@@ -43,6 +46,9 @@ func (c *Client) httpGet(ctx context.Context, path string) (*http.Response, erro
 		return nil, &Error{
 			err: fmt.Errorf("failed to make request: %w", err),
 			statusCode: http.StatusInternalServerError,
+			logData: log.Data{
+				"url": path,
+			},
 		}
 	}
 

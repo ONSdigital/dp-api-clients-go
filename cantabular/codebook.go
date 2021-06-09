@@ -2,9 +2,12 @@ package cantabular
 
 import (
 	"context"
+	"io/ioutil"
 	"fmt"
 	"net/http"
 	"encoding/json"
+
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 // Variable represents a 'codebook' object returned from Cantabular
@@ -35,10 +38,28 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 
 	var resp GetCodebookResponse
 
-	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil{
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil{
 		return nil, &Error{
-			err: fmt.Errorf("failed to decode response body: %s", err),
+			err: fmt.Errorf("failed to read response body: %s", err),
+			statusCode: res.StatusCode,
+			logData: log.Data{
+				"response_body": string(b),
+			},
+		}
+	}
+
+	if len(b) == 0{
+		b = []byte("[response body empty]")
+	}
+
+	if err := json.Unmarshal(b, &resp); err != nil{
+		return nil, &Error{
+			err: fmt.Errorf("failed to unmarshal response body: %s", err),
 			statusCode: http.StatusInternalServerError,
+			logData: log.Data{
+				"response_body": string(b),
+			},
 		}
 	}
 
