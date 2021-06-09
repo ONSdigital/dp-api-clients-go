@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ONSdigital/dp-import-cantabular-dataset/cantabular"
+	"github.com/ONSdigital/dp-api-clients-go/cantabular"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	. "github.com/smartystreets/goconvey/convey"
 )
