@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
@@ -42,20 +41,16 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
 
-// CloseResponseBody closes the response body and logs an error if unsuccessful
+// CloseResponseBody closes the response body
 func CloseResponseBody(ctx context.Context, resp *http.Response) {
-	if resp.Body == nil {
-		return
-	}
-	if err := resp.Body.Close(); err != nil {
-		log.Event(ctx, "error closing http response body", log.ERROR, log.Error(err))
+	if resp.Body != nil {
+		resp.Body.Close()
 	}
 }
 
 // GetRecipe from an ID
 func (c *Client) GetRecipe(ctx context.Context, userAuthToken, serviceAuthToken, recipeID string) (*Recipe, error) {
 	uri := fmt.Sprintf("%s/recipes/%s", c.hcCli.URL, recipeID)
-	clientlog.Do(ctx, "retrieving recipe", service, uri)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
 	if err != nil {
@@ -77,6 +72,9 @@ func (c *Client) GetRecipe(ctx context.Context, userAuthToken, serviceAuthToken,
 		return nil, &Error{
 			err:        fmt.Errorf("failed to read response from recipe-api: %s", err),
 			statusCode: resp.StatusCode,
+			logData: log.Data{
+				"response_body": string(b),
+			},
 		}
 	}
 
@@ -85,7 +83,7 @@ func (c *Client) GetRecipe(ctx context.Context, userAuthToken, serviceAuthToken,
 		return nil, &Error{
 			err:        fmt.Errorf("failed to unmarshal response from recipe-api: %s", err),
 			statusCode: resp.StatusCode,
-			logData: map[string]interface{}{
+			logData: log.Data{
 				"response_body": string(b),
 			},
 		}
