@@ -2,11 +2,14 @@ package cantabular
 
 import (
 	"net/http"
+	"io/ioutil"
 	"errors"
 	"context"
 	"net/url"
 	"fmt"
 	"encoding/json"
+
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 // Client is the client for interacting with the Cantabular API
@@ -68,7 +71,7 @@ func (c *Client) errorResponse(res *http.Response) error {
 			statusCode: res.StatusCode,
 			logData: log.Data{
 				"response_body": string(b),
-			}
+			},
 		}
 	}
 
