@@ -68,7 +68,11 @@ func TestGetRecipe(t *testing.T) {
 
 		Convey("Then whe GetRecipe is called, one GET /recipes/ID call is performed and the expected error is returned", func() {
 			recipe, err := recipeClient.GetRecipe(ctx, testUserAuthToken, testServiceToken, recipeID)
-			So(err, ShouldResemble, &ErrInvalidRecipeAPIResponse{http.StatusOK, http.StatusBadRequest, fmt.Sprintf("%s/recipes/%s", testHost, recipeID)})
+			So(err, ShouldResemble, &Error{
+				err:        errors.New("wrong status code, expected 200 OK"),
+				statusCode: http.StatusBadRequest,
+				logData:    log.Data{},
+			})
 			So(recipe, ShouldBeNil)
 			So(httpClient.DoCalls(), ShouldHaveLength, 1)
 			checkRequest(httpClient, 0, http.MethodGet, fmt.Sprintf("%s/recipes/%s", testHost, recipeID))

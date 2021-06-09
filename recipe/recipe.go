@@ -3,6 +3,7 @@ package recipe
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -64,7 +65,11 @@ func (c *Client) GetRecipe(ctx context.Context, userAuthToken, serviceAuthToken,
 	defer CloseResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, &ErrInvalidRecipeAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return nil, &Error{
+			err:        errors.New("wrong status code, expected 200 OK"),
+			statusCode: resp.StatusCode,
+			logData:    log.Data{},
+		}
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)

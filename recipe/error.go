@@ -2,30 +2,8 @@ package recipe
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 )
-
-// ErrInvalidRecipeAPIResponse is returned when an app does not respond with a valid status
-type ErrInvalidRecipeAPIResponse struct {
-	ExpectedCode int
-	ActualCode   int
-	URI          string
-}
-
-// Error should be called by the user to print out the stringified version of the error
-func (e *ErrInvalidRecipeAPIResponse) Error() string {
-	return fmt.Sprintf("invalid response from recipe api - should be: %d, got: %d, path: %s",
-		e.ExpectedCode,
-		e.ActualCode,
-		e.URI,
-	)
-}
-
-// Code returns the status code received from filter api if an error is returned
-func (e *ErrInvalidRecipeAPIResponse) Code() int {
-	return e.ActualCode
-}
 
 // Error is the package's error type
 type Error struct {
