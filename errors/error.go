@@ -12,7 +12,7 @@ type Error struct{
 	logData map[string]interface{}
 }
 
-// New returns a new Error
+// News a new Error
 func New(err error, statusCode int, logData map[string]interface{}) *Error{
 	if err == nil{
 		err = errors.New("nil error")

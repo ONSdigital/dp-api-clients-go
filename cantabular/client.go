@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 
 	"github.com/ONSdigital/log.go/v2/log"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/errors"
 )
 
 // Client is the client for interacting with the Cantabular API
@@ -30,26 +31,26 @@ func NewClient(ua httpClient, cfg Config) *Client{
 func (c *Client) httpGet(ctx context.Context, path string) (*http.Response, error) {
 	URL, err := url.Parse(path)
 	if err != nil {
-		return nil, &Error{
-			err: fmt.Errorf("failed to parse url: %s", err),
-			statusCode: http.StatusBadRequest,
-			logData: log.Data{
+		return nil, dperrors.New(
+			fmt.Errorf("failed to parse url: %s", err),
+			http.StatusBadRequest,
+			log.Data{
 				"url": path,
 			},
-		}
+		)
 	}
 
 	path = URL.String()
 
 	resp, err := c.ua.Get(ctx, path)
 	if err != nil {
-		return nil, &Error{
-			err: fmt.Errorf("failed to make request: %w", err),
-			statusCode: http.StatusInternalServerError,
-			logData: log.Data{
+		return nil, dperrors.New(
+			fmt.Errorf("failed to make request: %w", err),
+			http.StatusInternalServerError,
+			log.Data{
 				"url": path,
 			},
-		}
+		)
 	}
 
 	return resp, nil
@@ -59,10 +60,11 @@ func (c *Client) httpGet(ctx context.Context, path string) (*http.Response, erro
 func (c *Client) errorResponse(res *http.Response) error {
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil{
-		return &Error{
-			err: fmt.Errorf("failed to read error response body: %s", err),
-			statusCode: res.StatusCode,
-		}
+		return dperrors.New(
+			fmt.Errorf("failed to read error response body: %s", err),
+			res.StatusCode,
+			nil,
+		)
 	}
 
 	if len(b) == 0{
@@ -72,17 +74,18 @@ func (c *Client) errorResponse(res *http.Response) error {
 	var resp ErrorResponse
 
 	if err := json.Unmarshal(b, &resp); err != nil{
-		return &Error{
-			err: fmt.Errorf("failed to unmarshal error response body: %s", err),
-			statusCode: res.StatusCode,
-			logData: log.Data{
+		return dperrors.New(
+			fmt.Errorf("failed to unmarshal error response body: %s", err),
+			res.StatusCode,
+			log.Data{
 				"response_body": string(b),
 			},
-		}
+		)
 	}
 
-	return &Error{
-		err: errors.New(resp.Message),
-		statusCode: res.StatusCode,
-	}
+	return dperrors.New(
+		errors.New(resp.Message),
+		res.StatusCode,
+		nil,
+	)
 }
