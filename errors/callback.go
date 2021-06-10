@@ -1,4 +1,4 @@
-package onserr
+package errors
 
 import (
 	"errors"
