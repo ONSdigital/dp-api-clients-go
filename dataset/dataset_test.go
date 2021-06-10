@@ -762,7 +762,7 @@ func TestClient_GetInstanceDimensionsBytes(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensionsBytes is called", func() {
-			_, err := datasetClient.GetInstanceDimensionsBytes(ctx, userAuthToken, serviceAuthToken, "123")
+			_, err := datasetClient.GetInstanceDimensionsBytes(ctx, serviceAuthToken, "123", nil)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -793,7 +793,7 @@ func TestClient_GetInstanceDimensionsBytes(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensionsBytes is called", func() {
-			_, err := datasetClient.GetInstanceDimensionsBytes(ctx, userAuthToken, serviceAuthToken, "123")
+			_, err := datasetClient.GetInstanceDimensionsBytes(ctx, serviceAuthToken, "123", nil)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from dataset api: http://localhost:8080/instances/123/dimensions, body: resource not found").Error())
@@ -1175,7 +1175,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensions is called", func() {
-			dimensions, err := datasetClient.GetInstanceDimensions(ctx, serviceAuthToken, "123", &QueryParams{})
+			dimensions, err := datasetClient.GetInstanceDimensions(ctx, serviceAuthToken, "123", nil)
 
 			Convey("a positive response with expected dimensions is returned", func() {
 				So(err, ShouldBeNil)
@@ -1193,7 +1193,7 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstanceDimensions is called", func() {
-			_, err := datasetClient.GetInstanceDimensions(ctx, serviceAuthToken, "123", &QueryParams{})
+			_, err := datasetClient.GetInstanceDimensions(ctx, serviceAuthToken, "123", nil)
 
 			Convey("then the expected error is returned", func() {
 				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
@@ -1206,6 +1206,120 @@ func TestClient_GetInstanceDimensions(t *testing.T) {
 			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
 				checkRequestBase(httpClient, http.MethodGet, "/instances/123/dimensions")
 			})
+		})
+	})
+}
+
+func TestClient_GetInstanceDimensionsInBatches(t *testing.T) {
+
+	instanceID := "myInstance"
+
+	response1 := Dimensions{
+		Items:      []Dimension{{DimensionID: "testDimension1", Option: "op1"}},
+		TotalCount: 2, // Total count is read from the first response to determine how many batches are required
+		Offset:     0,
+		Count:      1,
+	}
+
+	response2 := Dimensions{
+		Items:      []Dimension{{DimensionID: "testDimension1", Option: "op2"}},
+		TotalCount: 2,
+		Offset:     1,
+		Count:      1,
+	}
+
+	expectedDimensions := Dimensions{
+		Items: []Dimension{
+			response1.Items[0],
+			response2.Items[0],
+		},
+		Count:      2,
+		TotalCount: 2,
+	}
+
+	batchSize := 1
+	maxWorkers := 1
+
+	Convey("When a 200 OK status is returned in 2 consecutive calls", t, func() {
+
+		httpClient := createHTTPClientMock(
+			MockedHTTPResponse{http.StatusOK, response1},
+			MockedHTTPResponse{http.StatusOK, response2})
+		datasetClient := newDatasetClient(httpClient)
+
+		processedBatches := []Dimensions{}
+		var testProcess InstanceDimensionsBatchProcessor = func(batch Dimensions) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetInstanceDimensionsInBatches succeeds and returns the accumulated items from all the batches", func() {
+			dimensions, err := datasetClient.GetInstanceDimensionsInBatches(ctx, serviceAuthToken, instanceID, batchSize, maxWorkers)
+
+			So(err, ShouldBeNil)
+			So(dimensions, ShouldResemble, expectedDimensions)
+		})
+
+		Convey("then GetInstanceDimensionsBatchProcess calls the batchProcessor function twice, with the expected batches", func() {
+			err := datasetClient.GetInstanceDimensionsBatchProcess(ctx, serviceAuthToken, instanceID, testProcess, batchSize, maxWorkers)
+			So(err, ShouldBeNil)
+			So(processedBatches, ShouldResemble, []Dimensions{response1, response2})
+			So(httpClient.DoCalls(), ShouldHaveLength, 2)
+			So(httpClient.DoCalls()[0].Req.URL.String(), ShouldResemble,
+				"http://localhost:8080/instances/myInstance/dimensions?offset=0&limit=1")
+			So(httpClient.DoCalls()[1].Req.URL.String(), ShouldResemble,
+				"http://localhost:8080/instances/myInstance/dimensions?offset=1&limit=1")
+		})
+	})
+
+	Convey("When a 400 error status is returned in the first call", t, func() {
+		httpClient := createHTTPClientMock(
+			MockedHTTPResponse{http.StatusBadRequest, ""})
+		datasetClient := newDatasetClient(httpClient)
+
+		processedBatches := []Dimensions{}
+		var testProcess InstanceDimensionsBatchProcessor = func(batch Dimensions) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetInstanceDimensionsInBatches fails with the expected error and the process is aborted", func() {
+			_, err := datasetClient.GetInstanceDimensionsInBatches(ctx, serviceAuthToken, instanceID, batchSize, maxWorkers)
+			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
+			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/instances/myInstance/dimensions?offset=0&limit=1")
+		})
+
+		Convey("then GetInstanceDimensionsBatchProcess fails with the expected error and doesn't call the batchProcessor", func() {
+			err := datasetClient.GetInstanceDimensionsBatchProcess(ctx, userAuthToken, instanceID, testProcess, batchSize, maxWorkers)
+			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
+			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/instances/myInstance/dimensions?offset=0&limit=1")
+			So(processedBatches, ShouldResemble, []Dimensions{})
+		})
+	})
+
+	Convey("When a 200 error status is returned in the first call and 400 error is returned in the second call", t, func() {
+		httpClient := createHTTPClientMock(
+			MockedHTTPResponse{http.StatusOK, response1},
+			MockedHTTPResponse{http.StatusBadRequest, ""})
+		datasetClient := newDatasetClient(httpClient)
+
+		processedBatches := []Dimensions{}
+		var testProcess InstanceDimensionsBatchProcessor = func(batch Dimensions) (abort bool, err error) {
+			processedBatches = append(processedBatches, batch)
+			return false, nil
+		}
+
+		Convey("then GetInstanceDimensionsInBatches fails with the expected error, corresponding to the second batch, and the process is aborted", func() {
+			_, err := datasetClient.GetInstanceDimensionsInBatches(ctx, serviceAuthToken, instanceID, batchSize, maxWorkers)
+			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
+			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/instances/myInstance/dimensions?offset=1&limit=1")
+		})
+
+		Convey("then GetInstanceDimensionsBatchProcess fails with the expected error and calls the batchProcessor for the first batch only", func() {
+			err := datasetClient.GetInstanceDimensionsBatchProcess(ctx, serviceAuthToken, instanceID, testProcess, batchSize, maxWorkers)
+			So(err.(*ErrInvalidDatasetAPIResponse).actualCode, ShouldEqual, http.StatusBadRequest)
+			So(err.(*ErrInvalidDatasetAPIResponse).uri, ShouldResemble, "http://localhost:8080/instances/myInstance/dimensions?offset=1&limit=1")
+			So(processedBatches, ShouldResemble, []Dimensions{response1})
 		})
 	})
 }

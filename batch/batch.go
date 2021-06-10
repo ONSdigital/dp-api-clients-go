@@ -1,6 +1,7 @@
 package batch
 
 import (
+	"errors"
 	"sync"
 	"time"
 )
@@ -13,6 +14,21 @@ type GenericBatchProcessor func(batch interface{}, batchETag string) (abort bool
 
 // ProcessInConcurrentBatches is a generic method to concurrently obtain some resource in batches and then process each batch
 func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch GenericBatchProcessor, batchSize, maxWorkers int) (err error) {
+
+	// validate paramters
+	if getBatch == nil {
+		return errors.New("getBatch function cannot be nil")
+	}
+	if processBatch == nil {
+		return errors.New("processBatch function cannot be nil")
+	}
+	if batchSize <= 0 {
+		return errors.New("batchSize must be a positive value")
+	}
+	if maxWorkers <= 0 {
+		return errors.New("maxWorkers must be a positive value")
+	}
+
 	wg := sync.WaitGroup{}
 	chWait := make(chan struct{})
 	chErr := make(chan error, maxWorkers)
@@ -127,6 +143,18 @@ func ProcessInConcurrentBatches(getBatch GenericBatchGetter, processBatch Generi
 
 // ProcessInBatches is a generic method that splits the provided items in batches and calls processBatch for each batch
 func ProcessInBatches(items []string, processBatch func([]string) error, batchSize int) (processedBatches int, err error) {
+
+	// validate paramters
+	if items == nil {
+		return 0, errors.New("items cannot be nil")
+	}
+	if processBatch == nil {
+		return 0, errors.New("processBatch cannot be nil")
+	}
+	if batchSize <= 0 {
+		return 0, errors.New("batchSize must be a positive value")
+	}
+
 	// Get batch splits for provided items
 	numFullChunks := len(items) / batchSize
 	remainingSize := len(items) % batchSize

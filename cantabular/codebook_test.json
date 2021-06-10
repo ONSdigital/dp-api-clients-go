@@ -1,0 +1,111 @@
+{
+  "dataset": {
+    "name": "Example",
+    "digest": "3c375cfea43dc7e075ec1690d240a920d08c7b61898df1c21718700d37039c8f",
+    "description": "Example dataset for validation",
+    "size": 7,
+      "ruleBaseVariable": "city",
+    "datetime": "2021-01-08T14:49:50Z"
+  },
+  "codebook": [
+    {
+      "name": "city",
+      "label": "City",
+      "len": 3,
+      "codes": [
+        "0",
+        "1",
+        "2"
+      ],
+      "labels": [
+        "London",
+        "Liverpool",
+        "Belfast"
+      ]
+    },
+    {
+      "name": "country",
+      "label": "Country",
+      "len": 2,
+      "codes": [
+        "E",
+        "N"
+      ],
+      "labels": [
+        "England",
+        "Northern Ireland"
+      ],
+      "mapFrom": [
+        "city"
+      ],
+      "mapFromCodes": [
+        "E",
+        "",
+        "N"
+      ]
+    },
+    {
+      "name": "sex",
+      "label": "Sex",
+      "len": 2,
+      "codes": [
+        "0",
+        "1"
+      ],
+      "labels": [
+        "Male",
+        "Female"
+      ]
+    },
+    {
+      "name": "siblings",
+      "label": "Number of siblings",
+      "len": 7,
+      "codes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "labels": [
+        "No siblings",
+        "1 sibling",
+        "2 siblings",
+        "3 siblings",
+        "4 siblings",
+        "5 siblings",
+        "6 or more siblings"
+      ]
+    },
+    {
+      "name": "siblings_3",
+      "label": "Number of siblings (3 mappings)",
+      "len": 3,
+      "codes": [
+        "0",
+        "1-2",
+        "3+"
+      ],
+      "labels": [
+        "No siblings",
+        "1 or 2 siblings",
+        "3 or more siblings"
+      ],
+      "mapFrom": [
+        "siblings"
+      ],
+      "mapFromCodes": [
+        "0",
+        "1-2",
+        "",
+        "3+",
+        "",
+        "",
+        ""
+      ]
+    }
+  ]
+}

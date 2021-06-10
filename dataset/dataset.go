@@ -609,12 +609,18 @@ func (c *Client) GetInstanceBytes(ctx context.Context, userAuthToken, serviceAut
 }
 
 // GetInstanceDimensionsBytes returns a list of dimensions for an instance as bytes from the dataset api
-func (c *Client) GetInstanceDimensionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, instanceID string) (b []byte, err error) {
+func (c *Client) GetInstanceDimensionsBytes(ctx context.Context, serviceAuthToken, instanceID string, q *QueryParams) (b []byte, err error) {
 	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
+	if q != nil {
+		if err := q.Validate(); err != nil {
+			return nil, err
+		}
+		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
+	}
 
 	clientlog.Do(ctx, "retrieving instance dimensions", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, "", uri, nil)
+	resp, err := c.doGetWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, nil)
 	if err != nil {
 		return
 	}
@@ -821,17 +827,7 @@ func (c *Client) UpdateInstanceWithNewInserts(ctx context.Context, serviceAuthTo
 
 // GetInstanceDimensions performs a 'GET /instances/<id>/dimensions' and returns the marshalled Dimensions struct
 func (c *Client) GetInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string, q *QueryParams) (m Dimensions, err error) {
-	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
-	if q != nil {
-		if err := q.Validate(); err != nil {
-			return Dimensions{}, err
-		}
-		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
-	}
-
-	clientlog.Do(ctx, "retrieving instance dimensions", service, uri)
-
-	b, err := c.GetInstanceDimensionsBytes(ctx, "", serviceAuthToken, instanceID)
+	b, err := c.GetInstanceDimensionsBytes(ctx, serviceAuthToken, instanceID, q)
 	if err != nil {
 		return
 	}
@@ -840,7 +836,7 @@ func (c *Client) GetInstanceDimensions(ctx context.Context, serviceAuthToken, in
 	return
 }
 
-func (c *Client) GetInstanceDimensionsInBatches(ctx context.Context, userAuthToken, serviceAuthToken, instanceID string, batchSize, maxWorkers int) (dimensions Dimensions, err error) {
+func (c *Client) GetInstanceDimensionsInBatches(ctx context.Context, serviceAuthToken, instanceID string, batchSize, maxWorkers int) (dimensions Dimensions, err error) {
 
 	// Function to aggregate items.
 	// For the first received batch, as we have the total count information, will initialise the final structure of items with a fixed size equal to TotalCount.
@@ -860,7 +856,7 @@ func (c *Client) GetInstanceDimensionsInBatches(ctx context.Context, userAuthTok
 	}
 
 	// call dataset API GetInstanceDimensions in batches and aggregate the responses
-	if err := c.GetInstanceDimensionsBatchProcess(ctx, userAuthToken, serviceAuthToken, instanceID, processBatch, batchSize, maxWorkers); err != nil {
+	if err := c.GetInstanceDimensionsBatchProcess(ctx, serviceAuthToken, instanceID, processBatch, batchSize, maxWorkers); err != nil {
 		return Dimensions{}, err
 	}
 
@@ -868,7 +864,7 @@ func (c *Client) GetInstanceDimensionsInBatches(ctx context.Context, userAuthTok
 }
 
 // GetInstanceDimensionsBatchProcess gets the instance dimensions from the dataset API in batches, calling the provided function for each batch.
-func (c *Client) GetInstanceDimensionsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, instanceID string, processBatch InstanceDimensionsBatchProcessor, batchSize, maxWorkers int) error {
+func (c *Client) GetInstanceDimensionsBatchProcess(ctx context.Context, serviceAuthToken, instanceID string, processBatch InstanceDimensionsBatchProcessor, batchSize, maxWorkers int) error {
 
 	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit
 	batchGetter := func(offset int) (interface{}, int, string, error) {
