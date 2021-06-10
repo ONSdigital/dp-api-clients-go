@@ -62,16 +62,16 @@ func TestGetRecipe(t *testing.T) {
 	Convey("Given that 400 BadRequest is returned by recipe API", t, func() {
 		httpClient := newMockHTTPClient(&http.Response{
 			StatusCode: http.StatusBadRequest,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+			Body:       ioutil.NopCloser(bytes.NewReader(nil)),
 		}, nil)
 		recipeClient := newRecipeClient(httpClient)
 
 		Convey("Then whe GetRecipe is called, one GET /recipes/ID call is performed and the expected error is returned", func() {
 			recipe, err := recipeClient.GetRecipe(ctx, testUserAuthToken, testServiceToken, recipeID)
 			So(err, ShouldResemble, &Error{
-				err:        errors.New("wrong status code, expected 200 OK"),
+				err:        errors.New("failed to unmarshal error response body: invalid character 'r' looking for beginning of value"),
 				statusCode: http.StatusBadRequest,
-				logData:    log.Data{},
+				logData:    log.Data{"response_body": "[response body empty]"},
 			})
 			So(recipe, ShouldBeNil)
 			So(httpClient.DoCalls(), ShouldHaveLength, 1)
@@ -85,7 +85,10 @@ func TestGetRecipe(t *testing.T) {
 
 		Convey("Then whe GetRecipe is called, one GET /recipes/ID call is performed and the expected error is returned", func() {
 			recipe, err := recipeClient.GetRecipe(ctx, testUserAuthToken, testServiceToken, recipeID)
-			So(err, ShouldResemble, fmt.Errorf("failed to call recipe api: %w", errTest))
+			So(err, ShouldResemble, &Error{
+				err:        errors.New("failed to get response from Recipe API: recipe API error"),
+				statusCode: http.StatusInternalServerError,
+			})
 			So(recipe, ShouldBeNil)
 			So(httpClient.DoCalls(), ShouldHaveLength, 1)
 			checkRequest(httpClient, 0, http.MethodGet, fmt.Sprintf("%s/recipes/%s", testHost, recipeID))
@@ -102,8 +105,8 @@ func TestGetRecipe(t *testing.T) {
 		Convey("Then whe GetRecipe is called, one GET /recipes/ID call is performed and the expected error is returned", func() {
 			recipe, err := recipeClient.GetRecipe(ctx, testUserAuthToken, testServiceToken, recipeID)
 			So(err, ShouldResemble, &Error{
-				err:        errors.New("failed to unmarshal response from recipe-api: invalid character 'i' looking for beginning of value"),
-				statusCode: http.StatusOK,
+				err:        errors.New("failed to unmarshal response body: invalid character 'i' looking for beginning of value"),
+				statusCode: http.StatusInternalServerError,
 				logData:    log.Data{"response_body": "invalidRecipeBody"},
 			})
 			So(recipe, ShouldBeNil)

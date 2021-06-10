@@ -1,10 +1,5 @@
 package recipe
 
-import (
-	"errors"
-	"net/http"
-)
-
 // Error is the package's error type
 type Error struct {
 	err        error
@@ -31,21 +26,4 @@ func (e *Error) Code() int {
 // log data to be embedded in and retrieved from an error
 func (e *Error) LogData() map[string]interface{} {
 	return e.logData
-}
-
-// coder is an interface that allows you to
-// extract a http status code from an error (or other object)
-type coder interface {
-	Code() int
-}
-
-// StatusCode is a callback function that allows you to extract
-// a status code from an error, or returns 500 as a default
-func StatusCode(err error) int {
-	var cerr coder
-	if errors.As(err, &cerr) {
-		return cerr.Code()
-	}
-
-	return http.StatusInternalServerError
 }
