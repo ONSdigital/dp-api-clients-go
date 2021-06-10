@@ -41,8 +41,8 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
 
-// CloseResponseBody closes the response body
-func CloseResponseBody(ctx context.Context, resp *http.Response) {
+// closeResponseBody closes the response body
+func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if resp.Body != nil {
 		resp.Body.Close()
 	}
@@ -57,24 +57,21 @@ func (c *Client) GetRecipe(ctx context.Context, userAuthToken, serviceAuthToken,
 		return nil, fmt.Errorf("failed to call recipe api: %w", err)
 	}
 
-	defer CloseResponseBody(ctx, resp)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, &Error{
-			err:        errors.New("wrong status code, expected 200 OK"),
-			statusCode: resp.StatusCode,
-			logData:    log.Data{},
-		}
-	}
+	defer closeResponseBody(ctx, resp)
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, &Error{
 			err:        fmt.Errorf("failed to read response from recipe-api: %s", err),
 			statusCode: resp.StatusCode,
-			logData: log.Data{
-				"response_body": string(b),
-			},
+		}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, &Error{
+			err:        errors.New("wrong status code, expected 200 OK"),
+			statusCode: resp.StatusCode,
+			logData:    log.Data{"response_body": string(b)},
 		}
 	}
 

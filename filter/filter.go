@@ -100,8 +100,8 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
 
-// CloseResponseBody closes the response body and logs an error if unsuccessful
-func CloseResponseBody(ctx context.Context, resp *http.Response) {
+// closeResponseBody closes the response body and logs an error if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if resp.Body == nil {
 		return
 	}
@@ -130,7 +130,7 @@ func (c *Client) GetOutputBytes(ctx context.Context, userAuthToken, serviceAuthT
 		return nil, err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -173,7 +173,7 @@ func (c *Client) UpdateFilterOutputBytes(ctx context.Context, userAuthToken, ser
 	if err != nil {
 		return err
 	}
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -209,7 +209,7 @@ func (c *Client) AddEvent(ctx context.Context, userAuthToken, serviceAuthToken, 
 	if err != nil {
 		return err
 	}
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -239,7 +239,7 @@ func (c *Client) GetDimensionBytes(ctx context.Context, userAuthToken, serviceAu
 		return nil, "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode != http.StatusNoContent {
@@ -287,7 +287,7 @@ func (c *Client) GetDimensionsBytes(ctx context.Context, userAuthToken, serviceA
 		return nil, "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -332,7 +332,7 @@ func (c *Client) GetDimensionOptionsBytes(ctx context.Context, userAuthToken, se
 		return nil, "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode != http.StatusNoContent {
@@ -455,7 +455,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return "", "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
 		return "", "", ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
@@ -510,7 +510,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	if err != nil {
 		return m, "", err
 	}
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return m, "", ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -558,7 +558,7 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 		return "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
 		return "", &ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
@@ -605,7 +605,7 @@ func (c *Client) PatchDimensionValues(ctx context.Context, userAuthToken, servic
 		if err != nil {
 			return err
 		}
-		defer CloseResponseBody(ctx, resp)
+		defer closeResponseBody(ctx, resp)
 
 		// check response code
 		if resp.StatusCode != http.StatusOK {
@@ -730,7 +730,7 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 		return "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusNoContent {
 		return "", &ErrInvalidFilterAPIResponse{http.StatusNoContent, resp.StatusCode, uri}
@@ -768,7 +768,7 @@ func (c *Client) RemoveDimension(ctx context.Context, userAuthToken, serviceAuth
 		return "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusNoContent {
 		err = &ErrInvalidFilterAPIResponse{http.StatusNoContent, resp.StatusCode, uri}
@@ -805,7 +805,7 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 		return "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
 		err = &ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
@@ -841,7 +841,7 @@ func (c *Client) GetJobStateBytes(ctx context.Context, userAuthToken, serviceAut
 		return nil, "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -892,7 +892,7 @@ func (c *Client) SetDimensionValues(ctx context.Context, userAuthToken, serviceA
 		return "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
 		return "", &ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
@@ -930,7 +930,7 @@ func (c *Client) GetPreviewBytes(ctx context.Context, userAuthToken, serviceAuth
 		return nil, err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
