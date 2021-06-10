@@ -613,7 +613,7 @@ func (c *Client) GetInstanceDimensionsBytes(ctx context.Context, serviceAuthToke
 	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
 	if q != nil {
 		if err := q.Validate(); err != nil {
-			return []byte{}, err
+			return nil, err
 		}
 		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
 	}
