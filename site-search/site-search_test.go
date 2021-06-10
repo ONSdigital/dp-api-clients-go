@@ -238,7 +238,7 @@ func TestClient_GetDepartments(t *testing.T) {
 	})
 
 	Convey("given a 200 status is returned with list of department search results", t, func() {
-		searchResp, err := ioutil.ReadFile("./response_mocks/results.json")
+		searchResp, err := ioutil.ReadFile("./response_mocks/departments.json")
 		So(err, ShouldBeNil)
 
 		httpClient := createHTTPClientMock(http.StatusOK, searchResp)
@@ -251,7 +251,7 @@ func TestClient_GetDepartments(t *testing.T) {
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
-				So(r.Count, ShouldEqual, 5)
+				So(r.Count, ShouldEqual, 1)
 				So(r.Items, ShouldNotBeEmpty)
 			})
 
