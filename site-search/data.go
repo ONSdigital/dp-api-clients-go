@@ -72,18 +72,20 @@ type MatchDetails struct {
 
 // Department represents response from /departments/search end point
 type Department struct {
-	Count int                `json:"count"`
-	Took  int                `json:"took"`
-	Items *[]DepartmentItems `json:"items"`
+	Count int               `json:"count"`
+	Took  int               `json:"took"`
+	Items *[]DepartmentItem `json:"items"`
 }
 
-type DepartmentItems struct {
-	Code    string               `json:"code"`
-	Name    string               `json:"name"`
-	URL     string               `json:"url"`
-	Matches *[]DepartmentMatches `json:"matches"`
+// DepartmentItems represents a department
+type DepartmentItem struct {
+	Code    string             `json:"code"`
+	Name    string             `json:"name"`
+	URL     string             `json:"url"`
+	Matches *[]DepartmentMatch `json:"matches"`
 }
 
-type DepartmentMatches struct {
+// DepartmentItems represents a department matches term
+type DepartmentMatch struct {
 	Terms *[]MatchDetails `json:"terms"`
 }
