@@ -20,7 +20,8 @@ func (c *Client) GetRecipe(ctx context.Context, userAuthToken, serviceAuthToken,
 		return nil, dperrors.New(
 			fmt.Errorf("failed to get response from Recipe API: %s", err),
 			http.StatusInternalServerError,
-			nil)
+			nil,
+		)
 	}
 
 	defer closeResponseBody(ctx, res)
@@ -36,7 +37,8 @@ func (c *Client) GetRecipe(ctx context.Context, userAuthToken, serviceAuthToken,
 		return nil, dperrors.New(
 			fmt.Errorf("failed to read response body: %s", err),
 			res.StatusCode,
-			log.Data{"response_body": string(b)})
+			log.Data{"response_body": string(b)},
+		)
 	}
 
 	if len(b) == 0 {
@@ -47,7 +49,8 @@ func (c *Client) GetRecipe(ctx context.Context, userAuthToken, serviceAuthToken,
 		return nil, dperrors.New(
 			fmt.Errorf("failed to unmarshal response body: %s", err),
 			http.StatusInternalServerError,
-			log.Data{"response_body": string(b)})
+			log.Data{"response_body": string(b)},
+		)
 	}
 
 	return &recipe, nil

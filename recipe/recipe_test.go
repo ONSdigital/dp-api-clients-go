@@ -72,7 +72,8 @@ func TestGetRecipe(t *testing.T) {
 			So(err, ShouldResemble, dperrors.New(
 				errors.New(""),
 				http.StatusBadRequest,
-				nil))
+				nil),
+			)
 			So(recipe, ShouldBeNil)
 			So(httpClient.DoCalls(), ShouldHaveLength, 1)
 			checkRequest(httpClient, 0, http.MethodGet, fmt.Sprintf("%s/recipes/%s", testHost, recipeID))
@@ -88,7 +89,8 @@ func TestGetRecipe(t *testing.T) {
 			So(err, ShouldResemble, dperrors.New(
 				errors.New("failed to get response from Recipe API: recipe API error"),
 				http.StatusInternalServerError,
-				nil))
+				nil),
+			)
 			So(recipe, ShouldBeNil)
 			So(httpClient.DoCalls(), ShouldHaveLength, 1)
 			checkRequest(httpClient, 0, http.MethodGet, fmt.Sprintf("%s/recipes/%s", testHost, recipeID))
@@ -107,7 +109,8 @@ func TestGetRecipe(t *testing.T) {
 			So(err, ShouldResemble, dperrors.New(
 				errors.New("failed to unmarshal response body: invalid character 'i' looking for beginning of value"),
 				http.StatusInternalServerError,
-				log.Data{"response_body": "invalidRecipeBody"}))
+				log.Data{"response_body": "invalidRecipeBody"}),
+			)
 			So(recipe, ShouldBeNil)
 			So(httpClient.DoCalls(), ShouldHaveLength, 1)
 			checkRequest(httpClient, 0, http.MethodGet, fmt.Sprintf("%s/recipes/%s", testHost, recipeID))
