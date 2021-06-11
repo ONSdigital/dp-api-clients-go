@@ -77,7 +77,7 @@ type Department struct {
 	Items *[]DepartmentItem `json:"items"`
 }
 
-// DepartmentItems represents a department
+// DepartmentItem represents a department
 type DepartmentItem struct {
 	Code    string             `json:"code"`
 	Name    string             `json:"name"`
@@ -85,7 +85,7 @@ type DepartmentItem struct {
 	Matches *[]DepartmentMatch `json:"matches"`
 }
 
-// DepartmentItems represents a department matches term
+// DepartmentMatch represents a department matches term
 type DepartmentMatch struct {
 	Terms *[]MatchDetails `json:"terms"`
 }
