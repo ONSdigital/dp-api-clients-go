@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"testing"
 
+	dperrors "github.com/ONSdigital/dp-api-clients-go/errors"
 	"github.com/ONSdigital/dp-api-clients-go/health"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
@@ -68,11 +69,10 @@ func TestGetRecipe(t *testing.T) {
 
 		Convey("Then whe GetRecipe is called, one GET /recipes/ID call is performed and the expected error is returned", func() {
 			recipe, err := recipeClient.GetRecipe(ctx, testUserAuthToken, testServiceToken, recipeID)
-			So(err, ShouldResemble, &Error{
-				err:        errors.New("failed to unmarshal error response body: invalid character 'r' looking for beginning of value"),
-				statusCode: http.StatusBadRequest,
-				logData:    log.Data{"response_body": "[response body empty]"},
-			})
+			So(err, ShouldResemble, dperrors.New(
+				errors.New(""),
+				http.StatusBadRequest,
+				nil))
 			So(recipe, ShouldBeNil)
 			So(httpClient.DoCalls(), ShouldHaveLength, 1)
 			checkRequest(httpClient, 0, http.MethodGet, fmt.Sprintf("%s/recipes/%s", testHost, recipeID))
@@ -85,10 +85,10 @@ func TestGetRecipe(t *testing.T) {
 
 		Convey("Then whe GetRecipe is called, one GET /recipes/ID call is performed and the expected error is returned", func() {
 			recipe, err := recipeClient.GetRecipe(ctx, testUserAuthToken, testServiceToken, recipeID)
-			So(err, ShouldResemble, &Error{
-				err:        errors.New("failed to get response from Recipe API: recipe API error"),
-				statusCode: http.StatusInternalServerError,
-			})
+			So(err, ShouldResemble, dperrors.New(
+				errors.New("failed to get response from Recipe API: recipe API error"),
+				http.StatusInternalServerError,
+				nil))
 			So(recipe, ShouldBeNil)
 			So(httpClient.DoCalls(), ShouldHaveLength, 1)
 			checkRequest(httpClient, 0, http.MethodGet, fmt.Sprintf("%s/recipes/%s", testHost, recipeID))
@@ -104,11 +104,10 @@ func TestGetRecipe(t *testing.T) {
 
 		Convey("Then whe GetRecipe is called, one GET /recipes/ID call is performed and the expected error is returned", func() {
 			recipe, err := recipeClient.GetRecipe(ctx, testUserAuthToken, testServiceToken, recipeID)
-			So(err, ShouldResemble, &Error{
-				err:        errors.New("failed to unmarshal response body: invalid character 'i' looking for beginning of value"),
-				statusCode: http.StatusInternalServerError,
-				logData:    log.Data{"response_body": "invalidRecipeBody"},
-			})
+			So(err, ShouldResemble, dperrors.New(
+				errors.New("failed to unmarshal response body: invalid character 'i' looking for beginning of value"),
+				http.StatusInternalServerError,
+				log.Data{"response_body": "invalidRecipeBody"}))
 			So(recipe, ShouldBeNil)
 			So(httpClient.DoCalls(), ShouldHaveLength, 1)
 			checkRequest(httpClient, 0, http.MethodGet, fmt.Sprintf("%s/recipes/%s", testHost, recipeID))

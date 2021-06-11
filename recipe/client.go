@@ -8,10 +8,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	dperrors "github.com/ONSdigital/dp-api-clients-go/errors"
 	"github.com/ONSdigital/dp-api-clients-go/headers"
 	"github.com/ONSdigital/dp-api-clients-go/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 const service = "recipe-api"
@@ -22,7 +23,7 @@ type Client struct {
 }
 
 // New creates a new instance of Client with a given recipe api url
-func New(recipeAPIURL string) *Client {
+func NewClient(recipeAPIURL string) *Client {
 	return &Client{
 		health.NewClient(service, recipeAPIURL),
 	}
@@ -66,10 +67,11 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 func (c *Client) errorResponse(res *http.Response) error {
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return &Error{
-			err:        fmt.Errorf("failed to read error response body: %s", err),
-			statusCode: res.StatusCode,
-		}
+		dperrors.New(
+			fmt.Errorf("failed to read error response body: %s", err),
+			res.StatusCode,
+			nil,
+		)
 	}
 
 	if len(b) == 0 {
@@ -79,17 +81,18 @@ func (c *Client) errorResponse(res *http.Response) error {
 	var resp ErrorResponse
 
 	if err := json.Unmarshal(b, &resp); err != nil {
-		return &Error{
-			err:        fmt.Errorf("failed to unmarshal error response body: %s", err),
-			statusCode: res.StatusCode,
-			logData: log.Data{
+		dperrors.New(
+			fmt.Errorf("failed to unmarshal error response body: %s", err),
+			res.StatusCode,
+			log.Data{
 				"response_body": string(b),
 			},
-		}
+		)
 	}
 
-	return &Error{
-		err:        errors.New(resp.Message),
-		statusCode: res.StatusCode,
-	}
+	return dperrors.New(
+		errors.New(resp.Message),
+		res.StatusCode,
+		nil,
+	)
 }

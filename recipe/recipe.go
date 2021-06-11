@@ -7,7 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/ONSdigital/log.go/log"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/errors"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 // GetRecipe from an ID
@@ -16,10 +17,10 @@ func (c *Client) GetRecipe(ctx context.Context, userAuthToken, serviceAuthToken,
 
 	res, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
 	if err != nil {
-		return nil, &Error{
-			err:        fmt.Errorf("failed to get response from Recipe API: %s", err),
-			statusCode: http.StatusInternalServerError,
-		}
+		return nil, dperrors.New(
+			fmt.Errorf("failed to get response from Recipe API: %s", err),
+			http.StatusInternalServerError,
+			nil)
 	}
 
 	defer closeResponseBody(ctx, res)
@@ -32,13 +33,10 @@ func (c *Client) GetRecipe(ctx context.Context, userAuthToken, serviceAuthToken,
 
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, &Error{
-			err:        fmt.Errorf("failed to read response body: %s", err),
-			statusCode: res.StatusCode,
-			logData: log.Data{
-				"response_body": string(b),
-			},
-		}
+		return nil, dperrors.New(
+			fmt.Errorf("failed to read response body: %s", err),
+			res.StatusCode,
+			log.Data{"response_body": string(b)})
 	}
 
 	if len(b) == 0 {
@@ -46,13 +44,10 @@ func (c *Client) GetRecipe(ctx context.Context, userAuthToken, serviceAuthToken,
 	}
 
 	if err := json.Unmarshal(b, &recipe); err != nil {
-		return nil, &Error{
-			err:        fmt.Errorf("failed to unmarshal response body: %s", err),
-			statusCode: http.StatusInternalServerError,
-			logData: log.Data{
-				"response_body": string(b),
-			},
-		}
+		return nil, dperrors.New(
+			fmt.Errorf("failed to unmarshal response body: %s", err),
+			http.StatusInternalServerError,
+			log.Data{"response_body": string(b)})
 	}
 
 	return &recipe, nil

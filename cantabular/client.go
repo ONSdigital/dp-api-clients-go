@@ -1,26 +1,29 @@
 package cantabular
 
 import (
-	"net/http"
-	"io/ioutil"
-	"errors"
 	"context"
-	"net/url"
-	"fmt"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 
-	"github.com/ONSdigital/log.go/v2/log"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/errors"
+	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
+const service = "cantabular"
+
 // Client is the client for interacting with the Cantabular API
-type Client struct{
+type Client struct {
 	ua   httpClient
 	host string
 }
 
 // NewClient returns a new Client
-func NewClient(ua httpClient, cfg Config) *Client{
+func NewClient(ua httpClient, cfg Config) *Client {
 	return &Client{
 		ua:   ua,
 		host: cfg.Host,
@@ -56,10 +59,18 @@ func (c *Client) httpGet(ctx context.Context, path string) (*http.Response, erro
 	return resp, nil
 }
 
+// Checker is a placeholder for Cantabular healthcheck, it returns StatusOK with a 'not implemented' message
+// TODO implement this function when we decide how to check the health status of a cantabular service
+func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) error {
+	code := 0
+	state.Update(healthcheck.StatusOK, "cantabular healthcheck not implemendted", code)
+	return nil
+}
+
 // errorResponse handles dealing with an error response from Cantabular
 func (c *Client) errorResponse(res *http.Response) error {
 	b, err := ioutil.ReadAll(res.Body)
-	if err != nil{
+	if err != nil {
 		return dperrors.New(
 			fmt.Errorf("failed to read error response body: %s", err),
 			res.StatusCode,
@@ -67,13 +78,13 @@ func (c *Client) errorResponse(res *http.Response) error {
 		)
 	}
 
-	if len(b) == 0{
+	if len(b) == 0 {
 		b = []byte("[response body empty]")
 	}
 
 	var resp ErrorResponse
 
-	if err := json.Unmarshal(b, &resp); err != nil{
+	if err := json.Unmarshal(b, &resp); err != nil {
 		return dperrors.New(
 			fmt.Errorf("failed to unmarshal error response body: %s", err),
 			res.StatusCode,
