@@ -1,10 +1,27 @@
-package cantabular
+package errors
 
-// Error is the package's error type
+import (
+	"errors"
+)
+
+// Error is a common error for HTTP APIs to return associated status code 
+// and logdata from API calls made
 type Error struct{
 	err error
 	statusCode int
 	logData map[string]interface{}
+}
+
+// News a new Error
+func New(err error, statusCode int, logData map[string]interface{}) *Error{
+	if err == nil{
+		err = errors.New("nil error")
+	}
+	return &Error{
+		err: err,
+		statusCode: statusCode,
+		logData: logData,
+	}
 }
 
 // Error implements the standard Go error

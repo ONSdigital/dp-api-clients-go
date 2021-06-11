@@ -11,6 +11,7 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/cantabular"
 	dphttp "github.com/ONSdigital/dp-net/http"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/errors"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -36,12 +37,8 @@ func TestGetCodebookUnhappy(t *testing.T) {
 			req := cantabular.GetCodebookRequest{}
 			cb, err := cantabularClient.GetCodebook(testCtx, req)
 
-			Convey("Then the expected status code should be recoverable from the error", func() {
-				So(cb, ShouldBeNil)
-				So(cantabular.StatusCode(err), ShouldEqual, http.StatusNotFound)
-			})
-
 			Convey("Then returned error messaage should be extracted correctly", func() {
+				So(cb, ShouldBeNil)
 				So(err.Error(), ShouldEqual, errorMessage)
 			})
 		})
@@ -67,7 +64,7 @@ func TestGetCodebookUnhappy(t *testing.T) {
 
 			Convey("Then the status code 500 should be recoverable from the error", func() {
 				So(cb, ShouldBeNil)
-				So(cantabular.StatusCode(err), ShouldEqual, http.StatusInternalServerError)
+				So(dperrors.StatusCode(err), ShouldEqual, http.StatusInternalServerError)
 			})
 		})
 	})

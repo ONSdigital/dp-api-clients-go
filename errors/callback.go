@@ -1,4 +1,4 @@
-package cantabular
+package errors
 
 import (
 	"errors"

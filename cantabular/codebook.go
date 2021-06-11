@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 
 	"github.com/ONSdigital/log.go/v2/log"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/errors"
 )
 
 // Variable represents a 'codebook' object returned from Cantabular
@@ -24,10 +25,11 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 
 	res, err := c.httpGet(ctx, url)
 	if err != nil{
-		return nil, &Error{
-			err: fmt.Errorf("failed to get response from Cantabular API: %s", err),
-			statusCode: http.StatusInternalServerError,
-		}
+		return nil, dperrors.New(
+			fmt.Errorf("failed to get response from Cantabular API: %s", err),
+			http.StatusInternalServerError,
+			nil,
+		)
 	}
 
 	defer res.Body.Close()
@@ -40,13 +42,13 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil{
-		return nil, &Error{
-			err: fmt.Errorf("failed to read response body: %s", err),
-			statusCode: res.StatusCode,
-			logData: log.Data{
+		return nil, dperrors.New(
+			fmt.Errorf("failed to read response body: %s", err),
+			res.StatusCode,
+			log.Data{
 				"response_body": string(b),
 			},
-		}
+		)
 	}
 
 	if len(b) == 0{
@@ -54,13 +56,13 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 	}
 
 	if err := json.Unmarshal(b, &resp); err != nil{
-		return nil, &Error{
-			err: fmt.Errorf("failed to unmarshal response body: %s", err),
-			statusCode: http.StatusInternalServerError,
-			logData: log.Data{
+		return nil, dperrors.New(
+			fmt.Errorf("failed to unmarshal response body: %s", err),
+			http.StatusInternalServerError,
+			log.Data{
 				"response_body": string(b),
 			},
-		}
+		)
 	}
 
 	return &resp, nil
