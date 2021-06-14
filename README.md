@@ -88,7 +88,7 @@ Instead of aggregating the results, you may want to perform some different logic
 
 ## Package docs
 
-* [health](https://github.com/ONSdigital/dp-api-clients-go/tree/feature/client-checker/health)
+* [health](health/README.md#health)
 
 ## Tests
 
