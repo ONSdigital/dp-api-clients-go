@@ -608,6 +608,36 @@ func (c *Client) GetInstanceBytes(ctx context.Context, userAuthToken, serviceAut
 	return
 }
 
+// PostInstance performs a POST /instances/ request with the provided instance marshalled as body
+func (c *Client) PostInstance(ctx context.Context, serviceAuthToken string, newInstance *NewInstance) (*Instance, error) {
+
+	payload, err := json.Marshal(newInstance)
+	if err != nil {
+		return nil, err
+	}
+
+	uri := fmt.Sprintf("%s/instances", c.hcCli.URL)
+
+	resp, err := c.doPostWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, payload)
+	if err != nil {
+		return nil, err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, NewDatasetAPIResponse(resp, uri)
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var instance *Instance
+	err = json.Unmarshal(b, &instance)
+	return instance, err
+}
+
 // GetInstanceDimensionsBytes returns a list of dimensions for an instance as bytes from the dataset api
 func (c *Client) GetInstanceDimensionsBytes(ctx context.Context, serviceAuthToken, instanceID string, q *QueryParams) (b []byte, err error) {
 	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)

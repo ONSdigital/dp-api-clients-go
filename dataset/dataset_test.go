@@ -782,9 +782,7 @@ func TestClient_GetInstanceDimensionsBytes(t *testing.T) {
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte("resource not found"))),
 				}, nil
 			},
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
+			SetPathsWithNoRetriesFunc: func(paths []string) {},
 			GetPathsWithNoRetriesFunc: func() []string {
 				return []string{"/healthcheck"}
 			},
@@ -801,6 +799,68 @@ func TestClient_GetInstanceDimensionsBytes(t *testing.T) {
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
 				checkRequestBase(httpClient, http.MethodGet, "/instances/123/dimensions")
+			})
+		})
+	})
+}
+
+func TestClient_PostInstance(t *testing.T) {
+
+	instanceToPost := NewInstance{
+		State: StateCreated.String(),
+		Dimensions: []CodeList{
+			{ID: "codelist1"},
+			{ID: "codelist2"},
+		},
+	}
+
+	createdInstance := Instance{
+		Version: Version{
+			InstanceID: "testInstance",
+			Dimensions: []VersionDimension{
+				{ID: "codelist1"},
+				{ID: "codelist1"},
+			},
+		},
+	}
+
+	Convey("given a 201 status is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusCreated, createdInstance})
+		datasetClient := newDatasetClient(httpClient)
+		expectedPayload, err := json.Marshal(instanceToPost)
+		So(err, ShouldBeNil)
+
+		Convey("when PostInstance is called", func() {
+			instance, err := datasetClient.PostInstance(ctx, serviceAuthToken, &instanceToPost)
+
+			Convey("a positive response is returned, with the expected instance", func() {
+				So(err, ShouldBeNil)
+				So(instance, ShouldResemble, &createdInstance)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkRequestBase(httpClient, http.MethodPost, "/instances")
+				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
+			})
+		})
+	})
+
+	Convey("When a 400 error status is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusBadRequest, ""})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when PostInstance is called", func() {
+			instance, err := datasetClient.PostInstance(ctx, serviceAuthToken, &instanceToPost)
+
+			Convey("a nil instance and the expected error is returned", func() {
+				So(instance, ShouldBeNil)
+				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
+					actualCode: http.StatusBadRequest,
+					uri:        "http://localhost:8080/instances",
+					body:       "",
+				})
 			})
 		})
 	})
@@ -1696,9 +1756,7 @@ func createHTTPClientMock(mockedHTTPResponse ...MockedHTTPResponse) *dphttp.Clie
 				Body:       ioutil.NopCloser(bytes.NewReader(body)),
 			}, nil
 		},
-		SetPathsWithNoRetriesFunc: func(paths []string) {
-			return
-		},
+		SetPathsWithNoRetriesFunc: func(paths []string) {},
 		GetPathsWithNoRetriesFunc: func() []string {
 			return []string{"/healthcheck"}
 		},
@@ -1710,9 +1768,7 @@ func createHTTPClientMockErr(err error) *dphttp.ClienterMock {
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			return nil, err
 		},
-		SetPathsWithNoRetriesFunc: func(paths []string) {
-			return
-		},
+		SetPathsWithNoRetriesFunc: func(paths []string) {},
 		GetPathsWithNoRetriesFunc: func() []string {
 			return []string{"/healthcheck"}
 		},

@@ -59,6 +59,35 @@ type VersionsList struct {
 	TotalCount int       `json:"total_count"`
 }
 
+// Instance which presents a single dataset being imported
+type NewInstance struct {
+	InstanceID        string               `json:"id,omitempty"`
+	Links             *Links               `json:"links,omitempty"`
+	State             string               `json:"state,omitempty"`
+	Events            []Event              `json:"events,omitempty"`
+	TotalObservations int                  `json:"total_observations,omitempty"`
+	Headers           []string             `json:"headers,omitempty"`
+	Dimensions        []CodeList           `json:"dimensions,omitempty"`
+	LastUpdated       string               `json:"last_updated,omitempty"`
+	ImportTasks       *InstanceImportTasks `json:"import_tasks"`
+}
+
+// Event holds one of the event which has happened to a new Instance
+type Event struct {
+	Type          string `json:"type"`
+	Time          string `json:"time"`
+	Message       string `json:"message"`
+	MessageOffset string `json:"messageOffset"`
+}
+
+// CodeList holds one of the codelists corresponding to a new Instance
+type CodeList struct {
+	ID          string `json:"id"`
+	HRef        string `json:"href"`
+	Name        string `json:"name"`
+	IsHierarchy bool   `json:"is_hierarchy"`
+}
+
 // Version represents a version within a dataset
 type Version struct {
 	Alerts               *[]Alert             `json:"alerts"`
