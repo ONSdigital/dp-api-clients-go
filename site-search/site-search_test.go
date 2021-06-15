@@ -212,6 +212,96 @@ func TestClient_GetSearch(t *testing.T) {
 	})
 }
 
+func TestClient_GetDepartments(t *testing.T) {
+	Convey("given a 200 status is returned with an empty result list", t, func() {
+		searchResp, err := ioutil.ReadFile("./response_mocks/empty_results.json")
+		So(err, ShouldBeNil)
+
+		httpClient := createHTTPClientMock(http.StatusOK, searchResp)
+		searchClient := newSearchClient(httpClient)
+
+		Convey("when GetDepartments is called", func() {
+			v := url.Values{}
+			v.Set("q", "a")
+			r, err := searchClient.GetDepartments(ctx, v)
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+				So(r.Count, ShouldEqual, 0)
+				So(r.Items, ShouldBeEmpty)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/departments/search?q=a")
+			})
+		})
+	})
+
+	Convey("given a 200 status is returned with list of department search results", t, func() {
+		searchResp, err := ioutil.ReadFile("./response_mocks/departments.json")
+		So(err, ShouldBeNil)
+
+		httpClient := createHTTPClientMock(http.StatusOK, searchResp)
+		searchClient := newSearchClient(httpClient)
+
+		Convey("when GetSearch is called", func() {
+			v := url.Values{}
+			v.Set("q", "housing")
+			r, err := searchClient.GetDepartments(ctx, v)
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldBeNil)
+				So(r.Count, ShouldEqual, 1)
+				So(r.Items, ShouldNotBeEmpty)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/departments/search?q=housing")
+			})
+		})
+	})
+
+	Convey("given a 400 status is returned", t, func() {
+		httpClient := createHTTPClientMock(http.StatusBadRequest, nil)
+		searchClient := newSearchClient(httpClient)
+
+		Convey("when GetSearch is called", func() {
+			v := url.Values{}
+			v.Set("limit", "a")
+			_, err := searchClient.GetDepartments(ctx, v)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 400, path: "+testHost+"/departments/search?limit=a").Error())
+
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/departments/search?limit=a")
+			})
+		})
+	})
+
+	Convey("given a 500 status is returned", t, func() {
+		httpClient := createHTTPClientMock(http.StatusInternalServerError, nil)
+		searchClient := newSearchClient(httpClient)
+
+		Convey("when GetSearch is called", func() {
+			v := url.Values{}
+			v.Set("limit", "housing")
+			_, err := searchClient.GetDepartments(ctx, v)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 500, path: "+testHost+"/departments/search?limit=housing").Error())
+
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/departments/search?limit=housing")
+			})
+		})
+	})
+}
+
 func newSearchClient(httpClient *dphttp.ClienterMock) *Client {
 	healthClient := health.NewClientWithClienter(service, testHost, httpClient)
 	searchClient := NewWithHealthClient(healthClient)
