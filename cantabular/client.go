@@ -68,13 +68,15 @@ func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) err
 }
 
 // errorResponse handles dealing with an error response from Cantabular
-func (c *Client) errorResponse(res *http.Response) error {
+func (c *Client) errorResponse(url string, res *http.Response) error {
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return dperrors.New(
 			fmt.Errorf("failed to read error response body: %s", err),
 			res.StatusCode,
-			nil,
+			log.Data{
+				"url": url,
+			},
 		)
 	}
 
@@ -89,6 +91,7 @@ func (c *Client) errorResponse(res *http.Response) error {
 			fmt.Errorf("failed to unmarshal error response body: %s", err),
 			res.StatusCode,
 			log.Data{
+				"url": url,
 				"response_body": string(b),
 			},
 		)
@@ -97,6 +100,8 @@ func (c *Client) errorResponse(res *http.Response) error {
 	return dperrors.New(
 		errors.New(resp.Message),
 		res.StatusCode,
-		nil,
+		log.Data{
+			"url": url,
+		},
 	)
 }

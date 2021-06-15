@@ -28,14 +28,16 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 		return nil, dperrors.New(
 			fmt.Errorf("failed to get response from Cantabular API: %s", err),
 			http.StatusInternalServerError,
-			nil,
+			log.Data{
+				"url": url,
+			},
 		)
 	}
 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK{
-		return nil, c.errorResponse(res)
+		return nil, c.errorResponse(url, res)
 	}
 
 	var resp GetCodebookResponse
@@ -46,7 +48,7 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 			fmt.Errorf("failed to read response body: %s", err),
 			res.StatusCode,
 			log.Data{
-				"response_body": string(b),
+				"url": url,
 			},
 		)
 	}
@@ -60,6 +62,7 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 			fmt.Errorf("failed to unmarshal response body: %s", err),
 			http.StatusInternalServerError,
 			log.Data{
+				"url": url,
 				"response_body": string(b),
 			},
 		)
