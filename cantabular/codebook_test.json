@@ -1,11 +1,11 @@
 {
   "dataset": {
     "name": "Example",
-    "digest": "3c375cfea43dc7e075ec1690d240a920d08c7b61898df1c21718700d37039c8f",
+    "digest": "6648a63e130fbbf79b7a94f88ecaba43fc5040c82522fe4ccdb61f9877e9e244",
     "description": "Example dataset for validation",
     "size": 7,
-      "ruleBaseVariable": "city",
-    "datetime": "2021-01-08T14:49:50Z"
+    "ruleBaseVariable": "city",
+    "datetime": "2021-06-15T12:21:14Z"
   },
   "codebook": [
     {
@@ -36,12 +36,16 @@
         "Northern Ireland"
       ],
       "mapFrom": [
-        "city"
-      ],
-      "mapFromCodes": [
-        "E",
-        "",
-        "N"
+        {
+          "sourceNames": [
+            "city"
+          ],
+          "codes": [
+            "E",
+            "",
+            "N"
+          ]
+        }
       ]
     },
     {
@@ -95,16 +99,20 @@
         "3 or more siblings"
       ],
       "mapFrom": [
-        "siblings"
-      ],
-      "mapFromCodes": [
-        "0",
-        "1-2",
-        "",
-        "3+",
-        "",
-        "",
-        ""
+        {
+          "sourceNames": [
+            "siblings"
+          ],
+          "codes": [
+            "0",
+            "1-2",
+            "",
+            "3+",
+            "",
+            "",
+            ""
+          ]
+        }
       ]
     }
   ]
