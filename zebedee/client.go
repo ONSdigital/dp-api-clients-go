@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -225,7 +226,15 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, collectionID, 
 	downloads := make([]Download, 0)
 
 	for _, v := range d.Downloads {
-		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+v.File)
+		var path string
+
+		if strings.HasPrefix(v.File, uri) {
+			path = v.File
+		} else {
+			path = uri + "/" + v.File
+		}
+
+		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, path)
 		if err != nil {
 			return d, err
 		}
