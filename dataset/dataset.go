@@ -44,9 +44,10 @@ const (
 	StateEditionConfirmed // instances and versions only
 	StateAssociated       // not editions
 	StatePublished
+	StateDetached
 )
 
-var stateValues = []string{"created", "submitted", "completed", "failed", "edition-confirmed", "associated", "published"}
+var stateValues = []string{"created", "submitted", "completed", "failed", "edition-confirmed", "associated", "published", "detached"}
 
 // String returns the string representation of a state
 func (s State) String() string {
