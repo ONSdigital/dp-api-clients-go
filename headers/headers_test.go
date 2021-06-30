@@ -65,7 +65,7 @@ func TestIsNotErrNotFound(t *testing.T) {
 	})
 }
 
-func setterTestCases(t *testing.T, fnName, headerName string, fnUnderTest func(req *http.Request, headerValue string) error) []setHeaderTestCase {
+func setterTestCases(t *testing.T, fnName, headerName string, fnUnderTest func(req *http.Request, headerValue string) error, expectBearer bool) []setHeaderTestCase {
 	return []setHeaderTestCase{
 		{
 			description: fmt.Sprintf("%s should return error if request is nil", fnName),
@@ -114,7 +114,12 @@ func setterTestCases(t *testing.T, fnName, headerName string, fnUnderTest func(r
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
-				So(val, ShouldEqual, testHeader2)
+				if expectBearer {
+					So(val, ShouldEqual, bearerPrefix+testHeader2)
+
+				} else {
+					So(val, ShouldEqual, testHeader2)
+				}
 			},
 		},
 		{
@@ -130,19 +135,25 @@ func setterTestCases(t *testing.T, fnName, headerName string, fnUnderTest func(r
 			},
 			assertResultFunc: func(err error, val string) {
 				So(err, ShouldBeNil)
-				So(val, ShouldEqual, testHeader1)
+				if expectBearer {
+					So(val, ShouldEqual, bearerPrefix+testHeader1)
+
+				} else {
+					So(val, ShouldEqual, testHeader1)
+				}
 			},
 		},
 	}
 }
 
 func TestSetCollectionID(t *testing.T) {
-	cases := setterTestCases(t, "SetCollectionID", collectionIDHeader, SetCollectionID)
+	cases := setterTestCases(t, "SetCollectionID", collectionIDHeader, SetCollectionID, false)
 	execSetHeaderTestCases(t, cases)
 }
 
-func TestSetUserAuthToken(t *testing.T) {
-	cases := setterTestCases(t, "SetUserAuthToken", userAuthTokenHeader, SetUserAuthToken)
+func TestSetAuthToken(t *testing.T) {
+	cases := setterTestCases(t, "SetAuthToken", userAuthTokenHeader, SetAuthToken, false)
+	cases = append(cases, setterTestCases(t, "SetAuthToken2", authTokenHeader, SetAuthToken, true)...)
 	execSetHeaderTestCases(t, cases)
 }
 
@@ -220,32 +231,32 @@ func TestSetServiceAuthToken(t *testing.T) {
 }
 
 func TestSetDownloadServiceToken(t *testing.T) {
-	cases := setterTestCases(t, "SetDownloadServiceToken", downloadServiceTokenHeader, SetDownloadServiceToken)
+	cases := setterTestCases(t, "SetDownloadServiceToken", downloadServiceTokenHeader, SetDownloadServiceToken, false)
 	execSetHeaderTestCases(t, cases)
 }
 
 func TestSetUserIdentity(t *testing.T) {
-	cases := setterTestCases(t, "SetUserIdentity", userIdentityHeader, SetUserIdentity)
+	cases := setterTestCases(t, "SetUserIdentity", userIdentityHeader, SetUserIdentity, false)
 	execSetHeaderTestCases(t, cases)
 }
 
 func TestSetRequestID(t *testing.T) {
-	cases := setterTestCases(t, "SetRequestID", requestIDHeader, SetRequestID)
+	cases := setterTestCases(t, "SetRequestID", requestIDHeader, SetRequestID, false)
 	execSetHeaderTestCases(t, cases)
 }
 
 func TestSetLocaleCode(t *testing.T) {
-	cases := setterTestCases(t, "SetLocaleCode", localeCodeHeader, SetLocaleCode)
+	cases := setterTestCases(t, "SetLocaleCode", localeCodeHeader, SetLocaleCode, false)
 	execSetHeaderTestCases(t, cases)
 }
 
 func TestSetIfMatch(t *testing.T) {
-	cases := setterTestCases(t, "SetIfMatch", ifMatchHeader, SetIfMatch)
+	cases := setterTestCases(t, "SetIfMatch", ifMatchHeader, SetIfMatch, false)
 	execSetHeaderTestCases(t, cases)
 }
 
 func TestSetETag(t *testing.T) {
-	cases := setterTestCases(t, "SetETag", eTagHeader, SetETag)
+	cases := setterTestCases(t, "SetETag", eTagHeader, SetETag, false)
 	execSetHeaderTestCases(t, cases)
 }
 

@@ -18,6 +18,9 @@ const (
 	// serviceAuthToken the service auth token header name
 	serviceAuthTokenHeader = "Authorization"
 
+	// Same value as serviceAuthTokenHeader as this is a standard header but not linked to service authentication
+	authTokenHeader = "Authorization"
+
 	// bearerPrefix is the prefix for authorization header values
 	bearerPrefix = "Bearer "
 
@@ -169,14 +172,9 @@ func SetCollectionID(req *http.Request, headerValue string) error {
 	return setRequestHeader(req, collectionIDHeader, headerValue)
 }
 
-// SetUserAuthToken set the user authentication token header on the provided request. If the authentication token is
-// already present it will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
-func SetUserAuthToken(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, userAuthTokenHeader, headerValue)
-}
-
 // SetServiceAuthToken set the service authentication token header on the provided request. If the authentication token is
 // already present it will be overwritten by the new value. If the header value is empty then returns ErrValueEmpty
+// Replaces deprecated SetUserAuthToken function
 func SetServiceAuthToken(req *http.Request, headerValue string) error {
 	if req == nil {
 		return ErrRequestNil
@@ -191,6 +189,20 @@ func SetServiceAuthToken(req *http.Request, headerValue string) error {
 	}
 
 	return setRequestHeader(req, serviceAuthTokenHeader, headerValue)
+}
+
+// SetAccessToken set the access token header on the provided request. If the access token is
+// already present it will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+func SetAuthToken(req *http.Request, headerValue string) error {
+	// TODO remove the userAuthTokenHeader once the X-Florence-Token has been removed
+	if err := setRequestHeader(req, userAuthTokenHeader, headerValue); err != nil {
+		return err
+	}
+	// Add bearer prefix if not present
+	if !strings.HasPrefix(headerValue, bearerPrefix) {
+		headerValue = bearerPrefix + headerValue
+	}
+	return setRequestHeader(req, authTokenHeader, headerValue)
 }
 
 // SetDownloadServiceToken set the download service auth token header on the provided request. If the authentication

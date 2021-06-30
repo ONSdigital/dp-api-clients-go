@@ -206,7 +206,7 @@ func createUserAuthRequest(url string, userAuthToken string) (*http.Request, err
 		return nil, err
 	}
 
-	if err := headers.SetUserAuthToken(outboundAuthReq, userAuthToken); err != nil {
+	if err := headers.SetAuthToken(outboundAuthReq, userAuthToken); err != nil {
 		return nil, err
 	}
 

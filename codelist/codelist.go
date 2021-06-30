@@ -297,7 +297,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken string,
 }
 
 func setAuthenticationHeaders(req *http.Request, userAuthToken, serviceAuthToken string) error {
-	err := headers.SetUserAuthToken(req, userAuthToken)
+	err := headers.SetAuthToken(req, userAuthToken)
 	if err != nil && err != headers.ErrValueEmpty {
 		return err
 	}

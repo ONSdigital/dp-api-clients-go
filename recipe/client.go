@@ -58,7 +58,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 		return nil, err
 	}
 
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	return c.hcCli.Client.Do(ctx, req)
 }
