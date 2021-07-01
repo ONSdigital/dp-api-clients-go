@@ -9,7 +9,7 @@ image_resource:
     tag: 1.15.7
 
 inputs:
-  - name: dp-dataset-api
+  - name: dp-api-clients-go
 
 run:
   path: dp-api-clients-go/ci/scripts/lint.sh
