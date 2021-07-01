@@ -14,6 +14,6 @@ build:
 .PHONY: build
 
 .PHONY: lint
- lint:
- 	exit
+lint:
+	exit
 
