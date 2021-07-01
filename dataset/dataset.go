@@ -44,9 +44,10 @@ const (
 	StateEditionConfirmed // instances and versions only
 	StateAssociated       // not editions
 	StatePublished
+	StateDetached
 )
 
-var stateValues = []string{"created", "submitted", "completed", "failed", "edition-confirmed", "associated", "published"}
+var stateValues = []string{"created", "submitted", "completed", "failed", "edition-confirmed", "associated", "published", "detached"}
 
 // String returns the string representation of a state
 func (s State) String() string {
@@ -1195,6 +1196,7 @@ func addCollectionIDHeader(r *http.Request, collectionID string) {
 // It sets the user and service authentication and collectionID as a request header. Returns the http.Response and any error.
 // It is the callers responsibility to ensure response.Body is closed on completion.
 // If url.Values are provided, they will be added as query parameters in the URL.
+// NOTE: Only one of the tokens 'userAuthToken' or 'serviceAuthToken' needs to have a value.
 func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, values url.Values) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
