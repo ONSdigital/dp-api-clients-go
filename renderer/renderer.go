@@ -33,7 +33,7 @@ func (e ErrInvalidRendererResponse) Code() int {
 
 // Renderer represents a renderer client to interact with the dp-frontend-renderer
 type Renderer struct {
-	hcCli *healthcheck.Client
+	HcCli *healthcheck.Client
 }
 
 // New creates an instance of renderer with a default client
@@ -59,7 +59,7 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 
 // Checker calls dataset api health endpoint and returns a check object to the caller.
 func (r *Renderer) Checker(ctx context.Context, check *health.CheckState) error {
-	return r.hcCli.Checker(ctx, check)
+	return r.HcCli.Checker(ctx, check)
 }
 
 // Do sends a request to the renderer service to render a given template
@@ -70,7 +70,7 @@ func (r *Renderer) Do(path string, b []byte) ([]byte, error) {
 		b = []byte(`{}`)
 	}
 
-	uri := r.hcCli.URL + "/" + path
+	uri := r.HcCli.URL + "/" + path
 	ctx := context.Background()
 
 	clientlog.Do(ctx, fmt.Sprintf("rendering template: %s", path), service, uri, log.Data{
@@ -84,7 +84,7 @@ func (r *Renderer) Do(path string, b []byte) ([]byte, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := r.hcCli.Client.Do(ctx, req)
+	resp, err := r.HcCli.Client.Do(ctx, req)
 	if err != nil {
 		return nil, err
 	}
