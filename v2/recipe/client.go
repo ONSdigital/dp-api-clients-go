@@ -8,9 +8,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	dperrors "github.com/ONSdigital/dp-api-clients-go/errors"
-	"github.com/ONSdigital/dp-api-clients-go/headers"
-	"github.com/ONSdigital/dp-api-clients-go/health"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/log.go/v2/log"
 )
@@ -58,7 +58,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 		return nil, err
 	}
 
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	return c.hcCli.Client.Do(ctx, req)
 }

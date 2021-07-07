@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ONSdigital/dp-api-clients-go/batch"
-	"github.com/ONSdigital/dp-api-clients-go/clientlog"
-	"github.com/ONSdigital/dp-api-clients-go/headers"
-	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
+	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
+	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
@@ -165,7 +165,7 @@ func (c *Client) UpdateFilterOutputBytes(ctx context.Context, userAuthToken, ser
 		return err
 	}
 
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceToken)
 
@@ -201,7 +201,7 @@ func (c *Client) AddEvent(ctx context.Context, userAuthToken, serviceAuthToken, 
 		return err
 	}
 
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceToken)
 
@@ -446,7 +446,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceToken)
 
@@ -501,7 +501,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return m, "", err
 	}
 
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceToken)
 	headers.SetIfMatch(req, ifMatch)
@@ -549,7 +549,7 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetIfMatch(req, ifMatch)
 
@@ -721,7 +721,7 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 	})
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetIfMatch(req, ifMatch)
 
@@ -759,7 +759,7 @@ func (c *Client) RemoveDimension(ctx context.Context, userAuthToken, serviceAuth
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetIfMatch(req, ifMatch)
 
@@ -796,7 +796,7 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 		return "", err
 	}
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetIfMatch(req, ifMatch)
 
@@ -883,7 +883,7 @@ func (c *Client) SetDimensionValues(ctx context.Context, userAuthToken, serviceA
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetIfMatch(req, ifMatch)
 
@@ -948,7 +948,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	return c.hcCli.Client.Do(ctx, req)
 }
@@ -962,7 +962,7 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceAuthToken)
 	return c.hcCli.Client.Do(ctx, req)
@@ -987,7 +987,7 @@ func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serv
 
 	// set headers
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetIfMatch(req, ifMatch)
 

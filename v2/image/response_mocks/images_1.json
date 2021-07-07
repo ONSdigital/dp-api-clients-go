@@ -1,0 +1,26 @@
+{
+  "count": 1,
+  "items": [
+    {
+      "id": "042e216a-7822-4fa0-a3d6-e3f5248ffc35",
+      "collection_id": "5557dcd9-bf58-4a67-94f7-2343569834cc",
+      "state": "published",
+      "filename": "image-name",
+      "license": {
+        "title": "Open Government Licence v3.0",
+        "href": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+      },
+      "upload": {
+        "path": "images/025a789c-533f-4ecf-a83b-65412b96b2b7/image-name.png"
+      },
+      "type": "chart",
+      "links": {
+        "self": "http://localhost:24700/images/042e216a-7822-4fa0-a3d6-e3f5248ffc35",
+        "downloads": "http://localhost:24700/images/042e216a-7822-4fa0-a3d6-e3f5248ffc35/downloads"
+      }
+    }
+  ],
+  "limit": 1,
+  "offset": 1,
+  "total_count": 2
+}

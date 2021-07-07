@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/ONSdigital/dp-api-clients-go/clientlog"
-	"github.com/ONSdigital/dp-api-clients-go/headers"
-	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
+	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -297,7 +297,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken string,
 }
 
 func setAuthenticationHeaders(req *http.Request, userAuthToken, serviceAuthToken string) error {
-	err := headers.SetUserAuthToken(req, userAuthToken)
+	err := headers.SetAuthToken(req, userAuthToken)
 	if err != nil && err != headers.ErrValueEmpty {
 		return err
 	}

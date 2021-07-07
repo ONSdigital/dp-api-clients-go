@@ -19,6 +19,8 @@ Common client code - in go - for ONS APIs:
 
 ## Usage
 
+Please use v2 of this library where possible replacing `github.com/ONSdigital/dp-api-clients-go/` with `github.com/ONSdigital/dp-api-clients-go/v2`
+
 Each client defines two constructor functions: one that creates a new healthcheck client (with a new dp-net/http Clienter), and the other that allows you to provide it externally, so that you can reuse it among different clients.
 
 For example, you may create a new image API client like so:
