@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 
 	"github.com/ONSdigital/log.go/v2/log"
-	dperrors "github.com/ONSdigital/dp-api-clients-go/errors"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 )
 
 // Variable represents a 'codebook' object returned from Cantabular
