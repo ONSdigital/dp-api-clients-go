@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"testing"
 
-	dperrors "github.com/ONSdigital/dp-api-clients-go/errors"
-	"github.com/ONSdigital/dp-api-clients-go/health"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"

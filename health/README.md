@@ -8,7 +8,7 @@ import (
     ...
     "context"
 
-    "github.com/ONSdigital/dp-api-clients-go/health"
+    "github.com/ONSdigital/dp-api-clients-go/v2/health"
     ...
 )
 
