@@ -18,7 +18,10 @@ import (
 )
 
 const (
-	testHost = "http://localhost:8080"
+	userAuthToken    = "iamatoken"
+	serviceAuthToken = "iamaservicetoken"
+	collectionID     = "iamacollectionID"
+	testHost         = "http://localhost:8080"
 )
 
 var (
@@ -131,7 +134,7 @@ func TestClient_GetSearch(t *testing.T) {
 		Convey("when GetSearch is called", func() {
 			v := url.Values{}
 			v.Set("q", "a")
-			r, err := searchClient.GetSearch(ctx, v)
+			r, err := searchClient.GetSearch(ctx, userAuthToken, serviceAuthToken, collectionID, v)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -156,7 +159,7 @@ func TestClient_GetSearch(t *testing.T) {
 		Convey("when GetSearch is called", func() {
 			v := url.Values{}
 			v.Set("q", "housing")
-			r, err := searchClient.GetSearch(ctx, v)
+			r, err := searchClient.GetSearch(ctx, userAuthToken, serviceAuthToken, collectionID, v)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -178,7 +181,7 @@ func TestClient_GetSearch(t *testing.T) {
 		Convey("when GetSearch is called", func() {
 			v := url.Values{}
 			v.Set("limit", "a")
-			_, err := searchClient.GetSearch(ctx, v)
+			_, err := searchClient.GetSearch(ctx, userAuthToken, serviceAuthToken, collectionID, v)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 400, path: "+testHost+"/search?limit=a").Error())
@@ -198,7 +201,7 @@ func TestClient_GetSearch(t *testing.T) {
 		Convey("when GetSearch is called", func() {
 			v := url.Values{}
 			v.Set("limit", "housing")
-			_, err := searchClient.GetSearch(ctx, v)
+			_, err := searchClient.GetSearch(ctx, userAuthToken, serviceAuthToken, collectionID, v)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 500, path: "+testHost+"/search?limit=housing").Error())
@@ -223,7 +226,7 @@ func TestClient_GetDepartments(t *testing.T) {
 		Convey("when GetDepartments is called", func() {
 			v := url.Values{}
 			v.Set("q", "a")
-			r, err := searchClient.GetDepartments(ctx, v)
+			r, err := searchClient.GetDepartments(ctx, userAuthToken, serviceAuthToken, collectionID, v)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -247,7 +250,7 @@ func TestClient_GetDepartments(t *testing.T) {
 		Convey("when GetSearch is called", func() {
 			v := url.Values{}
 			v.Set("q", "housing")
-			r, err := searchClient.GetDepartments(ctx, v)
+			r, err := searchClient.GetDepartments(ctx, userAuthToken, serviceAuthToken, collectionID, v)
 
 			Convey("a positive response is returned", func() {
 				So(err, ShouldBeNil)
@@ -268,7 +271,7 @@ func TestClient_GetDepartments(t *testing.T) {
 		Convey("when GetSearch is called", func() {
 			v := url.Values{}
 			v.Set("limit", "a")
-			_, err := searchClient.GetDepartments(ctx, v)
+			_, err := searchClient.GetDepartments(ctx, userAuthToken, serviceAuthToken, collectionID, v)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 400, path: "+testHost+"/departments/search?limit=a").Error())
@@ -288,7 +291,7 @@ func TestClient_GetDepartments(t *testing.T) {
 		Convey("when GetSearch is called", func() {
 			v := url.Values{}
 			v.Set("limit", "housing")
-			_, err := searchClient.GetDepartments(ctx, v)
+			_, err := searchClient.GetDepartments(ctx, userAuthToken, serviceAuthToken, collectionID, v)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 500, path: "+testHost+"/departments/search?limit=housing").Error())
