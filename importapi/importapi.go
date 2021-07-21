@@ -13,7 +13,7 @@ import (
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 const service = "import-api"
@@ -104,7 +104,7 @@ func (c *Client) GetImportJob(ctx context.Context, importJobID, serviceToken str
 
 	jsonBody, err := getBody(resp)
 	if err != nil {
-		log.Event(ctx, "Failed to read body from API", log.ERROR, log.Error(err))
+		log.Error(ctx, "Failed to read body from API", err)
 		return importJob, err
 	}
 
@@ -120,7 +120,7 @@ func (c *Client) GetImportJob(ctx context.Context, importJobID, serviceToken str
 	}
 
 	if err := json.Unmarshal(jsonBody, &importJob); err != nil {
-		log.Event(ctx, "GetImportJob unmarshal", log.ERROR, logData, log.Error(err))
+		log.Error(ctx, "GetImportJob unmarshal", logData, err)
 		return importJob, err
 	}
 
@@ -144,7 +144,7 @@ func (c *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken s
 
 	resp, err := c.doPut(ctx, uri, serviceToken, 0, jsonUpload)
 	if err != nil {
-		log.Event(ctx, "UpdateImportJobState", log.ERROR, logData, log.Error(err))
+		log.Error(ctx, "UpdateImportJobState", logData, err)
 		return err
 	}
 	defer closeResponseBody(ctx, resp)
@@ -170,7 +170,7 @@ func doCall(ctx context.Context, client dphttp.Clienter, method, uri, serviceTok
 
 	URL, err := url.Parse(uri)
 	if err != nil {
-		log.Event(ctx, "Failed to create url for API call", log.ERROR, logData, log.Error(err))
+		log.Error(ctx, "Failed to create url for API call", logData, err)
 		return nil, err
 	}
 	uri = URL.String()
@@ -192,7 +192,7 @@ func doCall(ctx context.Context, client dphttp.Clienter, method, uri, serviceTok
 	}
 	// check above req had no errors
 	if err != nil {
-		log.Event(ctx, "Failed to create request for API", log.ERROR, logData, log.Error(err))
+		log.Error(ctx, "Failed to create request for API", logData, err)
 		return nil, err
 	}
 
@@ -201,7 +201,7 @@ func doCall(ctx context.Context, client dphttp.Clienter, method, uri, serviceTok
 
 	resp, err := client.Do(ctx, req)
 	if err != nil {
-		log.Event(ctx, "Failed to action API", log.ERROR, logData, log.Error(err))
+		log.Error(ctx, "Failed to action API", logData, err)
 		return nil, err
 	}
 
@@ -240,6 +240,6 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 		return
 	}
 	if err := resp.Body.Close(); err != nil {
-		log.Event(ctx, "error closing http response body", log.ERROR, log.Error(err))
+		log.Error(ctx, "error closing http response body", err)
 	}
 }

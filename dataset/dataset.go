@@ -19,7 +19,7 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/pkg/errors"
 )
 
@@ -1042,7 +1042,7 @@ func (c *Client) PatchInstanceDimensionOption(ctx context.Context, serviceAuthTo
 	uri := fmt.Sprintf("%s/instances/%s/dimensions/%s/options/%s", c.hcCli.URL, instanceID, dimensionID, optionID)
 
 	if nodeID == "" && order == nil {
-		log.Event(ctx, "skipping patch call because no update was provided", log.INFO, log.Data{"uri": uri})
+		log.Info(ctx, "skipping patch call because no update was provided", log.Data{"uri": uri})
 		return ifMatch, nil
 	}
 	patchBody := createInstanceDimensionOptionPatch(nodeID, order)
@@ -1367,6 +1367,6 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 // closeResponseBody closes the response body and logs an error containing the context if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if err := resp.Body.Close(); err != nil {
-		log.Event(ctx, "error closing http response body", log.ERROR, log.Error(err))
+		log.Error(ctx, "error closing http response body", err)
 	}
 }

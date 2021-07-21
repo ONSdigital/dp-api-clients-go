@@ -11,7 +11,7 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 
 	"github.com/pkg/errors"
 )
@@ -111,7 +111,7 @@ func (api Client) CheckRequest(req *http.Request, florenceToken, serviceAuthToke
 
 	logData["user_identity"] = userIdentity
 	logData["caller_identity"] = userIdentity
-	log.Event(ctx, "caller identity retrieved setting context values", log.INFO, logData)
+	log.Info(ctx, "caller identity retrieved setting context values", logData)
 
 	ctx = context.WithValue(ctx, dprequest.UserIdentityKey, userIdentity)
 	ctx = context.WithValue(ctx, dprequest.CallerIdentityKey, tokenIdentityResp.Identifier)
@@ -141,7 +141,7 @@ func (api Client) doCheckTokenIdentity(ctx context.Context, token string, tokenT
 
 	url := api.hcCli.URL + "/identity"
 	logData["url"] = url
-	log.Event(ctx, "calling AuthAPI to authenticate caller identity", log.INFO, logData)
+	log.Info(ctx, "calling AuthAPI to authenticate caller identity", logData)
 
 	// Crete request according to the token type
 	var outboundAuthReq *http.Request
@@ -153,14 +153,14 @@ func (api Client) doCheckTokenIdentity(ctx context.Context, token string, tokenT
 		outboundAuthReq, errCreatingReq = createServiceAuthRequest(url, token)
 	}
 	if errCreatingReq != nil {
-		log.Event(ctx, "error creating AuthAPI identity http request", log.ERROR, logData, log.Error(errCreatingReq))
+		log.Error(ctx, "error creating AuthAPI identity http request", logData, errCreatingReq)
 		return nil, http.StatusInternalServerError, nil, errCreatingReq
 	}
 
 	// 'GET /identity' request
 	resp, err := api.hcCli.Client.Do(ctx, outboundAuthReq)
 	if err != nil {
-		log.Event(ctx, "HTTPClient.Do returned error making AuthAPI identity request", log.ERROR, logData, log.Error(err))
+		log.Error(ctx, "HTTPClient.Do returned error making AuthAPI identity request", logData, err)
 		return nil, http.StatusInternalServerError, nil, err
 	}
 	defer closeResponse(ctx, resp, logData)
@@ -243,7 +243,7 @@ func closeResponse(ctx context.Context, resp *http.Response, data log.Data) {
 	}
 
 	if errClose := resp.Body.Close(); errClose != nil {
-		log.Event(ctx, "error closing response body", log.ERROR, log.Error(errClose), data)
+		log.Error(ctx, "error closing response body", errClose, data)
 	}
 }
 
