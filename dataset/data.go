@@ -384,7 +384,9 @@ type Change struct {
 	Type        string `json:"type"`
 }
 
-// IsBasedOn is a special set of metadata for Cantabular datasets
+// IsBasedOn is a special set of json-ld metadata for Cantabular datasets
+// For more information on json-ld markup see:
+// https://moz.com/blog/json-ld-for-beginners
 type IsBasedOn struct{
 	Type string `json:"@type"`
 	ID   string `json:"@id"`
