@@ -6,6 +6,7 @@ type Model struct {
 	Links            Links        `json:"links"`
 	HasData          bool         `json:"has_data"`
 	NumberofChildren int          `json:"number_of_children,omitempty"`
+	Order            *int         `json:"order,omitempty"`
 	Children         []Child      `json:"children,omitempty"`
 	Breadcrumbs      []Breadcrumb `json:"breadcrumbs,omitempty"`
 }
@@ -26,6 +27,7 @@ type Link struct {
 type Child struct {
 	Label            string `json:"label"`
 	NumberofChildren int    `json:"no_of_children,omitempty"`
+	Order            *int   `json:"order,omitempty"`
 	HasData          bool   `json:"has_data"`
 	Links            Links  `json:"links"`
 }

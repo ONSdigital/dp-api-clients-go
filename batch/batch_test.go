@@ -195,6 +195,37 @@ func TestProcessInConcurrentBatches(t *testing.T) {
 				So(eTags, ShouldResemble, []string{testETag, testETag, testETag})
 			})
 		})
+
+		Convey("And some testing parameters", func() {
+			batchSize := 10
+			maxWorkers := 1
+			getter := batchGetter(batchSize, []error{nil})
+			processor := batchProcessor([]bool{false}, []error{nil})
+
+			Convey("Then calling ProcessInConcurrentBatches with a nil getBatch function results in the expected error error being returned", func() {
+				err := ProcessInConcurrentBatches(nil, processor, batchSize, maxWorkers)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "getBatch function cannot be nil")
+			})
+
+			Convey("Then calling ProcessInConcurrentBatches with a nil processBatch function results in the expected error error being returned", func() {
+				err := ProcessInConcurrentBatches(getter, nil, batchSize, maxWorkers)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "processBatch function cannot be nil")
+			})
+
+			Convey("Then calling ProcessInConcurrentBatches with a zero batchSize results in the expected error error being returned", func() {
+				err := ProcessInConcurrentBatches(getter, processor, 0, maxWorkers)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "batchSize must be a positive value")
+			})
+
+			Convey("Then calling ProcessInConcurrentBatches with zero maxWorkers results in the expected error error being returned", func() {
+				err := ProcessInConcurrentBatches(getter, processor, batchSize, 0)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "maxWorkers must be a positive value")
+			})
+		})
 	})
 }
 
@@ -226,6 +257,27 @@ func TestProcessInBatches(t *testing.T) {
 				{"3", "4", "5"},
 				{"6", "7", "8"},
 				{"9"}})
+		})
+
+		Convey("Then calling ProcessInBatches nil items results in the expected error error being returned", func() {
+			numChunks, err := ProcessInBatches(nil, processor, 10)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "items cannot be nil")
+			So(numChunks, ShouldEqual, 0)
+		})
+
+		Convey("Then calling ProcessInBatches a nil processor function results in the expected error error being returned", func() {
+			numChunks, err := ProcessInBatches(items, nil, 10)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "processBatch cannot be nil")
+			So(numChunks, ShouldEqual, 0)
+		})
+
+		Convey("Then calling ProcessInBatches zero batchSize results in the expected error error being returned", func() {
+			numChunks, err := ProcessInBatches(items, processor, 0)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "batchSize must be a positive value")
+			So(numChunks, ShouldEqual, 0)
 		})
 	})
 }

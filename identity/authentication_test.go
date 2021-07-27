@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/headers"
-	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-mocking/httpmocks"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
@@ -356,12 +356,11 @@ func TestHandler_bothTokens(t *testing.T) {
 			So(authFailure, ShouldBeNil)
 			So(status, ShouldEqual, http.StatusOK)
 
-			Convey("Then the identity service is called as expected - verifying florence, but ignoring auth header", func() {
+			Convey("Then the identity service is called as expected - verifying florence", func() {
 				So(len(httpClient.DoCalls()), ShouldEqual, 1)
 				zebedeeReq := httpClient.DoCalls()[0].Req
 				So(zebedeeReq.URL.String(), ShouldEqual, expectedZebedeeURL)
 				So(zebedeeReq.Header[dprequest.FlorenceHeaderKey][0], ShouldEqual, florenceToken)
-				So(len(zebedeeReq.Header[dprequest.AuthHeaderKey]), ShouldEqual, 0)
 			})
 
 			Convey("Then the context returns with expected values", func() {

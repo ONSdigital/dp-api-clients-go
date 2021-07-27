@@ -1,4 +1,4 @@
-dp-api-clients-go [![Build Status](https://travis-ci.org/ONSdigital/dp-api-clients-go.svg?branch=master)](https://travis-ci.org/ONSdigital/dp-api-clients-go) [![GoDoc](https://godoc.org/github.com/ONSdigital/dp-api-clients-go?status.svg)](https://godoc.org/github.com/ONSdigital/dp-api-clients-go)
+dp-api-clients-go [![GoDoc](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v2?status.svg)](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v2)
 =====
 
 Common client code - in go - for ONS APIs:
@@ -23,7 +23,7 @@ Each client defines two constructor functions: one that creates a new healthchec
 
 For example, you may create a new image API client like so:
 ```go
-    import  "github.com/ONSdigital/dp-api-clients-go/image"
+    import  "github.com/ONSdigital/dp-api-clients-go/v2/image"
 
     ...
     imageClient := image.NewAPIClient(<url>)
@@ -32,8 +32,8 @@ For example, you may create a new image API client like so:
 
 Or you may create it providing a Healthcheck client:
 ```go
-    import  "github.com/ONSdigital/dp-api-clients-go/image"
-    import  "github.com/ONSdigital/dp-api-clients-go/health"
+    import  "github.com/ONSdigital/dp-api-clients-go/v2/image"
+    import  "github.com/ONSdigital/dp-api-clients-go/v2/health"
 
     ...
     hcClient := health.NewClient(<genericName>, <url>)
@@ -88,7 +88,7 @@ Instead of aggregating the results, you may want to perform some different logic
 
 ## Package docs
 
-* [health](https://github.com/ONSdigital/dp-api-clients-go/tree/feature/client-checker/health)
+* [health](health/README.md#health)
 
 ## Tests
 

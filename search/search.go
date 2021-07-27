@@ -8,14 +8,14 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/ONSdigital/dp-api-clients-go/clientlog"
-	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
 )
 
 const (
-	service       = "search-api"
+	service       = "dimension-search-api"
 	defaultLimit  = 50
 	defaultOffset = 0
 )
@@ -28,39 +28,39 @@ type Config struct {
 	FlorenceToken string
 }
 
-// ErrInvalidSearchAPIResponse is returned when the search api does not respond
+// ErrInvalidDimensionSearchAPIResponse is returned when the dimension-search api does not respond
 // with a valid status
-type ErrInvalidSearchAPIResponse struct {
+type ErrInvalidDimensionSearchAPIResponse struct {
 	expectedCode int
 	actualCode   int
 	uri          string
 }
 
 // Error should be called by the user to print out the stringified version of the error
-func (e ErrInvalidSearchAPIResponse) Error() string {
-	return fmt.Sprintf("invalid response from search api - should be: %d, got: %d, path: %s",
+func (e ErrInvalidDimensionSearchAPIResponse) Error() string {
+	return fmt.Sprintf("invalid response from dimension-search api - should be: %d, got: %d, path: %s",
 		e.expectedCode,
 		e.actualCode,
 		e.uri,
 	)
 }
 
-// Code returns the status code received from search api if an error is returned
-func (e ErrInvalidSearchAPIResponse) Code() int {
+// Code returns the status code received from dimension-search api if an error is returned
+func (e ErrInvalidDimensionSearchAPIResponse) Code() int {
 	return e.actualCode
 }
 
-var _ error = ErrInvalidSearchAPIResponse{}
+var _ error = ErrInvalidDimensionSearchAPIResponse{}
 
 // Client is a search api client that can be used to make requests to the server
 type Client struct {
 	hcCli *healthcheck.Client
 }
 
-// New creates a new instance of Client with a given search api url
-func New(searchAPIURL string) *Client {
+// New creates a new instance of Client with a given dimension-search api url
+func New(dimensionSearchAPIURL string) *Client {
 	return &Client{
-		healthcheck.NewClient(service, searchAPIURL),
+		healthcheck.NewClient(service, dimensionSearchAPIURL),
 	}
 }
 
@@ -72,7 +72,7 @@ func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
 	}
 }
 
-// Checker calls search api health endpoint and returns a check object to the caller.
+// Checker calls dimension-search api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
@@ -131,7 +131,7 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, &ErrInvalidSearchAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return nil, &ErrInvalidDimensionSearchAPIResponse{http.StatusOK, resp.StatusCode, uri}
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(&m)

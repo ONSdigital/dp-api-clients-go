@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"net/url"
 
-	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
@@ -61,8 +61,9 @@ var _ error = ErrInvalidAPIResponse{}
 
 // ImportJob comes from the Import API and links an import job to its (other) instances
 type ImportJob struct {
-	JobID string  `json:"id"`
-	Links LinkMap `json:"links,omitempty"`
+	JobID     string               `json:"id"`
+	Links     LinkMap              `json:"links,omitempty"`
+	Processed []ProcessedInstances `json:"processed_instances,omitempty"`
 }
 
 // LinkMap is an array of instance links associated with am import job
@@ -74,6 +75,13 @@ type LinkMap struct {
 type InstanceLink struct {
 	ID   string `json:"id"`
 	Link string `json:"href"`
+}
+
+// ProcessedInstances holds the ID and the number of code lists that have been processed during an import process for an instance
+type ProcessedInstances struct {
+	ID             string `json:"id,omitempty"`
+	RequiredCount  int    `json:"required_count,omitempty"`
+	ProcessedCount int    `json:"processed_count,omitempty"`
 }
 
 // stateData represents a json with a single state filed
@@ -154,6 +162,41 @@ func (c *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken s
 		return NewAPIResponse(resp, uri)
 	}
 	return nil
+}
+
+func (c *Client) IncreaseProcessedInstanceCount(ctx context.Context, jobID, serviceToken, instanceID string) (procInst []ProcessedInstances, err error) {
+	uri := fmt.Sprintf("%s/jobs/%s/processed/%s", c.url, jobID, instanceID)
+
+	logData := log.Data{
+		"uri":         uri,
+		"job_id":      jobID,
+		"instance_id": instanceID,
+	}
+
+	resp, err := c.doPut(ctx, uri, serviceToken, 0, nil)
+	if err != nil {
+		log.Event(ctx, "error increaseing the instance count in import api", log.ERROR, logData, log.Error(err))
+		return nil, err
+	}
+	defer closeResponseBody(ctx, resp)
+	logData["httpCode"] = resp.StatusCode
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, NewAPIResponse(resp, uri)
+	}
+
+	jsonBody, err := getBody(resp)
+	if err != nil {
+		log.Event(ctx, "failed to read body from api response", log.ERROR, log.Error(err))
+		return nil, err
+	}
+
+	if err := json.Unmarshal(jsonBody, &procInst); err != nil {
+		log.Event(ctx, "failed to unmarshal api response body", log.ERROR, logData, log.Error(err))
+		return nil, err
+	}
+
+	return procInst, nil
 }
 
 func (c *Client) doGet(ctx context.Context, uri, serviceToken string, attempts int, vars url.Values) (*http.Response, error) {

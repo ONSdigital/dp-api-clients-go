@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/golang/mock/gomock"
@@ -29,7 +29,7 @@ const (
 	testHost      = "http://localhost:8080"
 )
 
-func TestSearchUnit(t *testing.T) {
+func TestDimensionSearchUnit(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -46,7 +46,7 @@ func TestSearchUnit(t *testing.T) {
 		searchResp, err := ioutil.ReadFile("./search_mocks/search.json")
 		So(err, ShouldBeNil)
 
-		Convey("test Dimension successfully returns a model upon a 200 response from search api", func() {
+		Convey("test Dimension successfully returns a model upon a 200 response from dimension-search api", func() {
 
 			mockClient := &dphttp.ClienterMock{
 				GetPathsWithNoRetriesFunc: func() []string { return []string{} },
@@ -104,7 +104,7 @@ func TestSearchUnit(t *testing.T) {
 
 		Convey("test Dimension returns error if HTTP Status code is not 200", func() {
 
-			searchErr := errors.New("invalid response from search api - should be: 200, got: 400, path: http://localhost:22000/dimension-search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=1&offset=1&q=Newport")
+			searchErr := errors.New("invalid response from dimension-search api - should be: 200, got: 400, path: http://localhost:22000/dimension-search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=1&offset=1&q=Newport")
 			mockClient := &dphttp.ClienterMock{
 				GetPathsWithNoRetriesFunc: func() []string { return []string{} },
 				SetPathsWithNoRetriesFunc: func([]string) {},
@@ -201,7 +201,7 @@ func TestSearchUnit(t *testing.T) {
 
 		Convey("test Dimension no limit returns error if HTTP Status code is not 200", func() {
 
-			expectedError := &ErrInvalidSearchAPIResponse{http.StatusOK, http.StatusTeapot, "http://localhost:22000/dimension-search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=50&offset=1&q=Newport"}
+			expectedError := &ErrInvalidDimensionSearchAPIResponse{http.StatusOK, http.StatusTeapot, "http://localhost:22000/dimension-search/datasets/12345/editions/time-series/versions/1/dimensions/geography?limit=50&offset=1&q=Newport"}
 			mockClient := &dphttp.ClienterMock{
 				GetPathsWithNoRetriesFunc: func() []string { return []string{} },
 				SetPathsWithNoRetriesFunc: func([]string) {},
@@ -216,7 +216,7 @@ func TestSearchUnit(t *testing.T) {
 			hcCli := health.NewClientWithClienter(service, "http://localhost:22000", mockClient)
 			searchCli := NewWithHealthClient(hcCli)
 
-			Convey("when search is called", func() {
+			Convey("when dimension-search is called", func() {
 				m, err := searchCli.Dimension(ctx, "12345", "time-series", "1", "geography", "Newport", Config{Offset: &offset})
 
 				Convey("then the request is sent with the default limit", func() {

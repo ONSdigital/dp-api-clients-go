@@ -43,7 +43,49 @@ type Dataset struct {
 
 // List represents an object containing a list of datasets
 type List struct {
-	Items []Dataset `json:"items"`
+	Items      []Dataset `json:"items"`
+	Count      int       `json:"count"`
+	Offset     int       `json:"offset"`
+	Limit      int       `json:"limit"`
+	TotalCount int       `json:"total_count"`
+}
+
+// VersionList represents an object containing a list of datasets
+type VersionsList struct {
+	Items      []Version `json:"items"`
+	Count      int       `json:"count"`
+	Offset     int       `json:"offset"`
+	Limit      int       `json:"limit"`
+	TotalCount int       `json:"total_count"`
+}
+
+// Instance which presents a single dataset being imported
+type NewInstance struct {
+	InstanceID        string               `json:"id,omitempty"`
+	Links             *Links               `json:"links,omitempty"`
+	State             string               `json:"state,omitempty"`
+	Events            []Event              `json:"events,omitempty"`
+	TotalObservations int                  `json:"total_observations,omitempty"`
+	Headers           []string             `json:"headers,omitempty"`
+	Dimensions        []CodeList           `json:"dimensions,omitempty"`
+	LastUpdated       string               `json:"last_updated,omitempty"`
+	ImportTasks       *InstanceImportTasks `json:"import_tasks"`
+}
+
+// Event holds one of the event which has happened to a new Instance
+type Event struct {
+	Type          string `json:"type"`
+	Time          string `json:"time"`
+	Message       string `json:"message"`
+	MessageOffset string `json:"messageOffset"`
+}
+
+// CodeList holds one of the codelists corresponding to a new Instance
+type CodeList struct {
+	ID          string `json:"id"`
+	HRef        string `json:"href"`
+	Name        string `json:"name"`
+	IsHierarchy bool   `json:"is_hierarchy"`
 }
 
 // Version represents a version within a dataset
@@ -133,7 +175,11 @@ type stateData struct {
 
 // Instances represent a list of Instance objects
 type Instances struct {
-	Items []Instance `json:"items"`
+	Items      []Instance `json:"items"`
+	Count      int        `json:"count"`
+	Offset     int        `json:"offset"`
+	Limit      int        `json:"limit"`
+	TotalCount int        `json:"total_count"`
 }
 
 // Metadata is a combination of version and dataset model fields
@@ -260,7 +306,11 @@ type Dimension struct {
 
 // Dimensions represents a list of dimensions
 type Dimensions struct {
-	Items []Dimension `json:"items"`
+	Items      []Dimension `json:"items"`
+	Count      int         `json:"count"`
+	Offset     int         `json:"offset"`
+	Limit      int         `json:"limit"`
+	TotalCount int         `json:"total_count"`
 }
 
 // Options represents a list of options from the dataset api
@@ -287,6 +337,7 @@ type OptionPost struct {
 	Label    string `json:"label"`
 	Name     string `json:"dimension"`
 	Option   string `json:"option"`
+	Order    *int   `json:"order,omitempty"`
 }
 
 // JobInstance represents the details necessary to update (PUT) a job instance

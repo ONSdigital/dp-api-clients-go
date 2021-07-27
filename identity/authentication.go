@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ONSdigital/dp-api-clients-go/headers"
-	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
@@ -206,7 +206,7 @@ func createUserAuthRequest(url string, userAuthToken string) (*http.Request, err
 		return nil, err
 	}
 
-	if err := headers.SetUserAuthToken(outboundAuthReq, userAuthToken); err != nil {
+	if err := headers.SetAuthToken(outboundAuthReq, userAuthToken); err != nil {
 		return nil, err
 	}
 

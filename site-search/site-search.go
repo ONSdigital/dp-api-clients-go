@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ONSdigital/dp-api-clients-go/clientlog"
-	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
 )
 
@@ -44,17 +44,21 @@ var _ error = ErrInvalidSearchResponse{}
 
 // Client is a dp-search-api client which can be used to make requests to the server
 type Client struct {
-	cli dphttp.Clienter
-	url string
+	hcCli *healthcheck.Client
 }
 
 // NewClient creates a new instance of Client with a given search-api url
 func NewClient(searchAPIURL string) *Client {
-	hcClient := healthcheck.NewClient(service, searchAPIURL)
-
 	return &Client{
-		cli: hcClient.Client,
-		url: searchAPIURL,
+		healthcheck.NewClient(service, searchAPIURL),
+	}
+}
+
+// NewWithHealthClient creates a new instance of Client,
+// reusing the URL and Clienter from the provided health check client.
+func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
+	return &Client{
+		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
 	}
 }
 
@@ -67,24 +71,28 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 
 // Checker calls search api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
-	hcClient := healthcheck.Client{
-		Client: c.cli,
-		URL:    c.url,
-		Name:   service,
-	}
-
-	return hcClient.Checker(ctx, check)
+	return c.hcCli.Checker(ctx, check)
 }
 
 // doGet executes clienter.Do GET for the provided uri
 // The url.Values will be added as query parameters in the URL.
 // Returns the http.Response and any error and it is the callers responsibility to ensure response.Body is closed on completion.
-func (c *Client) doGetWithAuthHeaders(ctx context.Context, uri string) (*http.Response, error) {
+func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, err
 	}
-	return c.cli.Do(ctx, req)
+
+	addCollectionIDHeader(req, collectionID)
+	dprequest.AddFlorenceHeader(req, userAuthToken)
+	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
+	return c.hcCli.Client.Do(ctx, req)
+}
+
+func addCollectionIDHeader(r *http.Request, collectionID string) {
+	if len(collectionID) > 0 {
+		r.Header.Add(dprequest.CollectionIDHeaderKey, collectionID)
+	}
 }
 
 // NewSearchErrorResponse creates an error response
@@ -97,15 +105,15 @@ func NewSearchErrorResponse(resp *http.Response, uri string) (e *ErrInvalidSearc
 }
 
 // GetSearch returns the search results
-func (c *Client) GetSearch(ctx context.Context, query url.Values) (r Response, err error) {
-	uri := fmt.Sprintf("%s/search", c.url)
+func (c *Client) GetSearch(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, query url.Values) (r Response, err error) {
+	uri := fmt.Sprintf("%s/search", c.hcCli.URL)
 	if query != nil {
 		uri = uri + "?" + query.Encode()
 	}
 
 	clientlog.Do(ctx, "retrieving search response", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -122,6 +130,38 @@ func (c *Client) GetSearch(ctx context.Context, query url.Values) (r Response, e
 	}
 
 	if err = json.Unmarshal(b, &r); err != nil {
+		return
+	}
+
+	return
+}
+
+// GetDepartments returns the search results
+func (c *Client) GetDepartments(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, query url.Values) (d Department, err error) {
+	uri := fmt.Sprintf("%s/departments/search", c.hcCli.URL)
+	if query != nil {
+		uri = uri + "?" + query.Encode()
+	}
+
+	clientlog.Do(ctx, "retrieving departments search response", service, uri)
+
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewSearchErrorResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(b, &d); err != nil {
 		return
 	}
 

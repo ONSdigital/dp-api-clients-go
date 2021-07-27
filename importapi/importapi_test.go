@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	. "github.com/smartystreets/goconvey/convey"
@@ -38,9 +38,7 @@ func TestClient_HealthChecker(t *testing.T) {
 		clientError := errors.New("disciples of the watch obey")
 
 		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
+			SetPathsWithNoRetriesFunc: func(paths []string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{}, clientError
 			},
@@ -75,9 +73,7 @@ func TestClient_HealthChecker(t *testing.T) {
 
 	Convey("given clienter.Do returns 500 response", t, func() {
 		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
+			SetPathsWithNoRetriesFunc: func(paths []string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 500,
@@ -114,9 +110,7 @@ func TestClient_HealthChecker(t *testing.T) {
 
 	Convey("given clienter.Do returns 404 response", t, func() {
 		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
+			SetPathsWithNoRetriesFunc: func(paths []string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 404,
@@ -154,9 +148,7 @@ func TestClient_HealthChecker(t *testing.T) {
 
 	Convey("given clienter.Do returns 429 response", t, func() {
 		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
+			SetPathsWithNoRetriesFunc: func(paths []string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 429,
@@ -193,9 +185,7 @@ func TestClient_HealthChecker(t *testing.T) {
 
 	Convey("given clienter.Do returns 200 response", t, func() {
 		clienter := &dphttp.ClienterMock{
-			SetPathsWithNoRetriesFunc: func(paths []string) {
-				return
-			},
+			SetPathsWithNoRetriesFunc: func(paths []string) {},
 			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 200,
@@ -287,7 +277,7 @@ func TestGetImportJob(t *testing.T) {
 		mockedAPI := getMockImportAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: jobJSON})
 		job, err := mockedAPI.GetImportJob(ctx, jobID, serviceToken)
 		So(err, ShouldBeNil)
-		So(job, ShouldResemble, ImportJob{JobID: jobID, Links: LinkMap{Instances: []InstanceLink{InstanceLink{ID: "iid1", Link: "iid1link"}}}})
+		So(job, ShouldResemble, ImportJob{JobID: jobID, Links: LinkMap{Instances: []InstanceLink{{ID: "iid1", Link: "iid1link"}}}})
 	})
 
 	Convey("When a multiple-instance import-job is returned", t, func() {
@@ -298,8 +288,8 @@ func TestGetImportJob(t *testing.T) {
 			JobID: jobID,
 			Links: LinkMap{
 				Instances: []InstanceLink{
-					InstanceLink{ID: "iid1", Link: "iid1link"},
-					InstanceLink{ID: "iid2", Link: "iid2link"},
+					{ID: "iid1", Link: "iid1link"},
+					{ID: "iid2", Link: "iid2link"},
 				},
 			},
 		})
@@ -334,5 +324,55 @@ func TestUpdateImportJobState(t *testing.T) {
 		mockedAPI := getMockImportAPI(http.Request{Method: "PUT"}, MockedHTTPResponse{StatusCode: 200, Body: ""})
 		err := mockedAPI.UpdateImportJobState(ctx, jobID, serviceToken, "newState")
 		So(err, ShouldBeNil)
+	})
+}
+
+func TestIncreaseProcessedInstanceCount(t *testing.T) {
+
+	jobID := "job0"
+	instanceID := "inst0"
+
+	Convey("When bad request is returned then the expected error is returned", t, func() {
+		mockedAPI := getMockImportAPI(http.Request{Method: http.MethodPut}, MockedHTTPResponse{StatusCode: http.StatusBadRequest, Body: ""})
+		procInst, err := mockedAPI.IncreaseProcessedInstanceCount(ctx, jobID, serviceToken, instanceID)
+		So(err, ShouldNotBeNil)
+		So(err, ShouldResemble, &ErrInvalidAPIResponse{
+			actualCode: http.StatusBadRequest,
+			uri:        fmt.Sprintf("%s/jobs/job0/processed/inst0", mockedAPI.url),
+			body:       "",
+		})
+		So(procInst, ShouldBeNil)
+	})
+
+	Convey("When server error is returned then the expected error is returned", t, func() {
+		mockedAPI := getMockImportAPI(http.Request{Method: http.MethodPut}, MockedHTTPResponse{StatusCode: http.StatusInternalServerError, Body: ""})
+		procInst, err := mockedAPI.IncreaseProcessedInstanceCount(ctx, jobID, serviceToken, instanceID)
+		So(err, ShouldNotBeNil)
+		So(err, ShouldResemble, &ErrInvalidAPIResponse{
+			actualCode: http.StatusInternalServerError,
+			uri:        fmt.Sprintf("%s/jobs/job0/processed/inst0", mockedAPI.url),
+			body:       "",
+		})
+		So(procInst, ShouldBeNil)
+	})
+
+	Convey("When ok response is returned the expected response is returned without error", t, func() {
+		bodyStr := `[
+			{
+				"id": "inst0",
+				"required_count": 10,
+				"processed_count": 2
+			}
+		]`
+		mockedAPI := getMockImportAPI(http.Request{Method: http.MethodPut}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: bodyStr})
+		procInst, err := mockedAPI.IncreaseProcessedInstanceCount(ctx, jobID, serviceToken, instanceID)
+		So(err, ShouldBeNil)
+		So(procInst, ShouldResemble, []ProcessedInstances{
+			{
+				ID:             instanceID,
+				RequiredCount:  10,
+				ProcessedCount: 2,
+			},
+		})
 	})
 }

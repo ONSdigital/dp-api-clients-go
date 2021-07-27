@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ONSdigital/dp-api-clients-go/batch"
-	"github.com/ONSdigital/dp-api-clients-go/clientlog"
-	"github.com/ONSdigital/dp-api-clients-go/headers"
-	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
+	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
+	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/log"
@@ -100,8 +100,8 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
 
-// CloseResponseBody closes the response body and logs an error if unsuccessful
-func CloseResponseBody(ctx context.Context, resp *http.Response) {
+// closeResponseBody closes the response body and logs an error if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if resp.Body == nil {
 		return
 	}
@@ -130,7 +130,7 @@ func (c *Client) GetOutputBytes(ctx context.Context, userAuthToken, serviceAuthT
 		return nil, err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -165,7 +165,7 @@ func (c *Client) UpdateFilterOutputBytes(ctx context.Context, userAuthToken, ser
 		return err
 	}
 
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceToken)
 
@@ -173,7 +173,43 @@ func (c *Client) UpdateFilterOutputBytes(ctx context.Context, userAuthToken, ser
 	if err != nil {
 		return err
 	}
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+	}
+	return nil
+}
+
+// AddEvent performs a POST operation to update the filter with the provided event
+func (c *Client) AddEvent(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, filterJobID string, event *Event) error {
+	b, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	uri := fmt.Sprintf("%s/filter-outputs/%s/events", c.hcCli.URL, filterJobID)
+
+	clientlog.Do(ctx, "adding event to filter output", service, uri, log.Data{
+		"method":   "POST",
+		"filterID": filterJobID,
+		"body":     string(b),
+	})
+
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+
+	headers.SetAuthToken(req, userAuthToken)
+	headers.SetServiceAuthToken(req, serviceAuthToken)
+	headers.SetDownloadServiceToken(req, downloadServiceToken)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return err
+	}
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -203,7 +239,7 @@ func (c *Client) GetDimensionBytes(ctx context.Context, userAuthToken, serviceAu
 		return nil, "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode != http.StatusNoContent {
@@ -251,7 +287,7 @@ func (c *Client) GetDimensionsBytes(ctx context.Context, userAuthToken, serviceA
 		return nil, "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -296,7 +332,7 @@ func (c *Client) GetDimensionOptionsBytes(ctx context.Context, userAuthToken, se
 		return nil, "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode != http.StatusNoContent {
@@ -410,7 +446,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceToken)
 
@@ -419,7 +455,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return "", "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
 		return "", "", ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
@@ -465,7 +501,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return m, "", err
 	}
 
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceToken)
 	headers.SetIfMatch(req, ifMatch)
@@ -474,7 +510,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	if err != nil {
 		return m, "", err
 	}
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return m, "", ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -513,7 +549,7 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetIfMatch(req, ifMatch)
 
@@ -522,7 +558,7 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 		return "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
 		return "", &ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
@@ -569,7 +605,7 @@ func (c *Client) PatchDimensionValues(ctx context.Context, userAuthToken, servic
 		if err != nil {
 			return err
 		}
-		defer CloseResponseBody(ctx, resp)
+		defer closeResponseBody(ctx, resp)
 
 		// check response code
 		if resp.StatusCode != http.StatusOK {
@@ -685,7 +721,7 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 	})
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetIfMatch(req, ifMatch)
 
@@ -694,7 +730,7 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 		return "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusNoContent {
 		return "", &ErrInvalidFilterAPIResponse{http.StatusNoContent, resp.StatusCode, uri}
@@ -723,7 +759,7 @@ func (c *Client) RemoveDimension(ctx context.Context, userAuthToken, serviceAuth
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetIfMatch(req, ifMatch)
 
@@ -732,7 +768,7 @@ func (c *Client) RemoveDimension(ctx context.Context, userAuthToken, serviceAuth
 		return "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusNoContent {
 		err = &ErrInvalidFilterAPIResponse{http.StatusNoContent, resp.StatusCode, uri}
@@ -760,7 +796,7 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 		return "", err
 	}
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetIfMatch(req, ifMatch)
 
@@ -769,7 +805,7 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 		return "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
 		err = &ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
@@ -805,7 +841,7 @@ func (c *Client) GetJobStateBytes(ctx context.Context, userAuthToken, serviceAut
 		return nil, "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -847,7 +883,7 @@ func (c *Client) SetDimensionValues(ctx context.Context, userAuthToken, serviceA
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetIfMatch(req, ifMatch)
 
@@ -856,7 +892,7 @@ func (c *Client) SetDimensionValues(ctx context.Context, userAuthToken, serviceA
 		return "", err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
 		return "", &ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
@@ -894,7 +930,7 @@ func (c *Client) GetPreviewBytes(ctx context.Context, userAuthToken, serviceAuth
 		return nil, err
 	}
 
-	defer CloseResponseBody(ctx, resp)
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -912,7 +948,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	return c.hcCli.Client.Do(ctx, req)
 }
@@ -926,7 +962,7 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	}
 
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetDownloadServiceToken(req, downloadServiceAuthToken)
 	return c.hcCli.Client.Do(ctx, req)
@@ -951,7 +987,7 @@ func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serv
 
 	// set headers
 	headers.SetCollectionID(req, collectionID)
-	headers.SetUserAuthToken(req, userAuthToken)
+	headers.SetAuthToken(req, userAuthToken)
 	headers.SetServiceAuthToken(req, serviceAuthToken)
 	headers.SetIfMatch(req, ifMatch)
 

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	. "github.com/smartystreets/goconvey/convey"
@@ -24,6 +24,29 @@ var (
 type MockedHTTPResponse struct {
 	StatusCode int
 	Body       string
+}
+
+func TestErrInvalidHierarchyAPIResponse(t *testing.T) {
+
+	Convey("Given an error created with NewErrInvalidHierarchyAPIResponse", t, func() {
+		err := NewErrInvalidHierarchyAPIResponse(http.StatusOK, http.StatusBadRequest, "/hierarchies/foo/bar")
+
+		Convey("Then the error is an ErrInvalidHierarchyAPIResponse with the expected fields", func() {
+			So(err, ShouldResemble, &ErrInvalidHierarchyAPIResponse{
+				expectedCode: http.StatusOK,
+				actualCode:   http.StatusBadRequest,
+				uri:          "/hierarchies/foo/bar",
+			})
+		})
+
+		Convey("Then Error() returns the expected error message", func() {
+			So(err.Error(), ShouldResemble, "invalid response from hierarchy api - should be: 200, got: 400, path: /hierarchies/foo/bar")
+		})
+
+		Convey("Then Code() returns the actual http stauts code", func() {
+			So(err.(*ErrInvalidHierarchyAPIResponse).Code(), ShouldEqual, http.StatusBadRequest)
+		})
+	})
 }
 
 func TestClient_HealthChecker(t *testing.T) {
@@ -141,7 +164,7 @@ func TestClient_HealthChecker(t *testing.T) {
 		})
 	})
 
-	Convey("given a 200 response", t, func() {
+	Convey("given a 200 OK response", t, func() {
 		httpClient := newMockHTTPClient(&http.Response{StatusCode: http.StatusOK}, nil)
 		hierarchyClient := newHierarchyClient(httpClient)
 		check := initialState
@@ -185,90 +208,120 @@ func getMockHierarchyAPI(expectRequest http.Request, mockedHTTPResponse MockedHT
 func TestClient_GetRoot(t *testing.T) {
 	instanceID := "foo"
 	name := "bar"
-	model := `{"label":"","has_data":true}`
-	Convey("When bad request is returned", t, func() {
-		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
+
+	Convey("Given a bad request API response, then the expected error is returned", t, func() {
+		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusBadRequest, Body: ""})
 		_, err := mockedAPI.GetRoot(ctx, instanceID, name)
-		So(err, ShouldNotBeNil)
+		expectedErr := NewErrInvalidHierarchyAPIResponse(http.StatusOK, http.StatusBadRequest, "/hierarchies/foo/bar")
+		So(err, ShouldResemble, expectedErr)
 		ts.Close()
 	})
 
-	Convey("When server error is returned", t, func() {
-		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("Given a server error API response, then the expected error is returned", t, func() {
+		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusInternalServerError, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetRoot(ctx, instanceID, name)
-		So(err, ShouldNotBeNil)
-		ts.Close()
-	})
-	Convey("When a hierarchy-instance is returned", t, func() {
-		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: model})
-		_, err := mockedAPI.GetRoot(ctx, instanceID, name)
-		So(err, ShouldBeNil)
+		expectedErr := NewErrInvalidHierarchyAPIResponse(http.StatusOK, http.StatusInternalServerError, "/hierarchies/foo/bar")
+		So(err, ShouldResemble, expectedErr)
 		ts.Close()
 	})
 
+	Convey("Given a 200 OK response, then the expected hierarchy-instance is returned with no error", t, func() {
+		model := `{"label":"testModel","has_data":true,"order":0}`
+		expectedOrder := 0
+		expectedModel := Model{
+			Label:   "testModel",
+			HasData: true,
+			Order:   &expectedOrder,
+		}
+
+		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: model})
+		m, err := mockedAPI.GetRoot(ctx, instanceID, name)
+		So(err, ShouldBeNil)
+		So(m, ShouldResemble, expectedModel)
+		ts.Close()
+	})
 }
 
 func TestClient_GetChild(t *testing.T) {
 	instanceID := "foo"
 	name := "bar"
 	code := "baz"
-	model := `{"label":"","has_data":true}`
-	Convey("When bad request is returned", t, func() {
-		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
+
+	Convey("Given a bad request API response, then the expected error is returned", t, func() {
+		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusBadRequest, Body: ""})
 		_, err := mockedAPI.GetChild(ctx, instanceID, name, code)
-		So(err, ShouldNotBeNil)
+		expectedErr := NewErrInvalidHierarchyAPIResponse(http.StatusOK, http.StatusBadRequest, "/hierarchies/foo/bar/baz")
+		So(err, ShouldResemble, expectedErr)
 		ts.Close()
 	})
 
-	Convey("When server error is returned", t, func() {
-		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("Given a server error API response, then the expected error is returned", t, func() {
+		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusInternalServerError, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.GetChild(ctx, instanceID, name, code)
-		So(err, ShouldNotBeNil)
+		expectedErr := NewErrInvalidHierarchyAPIResponse(http.StatusOK, http.StatusInternalServerError, "/hierarchies/foo/bar/baz")
+		So(err, ShouldResemble, expectedErr)
 		ts.Close()
 	})
 
-	Convey("When a hierarchy-instance is returned", t, func() {
-		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: model})
-		_, err := mockedAPI.GetChild(ctx, instanceID, name, code)
+	Convey("Given a hierarchy-instance API response, then the expected model is returned with no error", t, func() {
+		model := `{"label":"testChild","has_data":true,"order":321}`
+		expectedOrder := 321
+		expectedModel := Model{
+			Label:   "testChild",
+			HasData: true,
+			Order:   &expectedOrder,
+		}
+
+		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: model})
+		m, err := mockedAPI.GetChild(ctx, instanceID, name, code)
 		So(err, ShouldBeNil)
+		So(m, ShouldResemble, expectedModel)
 		ts.Close()
 	})
 }
 
 func TestClient_GetHierarchy(t *testing.T) {
 	path := "/hierarchies/foo/bar"
-	model := `{"label":"","has_data":true}`
 
-	Convey("When bad request is returned", t, func() {
-		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
+	Convey("Given a bad request API response, then the expected error is returned", t, func() {
+		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusBadRequest, Body: ""})
 		_, err := mockedAPI.getHierarchy(ctx, path)
-		So(err, ShouldNotBeNil)
+		expectedErr := NewErrInvalidHierarchyAPIResponse(http.StatusOK, http.StatusBadRequest, "/hierarchies/foo/bar")
+		So(err, ShouldResemble, expectedErr)
 		ts.Close()
 	})
 
-	Convey("When server error is returned", t, func() {
-		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 500, Body: "qux"})
+	Convey("Given a server error API response, then the expected error is returned", t, func() {
+		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusInternalServerError, Body: "qux"})
 		mockedAPI.hcCli.Client.SetMaxRetries(2)
 		_, err := mockedAPI.getHierarchy(ctx, path)
-		So(err, ShouldNotBeNil)
+		expectedErr := NewErrInvalidHierarchyAPIResponse(http.StatusOK, http.StatusInternalServerError, "/hierarchies/foo/bar")
+		So(err, ShouldResemble, expectedErr)
 		ts.Close()
 	})
 
-	Convey("When a hierarchy-instance is returned", t, func() {
-		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: model})
-		_, err := mockedAPI.getHierarchy(ctx, path)
+	Convey("Given a hierarchy-instance API response, then the expected model is returned with no error", t, func() {
+		model := `{"label":"testHierarchy","has_data":true,"order":123}`
+		expectedOrder := 123
+		expectedModel := Model{
+			Label:   "testHierarchy",
+			HasData: true,
+			Order:   &expectedOrder,
+		}
+
+		ts, mockedAPI := getMockHierarchyAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: model})
+		m, err := mockedAPI.getHierarchy(ctx, path)
 		So(err, ShouldBeNil)
+		So(m, ShouldResemble, expectedModel)
 		ts.Close()
 	})
 }
 
 func newMockHTTPClient(r *http.Response, err error) *dphttp.ClienterMock {
 	return &dphttp.ClienterMock{
-		SetPathsWithNoRetriesFunc: func(paths []string) {
-			return
-		},
+		SetPathsWithNoRetriesFunc: func(paths []string) {},
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			return r, err
 		},

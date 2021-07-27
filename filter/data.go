@@ -1,5 +1,14 @@
 package filter
 
+import "time"
+
+const (
+	EventFilterOutputQueryStart  = "FilterOutputQueryStart"
+	EventFilterOutputQueryEnd    = "FilterOutputQueryEnd"
+	EventFilterOutputCSVGenStart = "FilterOutputCSVGenStart"
+	EventFilterOutputCSVGenEnd   = "FilterOutputCSVGenEnd"
+)
+
 // Dimensions represents a dimensions response from the filter api
 type Dimensions struct {
 	Items      []Dimension `json:"items"`
@@ -90,8 +99,8 @@ type Download struct {
 
 // Event represents an event from a filter api response
 type Event struct {
-	Time string `json:"time"`
-	Type string `json:"type"`
+	Time time.Time `json:"time"`
+	Type string    `json:"type"`
 }
 
 // Preview represents a preview document returned from the filter api

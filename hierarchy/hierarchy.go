@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/ONSdigital/dp-api-clients-go/clientlog"
-	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/log.go/log"
 )
@@ -53,7 +53,7 @@ type Client struct {
 	hcCli *healthcheck.Client
 }
 
-// CloseResponseBody closes the response body and logs an error if unsuccessful
+// closeResponseBody closes the response body and logs an error if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if err := resp.Body.Close(); err != nil {
 		log.Event(ctx, "error closing http response body", log.ERROR, log.Error(err))
@@ -88,7 +88,7 @@ func (c *Client) GetRoot(ctx context.Context, instanceID, name string) (Model, e
 	path := fmt.Sprintf("/hierarchies/%s/%s", instanceID, name)
 
 	clientlog.Do(ctx, "retrieving hierarchy", service, path, log.Data{
-		"method":      "GET",
+		"method":      http.MethodGet,
 		"instance_id": instanceID,
 		"dimension":   name,
 	})
@@ -101,7 +101,7 @@ func (c *Client) GetChild(ctx context.Context, instanceID, name, code string) (M
 	path := fmt.Sprintf("/hierarchies/%s/%s/%s", instanceID, name, code)
 
 	clientlog.Do(ctx, "retrieving hierarchy", service, path, log.Data{
-		"method":      "GET",
+		"method":      http.MethodGet,
 		"instance_id": instanceID,
 		"dimension":   name,
 		"code":        code,
@@ -112,7 +112,7 @@ func (c *Client) GetChild(ctx context.Context, instanceID, name, code string) (M
 
 func (c *Client) getHierarchy(ctx context.Context, path string) (Model, error) {
 	var m Model
-	req, err := http.NewRequest("GET", c.hcCli.URL+path, nil)
+	req, err := http.NewRequest(http.MethodGet, c.hcCli.URL+path, nil)
 	if err != nil {
 		return m, err
 	}
