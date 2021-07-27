@@ -125,16 +125,20 @@ type UpdateInstance struct {
 	NumberOfObservations int64                `json:"total_observations,omitempty"`
 	ImportTasks          *InstanceImportTasks `json:"import_tasks,omitempty"`
 	CSVHeader            []string             `json:"headers,omitempty"`
+	Type                 string               `json:"type,omitempty"`
+	IsBasedOn            *IsBasedOn           `json:"is_based_on,omitempty"`
 }
 
 // VersionDimension represents a dimension model nested in the Version model
 type VersionDimension struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Links       Links  `json:"links"`
-	Description string `json:"description"`
-	Label       string `json:"label"`
-	URL         string `json:"href,omitempty"`
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	Links           Links  `json:"links"`
+	Description     string `json:"description"`
+	Label           string `json:"label"`
+	URL             string `json:"href,omitempty"`
+	Variable        string `json:"variable,omitempty"`
+	NumberOfOptions int    `json:"number_of_options,omitempty"`
 }
 
 // InstanceImportTasks represents all of the tasks required to complete an import job.
@@ -378,6 +382,12 @@ type Change struct {
 	Description string `json:"description"`
 	Name        string `json:"name"`
 	Type        string `json:"type"`
+}
+
+// IsBasedOn is a special set of metadata for Cantabular datasets
+type IsBasedOn struct{
+	Type string `json:"@type"`
+	ID   string `json:"@id"`
 }
 
 // Temporal represents a temporal returned by the dataset api
