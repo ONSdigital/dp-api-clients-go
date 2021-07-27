@@ -10,7 +10,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 const service = "renderer"
@@ -53,7 +53,7 @@ func NewWithHealthClient(hcCli *healthcheck.Client) *Renderer {
 
 func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if err := resp.Body.Close(); err != nil {
-		log.Event(ctx, "error closing http response body", log.ERROR, log.Error(err))
+		log.Error(ctx, "error closing http response body", err)
 	}
 }
 
