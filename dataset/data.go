@@ -70,6 +70,7 @@ type NewInstance struct {
 	Dimensions        []CodeList           `json:"dimensions,omitempty"`
 	LastUpdated       string               `json:"last_updated,omitempty"`
 	ImportTasks       *InstanceImportTasks `json:"import_tasks"`
+	Type              string               `json:"type,omitempty"`
 }
 
 // Event holds one of the event which has happened to a new Instance
@@ -387,7 +388,7 @@ type Change struct {
 // IsBasedOn is a special set of json-ld metadata for Cantabular datasets
 // For more information on json-ld markup see:
 // https://moz.com/blog/json-ld-for-beginners
-type IsBasedOn struct{
+type IsBasedOn struct {
 	Type string `json:"@type"`
 	ID   string `json:"@id"`
 }

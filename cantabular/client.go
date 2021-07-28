@@ -10,11 +10,13 @@ import (
 	"net/url"
 
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-const service = "cantabular"
+// Service is the cantabular service name
+const Service = "cantabular"
 
 // Client is the client for interacting with the Cantabular API
 type Client struct {
@@ -59,11 +61,33 @@ func (c *Client) httpGet(ctx context.Context, path string) (*http.Response, erro
 	return resp, nil
 }
 
-// Checker is a placeholder for Cantabular healthcheck, it returns StatusOK with a 'not implemented' message
-// TODO implement this function when we decide how to check the health status of a cantabular service
+// Checker contacts the /v9/datasets endpoint and updates the healthcheck state accordingly.
 func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) error {
+	logData := log.Data{
+		"service": Service,
+	}
 	code := 0
-	state.Update(healthcheck.StatusOK, "cantabular healthcheck not implemendted", code)
+	url := fmt.Sprintf("%s/v9/datasets", c.host)
+
+	res, err := c.httpGet(ctx, url)
+	if err != nil {
+		log.Error(ctx, "failed to request service health", err, logData)
+	} else {
+		code = res.StatusCode
+		defer res.Body.Close()
+	}
+
+	switch code {
+	case 0: // When there is a problem with the client return error in message
+		state.Update(healthcheck.StatusCritical, err.Error(), 0)
+	case 200:
+		message := Service + health.StatusMessage[healthcheck.StatusOK]
+		state.Update(healthcheck.StatusOK, message, code)
+	default:
+		message := Service + health.StatusMessage[healthcheck.StatusCritical]
+		state.Update(healthcheck.StatusCritical, message, code)
+	}
+
 	return nil
 }
 
@@ -91,7 +115,7 @@ func (c *Client) errorResponse(url string, res *http.Response) error {
 			fmt.Errorf("failed to unmarshal error response body: %s", err),
 			res.StatusCode,
 			log.Data{
-				"url": url,
+				"url":           url,
 				"response_body": string(b),
 			},
 		)
