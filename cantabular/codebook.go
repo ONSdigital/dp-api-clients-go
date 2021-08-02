@@ -11,7 +11,7 @@ import (
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 )
 
-// Variable represents a 'codebook' object returned from Cantabular
+// Variable represents a 'codebook' object returned from Cantabular Server
 type Codebook []Variable
 
 // GetCodebook gets a Codebook from cantabular.
