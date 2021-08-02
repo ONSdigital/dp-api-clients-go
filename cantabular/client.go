@@ -20,15 +20,17 @@ const Service = "cantabular"
 
 // Client is the client for interacting with the Cantabular API
 type Client struct {
-	ua   httpClient
-	host string
+	ua         httpClient
+	host       string
+	extApiHost string
 }
 
 // NewClient returns a new Client
 func NewClient(ua httpClient, cfg Config) *Client {
 	return &Client{
-		ua:   ua,
-		host: cfg.Host,
+		ua:         ua,
+		host:       cfg.Host,
+		extApiHost: cfg.ExtApiHost,
 	}
 }
 

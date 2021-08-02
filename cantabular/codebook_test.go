@@ -30,7 +30,10 @@ func TestGetCodebookUnhappy(t *testing.T) {
 
 		cantabularClient := cantabular.NewClient(
 			mockHttpClient,
-			cantabular.Config{},
+			cantabular.Config{
+				Host: "cantabular.host",
+				ExtApiHost: "cantabular.ext.host",
+			},
 		)
 
 		Convey("When the GetCodebook method is called", func() {
@@ -55,7 +58,10 @@ func TestGetCodebookUnhappy(t *testing.T) {
 
 		cantabularClient := cantabular.NewClient(
 			mockHttpClient,
-			cantabular.Config{},
+			cantabular.Config{
+				Host: "cantabular.host",
+				ExtApiHost: "cantabular.ext.host",
+			},
 		)
 
 		Convey("When the GetCodebook method is called", func() {
@@ -65,6 +71,40 @@ func TestGetCodebookUnhappy(t *testing.T) {
 			Convey("Then the status code 500 should be recoverable from the error", func() {
 				So(cb, ShouldBeNil)
 				So(dperrors.StatusCode(err), ShouldEqual, http.StatusInternalServerError)
+			})
+		})
+	})
+
+	Convey("Given a Cantabular is available but the correct host isn't configured", t, func() {
+		testCtx := context.Background()
+
+		resp, err := testCodebookResponse()
+		So(err, ShouldBeNil)
+
+		mockHttpClient := &dphttp.ClienterMock{
+			GetFunc: func(ctx context.Context, url string) (*http.Response, error) {
+				return Response(
+					resp,
+					http.StatusOK,
+				), nil
+			},
+		}
+
+		cantabularClient := cantabular.NewClient(
+			mockHttpClient,
+			cantabular.Config{
+				Host:       "",
+				ExtApiHost: "cantabular.ext.host",
+			},
+		)
+
+		Convey("When the GetCodebook method is called", func() {
+			req := cantabular.GetCodebookRequest{}
+			cb, err := cantabularClient.GetCodebook(testCtx, req)
+
+			Convey("Then the status code 503 should be recoverable from the error", func() {
+				So(cb, ShouldBeNil)
+				So(dperrors.StatusCode(err), ShouldEqual, http.StatusServiceUnavailable)
 			})
 		})
 	})
@@ -89,7 +129,10 @@ func TestGetCodebookHappy(t *testing.T) {
 
 		cantabularClient := cantabular.NewClient(
 			mockHttpClient,
-			cantabular.Config{},
+			cantabular.Config{
+				Host: "cantabular.host",
+				ExtApiHost: "cantabular.ext.host",
+			},
 		)
 
 		Convey("When the GetCodebook method is called", func() {

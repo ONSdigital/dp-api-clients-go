@@ -13,9 +13,3 @@ type Dataset struct{
 	RulebaseVariable  string    `json:"ruleBaseVariable"`
 	DateTime          time.Time `json:"datetime"`
 }
-
-// GQLDataset represents the 'dataset' field from a GraphQL static dataset
-// query response
-type StaticDataset struct{
-	Table Table `json:"table"`
-}
