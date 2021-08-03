@@ -13,6 +13,8 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/log.go/v2/log"
+
+	"github.com/shurcooL/graphql"
 )
 
 // Service is the cantabular service name
@@ -21,17 +23,26 @@ const Service = "cantabular"
 // Client is the client for interacting with the Cantabular API
 type Client struct {
 	ua         httpClient
+	gqlClient  *graphql.Client // make interface, move out of pkg?
 	host       string
 	extApiHost string
 }
 
 // NewClient returns a new Client
 func NewClient(ua httpClient, cfg Config) *Client {
-	return &Client{
+	c := &Client{
 		ua:         ua,
 		host:       cfg.Host,
 		extApiHost: cfg.ExtApiHost,
 	}
+
+	if len(cfg.ExtApiHost) > 0{
+		c.gqlClient = graphql.NewClient(
+			fmt.Sprintf("%s/graphql", cfg.ExtApiHost),
+			nil,
+		)
+	}
+	return c
 }
 
 // get makes a get request to the given url and returns the response

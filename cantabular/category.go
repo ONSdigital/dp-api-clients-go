@@ -4,5 +4,5 @@ package cantabular
 // query dataset response
 type Category struct{
 	Code  string `json:"code"`
-	Label string `json"label"`
+	Label string `json:"label"`
 }
