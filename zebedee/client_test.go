@@ -74,6 +74,9 @@ func TestUnitClient(t *testing.T) {
 		So(len(m.FeaturedContent), ShouldEqual, 1)
 		So(m.FeaturedContent[0].Title, ShouldEqual, "Featured Content One")
 		So(m.FeaturedContent[0].ImageID, ShouldEqual, "testImage")
+		So(len(m.AroundONS), ShouldEqual, 1)
+		So(m.AroundONS[0].Title, ShouldEqual, "Around ONS One")
+		So(m.AroundONS[0].ImageID, ShouldEqual, "testImage")
 		So(m.Description.Keywords[0], ShouldEqual, "keywordOne")
 		So(m.ServiceMessage, ShouldEqual, "")
 	})
@@ -169,7 +172,7 @@ func d(w http.ResponseWriter, req *http.Request) {
 	case "pageTitle":
 		w.Write([]byte(`{"title":"baby-names","edition":"2017"}`))
 	case "/":
-		w.Write([]byte(`{"intro":{"title":"Welcome to the Office for National Statistics","markdown":"Test markdown"},"featuredContent":[{"title":"Featured Content One","description":"Featured Content One Description","uri":"/one","image":"testImage"}],"serviceMessage":"","description":{"keywords":[ "keywordOne", "keywordTwo" ],"metaDescription":"","unit":"","preUnit":"","source":""}}`))
+		w.Write([]byte(`{"intro":{"title":"Welcome to the Office for National Statistics","markdown":"Test markdown"},"featuredContent":[{"title":"Featured Content One","description":"Featured Content One Description","uri":"/one","image":"testImage"}],"aroundONS":[{"title":"Around ONS One","description":"Around ONS One Description","uri":"/one","image":"testImage"}],"serviceMessage":"","description":{"keywords":[ "keywordOne", "keywordTwo" ],"metaDescription":"","unit":"","preUnit":"","source":""}}`))
 	}
 
 }
