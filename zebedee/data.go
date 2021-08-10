@@ -139,6 +139,7 @@ type TimeseriesDescription struct {
 type HomepageContent struct {
 	Intro           Intro               `json:"intro"`
 	FeaturedContent []Featured          `json:"featuredContent"`
+	AroundONS 		[]Featured          `json:"aroundONS"`
 	ServiceMessage  string              `json:"serviceMessage"`
 	URI             string              `json:"uri"`
 	Type            string              `json:"type"`
