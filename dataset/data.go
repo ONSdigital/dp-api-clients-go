@@ -113,7 +113,7 @@ type Version struct {
 type UpdateInstance struct {
 	Alerts               *[]Alert             `json:"alerts"`
 	CollectionID         string               `json:"collection_id"`
-	Downloads            map[string]Download  `json:"downloads"`
+	Downloads            DownloadList         `json:"downloads"`
 	Edition              string               `json:"edition"`
 	Dimensions           []VersionDimension   `json:"dimensions"`
 	ID                   string               `json:"id"`
@@ -195,9 +195,9 @@ type Metadata struct {
 
 // DownloadList represents a list of objects of containing information on the downloadable files
 type DownloadList struct {
-	CSV  *Download `bson:"csv,omitempty" json:"csv,omitempty"`
-	CSVW *Download `bson:"csvw,omitempty" json:"csvw,omitempty"`
-	XLS  *Download `bson:"xls,omitempty" json:"xls,omitempty"`
+	CSV  *Download `json:"csv,omitempty"`
+	CSVW *Download `json:"csvw,omitempty"`
+	XLS  *Download `json:"xls,omitempty"`
 }
 
 // Download represents a version download from the dataset api
