@@ -29,11 +29,12 @@ func TestGetCodebookUnhappy(t *testing.T) {
 		}
 
 		cantabularClient := cantabular.NewClient(
-			mockHttpClient,
 			cantabular.Config{
 				Host: "cantabular.host",
 				ExtApiHost: "cantabular.ext.host",
 			},
+			mockHttpClient,
+			nil,
 		)
 
 		Convey("When the GetCodebook method is called", func() {
@@ -57,11 +58,12 @@ func TestGetCodebookUnhappy(t *testing.T) {
 		}
 
 		cantabularClient := cantabular.NewClient(
-			mockHttpClient,
 			cantabular.Config{
 				Host: "cantabular.host",
 				ExtApiHost: "cantabular.ext.host",
 			},
+			mockHttpClient,
+			nil,
 		)
 
 		Convey("When the GetCodebook method is called", func() {
@@ -91,11 +93,12 @@ func TestGetCodebookUnhappy(t *testing.T) {
 		}
 
 		cantabularClient := cantabular.NewClient(
-			mockHttpClient,
 			cantabular.Config{
 				Host:       "",
 				ExtApiHost: "cantabular.ext.host",
 			},
+			mockHttpClient,
+			nil,
 		)
 
 		Convey("When the GetCodebook method is called", func() {
@@ -128,11 +131,12 @@ func TestGetCodebookHappy(t *testing.T) {
 		}
 
 		cantabularClient := cantabular.NewClient(
-			mockHttpClient,
 			cantabular.Config{
 				Host: "cantabular.host",
 				ExtApiHost: "cantabular.ext.host",
 			},
+			mockHttpClient,
+			nil,
 		)
 
 		Convey("When the GetCodebook method is called", func() {

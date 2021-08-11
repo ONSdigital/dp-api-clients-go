@@ -20,8 +20,9 @@ func TestChecker(t *testing.T) {
 		mockHttpClient := createMockHttpClient(http.StatusOK)
 
 		cantabularClient := cantabular.NewClient(
-			&mockHttpClient,
 			cantabular.Config{},
+			&mockHttpClient,
+			nil,
 		)
 
 		Convey("When the GetCodebook method is called", func() {
@@ -51,8 +52,9 @@ func TestChecker(t *testing.T) {
 		beforeCall := time.Now().UTC()
 
 		cantabularClient := cantabular.NewClient(
-			&mockHttpClient,
 			cantabular.Config{},
+			&mockHttpClient,
+			nil,
 		)
 
 		Convey("When the GetCodebook method is called", func() {

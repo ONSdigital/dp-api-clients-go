@@ -21,9 +21,9 @@ type StaticDataset struct{
 // StaticDatasetQuery performs a query for a static dataset against the
 // Cantabular Extended API using the /graphql endpoint
 func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryRequest) (*StaticDatasetQuery, error){
-	if len(c.extApiHost) == 0{
+	if c.gqlClient == nil {
 		return nil, dperrors.New(
-			errors.New("Cantabular Extended API host not configured"),
+			errors.New("Cantabular Extended API Client not configured"),
 			http.StatusServiceUnavailable,
 			nil,
 		)

@@ -23,25 +23,29 @@ const Service = "cantabular"
 // Client is the client for interacting with the Cantabular API
 type Client struct {
 	ua         httpClient
-	gqlClient  *graphql.Client // make interface, move out of pkg?
+	gqlClient  GraphQLClient
 	host       string
 	extApiHost string
 }
 
 // NewClient returns a new Client
-func NewClient(ua httpClient, cfg Config) *Client {
+func NewClient(cfg Config, ua httpClient, g GraphQLClient) *Client {
 	c := &Client{
 		ua:         ua,
+		gqlClient:  g,
 		host:       cfg.Host,
 		extApiHost: cfg.ExtApiHost,
 	}
 
-	if len(cfg.ExtApiHost) > 0{
+	if len(cfg.ExtApiHost) > 0 && c.gqlClient == nil {
 		c.gqlClient = graphql.NewClient(
 			fmt.Sprintf("%s/graphql", cfg.ExtApiHost),
-			nil,
+			&http.Client{
+				Timeout: cfg.GraphQLTimeout,
+			},
 		)
 	}
+
 	return c
 }
 
