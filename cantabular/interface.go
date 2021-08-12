@@ -1,6 +1,6 @@
 package cantabular
 
-//go:generate moq -out mock/http-client.go . httpClient
+//go:generate moq -out mock/graphql_client.go . GraphQLClient
 
 import (
 	"context"
@@ -10,4 +10,9 @@ import (
 // httpClient is an interface for a user agent to make http requests
 type httpClient interface{
 	Get(ctx context.Context, url string) (*http.Response, error)
+}
+
+// GraphQLClient is the Client used by the GraphQL package to make queries
+type GraphQLClient interface{
+	Query(ctx context.Context, query interface{}, vars map[string]interface{}) error
 }

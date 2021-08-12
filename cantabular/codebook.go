@@ -4,6 +4,7 @@ import (
 	"context"
 	"io/ioutil"
 	"fmt"
+	"errors"
 	"net/http"
 	"encoding/json"
 
@@ -11,11 +12,19 @@ import (
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 )
 
-// Variable represents a 'codebook' object returned from Cantabular
+// Variable represents a 'codebook' object returned from Cantabular Server
 type Codebook []Variable
 
 // GetCodebook gets a Codebook from cantabular.
 func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetCodebookResponse, error){
+	if len(c.host) == 0{
+		return nil, dperrors.New(
+			errors.New("Cantabular Server host not configured"),
+			http.StatusServiceUnavailable,
+			nil,
+		)
+	}
+
 	var vars string
 	for _, v := range req.Variables{
 		vars += "&v=" + v
