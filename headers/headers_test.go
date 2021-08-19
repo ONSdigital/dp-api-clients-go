@@ -230,6 +230,16 @@ func TestSetServiceAuthToken(t *testing.T) {
 	execSetHeaderTestCases(t, cases)
 }
 
+func TestSetRefreshTokenHeader(t *testing.T) {
+	cases := setterTestCases(t, "SetRefreshTokenHeader", refreshTokenHeader, SetRefreshTokenHeader, false)
+	execSetHeaderTestCases(t, cases)
+}
+
+func TestSetIDTokenHeader(t *testing.T) {
+	cases := setterTestCases(t, "SetIDTokenHeader", idTokenHeader, SetIDTokenHeader, false)
+	execSetHeaderTestCases(t, cases)
+}
+
 func TestSetDownloadServiceToken(t *testing.T) {
 	cases := setterTestCases(t, "SetDownloadServiceToken", downloadServiceTokenHeader, SetDownloadServiceToken, false)
 	execSetHeaderTestCases(t, cases)

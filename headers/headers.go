@@ -21,6 +21,12 @@ const (
 	// Same value as serviceAuthTokenHeader as this is a standard header but not linked to service authentication
 	authTokenHeader = "Authorization"
 
+	// idTokenHeader the unique ID of the signed in user
+	idTokenHeader = "ID"
+
+	// refreshTokenHeader a long life token used to get new session tokens
+	refreshTokenHeader = "Refresh"
+
 	// bearerPrefix is the prefix for authorization header values
 	bearerPrefix = "Bearer "
 
@@ -205,6 +211,17 @@ func SetAuthToken(req *http.Request, headerValue string) error {
 	return setRequestHeader(req, authTokenHeader, headerValue)
 }
 
+// SetIDTokenHeader set the ID token  header on the provided request. If the authentication
+// token is already present it will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+func SetIDTokenHeader(req *http.Request, headerValue string) error {
+	return setRequestHeader(req, idTokenHeader, headerValue)
+}
+
+// SetRefreshTokenHeader set the refresh token header on the provided request. If the authentication
+// token is already present it will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+func SetRefreshTokenHeader(req *http.Request, headerValue string) error {
+	return setRequestHeader(req, refreshTokenHeader, headerValue)
+}
 // SetDownloadServiceToken set the download service auth token header on the provided request. If the authentication
 // token is already present it will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
 func SetDownloadServiceToken(req *http.Request, headerValue string) error {
