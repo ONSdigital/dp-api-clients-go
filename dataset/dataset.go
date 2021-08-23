@@ -1018,6 +1018,38 @@ func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, i
 	return eTag, nil
 }
 
+// PatchInstanceDimensions performs a 'PATCH /instances/<id>/dimensions' with the provided List of Options to patch
+func (c *Client) PatchInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string, data []*OptionPost, ifMatch string) (eTag string, err error) {
+	patchBody := []dprequest.Patch{
+		{
+			Op:    dprequest.OpAdd.String(),
+			Path:  "/-",
+			Value: data,
+		},
+	}
+
+	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
+
+	clientlog.Do(ctx, "patching (upserting) options to instance dimensions", service, uri)
+
+	resp, err := c.doPatchWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, patchBody, ifMatch)
+	if err != nil {
+		return "", err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return "", NewDatasetAPIResponse(resp, uri)
+	}
+
+	eTag, err = headers.GetResponseETag(resp)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return "", err
+	}
+
+	return eTag, nil
+}
+
 func createInstanceDimensionOptionPatch(nodeID string, order *int) []dprequest.Patch {
 	patchBody := []dprequest.Patch{}
 	if nodeID != "" {
