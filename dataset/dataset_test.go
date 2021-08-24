@@ -58,7 +58,14 @@ var validateRequestPatches = func(httpClient *dphttp.ClienterMock, callIndex int
 	for i, patch := range expectedPatches {
 		So(sentPatches[i].Op, ShouldEqual, patch.Op)
 		So(sentPatches[i].Path, ShouldEqual, patch.Path)
-		So(sentPatches[i].Value, ShouldEqual, patch.Value)
+
+		// expected value is unmarshalled as a map (interface), so we need to convert it
+		var expectedValue interface{}
+		b, err := json.Marshal(patch.Value)
+		So(err, ShouldBeNil)
+		json.Unmarshal(b, &expectedValue)
+
+		So(sentPatches[i].Value, ShouldResemble, expectedValue)
 	}
 }
 
@@ -1842,6 +1849,80 @@ func TestClient_GetOptionsInBatches(t *testing.T) {
 		})
 	})
 
+}
+
+func TestClient_PatchInstanceDimensions(t *testing.T) {
+
+	options := []*OptionPost{
+		{
+			Name:   "testDimension",
+			Option: "op1",
+		},
+		{
+			Name:   "testDimension",
+			Option: "op2",
+		},
+	}
+
+	Convey("given a 200 status is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{
+			http.StatusOK,
+			nil,
+			map[string]string{"ETag": testETag},
+		})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when PatchInstanceDimensions is called with valid options", func() {
+			eTag, err := datasetClient.PatchInstanceDimensions(ctx, serviceAuthToken, "123", options, testIfMatch)
+
+			Convey("a positive response with expected dimensions and eTag is returned", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldEqual, testETag)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected patch body, method, path and headers", func() {
+				checkRequestBase(httpClient, http.MethodPatch, "/instances/123/dimensions", testIfMatch)
+				expectedPatches := []dprequest.Patch{
+					{Op: dprequest.OpAdd.String(), Path: "/-", Value: options},
+				}
+				validateRequestPatches(httpClient, 0, expectedPatches)
+			})
+		})
+
+		Convey("when PatchInstanceDimensions is called without any update", func() {
+			eTag, err := datasetClient.PatchInstanceDimensions(ctx, serviceAuthToken, "123", nil, testIfMatch)
+
+			Convey("a positive response with expected dimensions is returned with the same ifMatch as provided", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldEqual, testIfMatch)
+			})
+
+			Convey("and dphttpclient.Do call is skipped because nothing needed to be updated", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, nil, nil})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when PatchInstanceDimensionOption is called", func() {
+			_, err := datasetClient.PatchInstanceDimensions(ctx, serviceAuthToken, "123", options, testIfMatch)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
+					actualCode: http.StatusNotFound,
+					uri:        "http://localhost:8080/instances/123/dimensions",
+					body:       "null",
+				})
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
+				checkRequestBase(httpClient, http.MethodPatch, "/instances/123/dimensions", testIfMatch)
+			})
+		})
+	})
 }
 
 func newDatasetClient(httpClient *dphttp.ClienterMock) *Client {

@@ -1020,6 +1020,13 @@ func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, i
 
 // PatchInstanceDimensions performs a 'PATCH /instances/<id>/dimensions' with the provided List of Options to patch
 func (c *Client) PatchInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string, data []*OptionPost, ifMatch string) (eTag string, err error) {
+	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
+
+	if len(data) == 0 {
+		log.Info(ctx, "skipping patch call because no update was provided", log.Data{"uri": uri})
+		return ifMatch, nil
+	}
+
 	patchBody := []dprequest.Patch{
 		{
 			Op:    dprequest.OpAdd.String(),
@@ -1028,9 +1035,7 @@ func (c *Client) PatchInstanceDimensions(ctx context.Context, serviceAuthToken, 
 		},
 	}
 
-	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
-
-	clientlog.Do(ctx, "patching (upserting) options to instance dimensions", service, uri)
+	clientlog.Do(ctx, "patching (upserting) dimension options to instance", service, uri)
 
 	resp, err := c.doPatchWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, patchBody, ifMatch)
 	if err != nil {
