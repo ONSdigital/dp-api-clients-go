@@ -15,7 +15,7 @@ import (
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -134,7 +134,7 @@ func mockZebedeeServer(port chan int) {
 
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
-		log.Event(context.Background(), "error listening on local network address", log.FATAL, log.Error(err))
+		log.Fatal(context.Background(), "error listening on local network address", err)
 		os.Exit(2)
 	}
 
@@ -142,7 +142,7 @@ func mockZebedeeServer(port chan int) {
 	close(port)
 
 	if err := http.Serve(l, r); err != nil {
-		log.Event(context.Background(), "error serving http connections", log.FATAL, log.Error(err))
+		log.Fatal(context.Background(), "error serving http connections", err)
 		os.Exit(2)
 	}
 }

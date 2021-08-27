@@ -8,7 +8,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/clientlog"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 var (
@@ -87,7 +87,7 @@ func (c *Client) Checker(ctx context.Context, state *health.CheckState) error {
 		code, err = c.get(ctx, "/healthcheck")
 	}
 	if err != nil {
-		log.Event(ctx, "failed to request service health", log.ERROR, log.Error(err), logData)
+		log.Error(ctx, "failed to request service health", err, logData)
 	}
 
 	switch code {
@@ -134,7 +134,7 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 	}
 
 	if err := resp.Body.Close(); err != nil {
-		log.Event(ctx, "error closing http response body", log.ERROR, log.Error(err))
+		log.Error(ctx, "error closing http response body", err)
 	}
 }
 
