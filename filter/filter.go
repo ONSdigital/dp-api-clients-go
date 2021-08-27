@@ -16,7 +16,7 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 const service = "filter-api"
@@ -106,7 +106,7 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 		return
 	}
 	if err := resp.Body.Close(); err != nil {
-		log.Event(ctx, "error closing http response body", log.ERROR, log.Error(err))
+		log.Error(ctx, "error closing http response body", err)
 	}
 }
 
@@ -631,7 +631,7 @@ func (c *Client) PatchDimensionValues(ctx context.Context, userAuthToken, servic
 
 		// abort if no data is provided
 		if len(addValues)+len(removeValues) == 0 {
-			log.Event(ctx, "no PATCH operation has been sent because there aren't values to modify", log.INFO)
+			log.Info(ctx, "no PATCH operation has been sent because there aren't values to modify")
 			return latestETag, nil
 		}
 
@@ -655,11 +655,11 @@ func (c *Client) PatchDimensionValues(ctx context.Context, userAuthToken, servic
 		}
 
 		if err := doPatchCall(patchBody); err != nil {
-			log.Event(ctx, "error sending PATCH operation", log.ERROR, log.Error(err))
+			log.Error(ctx, "error sending PATCH operation", err)
 			return latestETag, err
 		}
 
-		log.Event(ctx, "successfully sent PATCH operation", log.INFO)
+		log.Info(ctx, "successfully sent PATCH operation")
 		return latestETag, nil
 	}
 
@@ -691,7 +691,7 @@ func (c *Client) PatchDimensionValues(ctx context.Context, userAuthToken, servic
 	numChunks, err := batch.ProcessInBatches(addValues, processAddPatch, batchSize)
 	logData := log.Data{"num_successful_batches_added": numChunks}
 	if err != nil {
-		log.Event(ctx, "error sending PATCH operations in batches", log.ERROR, logData, log.Error(err))
+		log.Error(ctx, "error sending PATCH operations in batches", err, logData)
 		return latestETag, err
 	}
 
@@ -699,11 +699,11 @@ func (c *Client) PatchDimensionValues(ctx context.Context, userAuthToken, servic
 	numChunks, err = batch.ProcessInBatches(removeValues, processRemovePatch, batchSize)
 	logData["num_successful_batches_removed"] = numChunks
 	if err != nil {
-		log.Event(ctx, "error sending PATCH operations in batches", log.ERROR, logData, log.Error(err))
+		log.Error(ctx, "error sending PATCH operations in batches", err, logData)
 		return latestETag, err
 	}
 
-	log.Event(ctx, "successfully sent PATCH operations in batches", log.INFO, logData)
+	log.Info(ctx, "successfully sent PATCH operations in batches", logData)
 	return latestETag, nil
 }
 
