@@ -1018,7 +1018,7 @@ func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, i
 	return eTag, nil
 }
 
-// PatchInstanceDimensions performs a 'PATCH /instances/<id>/dimensions' with the provided List of Options to patch
+// PatchInstanceDimensions performs a 'PATCH /instances/<id>/dimensions' with the provided List of Options to patch (upsert)
 func (c *Client) PatchInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string, data []*OptionPost, ifMatch string) (eTag string, err error) {
 	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
 
@@ -1029,7 +1029,7 @@ func (c *Client) PatchInstanceDimensions(ctx context.Context, serviceAuthToken, 
 
 	patchBody := []dprequest.Patch{
 		{
-			Op:    dprequest.OpAdd.String(),
+			Op:    dprequest.OpAdd.String(), // this will cause an 'upsert' to be actioned for all provided Options in data
 			Path:  "/-",
 			Value: data,
 		},
