@@ -29,6 +29,11 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 		)
 	}
 
+	logData := log.Data{
+		"url":     fmt.Sprintf("%s/graphql", c.extApiHost),
+		"request": req,
+	}
+
 	vars := map[string]interface{}{
 		// GraphQL package requires self defined scalar types for variables
 		// and arguments
@@ -48,10 +53,15 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 		return nil, dperrors.New(
 			fmt.Errorf("failed to make GraphQL query: %w", err),
 			http.StatusInternalServerError,
-			log.Data{
-				"url":     fmt.Sprintf("%s/graphql", c.extApiHost),
-				"request": req,
-			},
+			logData,
+		)
+	}
+
+	if err := q.Dataset.Table.Error; err != "" {
+		return nil, dperrors.New(
+			fmt.Errorf("GraphQL error: %s", err),
+			http.StatusBadRequest,
+			logData,
 		)
 	}
 
