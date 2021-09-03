@@ -33,7 +33,6 @@ func mockZebedeeServer(port chan int) {
 
 	r.Path("/data").HandlerFunc(d)
 	r.Path("/parents").HandlerFunc(parents)
-	r.Path("/publisheddata").HandlerFunc(parents)
 	r.Path("/filesize").HandlerFunc(filesize)
 
 	l, err := net.Listen("tcp", "localhost:0")
