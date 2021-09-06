@@ -12,7 +12,7 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-// GQLDataset represents the 'dataset' field from a GraphQL static dataset
+// StaticDataset represents the 'dataset' field from a GraphQL static dataset
 // query response
 type StaticDataset struct {
 	Table Table `json:"table" graphql:"table(variables: $variables)"`

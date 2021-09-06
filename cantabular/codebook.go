@@ -12,7 +12,7 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-// Variable represents a 'codebook' object returned from Cantabular Server
+// Codebook represents a 'codebook' object returned from Cantabular Server
 type Codebook []Variable
 
 // GetCodebook gets a Codebook from cantabular.
