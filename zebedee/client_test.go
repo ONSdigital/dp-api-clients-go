@@ -420,12 +420,10 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 		httpClient := newMockHTTPClient(response, nil)
 		zebedeeClient := newZebedeeClient(httpClient)
 
-		Convey("when zebedeeClient.Checker is called", func() {
+		Convey("when zebedeeClient.GetPublishedData is called", func() {
 			testContent, err := zebedeeClient.GetPublishedData(ctx, testURIString)
 
-			Convey("then the expected check is returned", func() {
-				// So(err.Error(), ShouldResemble, errors.Errorf(http.StatusInternalServerError).Error())
-				// So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 500 from image api: http://localhost:8080/images, body: wrong!").Error())
+			Convey("then the expected page content is returned", func() {
 				So(err, ShouldNotBeNil)
 				So(testContent, ShouldBeNil)
 				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
@@ -445,12 +443,10 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 		httpClient := newMockHTTPClient(response, nil)
 		zebedeeClient := newZebedeeClient(httpClient)
 
-		Convey("when zebedeeClient.Checker is called", func() {
+		Convey("when zebedeeClient.GetPublishedData is called", func() {
 			testContent, err := zebedeeClient.GetPublishedData(ctx, testURIString)
 
-			Convey("then the expected check is returned", func() {
-				// So(err.Error(), ShouldResemble, errors.Errorf(http.StatusInternalServerError).Error())
-				// So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 500 from image api: http://localhost:8080/images, body: wrong!").Error())
+			Convey("then the expected error is returned", func() {
 				So(err, ShouldNotBeNil)
 				So(testContent, ShouldBeNil)
 				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
