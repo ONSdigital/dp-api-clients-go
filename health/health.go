@@ -128,13 +128,12 @@ func (c *Client) get(ctx context.Context, path string) (int, error) {
 	return resp.StatusCode, nil
 }
 
+// closeResponseBody closes the response body and logs an error if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
-	if resp.Body == nil {
-		return
-	}
-
-	if err := resp.Body.Close(); err != nil {
-		log.Error(ctx, "error closing http response body", err)
+	if resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
 	}
 }
 

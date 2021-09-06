@@ -19,7 +19,7 @@ type Codebook []Variable
 func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetCodebookResponse, error) {
 	if len(c.host) == 0 {
 		return nil, dperrors.New(
-			errors.New("Cantabular Server host not configured"),
+			errors.New("cantabular Server host not configured"),
 			http.StatusServiceUnavailable,
 			nil,
 		)
@@ -43,13 +43,11 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 		)
 	}
 
-	defer res.Body.Close()
+	defer closeResponseBody(ctx, res)
 
 	if res.StatusCode != http.StatusOK {
 		return nil, c.errorResponse(url, res)
 	}
-
-	var resp GetCodebookResponse
 
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
@@ -66,6 +64,8 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 		b = []byte("[response body empty]")
 	}
 
+	var resp GetCodebookResponse
+
 	if err := json.Unmarshal(b, &resp); err != nil {
 		return nil, dperrors.New(
 			fmt.Errorf("failed to unmarshal response body: %s", err),
@@ -78,4 +78,13 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 	}
 
 	return &resp, nil
+}
+
+// closeResponseBody closes the response body and logs an error if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}
 }

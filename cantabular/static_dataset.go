@@ -23,7 +23,7 @@ type StaticDataset struct {
 func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryRequest) (*StaticDatasetQuery, error) {
 	if c.gqlClient == nil {
 		return nil, dperrors.New(
-			errors.New("Cantabular Extended API Client not configured"),
+			errors.New("cantabular Extended API Client not configured"),
 			http.StatusServiceUnavailable,
 			nil,
 		)

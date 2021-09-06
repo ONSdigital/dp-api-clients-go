@@ -42,10 +42,12 @@ func (c *Client) Checker(ctx context.Context, check *healthcheck.CheckState) err
 	return c.hcCli.Checker(ctx, check)
 }
 
-// closeResponseBody closes the response body
+// closeResponseBody closes the response body and logs an error if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if resp.Body != nil {
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
 	}
 }
 

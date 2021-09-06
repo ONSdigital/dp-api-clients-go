@@ -13,7 +13,7 @@ type GetCodebookRequest struct {
 	Categories  bool
 }
 
-// GetCodebookRequest holds the response body for
+// GetCodebookResponse holds the response body for
 // GET [cantabular-srv]/codebook/{dataset}?cats=xxx&v=xxx
 type GetCodebookResponse struct {
 	Codebook Codebook `json:"codebook"`

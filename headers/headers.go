@@ -1,4 +1,4 @@
-// headers package provides header name constants and get/set functions for commonly used http headers in the
+// Package headers package provides header name constants and get/set functions for commonly used http headers in the
 // dp-api-clients-go repo. Package replaces go-ns lib and should be treated as the single source of truth
 package headers
 
@@ -197,7 +197,7 @@ func SetServiceAuthToken(req *http.Request, headerValue string) error {
 	return setRequestHeader(req, serviceAuthTokenHeader, headerValue)
 }
 
-// SetAccessToken set the access token header on the provided request. If the access token is
+// SetAuthToken set the access token header on the provided request. If the access token is
 // already present it will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
 func SetAuthToken(req *http.Request, headerValue string) error {
 	// TODO remove the userAuthTokenHeader once the X-Florence-Token has been removed

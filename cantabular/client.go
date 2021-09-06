@@ -91,7 +91,7 @@ func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) err
 		log.Error(ctx, "failed to request service health", err, logData)
 	} else {
 		code = res.StatusCode
-		defer res.Body.Close()
+		defer closeResponseBody(ctx, res)
 	}
 
 	switch code {

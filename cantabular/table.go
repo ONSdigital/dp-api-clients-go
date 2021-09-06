@@ -25,7 +25,7 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 	// Create and write header seperately
 	header := c.createCSVHeader(table.Dimensions)
 
-	w.Write(header)
+	w.Write(header) //!!! add code to handle error return from this
 	if err := w.Error(); err != nil {
 		return nil, fmt.Errorf("error writing the csv header: %w", err)
 	}
@@ -33,7 +33,7 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 	// Obtain the CSV rows according to the cantabular dimensions and counts
 	for i, count := range table.Values {
 		row := c.createCSVRow(table.Dimensions, i, count)
-		w.Write(row)
+		w.Write(row) //!!! add code to handle error return from this
 		if err := w.Error(); err != nil {
 			return nil, fmt.Errorf("error writing a csv row: %w", err)
 		}
