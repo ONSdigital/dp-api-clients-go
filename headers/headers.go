@@ -222,6 +222,7 @@ func SetIDTokenHeader(req *http.Request, headerValue string) error {
 func SetRefreshTokenHeader(req *http.Request, headerValue string) error {
 	return setRequestHeader(req, refreshTokenHeader, headerValue)
 }
+
 // SetDownloadServiceToken set the download service auth token header on the provided request. If the authentication
 // token is already present it will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
 func SetDownloadServiceToken(req *http.Request, headerValue string) error {

@@ -106,7 +106,7 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 	v.Add("limit", strconv.Itoa(limit))
 	v.Add("offset", strconv.Itoa(offset))
 
-	uri = uri + v.Encode()
+	uri += v.Encode()
 
 	clientlog.Do(ctx, "searching for dataset dimension option", service, uri)
 

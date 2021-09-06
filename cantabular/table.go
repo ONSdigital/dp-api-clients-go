@@ -17,7 +17,7 @@ type Table struct {
 
 // ParseTable takes a table from a GraphQL response and parses it into a
 // header and rows of counts (observations) ready to be read line-by-line.
-func (c *Client) ParseTable(table Table) (*bufio.Reader, error){
+func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 	// Create CSV writer with underlying buffer
 	b := new(bytes.Buffer)
 	w := csv.NewWriter(b)
@@ -71,7 +71,7 @@ func (c *Client) createCSVRow(dims []Dimension, index, count int) []string {
 	for i := len(dims) - 1; i >= 0; i-- {
 		catIndex := index % dims[i].Count           // Index of the category for the current dimension
 		row[i] = dims[i].Categories[catIndex].Label // The CSV column corresponds to the label of the Category
-		index = index / dims[i].Count               // Modify index for next iteration
+		index /= dims[i].Count                      // Modify index for next iteration
 	}
 
 	row[len(dims)] = fmt.Sprintf("%d", count)

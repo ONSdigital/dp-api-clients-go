@@ -1368,7 +1368,7 @@ func TestSetAuthenticationHeaders(t *testing.T) {
 		actual, getErr := headers.GetUserAuthToken(req)
 		So(actual, ShouldResemble, testUserAuthToken)
 		So(getErr, ShouldBeNil)
-		
+
 	})
 
 	Convey("should set expected user and service auth tokens", t, func() {

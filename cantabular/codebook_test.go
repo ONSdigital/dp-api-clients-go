@@ -2,16 +2,16 @@ package cantabular_test
 
 import (
 	"bytes"
-	"fmt"
-	"errors"
 	"context"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
-	dphttp "github.com/ONSdigital/dp-net/http"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -30,7 +30,7 @@ func TestGetCodebookUnhappy(t *testing.T) {
 
 		cantabularClient := cantabular.NewClient(
 			cantabular.Config{
-				Host: "cantabular.host",
+				Host:       "cantabular.host",
 				ExtApiHost: "cantabular.ext.host",
 			},
 			mockHttpClient,
@@ -59,7 +59,7 @@ func TestGetCodebookUnhappy(t *testing.T) {
 
 		cantabularClient := cantabular.NewClient(
 			cantabular.Config{
-				Host: "cantabular.host",
+				Host:       "cantabular.host",
 				ExtApiHost: "cantabular.ext.host",
 			},
 			mockHttpClient,
@@ -132,7 +132,7 @@ func TestGetCodebookHappy(t *testing.T) {
 
 		cantabularClient := cantabular.NewClient(
 			cantabular.Config{
-				Host: "cantabular.host",
+				Host:       "cantabular.host",
 				ExtApiHost: "cantabular.ext.host",
 			},
 			mockHttpClient,
@@ -145,14 +145,14 @@ func TestGetCodebookHappy(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			Convey("Then the expected codebook information should be returned", func() {
-				So(cb.Dataset.Name,                          ShouldEqual,      "Example")
-				So(cb.Codebook,                              ShouldHaveLength,  5)
-				So(cb.Codebook[0].Name,                      ShouldEqual,      "city")
-				So(cb.Codebook[1].Labels[0],                 ShouldEqual,      "England")
-				So(cb.Codebook[2].Labels,                    ShouldHaveLength,  2)
-				So(cb.Codebook[3].Codes[2],                  ShouldEqual,      "2")
-				So(cb.Codebook[4].MapFrom[0].SourceNames[0], ShouldEqual,      "siblings")
-				So(cb.Codebook[4].MapFrom[0].Code[1],        ShouldEqual,      "1-2")
+				So(cb.Dataset.Name, ShouldEqual, "Example")
+				So(cb.Codebook, ShouldHaveLength, 5)
+				So(cb.Codebook[0].Name, ShouldEqual, "city")
+				So(cb.Codebook[1].Labels[0], ShouldEqual, "England")
+				So(cb.Codebook[2].Labels, ShouldHaveLength, 2)
+				So(cb.Codebook[3].Codes[2], ShouldEqual, "2")
+				So(cb.Codebook[4].MapFrom[0].SourceNames[0], ShouldEqual, "siblings")
+				So(cb.Codebook[4].MapFrom[0].Code[1], ShouldEqual, "1-2")
 			})
 		})
 	})
@@ -168,11 +168,11 @@ func Response(body []byte, statusCode int) *http.Response {
 	}
 }
 
-func testErrorResponse(errorMsg string) []byte{
+func testErrorResponse(errorMsg string) []byte {
 	return []byte(fmt.Sprintf(`{"message":"%s"}`, errorMsg))
 }
 
-func testCodebookResponse() ([]byte, error){
+func testCodebookResponse() ([]byte, error) {
 	b, err := ioutil.ReadFile("codebook_test.json")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %s", err)

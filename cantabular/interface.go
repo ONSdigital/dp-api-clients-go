@@ -8,11 +8,11 @@ import (
 )
 
 // httpClient is an interface for a user agent to make http requests
-type httpClient interface{
+type httpClient interface {
 	Get(ctx context.Context, url string) (*http.Response, error)
 }
 
 // GraphQLClient is the Client used by the GraphQL package to make queries
-type GraphQLClient interface{
+type GraphQLClient interface {
 	Query(ctx context.Context, query interface{}, vars map[string]interface{}) error
 }

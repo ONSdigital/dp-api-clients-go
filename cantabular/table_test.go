@@ -8,9 +8,9 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestParseQueryResponse(t *testing.T) {
+func TestParseTable(t *testing.T) {
 
-	Convey("Given a Cantabular client", t, func(){
+	Convey("Given a Cantabular client", t, func() {
 		var c cantabular.Client
 
 		Convey("When ParseTable is triggered with a valid table", func() {

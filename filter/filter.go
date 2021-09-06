@@ -488,7 +488,7 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	uri := fmt.Sprintf("%s/filters/%s", c.hcCli.URL, m.FilterID)
 
 	if doSubmit {
-		uri = uri + "?submitted=true"
+		uri += "?submitted=true"
 	}
 
 	clientlog.Do(ctx, "updating filter job", service, uri, log.Data{

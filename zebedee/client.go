@@ -131,7 +131,7 @@ func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, col
 		dlp.RelatedMethodologyArticle,
 	}
 
-	//Concurrently resolve any URIs where we need more data from another page
+	// Concurrently resolve any URIs where we need more data from another page
 	var wg sync.WaitGroup
 	sem := make(chan int, 10)
 

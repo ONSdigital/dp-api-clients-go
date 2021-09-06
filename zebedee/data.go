@@ -108,7 +108,7 @@ type Alert struct {
 	Type     string `json:"type"`
 }
 
-//Related stores the Title and URI for any related data (eg related publications on a dataset page)
+// Related stores the Title and URI for any related data (eg related publications on a dataset page)
 type Related struct {
 	Title string `json:"title"`
 	URI   string `json:"uri"`
@@ -139,7 +139,7 @@ type TimeseriesDescription struct {
 type HomepageContent struct {
 	Intro           Intro               `json:"intro"`
 	FeaturedContent []Featured          `json:"featuredContent"`
-	AroundONS 		[]Featured          `json:"aroundONS"`
+	AroundONS       []Featured          `json:"aroundONS"`
 	ServiceMessage  string              `json:"serviceMessage"`
 	URI             string              `json:"uri"`
 	Type            string              `json:"type"`
