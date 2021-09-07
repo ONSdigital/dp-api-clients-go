@@ -22,7 +22,7 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 	b := new(bytes.Buffer)
 	w := csv.NewWriter(b)
 
-	// Create and write header seperately
+	// Create and write header separately
 	header := c.createCSVHeader(table.Dimensions)
 
 	err := w.Write(header)
@@ -45,7 +45,7 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 		return nil, fmt.Errorf("error flushing the csv writer: %w", err)
 	}
 
-	// Return a reader with the same underlying Byte buffer as written by the csv writter
+	// Return a reader with the same underlying Byte buffer as written by the csv writer
 	return bufio.NewReader(b), nil
 }
 
