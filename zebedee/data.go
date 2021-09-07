@@ -108,7 +108,7 @@ type Alert struct {
 	Type     string `json:"type"`
 }
 
-// Related stores the Title and URI for any related data (eg related publications on a dataset page)
+// Related stores the Title and URI for any related data (e.g. related publications on a dataset page)
 type Related struct {
 	Title string `json:"title"`
 	URI   string `json:"uri"`

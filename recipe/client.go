@@ -22,7 +22,7 @@ type Client struct {
 	hcCli *health.Client
 }
 
-// New creates a new instance of Client with a given recipe api url
+// NewClient creates a new instance of Client with a given recipe api url
 func NewClient(recipeAPIURL string) *Client {
 	return &Client{
 		health.NewClient(service, recipeAPIURL),
@@ -60,8 +60,14 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 		return nil, err
 	}
 
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return nil, err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return nil, err
+	}
 	return c.hcCli.Client.Do(ctx, req)
 }
 

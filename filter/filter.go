@@ -164,9 +164,18 @@ func (c *Client) UpdateFilterOutputBytes(ctx context.Context, userAuthToken, ser
 		return err
 	}
 
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
-	headers.SetDownloadServiceToken(req, downloadServiceToken)
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return err
+	}
+	err = headers.SetDownloadServiceToken(req, downloadServiceToken)
+	if err != nil {
+		return err
+	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
@@ -200,9 +209,18 @@ func (c *Client) AddEvent(ctx context.Context, userAuthToken, serviceAuthToken, 
 		return err
 	}
 
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
-	headers.SetDownloadServiceToken(req, downloadServiceToken)
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return err
+	}
+	err = headers.SetDownloadServiceToken(req, downloadServiceToken)
+	if err != nil {
+		return err
+	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
@@ -444,10 +462,22 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return "", "", err
 	}
 
-	headers.SetCollectionID(req, collectionID)
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
-	headers.SetDownloadServiceToken(req, downloadServiceToken)
+	err = headers.SetCollectionID(req, collectionID)
+	if err != nil {
+		return "", "", err
+	}
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return "", "", err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return "", "", err
+	}
+	err = headers.SetDownloadServiceToken(req, downloadServiceToken)
+	if err != nil {
+		return "", "", err
+	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
@@ -500,10 +530,22 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return m, "", err
 	}
 
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
-	headers.SetDownloadServiceToken(req, downloadServiceToken)
-	headers.SetIfMatch(req, ifMatch)
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return m, "", err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return m, "", err
+	}
+	err = headers.SetDownloadServiceToken(req, downloadServiceToken)
+	if err != nil {
+		return m, "", err
+	}
+	err = headers.SetIfMatch(req, ifMatch)
+	if err != nil {
+		return m, "", err
+	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
@@ -547,10 +589,22 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 		return "", err
 	}
 
-	headers.SetCollectionID(req, collectionID)
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
-	headers.SetIfMatch(req, ifMatch)
+	err = headers.SetCollectionID(req, collectionID)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetIfMatch(req, ifMatch)
+	if err != nil {
+		return "", err
+	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
@@ -719,10 +773,22 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 		"value":  value,
 	})
 
-	headers.SetCollectionID(req, collectionID)
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
-	headers.SetIfMatch(req, ifMatch)
+	err = headers.SetCollectionID(req, collectionID)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetIfMatch(req, ifMatch)
+	if err != nil {
+		return "", err
+	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
@@ -757,10 +823,22 @@ func (c *Client) RemoveDimension(ctx context.Context, userAuthToken, serviceAuth
 		return "", err
 	}
 
-	headers.SetCollectionID(req, collectionID)
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
-	headers.SetIfMatch(req, ifMatch)
+	err = headers.SetCollectionID(req, collectionID)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetIfMatch(req, ifMatch)
+	if err != nil {
+		return "", err
+	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
@@ -794,10 +872,22 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 	if err != nil {
 		return "", err
 	}
-	headers.SetCollectionID(req, collectionID)
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
-	headers.SetIfMatch(req, ifMatch)
+	err = headers.SetCollectionID(req, collectionID)
+	if err != nil {
+		return "", err
+	}
+	err =headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetIfMatch(req, ifMatch)
+	if err != nil {
+		return "", err
+	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
@@ -881,10 +971,22 @@ func (c *Client) SetDimensionValues(ctx context.Context, userAuthToken, serviceA
 		return "", err
 	}
 
-	headers.SetCollectionID(req, collectionID)
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
-	headers.SetIfMatch(req, ifMatch)
+	err = headers.SetCollectionID(req, collectionID)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return "", err
+	}
+	err = headers.SetIfMatch(req, ifMatch)
+	if err != nil {
+		return "", err
+	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
@@ -946,9 +1048,18 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 		return nil, err
 	}
 
-	headers.SetCollectionID(req, collectionID)
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
+	err = headers.SetCollectionID(req, collectionID)
+	if err != nil {
+		return nil, err
+	}
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return nil, err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return nil, err
+	}
 	return c.hcCli.Client.Do(ctx, req)
 }
 
@@ -960,10 +1071,22 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 		return nil, err
 	}
 
-	headers.SetCollectionID(req, collectionID)
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
-	headers.SetDownloadServiceToken(req, downloadServiceAuthToken)
+	err = headers.SetCollectionID(req, collectionID)
+	if err != nil {
+		return nil, err
+	}
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return nil, err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return nil, err
+	}
+	err = headers.SetDownloadServiceToken(req, downloadServiceAuthToken)
+	if err != nil {
+		return nil, err
+	}
 	return c.hcCli.Client.Do(ctx, req)
 }
 
@@ -985,10 +1108,22 @@ func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serv
 	}
 
 	// set headers
-	headers.SetCollectionID(req, collectionID)
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
-	headers.SetIfMatch(req, ifMatch)
+	err = headers.SetCollectionID(req, collectionID)
+	if err != nil {
+		return nil, err
+	}
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return nil, err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return nil, err
+	}
+	err = headers.SetIfMatch(req, ifMatch)
+	if err != nil {
+		return nil, err
+	}
 
 	// do the request
 	return c.hcCli.Client.Do(ctx, req)

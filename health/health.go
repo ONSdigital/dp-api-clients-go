@@ -92,19 +92,17 @@ func (c *Client) Checker(ctx context.Context, state *health.CheckState) error {
 
 	switch code {
 	case 0: // When there is a problem with the client return error in message
-		state.Update(health.StatusCritical, err.Error(), 0)
+		return state.Update(health.StatusCritical, err.Error(), 0)
 	case 200:
 		message := generateMessage(service, health.StatusOK)
-		state.Update(health.StatusOK, message, code)
+		return state.Update(health.StatusOK, message, code)
 	case 429:
 		message := generateMessage(service, health.StatusWarning)
-		state.Update(health.StatusWarning, message, code)
+		return state.Update(health.StatusWarning, message, code)
 	default:
 		message := generateMessage(service, health.StatusCritical)
-		state.Update(health.StatusCritical, message, code)
+		return state.Update(health.StatusCritical, message, code)
 	}
-
-	return nil
 }
 
 func (c *Client) get(ctx context.Context, path string) (int, error) {
