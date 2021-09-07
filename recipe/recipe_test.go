@@ -70,9 +70,11 @@ func TestGetRecipe(t *testing.T) {
 		Convey("Then whe GetRecipe is called, one GET /recipes/ID call is performed and the expected error is returned", func() {
 			recipe, err := recipeClient.GetRecipe(ctx, testUserAuthToken, testServiceToken, recipeID)
 			So(err, ShouldResemble, dperrors.New(
-				errors.New(""),
+				errors.New("failed to unmarshal error response body: invalid character 'r' looking for beginning of value"),
 				http.StatusBadRequest,
-				nil),
+				log.Data{
+					"response_body": "[response body empty]",
+				}),
 			)
 			So(recipe, ShouldBeNil)
 			So(httpClient.DoCalls(), ShouldHaveLength, 1)

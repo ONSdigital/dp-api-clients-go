@@ -75,7 +75,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 func (c *Client) errorResponse(res *http.Response) error {
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		dperrors.New(
+		return dperrors.New(
 			fmt.Errorf("failed to read error response body: %s", err),
 			res.StatusCode,
 			nil,
@@ -89,7 +89,7 @@ func (c *Client) errorResponse(res *http.Response) error {
 	var resp ErrorResponse
 
 	if err := json.Unmarshal(b, &resp); err != nil {
-		dperrors.New(
+		return dperrors.New(
 			fmt.Errorf("failed to unmarshal error response body: %s", err),
 			res.StatusCode,
 			log.Data{
