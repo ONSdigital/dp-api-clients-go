@@ -96,16 +96,14 @@ func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) err
 
 	switch code {
 	case 0: // When there is a problem with the client return error in message
-		state.Update(healthcheck.StatusCritical, err.Error(), 0)
+		return state.Update(healthcheck.StatusCritical, err.Error(), 0)
 	case 200:
 		message := Service + health.StatusMessage[healthcheck.StatusOK]
-		state.Update(healthcheck.StatusOK, message, code)
+		return state.Update(healthcheck.StatusOK, message, code)
 	default:
 		message := Service + health.StatusMessage[healthcheck.StatusCritical]
-		state.Update(healthcheck.StatusCritical, message, code)
+		return state.Update(healthcheck.StatusCritical, message, code)
 	}
-
-	return nil
 }
 
 // errorResponse handles dealing with an error response from Cantabular
