@@ -825,10 +825,10 @@ func TestClient_CreateBlueprint(t *testing.T) {
 		So(len(httpClient.DoCalls()), ShouldEqual, 1)
 
 		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
-		var actualVersion string
+		var actualVersion CreateBlueprint
 		err := json.Unmarshal(actualBody, &actualVersion)
 		So(err, ShouldBeNil)
-		So(actualVersion, ShouldResemble, expectedFilterID)
+		So(actualVersion.FilterID, ShouldResemble, expectedFilterID)
 	}
 
 	Convey("Given a valid Blueprint is returned", t, func() {
