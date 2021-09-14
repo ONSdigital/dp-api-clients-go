@@ -30,7 +30,6 @@ type DatasetDetails struct {
 	Type              string            `json:"type,omitempty"`
 	UnitOfMeasure     string            `json:"unit_of_measure,omitempty"`
 	URI               string            `json:"uri,omitempty"`
-	UsageNotes        *[]UsageNote      `json:"usage_notes,omitempty"`
 }
 
 // Dataset represents a dataset resource
