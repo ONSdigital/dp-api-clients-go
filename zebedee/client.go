@@ -39,7 +39,7 @@ type ErrInvalidZebedeeResponse struct {
 
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidZebedeeResponse) Error() string {
-	return fmt.Sprintf("invalid response from zebedee - should be 2.x.x or 3.x.x, got: %d, path: %s",
+	return fmt.Sprintf("invalid response from zebedee: %d, path: %s",
 		e.ActualCode,
 		e.URI,
 	)

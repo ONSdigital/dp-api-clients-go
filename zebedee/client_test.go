@@ -163,7 +163,7 @@ func TestUnitClient(t *testing.T) {
 			b, h, err := cli.get(ctx, testAccessToken, "/invalid")
 			So(err, ShouldNotBeNil)
 			So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
-			So(err.Error(), ShouldEqual, "invalid response from zebedee - should be 2.x.x or 3.x.x, got: 404, path: /invalid")
+			So(err.Error(), ShouldEqual, "invalid response from zebedee: 404, path: /invalid")
 			So(b, ShouldBeNil)
 			So(h, ShouldBeNil)
 		})
@@ -426,7 +426,7 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 				So(err, ShouldNotBeNil)
 				So(testContent, ShouldBeNil)
 				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
-				So(err.Error(), ShouldEqual, "invalid response from zebedee - should be 2.x.x or 3.x.x, got: 500, path: /publisheddata")
+				So(err.Error(), ShouldEqual, "invalid response from zebedee: 500, path: /publisheddata")
 
 			})
 
@@ -449,7 +449,7 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 				So(err, ShouldNotBeNil)
 				So(testContent, ShouldBeNil)
 				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
-				So(err.Error(), ShouldEqual, "invalid response from zebedee - should be 2.x.x or 3.x.x, got: 404, path: /publisheddata")
+				So(err.Error(), ShouldEqual, "invalid response from zebedee: 404, path: /publisheddata")
 
 			})
 
