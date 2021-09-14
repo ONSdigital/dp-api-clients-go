@@ -31,7 +31,7 @@ var (
 func mockZebedeeServer(port chan int) {
 	r := mux.NewRouter()
 
-	r.Path("/data").HandlerFunc(d)
+	r.Path("/data").HandlerFunc(contentData)
 	r.Path("/parents").HandlerFunc(parents)
 	r.Path("/filesize").HandlerFunc(filesize)
 
@@ -70,7 +70,7 @@ func newZebedeeClient(httpClient *dphttp.ClienterMock) *Client {
 	return zebedeeClient
 }
 
-func d(w http.ResponseWriter, req *http.Request) {
+func contentData(w http.ResponseWriter, req *http.Request) {
 	uri := req.URL.Query().Get("uri")
 
 	serviceAuthToken := req.Header.Get(dprequest.FlorenceHeaderKey)
@@ -119,7 +119,7 @@ func filesize(w http.ResponseWriter, req *http.Request) {
 
 	default:
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(errors.New("Invalid path for get file size").Error()))
+		w.Write([]byte(errors.New("invalid path for get file size").Error()))
 		return
 	}
 
@@ -414,7 +414,6 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 			})
 		})
 	})
-
 	Convey("given a 500 response", t, func() {
 		response := httpmocks.NewResponseMock(body, http.StatusInternalServerError)
 		httpClient := newMockHTTPClient(response, nil)
