@@ -8,9 +8,9 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestParseQueryResponse(t *testing.T) {
+func TestParseTable(t *testing.T) {
 
-	Convey("Given a Cantabular client", t, func(){
+	Convey("Given a Cantabular client", t, func() {
 		var c cantabular.Client
 
 		Convey("When ParseTable is triggered with a valid table", func() {
@@ -20,25 +20,25 @@ func TestParseQueryResponse(t *testing.T) {
 			Convey("Then the expected reader is returned without error", func() {
 				So(err, ShouldBeNil)
 				validateLines(reader, []string{
-					"City,Number of siblings (3 mappings),Sex,count",
-					"London,No siblings,Male,2",
-					"London,No siblings,Female,0",
-					"London,1 or 2 siblings,Male,1",
-					"London,1 or 2 siblings,Female,3",
-					"London,3 or more siblings,Male,5",
-					"London,3 or more siblings,Female,4",
-					"Liverpool,No siblings,Male,7",
-					"Liverpool,No siblings,Female,6",
-					"Liverpool,1 or 2 siblings,Male,11",
-					"Liverpool,1 or 2 siblings,Female,10",
-					"Liverpool,3 or more siblings,Male,9",
-					"Liverpool,3 or more siblings,Female,13",
-					"Belfast,No siblings,Male,14",
-					"Belfast,No siblings,Female,12",
-					"Belfast,1 or 2 siblings,Male,16",
-					"Belfast,1 or 2 siblings,Female,17",
-					"Belfast,3 or more siblings,Male,15",
-					"Belfast,3 or more siblings,Female,8",
+					"cantabular_blob,City,Number of siblings (3 mappings),Sex",
+					"2,London,No siblings,Male",
+					"0,London,No siblings,Female",
+					"1,London,1 or 2 siblings,Male",
+					"3,London,1 or 2 siblings,Female",
+					"5,London,3 or more siblings,Male",
+					"4,London,3 or more siblings,Female",
+					"7,Liverpool,No siblings,Male",
+					"6,Liverpool,No siblings,Female",
+					"11,Liverpool,1 or 2 siblings,Male",
+					"10,Liverpool,1 or 2 siblings,Female",
+					"9,Liverpool,3 or more siblings,Male",
+					"13,Liverpool,3 or more siblings,Female",
+					"14,Belfast,No siblings,Male",
+					"12,Belfast,No siblings,Female",
+					"16,Belfast,1 or 2 siblings,Male",
+					"17,Belfast,1 or 2 siblings,Female",
+					"15,Belfast,3 or more siblings,Male",
+					"8,Belfast,3 or more siblings,Female",
 				})
 			})
 		})

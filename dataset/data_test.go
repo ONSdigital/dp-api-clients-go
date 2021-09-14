@@ -30,14 +30,14 @@ func setupMetadata() Metadata {
 		Version: Version{
 			ReleaseDate: "release date",
 			LatestChanges: []Change{
-				Change{
+				{
 					Description: "change description",
 					Name:        "change name",
 					Type:        "change type",
 				},
 			},
 			Downloads: map[string]Download{
-				"download1": Download{
+				"download1": {
 					URL:     "url",
 					Size:    "size",
 					Public:  "public",
@@ -54,7 +54,7 @@ func setupMetadata() Metadata {
 				Type: "type",
 			},
 			Contacts: &[]Contact{
-				Contact{
+				{
 					Name:      "Bob",
 					Email:     "bob@test.com",
 					Telephone: "01657923723",
@@ -67,21 +67,21 @@ func setupMetadata() Metadata {
 			License:           "license",
 			NationalStatistic: true,
 			Methodologies: &[]Methodology{
-				Methodology{
+				{
 					Description: "methodology description",
 					URL:         "methodology url",
 					Title:       "methodology title",
 				},
 			},
 			Publications: &[]Publication{
-				Publication{
+				{
 					Description: "publication description",
 					URL:         "publication url",
 					Title:       "publication title",
 				},
 			},
 			RelatedDatasets: &[]RelatedDataset{
-				RelatedDataset{
+				{
 					URL:   "related dataset url",
 					Title: "related dataset title",
 				},

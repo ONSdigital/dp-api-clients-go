@@ -713,7 +713,7 @@ func (c *Client) GetInstances(ctx context.Context, userAuthToken, serviceAuthTok
 		return
 	}
 
-	json.Unmarshal(b, &m)
+	err = json.Unmarshal(b, &m)
 	return
 }
 
@@ -1401,9 +1401,11 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	return c.hcCli.Client.Do(ctx, req)
 }
 
-// closeResponseBody closes the response body and logs an error containing the context if unsuccessful
+// closeResponseBody closes the response body and logs an error if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
-	if err := resp.Body.Close(); err != nil {
-		log.Error(ctx, "error closing http response body", err)
+	if resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
 	}
 }

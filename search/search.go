@@ -12,6 +12,8 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
+
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 const (
@@ -106,7 +108,7 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 	v.Add("limit", strconv.Itoa(limit))
 	v.Add("offset", strconv.Itoa(offset))
 
-	uri = uri + v.Encode()
+	uri += v.Encode()
 
 	clientlog.Do(ctx, "searching for dataset dimension option", service, uri)
 
@@ -128,7 +130,7 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, &ErrInvalidDimensionSearchAPIResponse{http.StatusOK, resp.StatusCode, uri}
@@ -137,4 +139,13 @@ func (c *Client) Dimension(ctx context.Context, datasetID, edition, version, nam
 	err = json.NewDecoder(resp.Body).Decode(&m)
 
 	return
+}
+
+// closeResponseBody closes the response body and logs an error if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}
 }

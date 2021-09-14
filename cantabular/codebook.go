@@ -2,38 +2,38 @@ package cantabular
 
 import (
 	"context"
-	"io/ioutil"
-	"fmt"
-	"errors"
-	"net/http"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 
-	"github.com/ONSdigital/log.go/v2/log"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
-// Variable represents a 'codebook' object returned from Cantabular Server
+// Codebook represents a 'codebook' object returned from Cantabular Server
 type Codebook []Variable
 
 // GetCodebook gets a Codebook from cantabular.
-func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetCodebookResponse, error){
-	if len(c.host) == 0{
+func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetCodebookResponse, error) {
+	if len(c.host) == 0 {
 		return nil, dperrors.New(
-			errors.New("Cantabular Server host not configured"),
+			errors.New("cantabular server host not configured"),
 			http.StatusServiceUnavailable,
 			nil,
 		)
 	}
 
 	var vars string
-	for _, v := range req.Variables{
+	for _, v := range req.Variables {
 		vars += "&v=" + v
 	}
 
 	url := fmt.Sprintf("%s/v9/codebook/%s?cats=%v%s", c.host, req.DatasetName, req.Categories, vars)
 
 	res, err := c.httpGet(ctx, url)
-	if err != nil{
+	if err != nil {
 		return nil, dperrors.New(
 			fmt.Errorf("failed to get response from Cantabular API: %s", err),
 			http.StatusInternalServerError,
@@ -43,16 +43,14 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 		)
 	}
 
-	defer res.Body.Close()
+	defer closeResponseBody(ctx, res)
 
-	if res.StatusCode != http.StatusOK{
+	if res.StatusCode != http.StatusOK {
 		return nil, c.errorResponse(url, res)
 	}
 
-	var resp GetCodebookResponse
-
 	b, err := ioutil.ReadAll(res.Body)
-	if err != nil{
+	if err != nil {
 		return nil, dperrors.New(
 			fmt.Errorf("failed to read response body: %s", err),
 			res.StatusCode,
@@ -62,20 +60,31 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 		)
 	}
 
-	if len(b) == 0{
+	if len(b) == 0 {
 		b = []byte("[response body empty]")
 	}
 
-	if err := json.Unmarshal(b, &resp); err != nil{
+	var resp GetCodebookResponse
+
+	if err := json.Unmarshal(b, &resp); err != nil {
 		return nil, dperrors.New(
 			fmt.Errorf("failed to unmarshal response body: %s", err),
 			http.StatusInternalServerError,
 			log.Data{
-				"url": url,
+				"url":           url,
 				"response_body": string(b),
 			},
 		)
 	}
 
 	return &resp, nil
+}
+
+// closeResponseBody closes the response body and logs an error if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}
 }

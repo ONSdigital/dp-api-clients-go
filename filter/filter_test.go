@@ -825,9 +825,10 @@ func TestClient_CreateBlueprint(t *testing.T) {
 		So(len(httpClient.DoCalls()), ShouldEqual, 1)
 
 		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
-		var actualVersion string
-		json.Unmarshal(actualBody, &actualVersion)
-		So(actualVersion, ShouldResemble, expectedFilterID)
+		var actualVersion CreateBlueprint
+		err := json.Unmarshal(actualBody, &actualVersion)
+		So(err, ShouldBeNil)
+		So(actualVersion.FilterID, ShouldResemble, expectedFilterID)
 	}
 
 	Convey("Given a valid Blueprint is returned", t, func() {
@@ -920,7 +921,8 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 		var actualModel Model
 
-		json.Unmarshal(actualBody, &actualModel)
+		err := json.Unmarshal(actualBody, &actualModel)
+		So(err, ShouldBeNil)
 		So(actualModel, ShouldResemble, expectedModel)
 
 		actualIfMatch := httpClient.DoCalls()[0].Req.Header.Get("If-Match")
