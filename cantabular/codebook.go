@@ -19,7 +19,7 @@ type Codebook []Variable
 func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetCodebookResponse, error) {
 	if len(c.host) == 0 {
 		return nil, dperrors.New(
-			errors.New("cantabular Server host not configured"),
+			errors.New("cantabular server host not configured"),
 			http.StatusServiceUnavailable,
 			nil,
 		)
