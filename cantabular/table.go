@@ -22,19 +22,24 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 	b := new(bytes.Buffer)
 	w := csv.NewWriter(b)
 
+	// aux func to write to the csv writer, returning any error (returned by w.Write or w.Error)
+	write := func(record []string) error {
+		if err := w.Write(record); err != nil {
+			return err
+		}
+		return w.Error()
+	}
+
 	// Create and write header separately
 	header := c.createCSVHeader(table.Dimensions)
-
-	err := w.Write(header)
-	if err != nil {
+	if err := write(header); err != nil {
 		return nil, fmt.Errorf("error writing the csv header: %w", err)
 	}
 
 	// Obtain the CSV rows according to the cantabular dimensions and counts
 	for i, count := range table.Values {
 		row := c.createCSVRow(table.Dimensions, i, count)
-		err := w.Write(row)
-		if err != nil {
+		if err := write(row); err != nil {
 			return nil, fmt.Errorf("error writing a csv row: %w", err)
 		}
 	}

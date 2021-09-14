@@ -84,9 +84,9 @@ func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) err
 		"service": Service,
 	}
 	code := 0
-	urlHost := fmt.Sprintf("%s/v9/datasets", c.host)
+	hostPath := fmt.Sprintf("%s/v9/datasets", c.host)
 
-	res, err := c.httpGet(ctx, urlHost)
+	res, err := c.httpGet(ctx, hostPath)
 	if err != nil {
 		log.Error(ctx, "failed to request service health", err, logData)
 	} else {
