@@ -876,7 +876,7 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 	if err != nil {
 		return "", err
 	}
-	err =headers.SetAuthToken(req, userAuthToken)
+	err = headers.SetAuthToken(req, userAuthToken)
 	if err != nil {
 		return "", err
 	}
