@@ -5,7 +5,7 @@ import (
 )
 
 // Config holds the config used to initialise the Cantabular Client
-type Config struct{
+type Config struct {
 	Host           string
 	ExtApiHost     string
 	GraphQLTimeout time.Duration

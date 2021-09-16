@@ -3,14 +3,13 @@ package cantabular_test
 import (
 	"context"
 	"errors"
-	"testing"
 	"net/http"
-
+	"testing"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/mock"
-	dphttp "github.com/ONSdigital/dp-net/http"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -21,7 +20,7 @@ func TestStaticDatasetQueryHappy(t *testing.T) {
 
 		mockHttpClient := &dphttp.ClienterMock{}
 		mockGQLClient := &mock.GraphQLClientMock{
-			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error{
+			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
 				return nil
 			},
 		}
@@ -38,7 +37,7 @@ func TestStaticDatasetQueryHappy(t *testing.T) {
 		Convey("When the StaticDatasetQuery method is called", func() {
 			req := cantabular.StaticDatasetQueryRequest{}
 			_, err := cantabularClient.StaticDatasetQuery(testCtx, req)
-			
+
 			Convey("No error should be returned", func() {
 				So(err, ShouldBeNil)
 			})
@@ -55,7 +54,7 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 
 		cantabularClient := cantabular.NewClient(
 			cantabular.Config{
-				Host:       "cantabular.host",
+				Host: "cantabular.host",
 			},
 			mockHttpClient,
 			nil,
@@ -99,7 +98,7 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 		Convey("When the StaticDatasetQuery method is called", func() {
 			req := cantabular.StaticDatasetQueryRequest{}
 			_, err := cantabularClient.StaticDatasetQuery(testCtx, req)
-			
+
 			Convey("An error should be returned with status code 400 Bad Request", func() {
 				So(err, ShouldNotBeNil)
 				So(dperrors.StatusCode(err), ShouldEqual, http.StatusBadRequest)

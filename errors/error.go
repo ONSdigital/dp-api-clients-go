@@ -4,23 +4,23 @@ import (
 	"errors"
 )
 
-// Error is a common error for HTTP APIs to return associated status code 
+// Error is a common error for HTTP APIs to return associated status code
 // and logdata from API calls made
-type Error struct{
-	err error
+type Error struct {
+	err        error
 	statusCode int
-	logData map[string]interface{}
+	logData    map[string]interface{}
 }
 
-// News a new Error
-func New(err error, statusCode int, logData map[string]interface{}) *Error{
-	if err == nil{
+// New a new Error
+func New(err error, statusCode int, logData map[string]interface{}) *Error {
+	if err == nil {
 		err = errors.New("nil error")
 	}
 	return &Error{
-		err: err,
+		err:        err,
 		statusCode: statusCode,
-		logData: logData,
+		logData:    logData,
 	}
 }
 
@@ -30,7 +30,7 @@ func (e *Error) Error() string {
 }
 
 // Unwrap implements Go error unwrapping
-func (e *Error) Unwrap() error{
+func (e *Error) Unwrap() error {
 	return e.err
 }
 
@@ -38,12 +38,12 @@ func (e *Error) Unwrap() error{
 // Hopefull can be renamed to StatusCodea some point but this is
 // how it is named elsewhere across ONS services and is more useful
 // being consistent
-func (e *Error) Code() int{
+func (e *Error) Code() int {
 	return e.statusCode
 }
 
 // LogData implemented the DataLogger interface and allows
 // log data to be embedded in and retrieved from an error
-func (e *Error) LogData() map[string]interface{}{
+func (e *Error) LogData() map[string]interface{} {
 	return e.logData
 }

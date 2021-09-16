@@ -30,7 +30,6 @@ type DatasetDetails struct {
 	Type              string            `json:"type,omitempty"`
 	UnitOfMeasure     string            `json:"unit_of_measure,omitempty"`
 	URI               string            `json:"uri,omitempty"`
-	UsageNotes        *[]UsageNote      `json:"usage_notes,omitempty"`
 }
 
 // Dataset represents a dataset resource
@@ -50,7 +49,7 @@ type List struct {
 	TotalCount int       `json:"total_count"`
 }
 
-// VersionList represents an object containing a list of datasets
+// VersionsList represents an object containing a list of datasets
 type VersionsList struct {
 	Items      []Version `json:"items"`
 	Count      int       `json:"count"`
@@ -59,7 +58,7 @@ type VersionsList struct {
 	TotalCount int       `json:"total_count"`
 }
 
-// Instance which presents a single dataset being imported
+// NewInstance which presents a single dataset being imported
 type NewInstance struct {
 	InstanceID        string               `json:"id,omitempty"`
 	Links             *Links               `json:"links,omitempty"`

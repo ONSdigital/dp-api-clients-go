@@ -21,6 +21,8 @@ import (
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
+
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 const service = "zebedee"
@@ -126,7 +128,7 @@ func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, col
 		dlp.RelatedMethodologyArticle,
 	}
 
-	//Concurrently resolve any URIs where we need more data from another page
+	// Concurrently resolve any URIs where we need more data from another page
 	var wg sync.WaitGroup
 	sem := make(chan int, 10)
 
@@ -161,7 +163,7 @@ func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte,
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
 		io.Copy(ioutil.Discard, resp.Body)
@@ -184,7 +186,7 @@ func (c *Client) put(ctx context.Context, userAccessToken, path string, payload 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeResponseBody(ctx, resp)
 
 	return resp, nil
 }
@@ -406,4 +408,13 @@ func (c *Client) GetPublishedData(ctx context.Context, uriString string) ([]byte
 	}
 
 	return content, nil
+}
+
+// closeResponseBody closes the response body and logs an error if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}
 }

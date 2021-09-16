@@ -84,28 +84,26 @@ func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) err
 		"service": Service,
 	}
 	code := 0
-	url := fmt.Sprintf("%s/v9/datasets", c.host)
+	reqURL := fmt.Sprintf("%s/v9/datasets", c.host)
 
-	res, err := c.httpGet(ctx, url)
+	res, err := c.httpGet(ctx, reqURL)
 	if err != nil {
 		log.Error(ctx, "failed to request service health", err, logData)
 	} else {
 		code = res.StatusCode
-		defer res.Body.Close()
+		defer closeResponseBody(ctx, res)
 	}
 
 	switch code {
 	case 0: // When there is a problem with the client return error in message
-		state.Update(healthcheck.StatusCritical, err.Error(), 0)
+		return state.Update(healthcheck.StatusCritical, err.Error(), 0)
 	case 200:
 		message := Service + health.StatusMessage[healthcheck.StatusOK]
-		state.Update(healthcheck.StatusOK, message, code)
+		return state.Update(healthcheck.StatusOK, message, code)
 	default:
 		message := Service + health.StatusMessage[healthcheck.StatusCritical]
-		state.Update(healthcheck.StatusCritical, message, code)
+		return state.Update(healthcheck.StatusCritical, message, code)
 	}
-
-	return nil
 }
 
 // errorResponse handles dealing with an error response from Cantabular

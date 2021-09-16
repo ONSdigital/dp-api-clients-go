@@ -63,7 +63,8 @@ var validateRequestPatches = func(httpClient *dphttp.ClienterMock, callIndex int
 		var expectedValue interface{}
 		b, err := json.Marshal(patch.Value)
 		So(err, ShouldBeNil)
-		json.Unmarshal(b, &expectedValue)
+		err = json.Unmarshal(b, &expectedValue)
+		So(err, ShouldBeNil)
 
 		So(sentPatches[i].Value, ShouldResemble, expectedValue)
 	}
@@ -229,7 +230,8 @@ func TestClient_PutVersion(t *testing.T) {
 		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 
 		var actualVersion Version
-		json.Unmarshal(actualBody, &actualVersion)
+		err := json.Unmarshal(actualBody, &actualVersion)
+		So(err, ShouldBeNil)
 		So(actualVersion, ShouldResemble, expectedVersion)
 	}
 

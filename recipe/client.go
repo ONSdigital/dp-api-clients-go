@@ -22,7 +22,7 @@ type Client struct {
 	hcCli *health.Client
 }
 
-// New creates a new instance of Client with a given recipe api url
+// NewClient creates a new instance of Client with a given recipe api url
 func NewClient(recipeAPIURL string) *Client {
 	return &Client{
 		health.NewClient(service, recipeAPIURL),
@@ -42,10 +42,12 @@ func (c *Client) Checker(ctx context.Context, check *healthcheck.CheckState) err
 	return c.hcCli.Checker(ctx, check)
 }
 
-// closeResponseBody closes the response body
+// closeResponseBody closes the response body and logs an error if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if resp.Body != nil {
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
 	}
 }
 
@@ -58,8 +60,14 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 		return nil, err
 	}
 
-	headers.SetAuthToken(req, userAuthToken)
-	headers.SetServiceAuthToken(req, serviceAuthToken)
+	err = headers.SetAuthToken(req, userAuthToken)
+	if err != nil {
+		return nil, err
+	}
+	err = headers.SetServiceAuthToken(req, serviceAuthToken)
+	if err != nil {
+		return nil, err
+	}
 	return c.hcCli.Client.Do(ctx, req)
 }
 
@@ -67,7 +75,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 func (c *Client) errorResponse(res *http.Response) error {
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		dperrors.New(
+		return dperrors.New(
 			fmt.Errorf("failed to read error response body: %s", err),
 			res.StatusCode,
 			nil,
@@ -81,7 +89,7 @@ func (c *Client) errorResponse(res *http.Response) error {
 	var resp ErrorResponse
 
 	if err := json.Unmarshal(b, &resp); err != nil {
-		dperrors.New(
+		return dperrors.New(
 			fmt.Errorf("failed to unmarshal error response body: %s", err),
 			res.StatusCode,
 			log.Data{

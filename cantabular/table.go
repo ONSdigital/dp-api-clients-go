@@ -17,24 +17,29 @@ type Table struct {
 
 // ParseTable takes a table from a GraphQL response and parses it into a
 // header and rows of counts (observations) ready to be read line-by-line.
-func (c *Client) ParseTable(table Table) (*bufio.Reader, error){
+func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 	// Create CSV writer with underlying buffer
 	b := new(bytes.Buffer)
 	w := csv.NewWriter(b)
 
-	// Create and write header seperately
-	header := c.createCSVHeader(table.Dimensions)
+	// aux func to write to the csv writer, returning any error (returned by w.Write or w.Error)
+	write := func(record []string) error {
+		if err := w.Write(record); err != nil {
+			return err
+		}
+		return w.Error()
+	}
 
-	w.Write(header)
-	if err := w.Error(); err != nil {
+	// Create and write header separately
+	header := c.createCSVHeader(table.Dimensions)
+	if err := write(header); err != nil {
 		return nil, fmt.Errorf("error writing the csv header: %w", err)
 	}
 
 	// Obtain the CSV rows according to the cantabular dimensions and counts
 	for i, count := range table.Values {
 		row := c.createCSVRow(table.Dimensions, i, count)
-		w.Write(row)
-		if err := w.Error(); err != nil {
+		if err := write(row); err != nil {
 			return nil, fmt.Errorf("error writing a csv row: %w", err)
 		}
 	}
@@ -45,7 +50,7 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error){
 		return nil, fmt.Errorf("error flushing the csv writer: %w", err)
 	}
 
-	// Return a reader with the same underlying Byte buffer as written by the csv writter
+	// Return a reader with the same underlying Byte buffer as written by the csv writer
 	return bufio.NewReader(b), nil
 }
 
@@ -54,9 +59,9 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error){
 func (c *Client) createCSVHeader(dims []Dimension) []string {
 	header := make([]string, len(dims)+1)
 	for i, dim := range dims {
-		header[i] = dim.Variable.Label
+		header[i+1] = dim.Variable.Label
 	}
-	header[len(dims)] = "count"
+	header[0] = "cantabular_blob"
 
 	return header
 }
@@ -69,12 +74,12 @@ func (c *Client) createCSVRow(dims []Dimension, index, count int) []string {
 
 	// Iterate dimensions starting from the last one (lower weight)
 	for i := len(dims) - 1; i >= 0; i-- {
-		catIndex := index % dims[i].Count           // Index of the category for the current dimension
-		row[i] = dims[i].Categories[catIndex].Label // The CSV column corresponds to the label of the Category
-		index = index / dims[i].Count               // Modify index for next iteration
+		catIndex := index % dims[i].Count             // Index of the category for the current dimension
+		row[i+1] = dims[i].Categories[catIndex].Label // The CSV column corresponds to the label of the Category
+		index /= dims[i].Count                        // Modify index for next iteration
 	}
 
-	row[len(dims)] = fmt.Sprintf("%d", count)
+	row[0] = fmt.Sprintf("%d", count)
 
 	return row
 }

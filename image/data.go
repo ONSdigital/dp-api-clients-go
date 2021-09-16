@@ -60,7 +60,7 @@ type ImageLinks struct {
 	Downloads string `json:"downloads"`
 }
 
-// Images represents the fields for a group of image download variants as returned by Image API
+// ImageDownloads represents the fields for a group of image download variants as returned by Image API
 type ImageDownloads struct {
 	Count      int             `json:"count"`
 	Items      []ImageDownload `json:"items"`
@@ -96,7 +96,7 @@ type ImageDownload struct {
 	PublishCompleted *time.Time `json:"publish_completed,omitempty"`
 }
 
-// ImageDownload represents the fields for an Image Download
+// NewImageDownload represents the fields for an Image Download
 type NewImageDownload struct {
 	Id      string `json:"id,omitempty"`
 	Height  *int   `json:"height,omitempty"`

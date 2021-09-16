@@ -2,15 +2,15 @@ package errors
 
 import (
 	"errors"
-	"net/http"
 	"github.com/ONSdigital/log.go/v2/log"
+	"net/http"
 )
 
 // StatusCode is a callback function that allows you to extract
 // a status code from an error, or returns 500 as a default
-func StatusCode(err error) int{
+func StatusCode(err error) int {
 	var cerr coder
-	if errors.As(err, &cerr){
+	if errors.As(err, &cerr) {
 		return cerr.Code()
 	}
 
@@ -18,9 +18,9 @@ func StatusCode(err error) int{
 }
 
 // LogData returns logData for an error if there is any
-func LogData(err error) log.Data{
+func LogData(err error) log.Data {
 	var lderr dataLogger
-	if errors.As(err, &lderr){
+	if errors.As(err, &lderr) {
 		return lderr.LogData()
 	}
 
@@ -28,12 +28,12 @@ func LogData(err error) log.Data{
 }
 
 // UnwrapLogData recursively unwraps logData from an error
-func UnwrapLogData(err error) log.Data{
+func UnwrapLogData(err error) log.Data {
 	var data []log.Data
 
-	for err != nil && errors.Unwrap(err) != nil{
-		if lderr, ok := err.(dataLogger); ok{
-			if d := lderr.LogData(); d != nil{
+	for err != nil && errors.Unwrap(err) != nil {
+		if lderr, ok := err.(dataLogger); ok {
+			if d := lderr.LogData(); d != nil {
 				data = append(data, d)
 			}
 		}
@@ -45,10 +45,10 @@ func UnwrapLogData(err error) log.Data{
 	// entries for duplicate keyed entries, but not for duplicate
 	// key-value pairs
 	logData := log.Data{}
-	for _, d := range data{
-		for k, v := range d{
-			if val, ok := logData[k]; ok{
-				if val != v{
+	for _, d := range data {
+		for k, v := range d {
+			if val, ok := logData[k]; ok {
+				if val != v {
 					if s, ok := val.([]interface{}); ok {
 						s = append(s, v)
 						logData[k] = s
@@ -56,7 +56,7 @@ func UnwrapLogData(err error) log.Data{
 						logData[k] = []interface{}{val, v}
 					}
 				}
-			} else{
+			} else {
 				logData[k] = v
 			}
 		}

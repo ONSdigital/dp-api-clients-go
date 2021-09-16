@@ -23,7 +23,7 @@ func (a *Allowed) isMethodAllowed(method string) bool {
 // HealthcheckFilter creates a map for healthcheck endpoints whitelisting, to be provided to the Whitelist generic function
 func HealthcheckFilter(hcHandler func(w http.ResponseWriter, req *http.Request)) map[string]Allowed {
 	return map[string]Allowed{
-		"/health": Allowed{
+		"/health": {
 			Methods: []string{http.MethodGet},
 			Handler: hcHandler,
 		},

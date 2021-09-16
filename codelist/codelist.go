@@ -134,7 +134,7 @@ func (c *Client) GetIDNameMap(ctx context.Context, userAuthToken string, service
 	return idNames, nil
 }
 
-//GetGeographyCodeLists returns the geography codelists
+// GetGeographyCodeLists returns the geography codelists
 func (c *Client) GetGeographyCodeLists(ctx context.Context, userAuthToken string, serviceAuthToken string) (CodeListResults, error) {
 	uri := fmt.Sprintf("%s/code-lists?type=geography", c.hcCli.URL)
 	clientlog.Do(ctx, "retrieving geography codelists", service, uri)
@@ -162,7 +162,7 @@ func (c *Client) GetGeographyCodeLists(ctx context.Context, userAuthToken string
 	return results, nil
 }
 
-//GetCodeListEditions returns the editions for a codelist
+// GetCodeListEditions returns the editions for a codelist
 func (c *Client) GetCodeListEditions(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string) (EditionsListResults, error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/editions", c.hcCli.URL, codeListID)
 	clientlog.Do(ctx, "retrieving codelist editions", service, uri)
@@ -192,7 +192,7 @@ func (c *Client) GetCodeListEditions(ctx context.Context, userAuthToken string, 
 	return editionsList, nil
 }
 
-//GetCodes returns the codes for a specific edition of a code list
+// GetCodes returns the codes for a specific edition of a code list
 func (c *Client) GetCodes(ctx context.Context, userAuthToken string, serviceAuthToken string, codeListID string, edition string) (CodesResults, error) {
 	uri := fmt.Sprintf("%s/code-lists/%s/editions/%s/codes", c.hcCli.URL, codeListID, edition)
 	clientlog.Do(ctx, "retrieving codes from an edition of a code list", service, uri)
@@ -310,12 +310,11 @@ func setAuthenticationHeaders(req *http.Request, userAuthToken, serviceAuthToken
 	return nil
 }
 
+// closeResponseBody closes the response body and logs an error if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
-	if resp.Body == nil {
-		return
-	}
-
-	if err := resp.Body.Close(); err != nil {
-		log.Error(ctx, "error closing http response body", err)
+	if resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
 	}
 }
