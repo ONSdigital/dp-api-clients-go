@@ -422,7 +422,7 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 		Convey("when zebedeeClient.GetPublishedData is called", func() {
 			testContent, err := zebedeeClient.GetPublishedData(ctx, testURIString)
 
-			Convey("then the expected page content is returned", func() {
+			Convey("then the expected error is returned", func() {
 				So(err, ShouldNotBeNil)
 				So(testContent, ShouldBeNil)
 				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
