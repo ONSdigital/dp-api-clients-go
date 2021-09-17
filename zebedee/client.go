@@ -41,18 +41,13 @@ type ErrInvalidZebedeeResponse struct {
 
 // Error should be called by the user to print out the stringified version of the error
 func (e ErrInvalidZebedeeResponse) Error() string {
-	return fmt.Sprintf("invalid response from zebedee - should be 2.x.x or 3.x.x, got: %d, path: %s",
+	return fmt.Sprintf("invalid response from zebedee: %d, path: %s",
 		e.ActualCode,
 		e.URI,
 	)
 }
 
 var _ error = ErrInvalidZebedeeResponse{}
-
-var (
-	errCastingCollectionID = errors.New("error casting collection ID cookie to string")
-	errCastingLocalCode    = errors.New("error casting locale code to string")
-)
 
 // New creates a new Zebedee Client, set ZEBEDEE_REQUEST_TIMEOUT_SECOND
 // environment variable to modify default client timeout as zebedee can often be slow
@@ -402,6 +397,17 @@ func (c *Client) createRequestURL(ctx context.Context, collectionID, lang, path,
 	}
 
 	return path
+}
+
+// GetPublishedData returns []byte
+func (c *Client) GetPublishedData(ctx context.Context, uriString string) ([]byte, error) {
+	reqURL := c.createRequestURL(ctx, "", "", "/publisheddata", "uri="+uriString)
+	content, _, err := c.get(ctx, "", reqURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return content, nil
 }
 
 // closeResponseBody closes the response body and logs an error if unsuccessful
