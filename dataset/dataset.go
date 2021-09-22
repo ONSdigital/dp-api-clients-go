@@ -1019,20 +1019,46 @@ func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, i
 }
 
 // PatchInstanceDimensions performs a 'PATCH /instances/<id>/dimensions' with the provided List of Options to patch (upsert)
-func (c *Client) PatchInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string, data []*OptionPost, ifMatch string) (eTag string, err error) {
+func (c *Client) PatchInstanceDimensions(ctx context.Context, serviceAuthToken, instanceID string, upserts []*OptionPost, updates []*OptionUpdate, ifMatch string) (eTag string, err error) {
 	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
 
-	if len(data) == 0 {
+	// if nil or empty slices are provided, there is noting to update
+	if len(upserts) == 0 && len(updates) == 0 {
 		log.Info(ctx, "skipping patch call because no update was provided", log.Data{"uri": uri})
 		return ifMatch, nil
 	}
 
-	patchBody := []dprequest.Patch{
-		{
+	// create array of patch oprations that will be sent in one request
+	patchBody := []dprequest.Patch{}
+
+	// options to upsert are sent as a single path operation with the array of options as value
+	if len(upserts) > 0 {
+		patchBody = append(patchBody, dprequest.Patch{
 			Op:    dprequest.OpAdd.String(), // this will cause an 'upsert' to be actioned for all provided Options in data
 			Path:  "/-",
-			Value: data,
-		},
+			Value: upserts,
+		})
+	}
+
+	// options to update are sent as multiple patch operations, one for each update
+	for _, op := range updates {
+		if op.Name == "" || op.Option == "" {
+			return "", errors.New("option updates must provide name and option")
+		}
+		if op.NodeID != "" {
+			patchBody = append(patchBody, dprequest.Patch{
+				Op:    dprequest.OpAdd.String(), // this will cause an 'update' to be actioned for the provided Option
+				Path:  fmt.Sprintf("/%s/options/%s/node_id", op.Name, op.Option),
+				Value: op.NodeID,
+			})
+		}
+		if op.Order != nil {
+			patchBody = append(patchBody, dprequest.Patch{
+				Op:    dprequest.OpAdd.String(), // this will cause an 'update' to be actioned for the provided Option
+				Path:  fmt.Sprintf("/%s/options/%s/order", op.Name, op.Option),
+				Value: op.Order,
+			})
+		}
 	}
 
 	clientlog.Do(ctx, "patching (upserting) dimension options to instance", service, uri)

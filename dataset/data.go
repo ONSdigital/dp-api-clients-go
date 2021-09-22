@@ -344,6 +344,15 @@ type OptionPost struct {
 	Order    *int   `json:"order,omitempty"`
 }
 
+// OptionUpdate represents an update for an existing option.
+// The information provided in the struct will be used to generate a patch operation
+type OptionUpdate struct {
+	Option string
+	Name   string
+	Order  *int
+	NodeID string
+}
+
 // JobInstance represents the details necessary to update (PUT) a job instance
 type JobInstance struct {
 	HeaderNames          []string `json:"headers"`

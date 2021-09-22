@@ -1855,14 +1855,29 @@ func TestClient_GetOptionsInBatches(t *testing.T) {
 
 func TestClient_PatchInstanceDimensions(t *testing.T) {
 
-	options := []*OptionPost{
+	optionUpserts := []*OptionPost{
 		{
-			Name:   "testDimension",
+			Name:   "dim1",
 			Option: "op1",
 		},
 		{
-			Name:   "testDimension",
+			Name:   "dim2",
 			Option: "op2",
+		},
+	}
+
+	ord := 5
+	optionUpdates := []*OptionUpdate{
+		{
+			Name:   "dim1",
+			Option: "op1",
+			NodeID: "node1",
+			Order:  &ord,
+		},
+		{
+			Name:   "dim2",
+			Option: "op2",
+			NodeID: "node2",
 		},
 	}
 
@@ -1874,8 +1889,8 @@ func TestClient_PatchInstanceDimensions(t *testing.T) {
 		})
 		datasetClient := newDatasetClient(httpClient)
 
-		Convey("when PatchInstanceDimensions is called with valid options", func() {
-			eTag, err := datasetClient.PatchInstanceDimensions(ctx, serviceAuthToken, "123", options, testIfMatch)
+		Convey("when PatchInstanceDimensions is called with valid options upserts", func() {
+			eTag, err := datasetClient.PatchInstanceDimensions(ctx, serviceAuthToken, "123", optionUpserts, nil, testIfMatch)
 
 			Convey("a positive response with expected dimensions and eTag is returned", func() {
 				So(err, ShouldBeNil)
@@ -1885,14 +1900,71 @@ func TestClient_PatchInstanceDimensions(t *testing.T) {
 			Convey("and dphttpclient.Do is called 1 time with the expected patch body, method, path and headers", func() {
 				checkRequestBase(httpClient, http.MethodPatch, "/instances/123/dimensions", testIfMatch)
 				expectedPatches := []dprequest.Patch{
-					{Op: dprequest.OpAdd.String(), Path: "/-", Value: options},
+					{Op: dprequest.OpAdd.String(), Path: "/-", Value: optionUpserts},
 				}
 				validateRequestPatches(httpClient, 0, expectedPatches)
 			})
 		})
 
-		Convey("when PatchInstanceDimensions is called without any update", func() {
-			eTag, err := datasetClient.PatchInstanceDimensions(ctx, serviceAuthToken, "123", nil, testIfMatch)
+		Convey("when PatchInstanceDimensions is called with valid options updates", func() {
+			eTag, err := datasetClient.PatchInstanceDimensions(ctx, serviceAuthToken, "123", nil, optionUpdates, testIfMatch)
+
+			Convey("a positive response with expected dimensions and eTag is returned", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldEqual, testETag)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected patch body, method, path and headers", func() {
+				checkRequestBase(httpClient, http.MethodPatch, "/instances/123/dimensions", testIfMatch)
+				expectedPatches := []dprequest.Patch{
+					{Op: dprequest.OpAdd.String(), Path: "/dim1/options/op1/node_id", Value: "node1"},
+					{Op: dprequest.OpAdd.String(), Path: "/dim1/options/op1/order", Value: 5},
+					{Op: dprequest.OpAdd.String(), Path: "/dim2/options/op2/node_id", Value: "node2"},
+				}
+				validateRequestPatches(httpClient, 0, expectedPatches)
+			})
+		})
+
+		Convey("when PatchInstanceDimensions is called with an option update without a name value", func() {
+			update := []*OptionUpdate{
+				{
+					Option: "op1",
+					NodeID: "node1",
+				},
+			}
+			_, err := datasetClient.PatchInstanceDimensions(ctx, serviceAuthToken, "123", nil, update, testIfMatch)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "option updates must provide name and option")
+			})
+
+			Convey("and dphttpclient.Do call is skipped", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
+
+		Convey("when PatchInstanceDimensions is called with an option update without an option value", func() {
+			update := []*OptionUpdate{
+				{
+					Name:   "dim1",
+					NodeID: "node1",
+				},
+			}
+			_, err := datasetClient.PatchInstanceDimensions(ctx, serviceAuthToken, "123", nil, update, testIfMatch)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "option updates must provide name and option")
+			})
+
+			Convey("and dphttpclient.Do call is skipped", func() {
+				So(len(httpClient.DoCalls()), ShouldEqual, 0)
+			})
+		})
+
+		Convey("when PatchInstanceDimensions is called without any option upsert or update", func() {
+			eTag, err := datasetClient.PatchInstanceDimensions(ctx, serviceAuthToken, "123", nil, nil, testIfMatch)
 
 			Convey("a positive response with expected dimensions is returned with the same ifMatch as provided", func() {
 				So(err, ShouldBeNil)
@@ -1910,7 +1982,7 @@ func TestClient_PatchInstanceDimensions(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when PatchInstanceDimensionOption is called", func() {
-			_, err := datasetClient.PatchInstanceDimensions(ctx, serviceAuthToken, "123", options, testIfMatch)
+			_, err := datasetClient.PatchInstanceDimensions(ctx, serviceAuthToken, "123", optionUpserts, nil, testIfMatch)
 
 			Convey("then the expected error is returned", func() {
 				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
