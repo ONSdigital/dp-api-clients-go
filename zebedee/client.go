@@ -376,6 +376,22 @@ func (c *Client) GetCollection(ctx context.Context, userAccessToken, collectionI
 	return collection, nil
 }
 
+// GetBulletin retrieves a bulletin from zebedee
+func (c *Client) GetBulletin(ctx context.Context, userAccessToken, lang, uri string) (Bulletin, error) {
+	reqURL := c.createRequestURL(ctx, "", lang, "/data", "uri="+uri)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
+	if err != nil {
+		return Bulletin{}, err
+	}
+
+	var bulletin Bulletin
+	if err = json.Unmarshal(b, &bulletin); err != nil {
+		return bulletin, err
+	}
+
+	return bulletin, nil
+}
+
 // GetResourceBody returns body of a resource e.g. JSON definition of a table
 func (c *Client) GetResourceBody(ctx context.Context, userAccessToken, collectionID, lang, uri string) ([]byte, error) {
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/resource", "uri="+uri)
