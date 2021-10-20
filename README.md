@@ -1,4 +1,4 @@
-dp-api-clients-go [![GoDoc](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v2?status.svg)](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v2)
+dp-api-clients-go [![GoDoc](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v3?status.svg)](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v3)
 =====
 
 Common client code - in go - for ONS APIs:
@@ -23,7 +23,7 @@ Each client defines two constructor functions: one that creates a new healthchec
 
 For example, you may create a new image API client like so:
 ```go
-    import  "github.com/ONSdigital/dp-api-clients-go/v2/image"
+    import  "github.com/ONSdigital/dp-api-clients-go/v3/image"
 
     ...
     imageClient := image.NewAPIClient(<url>)
@@ -32,8 +32,8 @@ For example, you may create a new image API client like so:
 
 Or you may create it providing a Healthcheck client:
 ```go
-    import  "github.com/ONSdigital/dp-api-clients-go/v2/image"
-    import  "github.com/ONSdigital/dp-api-clients-go/v2/health"
+    import  "github.com/ONSdigital/dp-api-clients-go/v3/image"
+    import  "github.com/ONSdigital/dp-api-clients-go/v3/health"
 
     ...
     hcClient := health.NewClient(<genericName>, <url>)

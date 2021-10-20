@@ -8,10 +8,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
-	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
-	"github.com/ONSdigital/dp-api-clients-go/v2/health"
-	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v3/errors"
+	"github.com/ONSdigital/dp-api-clients-go/v3/headers"
+	"github.com/ONSdigital/dp-api-clients-go/v3/health"
+	"github.com/ONSdigital/dp-healthcheck/v2/healthcheck"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 

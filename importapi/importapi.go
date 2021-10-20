@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"net/url"
 
-	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
-	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v3/health"
+	health "github.com/ONSdigital/dp-healthcheck/v2/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/v2/log"

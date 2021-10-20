@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
-	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
+	"github.com/ONSdigital/dp-api-clients-go/v3/headers"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v3/health"
 	"github.com/ONSdigital/dp-mocking/httpmocks"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"

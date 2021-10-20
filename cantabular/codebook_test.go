@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
-	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	"github.com/ONSdigital/dp-api-clients-go/v3/cantabular"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v3/errors"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	. "github.com/smartystreets/goconvey/convey"
 )

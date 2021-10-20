@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
-	"github.com/ONSdigital/dp-api-clients-go/v2/health"
-	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	"github.com/ONSdigital/dp-api-clients-go/v3/headers"
+	"github.com/ONSdigital/dp-api-clients-go/v3/health"
+	"github.com/ONSdigital/dp-healthcheck/v2/healthcheck"
 	"github.com/ONSdigital/dp-mocking/httpmocks"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"

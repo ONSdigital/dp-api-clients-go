@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v3/errors"
 	"github.com/ONSdigital/log.go/v2/log"
 
 	"github.com/shurcooL/graphql"

@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
+	"github.com/ONSdigital/dp-api-clients-go/v3/cantabular"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
