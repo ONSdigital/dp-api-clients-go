@@ -19,6 +19,7 @@ import (
 
 // Service is the cantabular service name
 const Service = "cantabular"
+const ServiceApiExt = "cantabularApiExt"
 
 // Client is the client for interacting with the Cantabular API
 type Client struct {
@@ -80,11 +81,21 @@ func (c *Client) httpGet(ctx context.Context, path string) (*http.Response, erro
 
 // Checker contacts the /v9/datasets endpoint and updates the healthcheck state accordingly.
 func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) error {
+	reqURL := fmt.Sprintf("%s/v9/datasets", c.host)
+	return c.checkHealth(ctx, state, Service, reqURL)
+}
+
+// CheckerApiExt contacts the /graphql endpoint with an empty query and updates the healthcheck state accordingly.
+func (c *Client) CheckerApiExt(ctx context.Context, state *healthcheck.CheckState) error {
+	reqURL := fmt.Sprintf("%s/graphql?query={}", c.extApiHost)
+	return c.checkHealth(ctx, state, ServiceApiExt, reqURL)
+}
+
+func (c *Client) checkHealth(ctx context.Context, state *healthcheck.CheckState, service, reqURL string) error {
 	logData := log.Data{
-		"service": Service,
+		"service": service,
 	}
 	code := 0
-	reqURL := fmt.Sprintf("%s/v9/datasets", c.host)
 
 	res, err := c.httpGet(ctx, reqURL)
 	if err != nil {
@@ -98,10 +109,10 @@ func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) err
 	case 0: // When there is a problem with the client return error in message
 		return state.Update(healthcheck.StatusCritical, err.Error(), 0)
 	case 200:
-		message := Service + health.StatusMessage[healthcheck.StatusOK]
+		message := service + health.StatusMessage[healthcheck.StatusOK]
 		return state.Update(healthcheck.StatusOK, message, code)
 	default:
-		message := Service + health.StatusMessage[healthcheck.StatusCritical]
+		message := service + health.StatusMessage[healthcheck.StatusCritical]
 		return state.Update(healthcheck.StatusCritical, message, code)
 	}
 }
