@@ -469,6 +469,31 @@ func (c *Client) GetPublishedData(ctx context.Context, uriString string) ([]byte
 	return content, nil
 }
 
+// GetPublishedIndex returns PublishedIndex
+func (c *Client) GetPublishedIndex(ctx context.Context, params *PublishedIndexRequestParams) (PublishedIndex, error) {
+	reqURL := "/publishedindex"
+
+	if params != nil {
+		reqURL = fmt.Sprintf("%s?offset=%d",reqURL, params.Offset)
+		if params.Limit != nil {
+			reqURL = fmt.Sprintf("%s&limit=%d",reqURL, *(params.Limit))
+		}
+	}
+
+	b, _, err := c.get(ctx, "", reqURL)
+
+	if err != nil {
+		return PublishedIndex{}, err
+	}
+
+	var publishedIndex PublishedIndex
+	if err = json.Unmarshal(b, &publishedIndex); err != nil {
+		return publishedIndex, err
+	}
+
+	return publishedIndex, nil
+}
+
 // closeResponseBody closes the response body and logs an error if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if resp.Body != nil {
