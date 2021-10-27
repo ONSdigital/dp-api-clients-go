@@ -410,6 +410,23 @@ func (c *Client) GetPublishedData(ctx context.Context, uriString string) ([]byte
 	return content, nil
 }
 
+// GetPublishedData returns []byte
+func (c *Client) GetPublishedIndex(ctx context.Context) (PublishedIndex, error) {
+	reqURL := "/publishedIndex/"
+	b, _, err := c.get(ctx, "", reqURL)
+
+	if err != nil {
+		return PublishedIndex{}, err
+	}
+
+	var publishedIndex PublishedIndex
+	if err = json.Unmarshal(b, &publishedIndex); err != nil {
+		return publishedIndex, err
+	}
+
+	return publishedIndex, nil
+}
+
 // closeResponseBody closes the response body and logs an error if unsuccessful
 func closeResponseBody(ctx context.Context, resp *http.Response) {
 	if resp.Body != nil {

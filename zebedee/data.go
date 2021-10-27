@@ -193,3 +193,7 @@ type CollectionItem struct {
 type CollectionState struct {
 	State string `json:"state"`
 }
+
+type PublishedIndex struct {
+	URIs []string `json:"uris"`
+}
