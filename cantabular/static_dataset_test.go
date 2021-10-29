@@ -37,7 +37,28 @@ func TestStream(t *testing.T) {
 		defer func() { _ = responseBody.Close() }()
 
 		cantabular.GraphqlJSONToCSV(responseBody, os.Stdout)
-		// So(true, ShouldBeFalse)
+		So(true, ShouldBeFalse)
+
+		// r, w := io.Pipe()
+
+		// wg := &sync.WaitGroup{}
+
+		// wg.Add(1)
+		// go func() {
+		// 	defer wg.Done()
+		// 	cantabular.GraphqlJSONToCSV(responseBody, w)
+		// }()
+
+		// var out string
+		// go func() {
+		// 	defer wg.Done()
+		// 	b := []byte{}
+		// 	r.Read(b)
+		// 	out = string(b)
+		// }()
+		// wg.Wait()
+
+		// So(out, ShouldResemble, "mmmmm")
 	})
 }
 

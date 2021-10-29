@@ -2,13 +2,12 @@ package jsonstream
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 )
 
-// Decoder is a json.Decoder wrapper which adds convenience
-// methods for stream decoding and uses panic to simplify errors.
-// You should use recover() to catch errors from the methods.
+// Decoder is a json.Decoder wrapper which adds convenience methods for stream decoding.
 type Decoder struct{ *json.Decoder }
 
 // New creates a new Decoder.
@@ -20,70 +19,87 @@ func New(r io.Reader) Decoder {
 }
 
 // StartObjectComposite decodes the start of a JSON object, i.e. '{'
-func (dec Decoder) StartObjectComposite() bool { return dec.start('{') }
+func (dec Decoder) StartObjectComposite() (bool, error) { return dec.start('{') }
 
 // StartArrayComposite decodes the start of a JSON array, i.e. '['
-func (dec Decoder) StartArrayComposite() bool { return dec.start('[') }
+func (dec Decoder) StartArrayComposite() (bool, error) { return dec.start('[') }
 
 // start array or object
-func (dec Decoder) start(delim json.Delim) bool {
-	tok := dec.mustToken()
-	if tok == nil {
-		return false
+func (dec Decoder) start(delim json.Delim) (bool, error) {
+	tok, err := dec.Token()
+	if err != nil {
+		return false, fmt.Errorf("error decoding json token: %w", err)
 	}
+
+	if tok == nil {
+		return false, nil
+	}
+
 	gotDelim, ok := tok.(json.Delim)
 	if !ok {
-		panic(fmt.Sprintf("Expected %q but got %q", delim, tok))
+		return false, fmt.Errorf("expected %q but got %q", delim, tok)
 	}
+
 	if gotDelim != delim {
-		panic(fmt.Sprintf("Expected %q but got %q", delim, gotDelim))
+		return false, fmt.Errorf("expected %q but got %q", delim, gotDelim)
 	}
-	return true
+	return true, nil
 }
 
 // EndComposite will decode and discard the end of an array or object
-func (dec Decoder) EndComposite() {
+func (dec Decoder) EndComposite() error {
 	// json.Decoder guarantees matching delimiters so no need to check
-	_ = dec.mustToken()
+	if _, err := dec.Token(); err != nil {
+		return fmt.Errorf("error decoding json token: %w", err)
+	}
+	return nil
 }
 
 // DecodeString decodes a token and check that it is a string or null.
 // It returns nil if a null was found.
-func (dec Decoder) DecodeString() *string {
-	tok := dec.mustToken()
-	if tok == nil {
-		return nil
+func (dec Decoder) DecodeString() (*string, error) {
+	tok, err := dec.Token()
+	if err != nil {
+		return nil, fmt.Errorf("error decoding json token: %w", err)
 	}
+
+	if tok == nil {
+		return nil, nil
+	}
+
 	s, ok := tok.(string)
 	if !ok {
-		panic(fmt.Sprintf("Expected string but got %q", tok))
+		return nil, fmt.Errorf("expected string but got %q", tok)
 	}
-	return &s
+
+	return &s, nil
 }
 
 // DecodeName decodes a token and checks that it is a non-null string
-func (dec Decoder) DecodeName() string {
-	if s := dec.DecodeString(); s != nil {
-		return *s
+func (dec Decoder) DecodeName() (string, error) {
+	s, err := dec.DecodeString()
+	if err != nil {
+		return "", fmt.Errorf("error decoding string: %w", err)
 	}
-	panic("Expected JSON field name but got null")
+
+	if s == nil {
+		return "", errors.New("expected json field name but got null")
+	}
+
+	return *s, nil
 }
 
 // DecodeNumber decodes a token and checks that it is a non-null number
-func (dec Decoder) DecodeNumber() json.Number {
-	tok := dec.mustToken()
-	n, ok := tok.(json.Number)
-	if !ok {
-		panic(fmt.Sprintf("Expected number but got %q", tok))
-	}
-	return n
-}
-
-// mustToken reads a token and panics on error
-func (dec Decoder) mustToken() json.Token {
+func (dec Decoder) DecodeNumber() (json.Number, error) {
 	tok, err := dec.Token()
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("error decoding json token: %w", err)
 	}
-	return tok
+
+	n, ok := tok.(json.Number)
+	if !ok {
+		return "", fmt.Errorf("expected number but got %q", tok)
+	}
+
+	return n, nil
 }

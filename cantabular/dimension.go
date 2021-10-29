@@ -1,5 +1,7 @@
 package cantabular
 
+import "errors"
+
 type (
 
 	// Dimension represents the 'dimension' field from a GraphQL
@@ -50,8 +52,9 @@ func (ti *Iterator) CategoryAtColumn(i int) Category {
 	return ti.dims[i].Categories[ti.dimIndices[i]]
 }
 
-func (ti *Iterator) checkNotAtEnd() {
+func (ti *Iterator) checkNotAtEnd() error {
 	if ti.End() {
-		panic("after end of table")
+		return errors.New("after end of table")
 	}
+	return nil
 }

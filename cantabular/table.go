@@ -32,28 +32,49 @@ func decodeErrors(dec jsonstream.Decoder) error {
 
 // decodeDataFields decodes the fields of the data part of the GraphQL response, writing CSV to w
 func decodeDataFields(dec jsonstream.Decoder, w io.Writer) error {
-	mustMatchName := func(name string) error {
-		if gotName := dec.DecodeName(); gotName != name {
+	var matchName = func(name string) error {
+		gotName, err := dec.DecodeName()
+		if err != nil {
+			return fmt.Errorf("error decoding name: %w", err)
+		}
+		if gotName != name {
 			return fmt.Errorf("expected %q but got %q", name, gotName)
 		}
 		return nil
 	}
 
-	if err := mustMatchName("dataset"); err != nil {
+	if err := matchName("dataset"); err != nil {
 		return fmt.Errorf("failed to match dataset: %w", err)
 	}
-	if !dec.StartObjectComposite() {
+
+	isStartObj, err := dec.StartObjectComposite()
+	if err != nil {
+		return fmt.Errorf("error decoding start of json object composite for 'dataset' value: %w", err)
+	}
+	if !isStartObj {
 		return errors.New(`dataset object expected but "null" found`)
 	}
 
-	if err := mustMatchName("table"); err != nil {
+	if err := matchName("table"); err != nil {
 		return fmt.Errorf("failed to match table: %w", err)
 	}
-	if dec.StartObjectComposite() {
-		decodeTableFields(dec, w)
-		dec.EndComposite()
+
+	isStartObj, err = dec.StartObjectComposite()
+	if err != nil {
+		return fmt.Errorf("error decoding start of json object for 'table': %w", err)
 	}
-	dec.EndComposite()
+
+	if isStartObj {
+		if err := decodeTableFields(dec, w); err != nil {
+			return fmt.Errorf("error decoding table fields: %w", err)
+		}
+		if err := dec.EndComposite(); err != nil {
+			return fmt.Errorf("error decoding end of json object for 'table': %w", err)
+		}
+	}
+	if err := dec.EndComposite(); err != nil {
+		return fmt.Errorf("error decoding end of json object for 'dataset': %w", err)
+	}
 	return nil
 }
 
@@ -77,7 +98,11 @@ func decodeValues(dec jsonstream.Decoder, dims Dimensions, w io.Writer) (err err
 
 	// Obtain the CSV rows according to the cantabular dimensions and counts
 	for ti := dims.NewIterator(); dec.More(); {
-		row := createCSVRow(ti, dims, dec.DecodeNumber().String())
+		count, err := dec.DecodeNumber()
+		if err != nil {
+			return fmt.Errorf("error decoding count: %w", err)
+		}
+		row := createCSVRow(ti, dims, count.String())
 		if err = cw.Write(row); err != nil {
 			return fmt.Errorf("error writing a csv row: %w", err)
 		}
