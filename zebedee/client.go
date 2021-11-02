@@ -378,7 +378,9 @@ func (c *Client) GetCollection(ctx context.Context, userAccessToken, collectionI
 
 // GetBulletin retrieves a bulletin from zebedee
 func (c *Client) GetBulletin(ctx context.Context, userAccessToken, lang, uri string) (Bulletin, error) {
-	reqURL := c.createRequestURL(ctx, "", lang, "/data", "uri="+uri)
+	collectionID := ""
+
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
 		return Bulletin{}, err
@@ -388,6 +390,34 @@ func (c *Client) GetBulletin(ctx context.Context, userAccessToken, lang, uri str
 	if err = json.Unmarshal(b, &bulletin); err != nil {
 		return bulletin, err
 	}
+
+	related := [][]Link{
+		bulletin.RelatedBulletins,
+		bulletin.Links,
+	}
+
+	// Concurrently resolve any URIs where we need more data from another page
+	var wg sync.WaitGroup
+	sem := make(chan int, 10)
+
+	for _, element := range related {
+		for i, e := range element {
+			sem <- 1
+			wg.Add(1)
+			go func(i int, e Link, element []Link) {
+				defer func() {
+					<-sem
+					wg.Done()
+				}()
+				t, _ := c.GetPageTitle(ctx, userAccessToken, collectionID, lang, e.URI)
+				element[i].Title = t.Title
+				if t.Edition != "" {
+					element[i].Title += fmt.Sprintf(": %s", t.Edition)
+				}
+			}(i, e, element)
+		}
+	}
+	wg.Wait()
 
 	return bulletin, nil
 }
