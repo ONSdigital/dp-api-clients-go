@@ -34,7 +34,7 @@ type SupplementaryFile struct {
 	Size  string
 }
 
-// Version represents a version of a dataset
+// Version represents a version
 type Version struct {
 	URI         string `json:"uri"`
 	ReleaseDate string `json:"updateDate"`
@@ -79,6 +79,7 @@ type Description struct {
 	Keywords          []string `json:"keywords"`
 	MetaDescription   string   `json:"metaDescription"`
 	NationalStatistic bool     `json:"nationalStatistic"`
+	LatestRelease     bool     `json:"latestRelease"`
 	Contact           Contact  `json:"contact"`
 	ReleaseDate       string   `json:"releaseDate"`
 	NextRelease       string   `json:"nextRelease"`
@@ -110,7 +111,7 @@ type Figure struct {
 	URI      string `json:"uri"`
 }
 
-// Alert represents an alert within dataset landing page
+// Alert represents an alert
 type Alert struct {
 	Date     string `json:"date"`
 	Markdown string `json:"markdown"`
@@ -220,4 +221,6 @@ type Bulletin struct {
 	Type             string      `json:"type"`
 	URI              string      `json:"uri"`
 	Description      Description `json:"description"`
+	Versions         []Version   `json:"versions"`
+	Alerts           []Alert     `json:"alerts"`
 }
