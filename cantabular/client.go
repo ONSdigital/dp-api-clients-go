@@ -23,10 +23,11 @@ const ServiceApiExt = "cantabularApiExt"
 
 // Client is the client for interacting with the Cantabular API
 type Client struct {
-	ua         httpClient
-	gqlClient  GraphQLClient
-	host       string
-	extApiHost string
+	ua           httpClient
+	apiExtClient *http.Client
+	gqlClient    GraphQLClient
+	host         string
+	extApiHost   string
 }
 
 // NewClient returns a new Client
@@ -38,13 +39,16 @@ func NewClient(cfg Config, ua httpClient, g GraphQLClient) *Client {
 		extApiHost: cfg.ExtApiHost,
 	}
 
-	if len(cfg.ExtApiHost) > 0 && c.gqlClient == nil {
-		c.gqlClient = graphql.NewClient(
-			fmt.Sprintf("%s/graphql", cfg.ExtApiHost),
-			&http.Client{
-				Timeout: cfg.GraphQLTimeout,
-			},
-		)
+	if len(cfg.ExtApiHost) > 0 {
+		c.apiExtClient = &http.Client{
+			Timeout: cfg.GraphQLTimeout,
+		}
+		if c.gqlClient == nil {
+			c.gqlClient = graphql.NewClient(
+				fmt.Sprintf("%s/graphql", cfg.ExtApiHost),
+				c.apiExtClient,
+			)
+		}
 	}
 
 	return c
@@ -102,7 +106,7 @@ func (c *Client) checkHealth(ctx context.Context, state *healthcheck.CheckState,
 		log.Error(ctx, "failed to request service health", err, logData)
 	} else {
 		code = res.StatusCode
-		defer closeResponseBody(ctx, res.Body)
+		defer closeResponseBody(ctx, res)
 	}
 
 	switch code {

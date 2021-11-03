@@ -1,16 +1,66 @@
 package cantabular
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/csv"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/jsonstream"
+	"github.com/ONSdigital/dp-api-clients-go/v2/stream/jsonstream"
 )
 
-// GraphqlJSONToCSV converts a JSON response in r to CSV on w and panics on error
+// Table represents the 'table' field from the GraphQL dataset
+// query response
+type Table struct {
+	Dimensions []Dimension `json:"dimensions"`
+	Values     []int       `json:"values"`
+	Error      string      `json:"error,omitempty" `
+}
+
+// ParseTable takes a table from a GraphQL response and parses it into a
+// header and rows of counts (observations) ready to be read line-by-line.
+func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
+	// Create CSV writer with underlying buffer
+	b := new(bytes.Buffer)
+	w := csv.NewWriter(b)
+
+	// aux func to write to the csv writer, returning any error (returned by w.Write or w.Error)
+	write := func(record []string) error {
+		if err := w.Write(record); err != nil {
+			return err
+		}
+		return w.Error()
+	}
+
+	// Create and write header separately
+	header := createCSVHeader(table.Dimensions)
+	if err := write(header); err != nil {
+		return nil, fmt.Errorf("error writing the csv header: %w", err)
+	}
+
+	// Obtain the CSV rows according to the cantabular dimensions and counts
+	for i, count := range table.Values {
+		row := createCSVRow(table.Dimensions, i, count)
+		if err := write(row); err != nil {
+			return nil, fmt.Errorf("error writing a csv row: %w", err)
+		}
+	}
+
+	// Flush to make sure all data is present in the byte buffer
+	w.Flush()
+	if err := w.Error(); err != nil {
+		return nil, fmt.Errorf("error flushing the csv writer: %w", err)
+	}
+
+	// Return a reader with the same underlying Byte buffer as written by the csv writer
+	return bufio.NewReader(b), nil
+}
+
+// GraphqlJSONToCSV converts a JSON response in r to CSV on w
+// if an error happens, the process is aborted and the error is returned.
 func GraphqlJSONToCSV(r io.Reader, w io.Writer) error {
 	dec := jsonstream.New(r)
 	isStartObj, err := dec.StartObjectComposite()
@@ -187,7 +237,7 @@ func decodeValues(dec jsonstream.Decoder, dims Dimensions, w io.Writer) (err err
 		if err != nil {
 			return fmt.Errorf("error decoding count: %w", err)
 		}
-		row := createCSVRow(ti, dims, count.String())
+		row := ti.createCSVRow(dims, count.String())
 		if err = cw.Write(row); err != nil {
 			return fmt.Errorf("error writing a csv row: %w", err)
 		}
@@ -210,8 +260,26 @@ func createCSVHeader(dims Dimensions) []string {
 }
 
 // createCSVRow creates an array of strings corresponding to a csv row
-// for the provided iterator of values, dimensions and count
-func createCSVRow(ti *Iterator, dims []Dimension, count string) []string {
+// for the provided array of dimension, index and count
+// it assumes that the values are sorted with lower weight for the last dimension and higher weight for the first dimension.
+func createCSVRow(dims []Dimension, index, count int) []string {
+	row := make([]string, len(dims)+1)
+
+	// Iterate dimensions starting from the last one (lower weight)
+	for i := len(dims) - 1; i >= 0; i-- {
+		catIndex := index % dims[i].Count             // Index of the category for the current dimension
+		row[i+1] = dims[i].Categories[catIndex].Label // The CSV column corresponds to the label of the Category
+		index /= dims[i].Count                        // Modify index for next iteration
+	}
+
+	row[0] = fmt.Sprintf("%d", count)
+
+	return row
+}
+
+// createCSVRow creates an array of strings corresponding to a csv row
+// for the provided dimensions and count, using the pointer receiver iterator to determine the column value
+func (ti *Iterator) createCSVRow(dims []Dimension, count string) []string {
 	row := make([]string, len(dims)+1)
 	for i := range dims {
 		row[i+1] = ti.CategoryAtColumn(i).Label

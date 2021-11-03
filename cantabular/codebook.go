@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -43,7 +42,7 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 			},
 		)
 	}
-	defer closeResponseBody(ctx, res.Body)
+	defer closeResponseBody(ctx, res)
 
 	if res.StatusCode != http.StatusOK {
 		return nil, c.errorResponse(url, res)
@@ -81,9 +80,9 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 }
 
 // closeResponseBody closes the response body and logs an error if unsuccessful
-func closeResponseBody(ctx context.Context, body io.Closer) {
-	if body != nil {
-		if err := body.Close(); err != nil {
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
 			log.Error(ctx, "error closing http response body", err)
 		}
 	}

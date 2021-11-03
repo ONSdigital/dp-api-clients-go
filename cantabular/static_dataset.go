@@ -8,26 +8,116 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"sync"
 
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	"github.com/ONSdigital/dp-api-clients-go/v2/stream"
 	"github.com/ONSdigital/log.go/v2/log"
+	"github.com/shurcooL/graphql"
 )
 
-// // StaticDataset represents the 'dataset' field from a GraphQL static dataset
-// // query response
-// type StaticDataset struct {
-// 	Table Table `json:"table" graphql:"table(variables: $variables)"`
-// }
+// Transformer is a stream func to read from a reader, do some data transformation and write to the writter
+type Transformer = stream.Transformer
+
+// Consumer is a stream func to read from a reader
+type Consumer = stream.Consumer
+
+// StaticDataset represents the 'dataset' field from a GraphQL static dataset
+// query response
+type StaticDataset struct {
+	Table Table `json:"table" graphql:"table(variables: $variables)"`
+}
+
+// graphQLQuery represents a full query to be encoded into the body of a plain http post request
+// for a GraphQL static dataset query
+const graphQLQuery = `
+query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
+	dataset(name: $dataset) {
+		table(variables: $variables, filters: $filters) {
+			dimensions {
+				count
+				variable { name label }
+				categories { code label } }
+			values
+			error
+		  }
+	 }
+}`
 
 // StaticDatasetQuery performs a query for a static dataset against the
-// Cantabular Extended API using the /graphql endpoint
-// If the call is successfull, the response body is returned
-// - Important: it's the caller's responsability to close the body once it has been fully processed.
-func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryRequest) (io.ReadCloser, error) {
+// Cantabular Extended API using the /graphql endpoint and returns a StaticDatasetQuery,
+// loading the whole response to memory.
+// Use this method only if large query responses are NOT expected
+func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryRequest) (*StaticDatasetQuery, error) {
 	if c.gqlClient == nil {
 		return nil, dperrors.New(
 			errors.New("cantabular Extended API Client not configured"),
+			http.StatusServiceUnavailable,
+			nil,
+		)
+	}
+
+	logData := log.Data{
+		"url":     fmt.Sprintf("%s/graphql", c.extApiHost),
+		"request": req,
+	}
+
+	vars := map[string]interface{}{
+		// GraphQL package requires self defined scalar types for variables
+		// and arguments
+		"name": graphql.String(req.Dataset),
+	}
+
+	gvars := make([]graphql.String, 0)
+
+	for _, v := range req.Variables {
+		gvars = append(gvars, graphql.String(v))
+	}
+
+	vars["variables"] = gvars
+
+	var q StaticDatasetQuery
+	if err := c.gqlClient.Query(ctx, &q, vars); err != nil {
+		return nil, dperrors.New(
+			fmt.Errorf("failed to make GraphQL query: %w", err),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	if err := q.Dataset.Table.Error; err != "" {
+		return nil, dperrors.New(
+			fmt.Errorf("GraphQL error: %s", err),
+			http.StatusBadRequest,
+			logData,
+		)
+	}
+
+	return &q, nil
+}
+
+// StaticDatasetQueryStreamCSV performs a StaticDatasetQuery call
+// and then starts 2 go-routines to transform the response body into a CSV stream and
+// consume the transformed output with the provided Consumer concurrently.
+// Use this method if large query responses are expected.
+func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) error {
+	responseBody, err := c.staticDatasetQueryLowLevel(ctx, req)
+	if err != nil {
+		return err
+	}
+	transform := func(ctx context.Context, r io.Reader, w io.Writer) error {
+		return GraphqlJSONToCSV(r, w)
+	}
+	return stream.Stream(ctx, responseBody, transform, consume)
+}
+
+// staticDatasetQueryLowLevel performs a query for a static dataset against the
+// Cantabular Extended API using the /graphql endpoint and the http client directly
+// If the call is successfull, the response body is returned
+// - Important: it's the caller's responsability to close the body once it has been fully processed.
+func (c *Client) staticDatasetQueryLowLevel(ctx context.Context, req StaticDatasetQueryRequest) (io.ReadCloser, error) {
+	if c.apiExtClient == nil {
+		return nil, dperrors.New(
+			errors.New("cantabular Extended API http client not configured"),
 			http.StatusServiceUnavailable,
 			nil,
 		)
@@ -40,21 +130,7 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 		"request": req,
 	}
 
-	const graphQLQuery = `
-	query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
-		dataset(name: $dataset) {
-			table(variables: $variables, filters: $filters) {
-				dimensions {
-					count
-					variable { name label }
-					categories { code label } }
-				values
-				error
-	  		}
-	 	}
-	}`
-
-	// Create a json stream encoder with the query and provided dataset and variables
+	// Encoder the graphQL query with the provided dataset and variables
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 	if err := enc.Encode(map[string]interface{}{
@@ -71,8 +147,8 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 		)
 	}
 
-	// Do a POST call to graphQL endpoint where body will be written to the same buffer used by the json stream encoder
-	res, err := http.Post(url, "application/json", &b)
+	// Do a POST call to graphQL endpoint
+	res, err := c.apiExtClient.Post(url, "application/json", &b)
 	if err != nil {
 		return nil, dperrors.New(
 			fmt.Errorf("failed to make GraphQL query: %w", err),
@@ -83,53 +159,9 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 
 	// Check status code and return error
 	if res.StatusCode != http.StatusOK {
-		closeResponseBody(ctx, res.Body)
+		closeResponseBody(ctx, res)
 		return nil, c.errorResponse(url, res)
 	}
 
 	return res.Body, nil
-}
-
-type Transformer = func(ctx context.Context, r io.Reader, w io.Writer) error
-type Consumer = func(ctx context.Context, r io.Reader) error
-
-func (c *Client) StaticDatasetQueryStream(ctx context.Context, req StaticDatasetQueryRequest, transform Transformer, consume Consumer) error {
-	responseBody, err := c.StaticDatasetQuery(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	r, w := io.Pipe()
-	wg := &sync.WaitGroup{}
-
-	// Start go-routine to read response body, transform it 'on-the-fly' and write it to the pipe writer
-	wg.Add(1)
-	go func() {
-		defer func() {
-			closeResponseBody(ctx, responseBody)
-			w.Close()
-			wg.Done()
-		}()
-		err = transform(ctx, responseBody, w)
-	}()
-
-	// Start go-routine to read pipe reader (transformed) and call the consumer func
-	wg.Add(1)
-	go func() {
-		defer func() {
-			r.Close()
-			wg.Done()
-		}()
-		err = consume(ctx, r)
-	}()
-
-	wg.Wait()
-	return err
-}
-
-func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) error {
-	transform := func(ctx context.Context, r io.Reader, w io.Writer) error {
-		return GraphqlJSONToCSV(r, w)
-	}
-	return c.StaticDatasetQueryStream(ctx, req, transform, consume)
 }
