@@ -8,17 +8,18 @@ import (
 	"io"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/mock"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	dphttp "github.com/ONSdigital/dp-net/http"
+	"github.com/ONSdigital/log.go/v2/log"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 var testCtx = context.Background()
 
+// testCsv is the expected CSV generated from a successful query for testing
 var testCsv = `count,City,Number of siblings
 1,London,No siblings
 0,London,1 sibling
@@ -43,20 +44,94 @@ var testCsv = `count,City,Number of siblings
 1,Belfast,6 or more siblings
 `
 
+// mockRespBody is a successful query respose that is returned from a mocked client for testing
+var mockRespBody = `
+{
+	"data": {
+		"dataset": {
+			"table": {
+				"dimensions": [
+					{
+						"categories": [
+							{"code": "0", "label": "London"},
+							{"code": "1", "label": "Liverpool"},
+							{"code": "2", "label": "Belfast"}
+						],
+						"count": 3,
+						"variable": {"label": "City", "name": "city"}
+					},
+					{
+						"categories": [
+							{"code": "0", "label": "No siblings"},
+							{"code": "1", "label": "1 sibling"},
+							{"code": "2", "label": "2 siblings"},
+							{"code": "3", "label": "3 siblings"},
+							{"code": "4", "label": "4 siblings"},
+							{"code": "5", "label": "5 siblings"},
+							{"code": "6", "label": "6 or more siblings"}
+						],
+						"count":7,
+						"variable": {"label": "Number of siblings", "name": "siblings"}
+					}
+				],
+				"error": null,
+				"values": [1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,1,1]
+			}
+		}
+	}
+}`
+
+// mockRespBodyNoDataset is an error response that is returned from a mocked client for testing
+// when a wrong Dataset is provided in the query
+var mockRespBodyNoDataset = `
+{
+	"data": {
+		"dataset": null
+	},
+	"errors": [
+		{
+			"message": "404 Not Found: dataset not loaded in this server",
+			"locations": [
+				{
+					"line": 2,
+					"column": 2
+				}
+			],
+			"path": [
+				"dataset"
+			]
+		}
+	]
+}`
+
+// mockRespBodyNoTable is an error response that is returned from a mocked client for testing
+// when a wrong variable is provided in the query
+var mockRespBodyNoTable = `
+{
+	"data": {
+		"dataset": {
+			"table": null
+		}
+	},
+	"errors": [
+		{
+			"message": "400 Bad Request: variable at position 1 does not exist",
+			"locations": [
+				{
+					"line": 3,
+					"column": 3
+				}
+			],
+			"path": [
+				"dataset",
+				"table"
+			]
+		}
+	]
+}`
+
 func TestStream(t *testing.T) {
-	// responseBody := makeRequest(flag.Arg(0), flag.Args()[1:])
-
-	Convey("RealTest", t, func() {
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
-				Host:           "http://localhost:8491",
-				ExtApiHost:     "http://localhost:8492",
-				GraphQLTimeout: 10 * time.Second,
-			},
-			dphttp.NewClient(),
-			nil,
-		)
-
+	Convey("Given a stream consumer that scans an io.Reader", t, func() {
 		out := ""
 		consume := func(ctx context.Context, r io.Reader) error {
 			scanner := bufio.NewScanner(r)
@@ -67,14 +142,162 @@ func TestStream(t *testing.T) {
 			return nil
 		}
 
-		req := cantabular.StaticDatasetQueryRequest{
-			Dataset:   "Example",
-			Variables: []string{"city", "siblings"},
-		}
-		err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
-		So(err, ShouldBeNil)
+		Convey("And an http client that returns a valid query response and 200 OK status code", func() {
+			mockHttpClient := &dphttp.ClienterMock{
+				PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+					return Response(
+						[]byte(mockRespBody),
+						http.StatusOK,
+					), nil
+				},
+			}
 
-		So(out, ShouldResemble, testCsv)
+			cantabularClient := cantabular.NewClient(
+				cantabular.Config{
+					Host:       "cantabular.host",
+					ExtApiHost: "cantabular.ext.host",
+				},
+				mockHttpClient,
+				nil,
+			)
+
+			Convey("Then the expected CSV is successfully streamed", func() {
+				req := cantabular.StaticDatasetQueryRequest{
+					Dataset:   "Example",
+					Variables: []string{"city", "siblings"},
+				}
+				err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
+				So(err, ShouldBeNil)
+				So(out, ShouldResemble, testCsv)
+			})
+		})
+
+		Convey("And an http client that returns a 'dataset not loaded in this server' error response and 200 OK status code, due to a wrong 'dataset' value in the query", func() {
+			mockHttpClient := &dphttp.ClienterMock{
+				PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+					return Response(
+						[]byte(mockRespBodyNoDataset),
+						http.StatusOK,
+					), nil
+				},
+			}
+
+			cantabularClient := cantabular.NewClient(
+				cantabular.Config{
+					Host:       "cantabular.host",
+					ExtApiHost: "cantabular.ext.host",
+				},
+				mockHttpClient,
+				nil,
+			)
+
+			Convey("Then the expected error is returned and nothing is streamed", func() {
+				req := cantabular.StaticDatasetQueryRequest{
+					Dataset:   "InexistentDataset",
+					Variables: []string{"city", "siblings"},
+				}
+				err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
+				So(err, ShouldResemble, fmt.Errorf("transform error: %w",
+					fmt.Errorf("error(s) returned by graphQL query: %w",
+						errors.New("404 Not Found: dataset not loaded in this server"))))
+				So(out, ShouldEqual, "")
+			})
+		})
+
+		Convey("And an http client that returns a 'variable at position 1' error response and 200 OK status code, due to a wrong variable value in the query", func() {
+			mockHttpClient := &dphttp.ClienterMock{
+				PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+					return Response(
+						[]byte(mockRespBodyNoTable),
+						http.StatusOK,
+					), nil
+				},
+			}
+
+			cantabularClient := cantabular.NewClient(
+				cantabular.Config{
+					Host:       "cantabular.host",
+					ExtApiHost: "cantabular.ext.host",
+				},
+				mockHttpClient,
+				nil,
+			)
+
+			Convey("Then the expected error is returned and nothing is streamed", func() {
+				req := cantabular.StaticDatasetQueryRequest{
+					Dataset:   "Example",
+					Variables: []string{"wrong", "siblings"},
+				}
+				err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
+				So(err, ShouldResemble, fmt.Errorf("transform error: %w",
+					fmt.Errorf("error(s) returned by graphQL query: %w",
+						errors.New("400 Bad Request: variable at position 1 does not exist"))))
+				So(out, ShouldEqual, "")
+			})
+		})
+
+		Convey("And an http client that refuses to connect", func() {
+			mockHttpClient := &dphttp.ClienterMock{
+				PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+					return nil, errors.New(`Post "cantabular.ext.host/graphql": dial tcp 127.0.0.1:8493: connect: connection refused`)
+				},
+			}
+
+			cantabularClient := cantabular.NewClient(
+				cantabular.Config{
+					Host:       "cantabular.host",
+					ExtApiHost: "cantabular.ext.host",
+				},
+				mockHttpClient,
+				nil,
+			)
+
+			Convey("Then the expected error is returned and nothing is streamed", func() {
+				req := cantabular.StaticDatasetQueryRequest{
+					Dataset:   "Example",
+					Variables: []string{"city", "siblings"},
+				}
+				err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
+				So(err.Error(), ShouldResemble, `failed to make GraphQL query: failed to make request: Post "cantabular.ext.host/graphql": dial tcp 127.0.0.1:8493: connect: connection refused`)
+				So(out, ShouldEqual, "")
+			})
+		})
+
+		Convey("And an http client that returns status code 503", func() {
+			mockHttpClient := &dphttp.ClienterMock{
+				PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+					return Response(
+						[]byte(`{"message": "something is broken"}`),
+						http.StatusBadGateway,
+					), nil
+				},
+			}
+
+			cantabularClient := cantabular.NewClient(
+				cantabular.Config{
+					Host:       "cantabular.host",
+					ExtApiHost: "cantabular.ext.host",
+				},
+				mockHttpClient,
+				nil,
+			)
+
+			Convey("Then the expected error is returned and nothing is streamed", func() {
+				req := cantabular.StaticDatasetQueryRequest{
+					Dataset:   "Example",
+					Variables: []string{"city", "siblings"},
+				}
+				err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
+				So(err, ShouldResemble, dperrors.New(
+					errors.New("something is broken"),
+					http.StatusBadGateway,
+					log.Data{
+						"url": "cantabular.ext.host/graphql",
+					},
+				))
+				So(out, ShouldEqual, "")
+			})
+		})
 	})
 }
 

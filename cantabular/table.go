@@ -20,6 +20,11 @@ type Table struct {
 	Error      string      `json:"error,omitempty" `
 }
 
+var (
+	errNullDataset = errors.New(`dataset object expected but "null" found`)
+	errNullTable   = errors.New(`table object expected but "null" found`)
+)
+
 // ParseTable takes a table from a GraphQL response and parses it into a
 // header and rows of counts (observations) ready to be read line-by-line.
 func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
@@ -63,14 +68,19 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 // if an error happens, the process is aborted and the error is returned.
 func GraphqlJSONToCSV(r io.Reader, w io.Writer) error {
 	dec := jsonstream.New(r)
+
+	// nullDataset are allowed only if an error message is reported
+	var errData error
+
+	// find starting '{'
 	isStartObj, err := dec.StartObjectComposite()
 	if err != nil {
 		return fmt.Errorf("error decoding start of json object: %w", err)
 	}
-
 	if !isStartObj {
 		return errors.New("no json object found in response")
 	}
+
 	for dec.More() {
 		field, err := dec.DecodeName()
 		if err != nil {
@@ -78,17 +88,13 @@ func GraphqlJSONToCSV(r io.Reader, w io.Writer) error {
 		}
 		switch field {
 		case "data":
-			isStartObj, err := dec.StartObjectComposite()
-			if err != nil {
-				return fmt.Errorf("error decoding start of json object for 'data': %w", err)
-			}
-			if isStartObj {
-				if err := decodeDataFields(dec, w); err != nil {
-					return fmt.Errorf("error decoding data fields: %w", err)
+			if err := decodeDataFields(dec, w); err != nil {
+				// look for 'allowed' errors, as long as they are reported in the 'error' section
+				if err == errNullDataset || err == errNullTable {
+					errData = err
+					break
 				}
-				if err := dec.EndComposite(); err != nil {
-					return fmt.Errorf("error decoding end of json object for 'data': %w", err)
-				}
+				return err
 			}
 		case "errors":
 			if err := decodeErrors(dec); err != nil {
@@ -96,8 +102,15 @@ func GraphqlJSONToCSV(r io.Reader, w io.Writer) error {
 			}
 		}
 	}
+
+	// find final '}'
 	if err := dec.EndComposite(); err != nil {
 		return fmt.Errorf("error decoding end of json object: %w", err)
+	}
+
+	// check if there was an error in the "data" section that was not reported in the "error" section
+	if errData != nil {
+		return fmt.Errorf("error found parsing 'data' filed, but no error was reported in 'error' filed: %w", errData)
 	}
 	return nil
 }
@@ -166,7 +179,9 @@ func decodeErrors(dec jsonstream.Decoder) error {
 }
 
 // decodeDataFields decodes the fields of the data part of the GraphQL response, writing CSV to w
-func decodeDataFields(dec jsonstream.Decoder, w io.Writer) error {
+// if expects to find the following nested values: {"dataset": {"table": {...}}}
+// the end-composite values are always decoded according to the reached depth
+func decodeDataFields(dec jsonstream.Decoder, w io.Writer) (err error) {
 	var matchName = func(name string) error {
 		gotName, err := dec.DecodeName()
 		if err != nil {
@@ -178,37 +193,60 @@ func decodeDataFields(dec jsonstream.Decoder, w io.Writer) error {
 		return nil
 	}
 
+	depth := 0
+
+	// decode endComposites according to reached json depth
+	defer func() {
+		for i := 0; i < depth; i++ {
+			if e := dec.EndComposite(); e != nil {
+				err = fmt.Errorf("error decoding end of json object: %w", e)
+			}
+		}
+	}()
+
+	// find starting '{' for 'data' value
+	isStartObj, err := dec.StartObjectComposite()
+	if err != nil {
+		return fmt.Errorf("error decoding start of json object for 'data': %w", err)
+	}
+	if !isStartObj {
+		return nil // no value for 'data'
+	}
+	depth++
+
+	// find 'dataset' key
 	if err := matchName("dataset"); err != nil {
 		return fmt.Errorf("failed to match dataset: %w", err)
 	}
 
-	isStartObj, err := dec.StartObjectComposite()
+	// find '{' for 'dataset' value
+	isStartObj, err = dec.StartObjectComposite()
 	if err != nil {
 		return fmt.Errorf("error decoding start of json object composite for 'dataset' value: %w", err)
 	}
 	if !isStartObj {
-		return errors.New(`dataset object expected but "null" found`)
+		return errNullDataset // valid scenario if 'data' is parsed before 'errors'
 	}
+	depth++
 
+	// find 'table' key
 	if err := matchName("table"); err != nil {
 		return fmt.Errorf("failed to match table: %w", err)
 	}
 
+	// find '{' for 'table' value
 	isStartObj, err = dec.StartObjectComposite()
 	if err != nil {
 		return fmt.Errorf("error decoding start of json object for 'table': %w", err)
 	}
-
-	if isStartObj {
-		if err := decodeTableFields(dec, w); err != nil {
-			return fmt.Errorf("error decoding table fields: %w", err)
-		}
-		if err := dec.EndComposite(); err != nil {
-			return fmt.Errorf("error decoding end of json object for 'table': %w", err)
-		}
+	if !isStartObj {
+		return errNullTable // valid scenario if 'data' is parsed before 'errors'
 	}
-	if err := dec.EndComposite(); err != nil {
-		return fmt.Errorf("error decoding end of json object for 'dataset': %w", err)
+	depth++
+
+	// Decode table fields
+	if err := decodeTableFields(dec, w); err != nil {
+		return fmt.Errorf("error decoding table fields: %w", err)
 	}
 	return nil
 }

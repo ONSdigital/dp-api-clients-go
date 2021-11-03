@@ -15,9 +15,6 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-// Transformer is a stream func to read from a reader, do some data transformation and write to the writter
-type Transformer = stream.Transformer
-
 // Consumer is a stream func to read from a reader
 type Consumer = stream.Consumer
 
@@ -104,6 +101,7 @@ func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticData
 	if err != nil {
 		return err
 	}
+
 	transform := func(ctx context.Context, r io.Reader, w io.Writer) error {
 		return GraphqlJSONToCSV(r, w)
 	}
@@ -115,14 +113,6 @@ func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticData
 // If the call is successfull, the response body is returned
 // - Important: it's the caller's responsability to close the body once it has been fully processed.
 func (c *Client) staticDatasetQueryLowLevel(ctx context.Context, req StaticDatasetQueryRequest) (io.ReadCloser, error) {
-	if c.apiExtClient == nil {
-		return nil, dperrors.New(
-			errors.New("cantabular Extended API http client not configured"),
-			http.StatusServiceUnavailable,
-			nil,
-		)
-	}
-
 	url := fmt.Sprintf("%s/graphql", c.extApiHost)
 
 	logData := log.Data{
@@ -148,7 +138,7 @@ func (c *Client) staticDatasetQueryLowLevel(ctx context.Context, req StaticDatas
 	}
 
 	// Do a POST call to graphQL endpoint
-	res, err := c.apiExtClient.Post(url, "application/json", &b)
+	res, err := c.httpPost(ctx, url, "application/json", &b)
 	if err != nil {
 		return nil, dperrors.New(
 			fmt.Errorf("failed to make GraphQL query: %w", err),

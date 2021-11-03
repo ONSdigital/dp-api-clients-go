@@ -2,6 +2,7 @@ package stream
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 
@@ -15,9 +16,11 @@ type Consumer = func(ctx context.Context, r io.Reader) error
 // - one transforms the provided body into another stream by calling the provided transform method
 // - the other consumes the transformed stream using the provided consume method
 // This method block until all work is complete, at which point all Readers and Writers are closed and any error is returned.
-func Stream(ctx context.Context, body io.ReadCloser, transform Transformer, consume Consumer) (err error) {
+func Stream(ctx context.Context, body io.ReadCloser, transform Transformer, consume Consumer) error {
 	r, w := io.Pipe()
 	wg := &sync.WaitGroup{}
+
+	var errTransform, errConsume error
 
 	// Start go-routine to read response body, transform it 'on-the-fly' and write it to the pipe writer
 	wg.Add(1)
@@ -27,7 +30,7 @@ func Stream(ctx context.Context, body io.ReadCloser, transform Transformer, cons
 			w.Close()
 			wg.Done()
 		}()
-		err = transform(ctx, body, w)
+		errTransform = transform(ctx, body, w)
 	}()
 
 	// Start go-routine to read pipe reader (transformed) and call the consumer func
@@ -37,11 +40,21 @@ func Stream(ctx context.Context, body io.ReadCloser, transform Transformer, cons
 			r.Close()
 			wg.Done()
 		}()
-		err = consume(ctx, r)
+		errConsume = consume(ctx, r)
 	}()
 
 	wg.Wait()
-	return err
+
+	if errTransform != nil && errConsume != nil {
+		return fmt.Errorf("transform error: %v, consumer error: %v", errTransform, errConsume)
+	}
+	if errTransform != nil {
+		return fmt.Errorf("transform error: %w", errTransform)
+	}
+	if errConsume != nil {
+		return fmt.Errorf("consumer error: %w", errConsume)
+	}
+	return nil
 }
 
 // closeResponseBody closes the response body and logs an error if unsuccessful

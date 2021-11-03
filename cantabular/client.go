@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -23,11 +24,10 @@ const ServiceApiExt = "cantabularApiExt"
 
 // Client is the client for interacting with the Cantabular API
 type Client struct {
-	ua           httpClient
-	apiExtClient *http.Client
-	gqlClient    GraphQLClient
-	host         string
-	extApiHost   string
+	ua         httpClient
+	gqlClient  GraphQLClient
+	host       string
+	extApiHost string
 }
 
 // NewClient returns a new Client
@@ -39,22 +39,19 @@ func NewClient(cfg Config, ua httpClient, g GraphQLClient) *Client {
 		extApiHost: cfg.ExtApiHost,
 	}
 
-	if len(cfg.ExtApiHost) > 0 {
-		c.apiExtClient = &http.Client{
-			Timeout: cfg.GraphQLTimeout,
-		}
-		if c.gqlClient == nil {
-			c.gqlClient = graphql.NewClient(
-				fmt.Sprintf("%s/graphql", cfg.ExtApiHost),
-				c.apiExtClient,
-			)
-		}
+	if len(cfg.ExtApiHost) > 0 && c.gqlClient == nil {
+		c.gqlClient = graphql.NewClient(
+			fmt.Sprintf("%s/graphql", cfg.ExtApiHost),
+			&http.Client{
+				Timeout: cfg.GraphQLTimeout,
+			},
+		)
 	}
 
 	return c
 }
 
-// get makes a get request to the given url and returns the response
+// httpGet makes a get request to the given url and returns the response
 func (c *Client) httpGet(ctx context.Context, path string) (*http.Response, error) {
 	URL, err := url.Parse(path)
 	if err != nil {
@@ -75,7 +72,38 @@ func (c *Client) httpGet(ctx context.Context, path string) (*http.Response, erro
 			fmt.Errorf("failed to make request: %w", err),
 			http.StatusInternalServerError,
 			log.Data{
+				"url":    path,
+				"method": "get",
+			},
+		)
+	}
+
+	return resp, nil
+}
+
+// httpPost makes a post request to the given url and returns the response
+func (c *Client) httpPost(ctx context.Context, path string, contentType string, body io.Reader) (*http.Response, error) {
+	URL, err := url.Parse(path)
+	if err != nil {
+		return nil, dperrors.New(
+			fmt.Errorf("failed to parse url: %s", err),
+			http.StatusBadRequest,
+			log.Data{
 				"url": path,
+			},
+		)
+	}
+
+	path = URL.String()
+
+	resp, err := c.ua.Post(ctx, path, contentType, body)
+	if err != nil {
+		return nil, dperrors.New(
+			fmt.Errorf("failed to make request: %w", err),
+			http.StatusInternalServerError,
+			log.Data{
+				"url":    path,
+				"method": "post",
 			},
 		)
 	}
