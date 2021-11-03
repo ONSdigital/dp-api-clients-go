@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
-	"github.com/ONSdigital/dp-api-clients-go/v2/jsonstream"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
@@ -22,7 +22,8 @@ import (
 
 // StaticDatasetQuery performs a query for a static dataset against the
 // Cantabular Extended API using the /graphql endpoint
-// func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryRequest) (*StaticDatasetQuery, error) {
+// If the call is successfull, the response body is returned
+// - Important: it's the caller's responsability to close the body once it has been fully processed.
 func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryRequest) (io.ReadCloser, error) {
 	if c.gqlClient == nil {
 		return nil, dperrors.New(
@@ -53,6 +54,7 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 	 	}
 	}`
 
+	// Create a json stream encoder with the query and provided dataset and variables
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 	if err := enc.Encode(map[string]interface{}{
@@ -69,6 +71,7 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 		)
 	}
 
+	// Do a POST call to graphQL endpoint where body will be written to the same buffer used by the json stream encoder
 	res, err := http.Post(url, "application/json", &b)
 	if err != nil {
 		return nil, dperrors.New(
@@ -78,121 +81,55 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 		)
 	}
 
+	// Check status code and return error
 	if res.StatusCode != http.StatusOK {
+		closeResponseBody(ctx, res.Body)
 		return nil, c.errorResponse(url, res)
 	}
 
-	// bb, err := io.ReadAll(res.Body)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// fmt.Println(string(bb))
-
 	return res.Body, nil
-
-	/*
-		var q StaticDatasetQuery
-		if err := c.gqlClient.Query(ctx, &q, vars); err != nil {
-			return nil, dperrors.New(
-				fmt.Errorf("failed to make GraphQL query: %w", err),
-				http.StatusInternalServerError,
-				logData,
-			)
-		}
-
-		if err := q.Dataset.Table.Error; err != "" {
-			return nil, dperrors.New(
-				fmt.Errorf("GraphQL error: %s", err),
-				http.StatusBadRequest,
-				logData,
-			)
-		}
-
-		return &q, nil
-	*/
 }
 
-// GraphqlJSONToCSV converts a JSON response in r to CSV on w and panics on error
-func GraphqlJSONToCSV(r io.Reader, w io.Writer) error {
-	dec := jsonstream.New(r)
-	isStartObj, err := dec.StartObjectComposite()
+type Transformer = func(ctx context.Context, r io.Reader, w io.Writer) error
+type Consumer = func(ctx context.Context, r io.Reader) error
+
+func (c *Client) StaticDatasetQueryStream(ctx context.Context, req StaticDatasetQueryRequest, transform Transformer, consume Consumer) error {
+	responseBody, err := c.StaticDatasetQuery(ctx, req)
 	if err != nil {
-		return fmt.Errorf("error decoding start of json object: %w", err)
+		return err
 	}
 
-	if !isStartObj {
-		return errors.New("no json object found in response")
-	}
-	for dec.More() {
-		field, err := dec.DecodeName()
-		if err != nil {
-			return fmt.Errorf("error decoding field: %w", err)
-		}
-		switch field {
-		case "data":
-			isStartObj, err := dec.StartObjectComposite()
-			if err != nil {
-				return fmt.Errorf("error decoding start of json object for 'data': %w", err)
-			}
-			if isStartObj {
-				if err := decodeDataFields(dec, w); err != nil {
-					return fmt.Errorf("error decoding data fields: %w", err)
-				}
-				if err := dec.EndComposite(); err != nil {
-					return fmt.Errorf("error decoding end of json object for 'data': %w", err)
-				}
-			}
-		case "errors":
-			if err := decodeErrors(dec); err != nil {
-				return err
-			}
-		}
-	}
-	if err := dec.EndComposite(); err != nil {
-		return fmt.Errorf("error decoding end of json object: %w", err)
-	}
-	return nil
+	r, w := io.Pipe()
+	wg := &sync.WaitGroup{}
+
+	// Start go-routine to read response body, transform it 'on-the-fly' and write it to the pipe writer
+	wg.Add(1)
+	go func() {
+		defer func() {
+			closeResponseBody(ctx, responseBody)
+			w.Close()
+			wg.Done()
+		}()
+		err = transform(ctx, responseBody, w)
+	}()
+
+	// Start go-routine to read pipe reader (transformed) and call the consumer func
+	wg.Add(1)
+	go func() {
+		defer func() {
+			r.Close()
+			wg.Done()
+		}()
+		err = consume(ctx, r)
+	}()
+
+	wg.Wait()
+	return err
 }
 
-// decodeTableFields decodes the fields of the table part of the GraphQL response, writing CSV to w.
-// If no table cell values are present then no output is written.
-func decodeTableFields(dec jsonstream.Decoder, w io.Writer) error {
-	var dims Dimensions
-	for dec.More() {
-		field, err := dec.DecodeName()
-		if err != nil {
-			return fmt.Errorf("error decoding field: %w", err)
-		}
-		switch field {
-		case "dimensions":
-			if err := dec.Decode(&dims); err != nil {
-				return fmt.Errorf("error decoding dimensions: %w", err)
-			}
-		case "error":
-			errMsg, err := dec.DecodeString()
-			if err != nil {
-				return fmt.Errorf("error decoding error message: %w", err)
-			}
-			if errMsg != nil {
-				return fmt.Errorf("table blocked: %s", *errMsg)
-			}
-		case "values":
-			if dims == nil {
-				return errors.New("values received before dimensions")
-			}
-			isStartArray, err := dec.StartArrayComposite()
-			if err != nil {
-				return fmt.Errorf("error decoding start of json array for 'values': %w", err)
-			}
-			if isStartArray {
-				if err := decodeValues(dec, dims, w); err != nil {
-					return fmt.Errorf("error decoding values: %w", err)
-				}
-				if err := dec.EndComposite(); err != nil {
-					return fmt.Errorf("error decoding end of json array for 'values': %w", err)
-				}
-			}
-		}
+func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) error {
+	transform := func(ctx context.Context, r io.Reader, w io.Writer) error {
+		return GraphqlJSONToCSV(r, w)
 	}
-	return nil
+	return c.StaticDatasetQueryStream(ctx, req, transform, consume)
 }

@@ -1,8 +1,10 @@
 package cantabular_test
 
 import (
+	"bufio"
 	"context"
-	"os"
+	"fmt"
+	"io"
 	"testing"
 	"time"
 
@@ -12,6 +14,30 @@ import (
 )
 
 var testCtx = context.Background()
+
+var testCsv = `count,City,Number of siblings
+1,London,No siblings
+0,London,1 sibling
+0,London,2 siblings
+1,London,3 siblings
+0,London,4 siblings
+0,London,5 siblings
+0,London,6 or more siblings
+0,Liverpool,No siblings
+0,Liverpool,1 sibling
+0,Liverpool,2 siblings
+0,Liverpool,3 siblings
+1,Liverpool,4 siblings
+0,Liverpool,5 siblings
+0,Liverpool,6 or more siblings
+0,Belfast,No siblings
+0,Belfast,1 sibling
+1,Belfast,2 siblings
+0,Belfast,3 siblings
+0,Belfast,4 siblings
+1,Belfast,5 siblings
+1,Belfast,6 or more siblings
+`
 
 func TestStream(t *testing.T) {
 	// responseBody := makeRequest(flag.Arg(0), flag.Args()[1:])
@@ -27,38 +53,24 @@ func TestStream(t *testing.T) {
 			nil,
 		)
 
+		out := ""
+		consume := func(ctx context.Context, r io.Reader) error {
+			scanner := bufio.NewScanner(r)
+			for scanner.Scan() {
+				line := scanner.Text()
+				out += fmt.Sprintln(line)
+			}
+			return nil
+		}
+
 		req := cantabular.StaticDatasetQueryRequest{
 			Dataset:   "Example",
 			Variables: []string{"city", "siblings"},
 		}
-		responseBody, err := cantabularClient.StaticDatasetQuery(testCtx, req)
+		err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
 		So(err, ShouldBeNil)
 
-		defer func() { _ = responseBody.Close() }()
-
-		cantabular.GraphqlJSONToCSV(responseBody, os.Stdout)
-		So(true, ShouldBeFalse)
-
-		// r, w := io.Pipe()
-
-		// wg := &sync.WaitGroup{}
-
-		// wg.Add(1)
-		// go func() {
-		// 	defer wg.Done()
-		// 	cantabular.GraphqlJSONToCSV(responseBody, w)
-		// }()
-
-		// var out string
-		// go func() {
-		// 	defer wg.Done()
-		// 	b := []byte{}
-		// 	r.Read(b)
-		// 	out = string(b)
-		// }()
-		// wg.Wait()
-
-		// So(out, ShouldResemble, "mmmmm")
+		So(out, ShouldResemble, testCsv)
 	})
 }
 

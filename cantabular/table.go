@@ -10,6 +10,91 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/jsonstream"
 )
 
+// GraphqlJSONToCSV converts a JSON response in r to CSV on w and panics on error
+func GraphqlJSONToCSV(r io.Reader, w io.Writer) error {
+	dec := jsonstream.New(r)
+	isStartObj, err := dec.StartObjectComposite()
+	if err != nil {
+		return fmt.Errorf("error decoding start of json object: %w", err)
+	}
+
+	if !isStartObj {
+		return errors.New("no json object found in response")
+	}
+	for dec.More() {
+		field, err := dec.DecodeName()
+		if err != nil {
+			return fmt.Errorf("error decoding field: %w", err)
+		}
+		switch field {
+		case "data":
+			isStartObj, err := dec.StartObjectComposite()
+			if err != nil {
+				return fmt.Errorf("error decoding start of json object for 'data': %w", err)
+			}
+			if isStartObj {
+				if err := decodeDataFields(dec, w); err != nil {
+					return fmt.Errorf("error decoding data fields: %w", err)
+				}
+				if err := dec.EndComposite(); err != nil {
+					return fmt.Errorf("error decoding end of json object for 'data': %w", err)
+				}
+			}
+		case "errors":
+			if err := decodeErrors(dec); err != nil {
+				return err
+			}
+		}
+	}
+	if err := dec.EndComposite(); err != nil {
+		return fmt.Errorf("error decoding end of json object: %w", err)
+	}
+	return nil
+}
+
+// decodeTableFields decodes the fields of the table part of the GraphQL response, writing CSV to w.
+// If no table cell values are present then no output is written.
+func decodeTableFields(dec jsonstream.Decoder, w io.Writer) error {
+	var dims Dimensions
+	for dec.More() {
+		field, err := dec.DecodeName()
+		if err != nil {
+			return fmt.Errorf("error decoding field: %w", err)
+		}
+		switch field {
+		case "dimensions":
+			if err := dec.Decode(&dims); err != nil {
+				return fmt.Errorf("error decoding dimensions: %w", err)
+			}
+		case "error":
+			errMsg, err := dec.DecodeString()
+			if err != nil {
+				return fmt.Errorf("error decoding error message: %w", err)
+			}
+			if errMsg != nil {
+				return fmt.Errorf("table blocked: %s", *errMsg)
+			}
+		case "values":
+			if dims == nil {
+				return errors.New("values received before dimensions")
+			}
+			isStartArray, err := dec.StartArrayComposite()
+			if err != nil {
+				return fmt.Errorf("error decoding start of json array for 'values': %w", err)
+			}
+			if isStartArray {
+				if err := decodeValues(dec, dims, w); err != nil {
+					return fmt.Errorf("error decoding values: %w", err)
+				}
+				if err := dec.EndComposite(); err != nil {
+					return fmt.Errorf("error decoding end of json array for 'values': %w", err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // decodeErrors decodes the errors part of the GraphQL response and
 // returns any error with the fount message(s) if there are any.
 func decodeErrors(dec jsonstream.Decoder) error {
