@@ -18,9 +18,11 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-// Service is the cantabular service name
-const Service = "cantabular"
-const ServiceApiExt = "cantabularApiExt"
+// Cantabular service names
+const (
+	Service       = "cantabular"
+	ServiceAPIExt = "cantabularAPIExt"
+)
 
 // Client is the client for interacting with the Cantabular API
 type Client struct {
@@ -73,7 +75,7 @@ func (c *Client) httpGet(ctx context.Context, path string) (*http.Response, erro
 			http.StatusInternalServerError,
 			log.Data{
 				"url":    path,
-				"method": "get",
+				"method": "GET",
 			},
 		)
 	}
@@ -117,10 +119,10 @@ func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) err
 	return c.checkHealth(ctx, state, Service, reqURL)
 }
 
-// CheckerApiExt contacts the /graphql endpoint with an empty query and updates the healthcheck state accordingly.
-func (c *Client) CheckerApiExt(ctx context.Context, state *healthcheck.CheckState) error {
+// CheckerAPIExt contacts the /graphql endpoint with an empty query and updates the healthcheck state accordingly.
+func (c *Client) CheckerAPIExt(ctx context.Context, state *healthcheck.CheckState) error {
 	reqURL := fmt.Sprintf("%s/graphql?query={}", c.extApiHost)
-	return c.checkHealth(ctx, state, ServiceApiExt, reqURL)
+	return c.checkHealth(ctx, state, ServiceAPIExt, reqURL)
 }
 
 func (c *Client) checkHealth(ctx context.Context, state *healthcheck.CheckState, service, reqURL string) error {

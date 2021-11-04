@@ -161,14 +161,15 @@ func TestStream(t *testing.T) {
 				nil,
 			)
 
-			Convey("Then the expected CSV is successfully streamed", func() {
+			Convey("Then the expected CSV is successfully streamed with the expected number of rows", func() {
 				req := cantabular.StaticDatasetQueryRequest{
 					Dataset:   "Example",
 					Variables: []string{"city", "siblings"},
 				}
-				err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
+				rowCount, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
 				So(err, ShouldBeNil)
 				So(out, ShouldResemble, testCsv)
+				So(rowCount, ShouldEqual, 22)
 			})
 		})
 
@@ -196,7 +197,7 @@ func TestStream(t *testing.T) {
 					Dataset:   "InexistentDataset",
 					Variables: []string{"city", "siblings"},
 				}
-				err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
+				_, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
 				So(err, ShouldResemble, fmt.Errorf("transform error: %w",
 					fmt.Errorf("error(s) returned by graphQL query: %w",
 						errors.New("404 Not Found: dataset not loaded in this server"))))
@@ -228,7 +229,7 @@ func TestStream(t *testing.T) {
 					Dataset:   "Example",
 					Variables: []string{"wrong", "siblings"},
 				}
-				err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
+				_, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
 				So(err, ShouldResemble, fmt.Errorf("transform error: %w",
 					fmt.Errorf("error(s) returned by graphQL query: %w",
 						errors.New("400 Bad Request: variable at position 1 does not exist"))))
@@ -257,7 +258,7 @@ func TestStream(t *testing.T) {
 					Dataset:   "Example",
 					Variables: []string{"city", "siblings"},
 				}
-				err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
+				_, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
 				So(err.Error(), ShouldResemble, `failed to make GraphQL query: failed to make request: Post "cantabular.ext.host/graphql": dial tcp 127.0.0.1:8493: connect: connection refused`)
 				So(out, ShouldEqual, "")
 			})
@@ -287,7 +288,7 @@ func TestStream(t *testing.T) {
 					Dataset:   "Example",
 					Variables: []string{"city", "siblings"},
 				}
-				err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
+				_, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
 				So(err, ShouldResemble, dperrors.New(
 					errors.New("something is broken"),
 					http.StatusBadGateway,

@@ -24,9 +24,9 @@ type StaticDataset struct {
 	Table Table `json:"table" graphql:"table(variables: $variables)"`
 }
 
-// graphQLQuery represents a full query to be encoded into the body of a plain http post request
-// for a GraphQL static dataset query
-const graphQLQuery = `
+// QueryStaticDataset represents a full graphQL query to be encoded into the body of a plain http post request
+// for a static dataset query
+const QueryStaticDataset = `
 query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
 	dataset(name: $dataset) {
 		table(variables: $variables, filters: $filters) {
@@ -95,17 +95,22 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 // StaticDatasetQueryStreamCSV performs a StaticDatasetQuery call
 // and then starts 2 go-routines to transform the response body into a CSV stream and
 // consume the transformed output with the provided Consumer concurrently.
+// The number of CSV rows, including the header, is returned along with any error during the process.
 // Use this method if large query responses are expected.
-func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) error {
+func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) (int32, error) {
 	responseBody, err := c.staticDatasetQueryLowLevel(ctx, req)
 	if err != nil {
-		return err
+		return 0, err
 	}
+	var rowCount int32
 
 	transform := func(ctx context.Context, r io.Reader, w io.Writer) error {
-		return GraphqlJSONToCSV(r, w)
+		if rowCount, err = GraphQLJSONToCSV(r, w); err != nil {
+			return err
+		}
+		return nil
 	}
-	return stream.Stream(ctx, responseBody, transform, consume)
+	return rowCount, stream.Stream(ctx, responseBody, transform, consume)
 }
 
 // staticDatasetQueryLowLevel performs a query for a static dataset against the
@@ -124,7 +129,7 @@ func (c *Client) staticDatasetQueryLowLevel(ctx context.Context, req StaticDatas
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 	if err := enc.Encode(map[string]interface{}{
-		"query": graphQLQuery,
+		"query": QueryStaticDataset,
 		"variables": map[string]interface{}{
 			"dataset":   req.Dataset,
 			"variables": req.Variables,

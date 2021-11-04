@@ -3,7 +3,6 @@ package cantabular
 import "errors"
 
 type (
-
 	// Dimension represents the 'dimension' field from a GraphQL
 	// query dataset response
 	Dimension struct {
@@ -31,29 +30,29 @@ func (dims Dimensions) NewIterator() *Iterator {
 }
 
 // End returns true if there are no more cells in the table
-func (ti *Iterator) End() bool {
-	return ti.dimIndices[0] >= ti.dims[0].Count
+func (it *Iterator) End() bool {
+	return it.dimIndices[0] >= it.dims[0].Count
 }
 
 // Next advances to the next table cell. It should not be called if End() would return true.
-func (ti *Iterator) Next() {
-	ti.checkNotAtEnd()
-	for j := len(ti.dimIndices) - 1; j >= 0; j -= 1 {
-		if ti.dimIndices[j] += 1; ti.dimIndices[j] < ti.dims[j].Count || j == 0 {
+func (it *Iterator) Next() {
+	it.checkNotAtEnd()
+	for j := len(it.dimIndices) - 1; j >= 0; j -= 1 {
+		if it.dimIndices[j] += 1; it.dimIndices[j] < it.dims[j].Count || j == 0 {
 			break
 		}
-		ti.dimIndices[j] = 0
+		it.dimIndices[j] = 0
 	}
 }
 
 // CategoryAtColumn returns the i-th coordinate of the current cell
-func (ti *Iterator) CategoryAtColumn(i int) Category {
-	ti.checkNotAtEnd()
-	return ti.dims[i].Categories[ti.dimIndices[i]]
+func (it *Iterator) CategoryAtColumn(i int) Category {
+	it.checkNotAtEnd()
+	return it.dims[i].Categories[it.dimIndices[i]]
 }
 
-func (ti *Iterator) checkNotAtEnd() error {
-	if ti.End() {
+func (it *Iterator) checkNotAtEnd() error {
+	if it.End() {
 		return errors.New("after end of table")
 	}
 	return nil

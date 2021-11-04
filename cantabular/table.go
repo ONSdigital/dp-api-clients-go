@@ -20,6 +20,8 @@ type Table struct {
 	Error      string      `json:"error,omitempty" `
 }
 
+// possible errors that may be returned while parsing a 'data' field value
+// that, if present, need to be reported under the 'errors' field
 var (
 	errNullDataset = errors.New(`dataset object expected but "null" found`)
 	errNullTable   = errors.New(`table object expected but "null" found`)
@@ -64,98 +66,102 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 	return bufio.NewReader(b), nil
 }
 
-// GraphqlJSONToCSV converts a JSON response in r to CSV on w
+// GraphQLJSONToCSV converts a JSON response in r to CSV on w, returning the row count
 // if an error happens, the process is aborted and the error is returned.
-func GraphqlJSONToCSV(r io.Reader, w io.Writer) error {
+func GraphQLJSONToCSV(r io.Reader, w io.Writer) (int32, error) {
 	dec := jsonstream.New(r)
 
-	// nullDataset are allowed only if an error message is reported
+	// errData represents a possible error that may be returned by 'decodeDataFields',
+	// as long as it is reported in 'errors'
 	var errData error
 
+	// rowCount is the number of CSV rows that are decoded from r
+	var rowCount int32
+
 	// find starting '{'
-	isStartObj, err := dec.StartObjectComposite()
-	if err != nil {
-		return fmt.Errorf("error decoding start of json object: %w", err)
-	}
-	if !isStartObj {
-		return errors.New("no json object found in response")
+	if isStartObj, err := dec.StartObjectComposite(); err != nil {
+		return 0, fmt.Errorf("error decoding start of json object: %w", err)
+	} else if !isStartObj {
+		return 0, errors.New("no json object found in response")
 	}
 
+	// decode 'data' and 'error' fields
 	for dec.More() {
 		field, err := dec.DecodeName()
 		if err != nil {
-			return fmt.Errorf("error decoding field: %w", err)
+			return 0, fmt.Errorf("error decoding field: %w", err)
 		}
 		switch field {
 		case "data":
-			if err := decodeDataFields(dec, w); err != nil {
-				// look for 'allowed' errors, as long as they are reported in the 'error' section
+			if rowCount, err = decodeDataFields(dec, w); err != nil {
+				// null values for 'dataste' or 'table' are ok as long as the error is reported under the 'errors' field
 				if err == errNullDataset || err == errNullTable {
 					errData = err
 					break
 				}
-				return err
+				return 0, err
 			}
 		case "errors":
 			if err := decodeErrors(dec); err != nil {
-				return err
+				return 0, err
 			}
 		}
 	}
 
 	// find final '}'
 	if err := dec.EndComposite(); err != nil {
-		return fmt.Errorf("error decoding end of json object: %w", err)
+		return 0, fmt.Errorf("error decoding end of json object: %w", err)
 	}
 
 	// check if there was an error in the "data" section that was not reported in the "error" section
 	if errData != nil {
-		return fmt.Errorf("error found parsing 'data' filed, but no error was reported in 'error' filed: %w", errData)
+		return 0, fmt.Errorf("error found parsing 'data' filed, but no error was reported in 'error' filed: %w", errData)
 	}
-	return nil
+	return rowCount, nil
 }
 
 // decodeTableFields decodes the fields of the table part of the GraphQL response, writing CSV to w.
+// It returns the total number of rows, including the header.
 // If no table cell values are present then no output is written.
-func decodeTableFields(dec jsonstream.Decoder, w io.Writer) error {
+func decodeTableFields(dec jsonstream.Decoder, w io.Writer) (rowCount int32, err error) {
 	var dims Dimensions
 	for dec.More() {
 		field, err := dec.DecodeName()
 		if err != nil {
-			return fmt.Errorf("error decoding field: %w", err)
+			return 0, fmt.Errorf("error decoding field: %w", err)
 		}
 		switch field {
 		case "dimensions":
 			if err := dec.Decode(&dims); err != nil {
-				return fmt.Errorf("error decoding dimensions: %w", err)
+				return 0, fmt.Errorf("error decoding dimensions: %w", err)
 			}
 		case "error":
 			errMsg, err := dec.DecodeString()
 			if err != nil {
-				return fmt.Errorf("error decoding error message: %w", err)
+				return 0, fmt.Errorf("error decoding error message: %w", err)
 			}
 			if errMsg != nil {
-				return fmt.Errorf("table blocked: %s", *errMsg)
+				return 0, fmt.Errorf("table blocked: %s", *errMsg)
 			}
 		case "values":
 			if dims == nil {
-				return errors.New("values received before dimensions")
+				return 0, errors.New("values received before dimensions")
 			}
 			isStartArray, err := dec.StartArrayComposite()
 			if err != nil {
-				return fmt.Errorf("error decoding start of json array for 'values': %w", err)
+				return 0, fmt.Errorf("error decoding start of json array for 'values': %w", err)
 			}
 			if isStartArray {
-				if err := decodeValues(dec, dims, w); err != nil {
-					return fmt.Errorf("error decoding values: %w", err)
+				if rowCount, err = decodeValues(dec, dims, w); err != nil {
+					return 0, fmt.Errorf("error decoding values: %w", err)
 				}
 				if err := dec.EndComposite(); err != nil {
-					return fmt.Errorf("error decoding end of json array for 'values': %w", err)
+					return 0, fmt.Errorf("error decoding end of json array for 'values': %w", err)
 				}
 			}
 		}
 	}
-	return nil
+	return rowCount, nil
 }
 
 // decodeErrors decodes the errors part of the GraphQL response and
@@ -180,8 +186,9 @@ func decodeErrors(dec jsonstream.Decoder) error {
 
 // decodeDataFields decodes the fields of the data part of the GraphQL response, writing CSV to w
 // if expects to find the following nested values: {"dataset": {"table": {...}}}
+// it propagates the row count returned by 'decodeTableFields'
 // the end-composite values are always decoded according to the reached depth
-func decodeDataFields(dec jsonstream.Decoder, w io.Writer) (err error) {
+func decodeDataFields(dec jsonstream.Decoder, w io.Writer) (rowCount int32, err error) {
 	var matchName = func(name string) error {
 		gotName, err := dec.DecodeName()
 		if err != nil {
@@ -205,54 +212,49 @@ func decodeDataFields(dec jsonstream.Decoder, w io.Writer) (err error) {
 	}()
 
 	// find starting '{' for 'data' value
-	isStartObj, err := dec.StartObjectComposite()
-	if err != nil {
-		return fmt.Errorf("error decoding start of json object for 'data': %w", err)
-	}
-	if !isStartObj {
-		return nil // no value for 'data'
+	if isStartObj, err := dec.StartObjectComposite(); err != nil {
+		return 0, fmt.Errorf("error decoding start of json object for 'data': %w", err)
+	} else if !isStartObj {
+		return 0, nil // no value for 'data'
 	}
 	depth++
 
 	// find 'dataset' key
 	if err := matchName("dataset"); err != nil {
-		return fmt.Errorf("failed to match dataset: %w", err)
+		return 0, fmt.Errorf("failed to match dataset: %w", err)
 	}
 
 	// find '{' for 'dataset' value
-	isStartObj, err = dec.StartObjectComposite()
-	if err != nil {
-		return fmt.Errorf("error decoding start of json object composite for 'dataset' value: %w", err)
-	}
-	if !isStartObj {
-		return errNullDataset // valid scenario if 'data' is parsed before 'errors'
+	if isStartObj, err := dec.StartObjectComposite(); err != nil {
+		return 0, fmt.Errorf("error decoding start of json object composite for 'dataset' value: %w", err)
+	} else if !isStartObj {
+		return 0, errNullDataset // valid scenario if 'data' is parsed before 'errors'
 	}
 	depth++
 
 	// find 'table' key
 	if err := matchName("table"); err != nil {
-		return fmt.Errorf("failed to match table: %w", err)
+		return 0, fmt.Errorf("failed to match table: %w", err)
 	}
 
 	// find '{' for 'table' value
-	isStartObj, err = dec.StartObjectComposite()
-	if err != nil {
-		return fmt.Errorf("error decoding start of json object for 'table': %w", err)
-	}
-	if !isStartObj {
-		return errNullTable // valid scenario if 'data' is parsed before 'errors'
+	if isStartObj, err := dec.StartObjectComposite(); err != nil {
+		return 0, fmt.Errorf("error decoding start of json object for 'table': %w", err)
+	} else if !isStartObj {
+		return 0, errNullTable // valid scenario if 'data' is parsed before 'errors'
 	}
 	depth++
 
 	// Decode table fields
-	if err := decodeTableFields(dec, w); err != nil {
-		return fmt.Errorf("error decoding table fields: %w", err)
+	if rowCount, err = decodeTableFields(dec, w); err != nil {
+		return 0, fmt.Errorf("error decoding table fields: %w", err)
 	}
-	return nil
+	return rowCount, nil
 }
 
 // decodeValues decodes the values of the cells in the table, writing CSV to w.
-func decodeValues(dec jsonstream.Decoder, dims Dimensions, w io.Writer) (err error) {
+// It returns the total number of rows, including the header.
+func decodeValues(dec jsonstream.Decoder, dims Dimensions, w io.Writer) (rowCount int32, err error) {
 	cw := csv.NewWriter(w)
 
 	// csv.Writer errors are sticky, so we only need to check when flushing at the end
@@ -266,23 +268,25 @@ func decodeValues(dec jsonstream.Decoder, dims Dimensions, w io.Writer) (err err
 	// Create and write header separately
 	header := createCSVHeader(dims)
 	if err = cw.Write(header); err != nil {
-		return fmt.Errorf("error writing the csv header: %w", err)
+		return 0, fmt.Errorf("error writing the csv header: %w", err)
 	}
+	rowCount = 1 // number of rows, including headers
 
 	// Obtain the CSV rows according to the cantabular dimensions and counts
 	for ti := dims.NewIterator(); dec.More(); {
 		count, err := dec.DecodeNumber()
 		if err != nil {
-			return fmt.Errorf("error decoding count: %w", err)
+			return 0, fmt.Errorf("error decoding count: %w", err)
 		}
 		row := ti.createCSVRow(dims, count.String())
 		if err = cw.Write(row); err != nil {
-			return fmt.Errorf("error writing a csv row: %w", err)
+			return 0, fmt.Errorf("error writing a csv row: %w", err)
 		}
+		rowCount++
 		ti.Next()
 	}
 
-	return nil
+	return rowCount, nil
 }
 
 // createCSVHeader creates an array of strings corresponding to a csv header
@@ -317,10 +321,10 @@ func createCSVRow(dims []Dimension, index, count int) []string {
 
 // createCSVRow creates an array of strings corresponding to a csv row
 // for the provided dimensions and count, using the pointer receiver iterator to determine the column value
-func (ti *Iterator) createCSVRow(dims []Dimension, count string) []string {
+func (it *Iterator) createCSVRow(dims []Dimension, count string) []string {
 	row := make([]string, len(dims)+1)
 	for i := range dims {
-		row[i+1] = ti.CategoryAtColumn(i).Label
+		row[i+1] = it.CategoryAtColumn(i).Label
 	}
 	row[0] = count
 

@@ -48,7 +48,7 @@ func TestChecker(t *testing.T) {
 
 		Convey("When the CheckerApiExt method is called", func() {
 			check := healthcheck.NewCheckState(cantabular.Service)
-			err := cantabularClient.CheckerApiExt(testCtx, check)
+			err := cantabularClient.CheckerAPIExt(testCtx, check)
 			So(err, ShouldBeNil)
 
 			Convey("Then the expected endpoint is called", func() {
@@ -60,7 +60,7 @@ func TestChecker(t *testing.T) {
 				So(check.Name(), ShouldEqual, cantabular.Service)
 				So(check.StatusCode(), ShouldEqual, 200)
 				So(check.Status(), ShouldEqual, healthcheck.StatusOK)
-				So(check.Message(), ShouldEqual, "cantabularApiExt is ok")
+				So(check.Message(), ShouldEqual, "cantabularAPIExt is ok")
 				So(check.LastFailure(), ShouldBeNil)
 				So(err, ShouldBeNil)
 			})
@@ -100,7 +100,7 @@ func TestChecker(t *testing.T) {
 
 		Convey("When the CheckerApiExt method is called", func() {
 			check := healthcheck.NewCheckState(cantabular.Service)
-			err := cantabularClient.CheckerApiExt(testCtx, check)
+			err := cantabularClient.CheckerAPIExt(testCtx, check)
 			So(err, ShouldBeNil)
 
 			Convey("Then the expected endpoint is called", func() {
@@ -112,7 +112,7 @@ func TestChecker(t *testing.T) {
 				So(check.Name(), ShouldEqual, cantabular.Service)
 				So(check.StatusCode(), ShouldEqual, 500)
 				So(check.Status(), ShouldEqual, healthcheck.StatusCritical)
-				So(check.Message(), ShouldEqual, "cantabularApiExt functionality is unavailable or non-functioning")
+				So(check.Message(), ShouldEqual, "cantabularAPIExt functionality is unavailable or non-functioning")
 				So(*check.LastFailure(), ShouldHappenBetween, beforeCall, time.Now().UTC())
 				So(err, ShouldBeNil)
 			})
@@ -156,7 +156,7 @@ func TestChecker(t *testing.T) {
 
 		Convey("When the CheckerApiExt method is called", func() {
 			check := healthcheck.NewCheckState(cantabular.Service)
-			err := cantabularClient.CheckerApiExt(testCtx, check)
+			err := cantabularClient.CheckerAPIExt(testCtx, check)
 			So(err, ShouldBeNil)
 
 			Convey("Then the expected endpoint is called", func() {
