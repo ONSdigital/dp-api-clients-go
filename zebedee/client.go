@@ -391,6 +391,18 @@ func (c *Client) GetBulletin(ctx context.Context, userAccessToken, lang, uri str
 		return bulletin, err
 	}
 
+	if !bulletin.Description.LatestRelease {
+		// Resolve the latest release URI
+		latestUrl := fmt.Sprintf("%s/latest", bulletin.URI[:strings.LastIndex(bulletin.URI, "/")])
+		t, err := c.GetPageTitle(ctx, userAccessToken, collectionID, lang, latestUrl)
+		if err != nil {
+			log.Error(ctx, "error finding latest release URI", err, log.Data{"url": latestUrl})
+			bulletin.LatestReleaseURI = latestUrl
+		} else {
+			bulletin.LatestReleaseURI = t.URI
+		}
+	}
+
 	related := [][]Link{
 		bulletin.RelatedBulletins,
 		bulletin.Links,

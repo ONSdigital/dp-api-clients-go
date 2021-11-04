@@ -25,6 +25,7 @@ type FileSize struct {
 type PageTitle struct {
 	Title   string `json:"title"`
 	Edition string `json:"edition"`
+	URI     string `json:"uri"`
 }
 
 // SupplementaryFile represents a SupplementaryFile within a dataset
@@ -223,4 +224,5 @@ type Bulletin struct {
 	Description      Description `json:"description"`
 	Versions         []Version   `json:"versions"`
 	Alerts           []Alert     `json:"alerts"`
+	LatestReleaseURI string      `json:"latestReleaseUri"`
 }
