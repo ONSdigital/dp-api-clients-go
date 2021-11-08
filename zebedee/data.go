@@ -71,7 +71,7 @@ type DatasetLandingPage struct {
 	Timeseries                bool        `json:"timeseries"`
 }
 
-// Description represents a description block within the dataset landing page
+// Description represents a page description
 type Description struct {
 	Title             string   `json:"title"`
 	Edition           string   `json:"edition"`
@@ -96,9 +96,18 @@ type Contact struct {
 	Telephone string `json:"telephone"`
 }
 
-// Section represents a section within dataset landing page
+// Section represents a markdown section
 type Section struct {
+	Title    string `json:"title"`
 	Markdown string `json:"markdown"`
+}
+
+// Figure represents a figure (charts, tables)
+type Figure struct {
+	Title    string `json:"title"`
+	Filename string `json:"filename"`
+	Version  string `json:"version"`
+	URI      string `json:"uri"`
 }
 
 // Alert represents an alert within dataset landing page
@@ -109,7 +118,11 @@ type Alert struct {
 }
 
 // Related stores the Title and URI for any related data (e.g. related publications on a dataset page)
-type Related struct {
+// Deprecated: use Link
+type Related = Link
+
+// Link represents any link on website
+type Link struct {
 	Title string `json:"title"`
 	URI   string `json:"uri"`
 }
@@ -192,4 +205,19 @@ type CollectionItem struct {
 
 type CollectionState struct {
 	State string `json:"state"`
+}
+
+type Bulletin struct {
+	RelatedBulletins []Link      `json:"relatedBulletins"`
+	Sections         []Section   `json:"sections"`
+	Accordion        []Section   `json:"accordion"`
+	RelatedData      []Link      `json:"relatedData"`
+	Charts           []Figure    `json:"charts"`
+	Tables           []Figure    `json:"tables"`
+	Images           []Figure    `json:"images"`
+	Equations        []Figure    `json:"equations"`
+	Links            []Link      `json:"links"`
+	Type             string      `json:"type"`
+	URI              string      `json:"uri"`
+	Description      Description `json:"description"`
 }
