@@ -378,7 +378,9 @@ func (c *Client) GetCollection(ctx context.Context, userAccessToken, collectionI
 
 // GetBulletin retrieves a bulletin from zebedee
 func (c *Client) GetBulletin(ctx context.Context, userAccessToken, lang, uri string) (Bulletin, error) {
-	reqURL := c.createRequestURL(ctx, "", lang, "/data", "uri="+uri)
+	collectionID := ""
+
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
 		return Bulletin{}, err
@@ -388,6 +390,47 @@ func (c *Client) GetBulletin(ctx context.Context, userAccessToken, lang, uri str
 	if err = json.Unmarshal(b, &bulletin); err != nil {
 		return bulletin, err
 	}
+
+	if !bulletin.Description.LatestRelease {
+		// Resolve the latest release URI
+		latestUrl := fmt.Sprintf("%s/latest", bulletin.URI[:strings.LastIndex(bulletin.URI, "/")])
+		t, err := c.GetPageTitle(ctx, userAccessToken, collectionID, lang, latestUrl)
+		if err != nil {
+			log.Error(ctx, "error finding latest release URI", err, log.Data{"url": latestUrl})
+			bulletin.LatestReleaseURI = latestUrl
+		} else {
+			bulletin.LatestReleaseURI = t.URI
+		}
+	}
+
+	related := [][]Link{
+		bulletin.RelatedBulletins,
+		bulletin.Links,
+	}
+
+	// Concurrently resolve any URIs where we need more data from another page
+	var wg sync.WaitGroup
+	// We use this buffered channel to limit the number of concurrent calls we make to zebedee
+	sem := make(chan int, 10)
+
+	for _, element := range related {
+		for i, e := range element {
+			sem <- 1
+			wg.Add(1)
+			go func(i int, e Link, element []Link) {
+				defer func() {
+					<-sem
+					wg.Done()
+				}()
+				t, _ := c.GetPageTitle(ctx, userAccessToken, collectionID, lang, e.URI)
+				element[i].Title = t.Title
+				if t.Edition != "" {
+					element[i].Title += fmt.Sprintf(": %s", t.Edition)
+				}
+			}(i, e, element)
+		}
+	}
+	wg.Wait()
 
 	return bulletin, nil
 }
