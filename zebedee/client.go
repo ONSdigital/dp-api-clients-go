@@ -410,7 +410,8 @@ func (c *Client) GetBulletin(ctx context.Context, userAccessToken, lang, uri str
 
 	// Concurrently resolve any URIs where we need more data from another page
 	var wg sync.WaitGroup
-	sem := make(chan int, 10)
+	// We use this buffered channel to limit the number of concurrent calls we make to zebedee
+	sem := make(chan int, 1)
 
 	for _, element := range related {
 		for i, e := range element {

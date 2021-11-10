@@ -88,12 +88,14 @@ func contentData(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte(`{"type":"dataset","uri":"www.google.com","downloads":[{"file":"test.txt"}],"supplementaryFiles":[{"title":"helloworld","file":"helloworld.txt"}],"versions":[{"uri":"www.google.com"}]}`))
 	case "absoluteDownloadURI":
 		w.Write([]byte(`{"type":"dataset","uri":"localhost","downloads":[{"file":"absoluteDownloadURI/test.txt"}],"supplementaryFiles":[{"title":"helloworld","file":"helloworld.txt"}],"versions":[{"uri":"www.google.com"}]}`))
-	case "pageTitle":
+	case "pageTitle1":
 		w.Write([]byte(`{"title":"baby-names","edition":"2017","uri":"path/to/baby-names/2017"}`))
+	case "pageTitle2":
+		w.Write([]byte(`{"title":"page-title","edition":"2021","uri":"path/to/page-title/2021"}`))
 	case "bulletin-latest-release":
-		w.Write([]byte(`{"relatedBulletins":[{"uri":"pageTitle"}],"sections":[{"title":"Main points","markdown":"Main points markdown"},{"title":"Overview","markdown":"Overview markdown"}],"accordion":[{"title":"Background notes","markdown":"Notes markdown"}],"relatedData":[{"uri":"/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging"}],"charts":[{"title":"Figure 1.1","filename":"38d8c337","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337"}],"tables":[{"title":"Table 5.1","filename":"6f587872","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872"}],"images":[],"equations":[],"links":[{"uri":"pageTitle"}],"alerts":[{"date":"2021-09-30T07:10:46.230Z","markdown":"alert"}],"versions":[{"uri":"v1","updateDate":"2021-10-19T10:43:34.507Z","correctionNotice":"Notice"}],"type":"bulletin","uri":"/bulletin/2015-07-09","description":{"title":"UK Environmental Accounts","summary":"Measures the contribution of the environment to the economy","keywords":["fuel, energy"],"metaDescription":"Measures the contribution of the environment.","nationalStatistic":true,"latestRelease":true,"contact":{"email":"environment.accounts@ons.gsi.gov.uk","name":"Someone","telephone":"+44 (0)1633 455680"},"releaseDate":"2015-07-08T23:00:00.000Z","nextRelease":"","edition":"2015","unit":"","preUnit":"","source":""}}`))
+		w.Write([]byte(`{"relatedBulletins":[{"uri":"pageTitle1"}],"sections":[{"title":"Main points","markdown":"Main points markdown"},{"title":"Overview","markdown":"Overview markdown"}],"accordion":[{"title":"Background notes","markdown":"Notes markdown"}],"relatedData":[{"uri":"/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging"}],"charts":[{"title":"Figure 1.1","filename":"38d8c337","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337"}],"tables":[{"title":"Table 5.1","filename":"6f587872","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872"}],"images":[],"equations":[],"links":[{"uri":"pageTitle1"}, {"uri":"pageTitle2"}],"alerts":[{"date":"2021-09-30T07:10:46.230Z","markdown":"alert"}],"versions":[{"uri":"v1","updateDate":"2021-10-19T10:43:34.507Z","correctionNotice":"Notice"}],"type":"bulletin","uri":"/bulletin/2015-07-09","description":{"title":"UK Environmental Accounts","summary":"Measures the contribution of the environment to the economy","keywords":["fuel, energy"],"metaDescription":"Measures the contribution of the environment.","nationalStatistic":true,"latestRelease":true,"contact":{"email":"environment.accounts@ons.gsi.gov.uk","name":"Someone","telephone":"+44 (0)1633 455680"},"releaseDate":"2015-07-08T23:00:00.000Z","nextRelease":"","edition":"2015","unit":"","preUnit":"","source":""}}`))
 	case "bulletin-not-latest-release":
-		w.Write([]byte(`{"relatedBulletins":[{"uri":"pageTitle"}],"sections":[{"title":"Main points","markdown":"Main points markdown"},{"title":"Overview","markdown":"Overview markdown"}],"accordion":[{"title":"Background notes","markdown":"Notes markdown"}],"relatedData":[{"uri":"/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging"}],"charts":[{"title":"Figure 1.1","filename":"38d8c337","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337"}],"tables":[{"title":"Table 5.1","filename":"6f587872","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872"}],"images":[],"equations":[],"links":[{"uri":"pageTitle"}],"alerts":[{"date":"2021-09-30T07:10:46.230Z","markdown":"alert"}],"versions":[{"uri":"v1","updateDate":"2021-10-19T10:43:34.507Z","correctionNotice":"Notice"}],"type":"bulletin","uri":"/bulletin/2015-07-09","description":{"title":"UK Environmental Accounts","summary":"Measures the contribution of the environment to the economy","keywords":["fuel, energy"],"metaDescription":"Measures the contribution of the environment.","nationalStatistic":true,"latestRelease":false,"contact":{"email":"environment.accounts@ons.gsi.gov.uk","name":"Someone","telephone":"+44 (0)1633 455680"},"releaseDate":"2015-07-08T23:00:00.000Z","nextRelease":"","edition":"2015","unit":"","preUnit":"","source":""}}`))
+		w.Write([]byte(`{"relatedBulletins":[{"uri":"pageTitle1"}],"sections":[{"title":"Main points","markdown":"Main points markdown"},{"title":"Overview","markdown":"Overview markdown"}],"accordion":[{"title":"Background notes","markdown":"Notes markdown"}],"relatedData":[{"uri":"/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging"}],"charts":[{"title":"Figure 1.1","filename":"38d8c337","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337"}],"tables":[{"title":"Table 5.1","filename":"6f587872","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872"}],"images":[],"equations":[],"links":[{"uri":"pageTitle1"}, {"uri":"pageTitle2"}],"alerts":[{"date":"2021-09-30T07:10:46.230Z","markdown":"alert"}],"versions":[{"uri":"v1","updateDate":"2021-10-19T10:43:34.507Z","correctionNotice":"Notice"}],"type":"bulletin","uri":"/bulletin/2015-07-09","description":{"title":"UK Environmental Accounts","summary":"Measures the contribution of the environment to the economy","keywords":["fuel, energy"],"metaDescription":"Measures the contribution of the environment.","nationalStatistic":true,"latestRelease":false,"contact":{"email":"environment.accounts@ons.gsi.gov.uk","name":"Someone","telephone":"+44 (0)1633 455680"},"releaseDate":"2015-07-08T23:00:00.000Z","nextRelease":"","edition":"2015","unit":"","preUnit":"","source":""}}`))
 	case "/bulletin/latest":
 		w.Write([]byte(`{"title":"latest release","edition":"2021","uri":"/bulletin/2021"}`))
 	case "/":
@@ -219,7 +221,7 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test getPageTitle returns a correctly formatted page title", t, func() {
-		t, err := cli.GetPageTitle(ctx, testAccessToken, "", "", "pageTitle")
+		t, err := cli.GetPageTitle(ctx, testAccessToken, "", "", "pageTitle1")
 		So(err, ShouldBeNil)
 		So(t.Title, ShouldEqual, "baby-names")
 		So(t.Edition, ShouldEqual, "2017")
@@ -254,12 +256,14 @@ func TestUnitClient(t *testing.T) {
 			So(b.URI, ShouldEqual, "/bulletin/2015-07-09")
 			So(b.RelatedBulletins, ShouldNotBeEmpty)
 			So(len(b.RelatedBulletins), ShouldEqual, 1)
-			So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle")
+			So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle1")
 			So(b.RelatedBulletins[0].Title, ShouldEqual, "baby-names: 2017")
 			So(b.Links, ShouldNotBeEmpty)
-			So(len(b.Links), ShouldEqual, 1)
-			So(b.Links[0].URI, ShouldEqual, "pageTitle")
+			So(len(b.Links), ShouldEqual, 2)
+			So(b.Links[0].URI, ShouldEqual, "pageTitle1")
 			So(b.Links[0].Title, ShouldEqual, "baby-names: 2017")
+			So(b.Links[1].URI, ShouldEqual, "pageTitle2")
+			So(b.Links[1].Title, ShouldEqual, "page-title: 2021")
 			So(b.Sections, ShouldNotBeEmpty)
 			So(len(b.Sections), ShouldEqual, 2)
 			So(b.Sections[0].Title, ShouldEqual, "Main points")
@@ -316,12 +320,14 @@ func TestUnitClient(t *testing.T) {
 			So(b.URI, ShouldEqual, "/bulletin/2015-07-09")
 			So(b.RelatedBulletins, ShouldNotBeEmpty)
 			So(len(b.RelatedBulletins), ShouldEqual, 1)
-			So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle")
+			So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle1")
 			So(b.RelatedBulletins[0].Title, ShouldEqual, "baby-names: 2017")
 			So(b.Links, ShouldNotBeEmpty)
-			So(len(b.Links), ShouldEqual, 1)
-			So(b.Links[0].URI, ShouldEqual, "pageTitle")
+			So(len(b.Links), ShouldEqual, 2)
+			So(b.Links[0].URI, ShouldEqual, "pageTitle1")
 			So(b.Links[0].Title, ShouldEqual, "baby-names: 2017")
+			So(b.Links[1].URI, ShouldEqual, "pageTitle2")
+			So(b.Links[1].Title, ShouldEqual, "page-title: 2021")
 			So(b.Sections, ShouldNotBeEmpty)
 			So(len(b.Sections), ShouldEqual, 2)
 			So(b.Sections[0].Title, ShouldEqual, "Main points")
