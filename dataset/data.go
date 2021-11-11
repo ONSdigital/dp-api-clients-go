@@ -107,6 +107,7 @@ type Version struct {
 	ImportTasks          *InstanceImportTasks `json:"import_tasks,omitempty"`
 	CSVHeader            []string             `json:"headers,omitempty"`
 	UsageNotes           *[]UsageNote         `json:"usage_notes,omitempty"`
+	IsBasedOn            *IsBasedOn           `json:"is_based_on,omitempty"`
 }
 
 type UpdateInstance struct {
