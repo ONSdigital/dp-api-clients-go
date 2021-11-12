@@ -171,6 +171,24 @@ func TestStream(t *testing.T) {
 				So(out, ShouldResemble, testCsv)
 				So(rowCount, ShouldEqual, 22)
 			})
+
+			Convey("Then calling stream with a cancelled context results in the expected error being returned and only the first line being processed", func() {
+				testCtxWithCancel, cancel := context.WithCancel(testCtx)
+				cancel()
+
+				req := cantabular.StaticDatasetQueryRequest{
+					Dataset:   "Example",
+					Variables: []string{"city", "siblings"},
+				}
+				_, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtxWithCancel, req, consume)
+				So(err, ShouldResemble,
+					fmt.Errorf("transform error: %w",
+						fmt.Errorf("error decoding table fields: %w",
+							fmt.Errorf("error decoding values: %w",
+								fmt.Errorf("error iterating to next row: %w",
+									fmt.Errorf("context is done: %w", errors.New("context canceled")))))))
+				So(out, ShouldEqual, "count,City,Number of siblings\n1,London,No siblings\n")
+			})
 		})
 
 		Convey("And an http client that returns a 'dataset not loaded in this server' error response and 200 OK status code, due to a wrong 'dataset' value in the query", func() {

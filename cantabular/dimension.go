@@ -1,6 +1,10 @@
 package cantabular
 
-import "errors"
+import (
+	"context"
+	"errors"
+	"fmt"
+)
 
 type (
 	// Dimension represents the 'dimension' field from a GraphQL
@@ -16,14 +20,16 @@ type (
 
 	// Iterator facilitates reading the coordinates of each cell in row-major order
 	Iterator struct {
+		ctx        context.Context
 		dims       Dimensions
 		dimIndices []int
 	}
 )
 
 // NewIterator creates an iterator over a table on these Dimensions
-func (dims Dimensions) NewIterator() *Iterator {
+func (dims Dimensions) NewIterator(ctx context.Context) *Iterator {
 	return &Iterator{
+		ctx:        ctx,
 		dims:       dims,
 		dimIndices: make([]int, len(dims)),
 	}
@@ -35,14 +41,23 @@ func (it *Iterator) End() bool {
 }
 
 // Next advances to the next table cell. It should not be called if End() would return true.
-func (it *Iterator) Next() {
-	it.checkNotAtEnd()
-	for j := len(it.dimIndices) - 1; j >= 0; j -= 1 {
-		if it.dimIndices[j] += 1; it.dimIndices[j] < it.dims[j].Count || j == 0 {
-			break
+// If the Iterator contet is done, an error will be returned.
+func (it *Iterator) Next() error {
+	select {
+	case <-it.ctx.Done():
+		return fmt.Errorf("context is done: %w", it.ctx.Err())
+	default:
+		if err := it.checkNotAtEnd(); err != nil {
+			return err
 		}
-		it.dimIndices[j] = 0
+		for j := len(it.dimIndices) - 1; j >= 0; j -= 1 {
+			if it.dimIndices[j] += 1; it.dimIndices[j] < it.dims[j].Count || j == 0 {
+				break
+			}
+			it.dimIndices[j] = 0
+		}
 	}
+	return nil
 }
 
 // CategoryAtColumn returns the i-th coordinate of the current cell

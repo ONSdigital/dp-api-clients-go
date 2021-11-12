@@ -3,6 +3,7 @@ package cantabular
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -68,7 +69,7 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 
 // GraphQLJSONToCSV converts a JSON response in r to CSV on w, returning the row count
 // if an error happens, the process is aborted and the error is returned.
-func GraphQLJSONToCSV(r io.Reader, w io.Writer) (int32, error) {
+func GraphQLJSONToCSV(ctx context.Context, r io.Reader, w io.Writer) (int32, error) {
 	dec := jsonstream.New(r)
 
 	// errData represents a possible error that may be returned by 'decodeDataFields',
@@ -93,7 +94,7 @@ func GraphQLJSONToCSV(r io.Reader, w io.Writer) (int32, error) {
 		}
 		switch field {
 		case "data":
-			if rowCount, err = decodeDataFields(dec, w); err != nil {
+			if rowCount, err = decodeDataFields(ctx, dec, w); err != nil {
 				// null values for 'dataste' or 'table' are ok as long as the error is reported under the 'errors' field
 				if err == errNullDataset || err == errNullTable {
 					errData = err
@@ -123,7 +124,7 @@ func GraphQLJSONToCSV(r io.Reader, w io.Writer) (int32, error) {
 // decodeTableFields decodes the fields of the table part of the GraphQL response, writing CSV to w.
 // It returns the total number of rows, including the header.
 // If no table cell values are present then no output is written.
-func decodeTableFields(dec jsonstream.Decoder, w io.Writer) (rowCount int32, err error) {
+func decodeTableFields(ctx context.Context, dec jsonstream.Decoder, w io.Writer) (rowCount int32, err error) {
 	var dims Dimensions
 	for dec.More() {
 		field, err := dec.DecodeName()
@@ -152,7 +153,7 @@ func decodeTableFields(dec jsonstream.Decoder, w io.Writer) (rowCount int32, err
 				return 0, fmt.Errorf("error decoding start of json array for 'values': %w", err)
 			}
 			if isStartArray {
-				if rowCount, err = decodeValues(dec, dims, w); err != nil {
+				if rowCount, err = decodeValues(ctx, dec, dims, w); err != nil {
 					return 0, fmt.Errorf("error decoding values: %w", err)
 				}
 				if err := dec.EndComposite(); err != nil {
@@ -188,7 +189,7 @@ func decodeErrors(dec jsonstream.Decoder) error {
 // if expects to find the following nested values: {"dataset": {"table": {...}}}
 // it propagates the row count returned by 'decodeTableFields'
 // the end-composite values are always decoded according to the reached depth
-func decodeDataFields(dec jsonstream.Decoder, w io.Writer) (rowCount int32, err error) {
+func decodeDataFields(ctx context.Context, dec jsonstream.Decoder, w io.Writer) (rowCount int32, err error) {
 	var matchName = func(name string) error {
 		gotName, err := dec.DecodeName()
 		if err != nil {
@@ -246,7 +247,7 @@ func decodeDataFields(dec jsonstream.Decoder, w io.Writer) (rowCount int32, err 
 	depth++
 
 	// Decode table fields
-	if rowCount, err = decodeTableFields(dec, w); err != nil {
+	if rowCount, err = decodeTableFields(ctx, dec, w); err != nil {
 		return 0, fmt.Errorf("error decoding table fields: %w", err)
 	}
 	return rowCount, nil
@@ -254,7 +255,7 @@ func decodeDataFields(dec jsonstream.Decoder, w io.Writer) (rowCount int32, err 
 
 // decodeValues decodes the values of the cells in the table, writing CSV to w.
 // It returns the total number of rows, including the header.
-func decodeValues(dec jsonstream.Decoder, dims Dimensions, w io.Writer) (rowCount int32, err error) {
+func decodeValues(ctx context.Context, dec jsonstream.Decoder, dims Dimensions, w io.Writer) (rowCount int32, err error) {
 	cw := csv.NewWriter(w)
 
 	// csv.Writer errors are sticky, so we only need to check when flushing at the end
@@ -273,7 +274,7 @@ func decodeValues(dec jsonstream.Decoder, dims Dimensions, w io.Writer) (rowCoun
 	rowCount = 1 // number of rows, including headers
 
 	// Obtain the CSV rows according to the cantabular dimensions and counts
-	for ti := dims.NewIterator(); dec.More(); {
+	for ti := dims.NewIterator(ctx); dec.More(); {
 		count, err := dec.DecodeNumber()
 		if err != nil {
 			return 0, fmt.Errorf("error decoding count: %w", err)
@@ -283,7 +284,9 @@ func decodeValues(dec jsonstream.Decoder, dims Dimensions, w io.Writer) (rowCoun
 			return 0, fmt.Errorf("error writing a csv row: %w", err)
 		}
 		rowCount++
-		ti.Next()
+		if err := ti.Next(); err != nil {
+			return 0, fmt.Errorf("error iterating to next row: %w", err)
+		}
 	}
 
 	return rowCount, nil

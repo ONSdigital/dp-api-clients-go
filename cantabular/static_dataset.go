@@ -104,8 +104,8 @@ func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticData
 	}
 	var rowCount int32
 
-	transform := func(ctx context.Context, r io.Reader, w io.Writer) error {
-		if rowCount, err = GraphQLJSONToCSV(r, w); err != nil {
+	transform := func(ctx context.Context, body io.Reader, pipeWriter io.Writer) error {
+		if rowCount, err = GraphQLJSONToCSV(ctx, body, pipeWriter); err != nil {
 			return err
 		}
 		return nil
