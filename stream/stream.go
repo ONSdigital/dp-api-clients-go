@@ -49,6 +49,11 @@ func Stream(ctx context.Context, body io.ReadCloser, transform Transformer, cons
 	go func() {
 		defer wg.Done()
 		errConsume = consume(ctx, pipeReader)
+		if errConsume != nil {
+			if err := pipeWriter.Close(); err != nil {
+				log.Error(ctx, "stream error: error closing pipe reader from consumer go-routine during error handling", err)
+			}
+		}
 	}()
 
 	wg.Wait()
