@@ -17,30 +17,38 @@ type Consumer = func(ctx context.Context, r io.Reader) error
 // - the other consumes the transformed stream using the provided consume method
 // This method block until all work is complete, at which point all Readers and Writers are closed and any error is returned.
 func Stream(ctx context.Context, body io.ReadCloser, transform Transformer, consume Consumer) error {
-	r, w := io.Pipe()
+	pipeReader, pipeWriter := io.Pipe()
 	wg := &sync.WaitGroup{}
 
 	var errTransform, errConsume error
 
-	// Start go-routine to read response body, transform it 'on-the-fly' and write it to the pipe writer
+	// Start go-routine to read the provided body, transform it 'on-the-fly' and write the transformed data to the pipe writer
+	// When 'transform' finishes its execution, the pipe writer is closed (with error if 'transform' func returned an error).
 	wg.Add(1)
 	go func() {
 		defer func() {
 			closeResponseBody(ctx, body)
-			w.Close()
 			wg.Done()
 		}()
-		errTransform = transform(ctx, body, w)
+		errTransform = transform(ctx, body, pipeWriter)
+		if errTransform != nil {
+			err := pipeWriter.CloseWithError(errTransform)
+			if err != nil {
+				log.Error(ctx, "stream error: error closing pipe writer from transformer go-routine during error handling", err)
+			}
+			return
+		}
+		err := pipeWriter.Close()
+		if err != nil {
+			log.Error(ctx, "stream error: error closing pipe writer from transformer go-routine after 'consume' was successful", err)
+		}
 	}()
 
-	// Start go-routine to read pipe reader (transformed) and call the consumer func
+	// Start go-routine to read transformed data from pipe reader and call the consumer func
 	wg.Add(1)
 	go func() {
-		defer func() {
-			r.Close()
-			wg.Done()
-		}()
-		errConsume = consume(ctx, r)
+		defer wg.Done()
+		errConsume = consume(ctx, pipeReader)
 	}()
 
 	wg.Wait()

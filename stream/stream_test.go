@@ -71,7 +71,7 @@ func TestStream(t *testing.T) {
 		var consume = func(ctx context.Context, r io.Reader) error {
 			n, err := r.Read(output)
 			c.So(n, ShouldEqual, 0)
-			c.So(err, ShouldResemble, errors.New("EOF"))
+			c.So(err, ShouldResemble, errTestTransformer)
 			return nil
 		}
 
