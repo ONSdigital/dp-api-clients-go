@@ -48,9 +48,9 @@ type Description struct {
 
 // Hightlight contains specfic metadata with search keyword(s) highlighted
 type Highlight struct {
-	Title           string    `json:"title"`
+	Title           string    `json:"title,omitempty"`
 	Keywords        *[]string `json:"keywords,omitempty"`
-	Summary         string    `json:"summary"`
+	Summary         string    `json:"summary,omitempty"`
 	MetaDescription string    `json:"meta_description,omitempty"`
 	DatasetID       string    `json:"dataset_id,omitempty"`
 	Edition         string    `json:"edition,omitempty"`
