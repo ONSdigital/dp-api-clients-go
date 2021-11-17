@@ -39,7 +39,19 @@
                 "national_statistic": false,
                 "release_date": "2015-01-30T00:00:00.000Z",
                 "summary": "The Index of Private Housing Rental Prices (IPHRP) measures the change in price of property rented by private landlords. The index is published as a series of price indices covering Great Britain, its constituent countries and the English regions.",
-                "title": "Index of Private Housing Rental Prices"
+                "title": "Index of Private Housing Rental Prices",
+                "hightlight": {
+                    "summary": "The Index of Private Housing Rental Prices (IPHRP) measures the change in price of property rented by private landlords. The index is published as a series of price indices covering Great Britain, its constituent countries and the English regions.",
+                    "title": "Index of Private Housing Rental Prices",
+                    "keywords": [
+                        "Inflation",
+                        "Property",
+                        "private landlords",
+                        "rental market",
+                        "housing market"
+                    ],
+                    "edition": "Q4 2014"
+                }
             },
             "type": "bulletin",
             "uri": "/peoplepopulationandcommunity/housing/bulletins/indexofprivatehousingrentalprices/2015-01-30",

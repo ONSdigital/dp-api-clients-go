@@ -43,6 +43,17 @@ type Description struct {
 	Summary           string    `json:"summary"`
 	Title             string    `json:"title"`
 	Unit              string    `json:"unit,omitempty"`
+	Highlight         Highlight `json:"hightlight,omitempty"`
+}
+
+// Hightlight contains specfic metadata with search keyword(s) highlighted
+type Highlight struct {
+	Title           string    `json:"title"`
+	Keywords        *[]string `json:"keywords,omitempty"`
+	Summary         string    `json:"summary"`
+	MetaDescription string    `json:"meta_description,omitempty"`
+	DatasetID       string    `json:"dataset_id,omitempty"`
+	Edition         string    `json:"edition,omitempty"`
 }
 
 // Contact represents each search result contact details
