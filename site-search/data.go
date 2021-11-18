@@ -43,7 +43,7 @@ type Description struct {
 	Summary           string    `json:"summary"`
 	Title             string    `json:"title"`
 	Unit              string    `json:"unit,omitempty"`
-	Highlight         Highlight `json:"hightlight,omitempty"`
+	Highlight         Highlight `json:"highlight,omitempty"`
 }
 
 // Hightlight contains specfic metadata with search keyword(s) highlighted
