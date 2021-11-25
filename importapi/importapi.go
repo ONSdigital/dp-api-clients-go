@@ -18,6 +18,35 @@ import (
 
 const service = "import-api"
 
+// State - iota enum of possible states
+type State int
+
+// stateData represents a json with a single state filed
+type stateData struct {
+	State string `json:"state"`
+}
+
+// Possible values for a State of the resource
+const (
+	StateCreated State = iota
+	StateSubmitted
+	StateCompleted
+	StateFailed
+)
+
+var stateValues = []string{"created", "submitted", "completed", "failed"}
+
+// String returns the string representation of a state
+func (s State) String() string {
+	return stateValues[s]
+}
+
+// Json returns a json type with 'state' key and the string corresponding to the provided state as value
+// e.g. {"state": "created"}
+func (s State) Json() *stateData {
+	return &stateData{s.String()}
+}
+
 // Client is an import api client which can be used to make requests to the API
 type Client struct {
 	cli dphttp.Clienter
@@ -84,11 +113,6 @@ type ProcessedInstances struct {
 	ProcessedCount int    `json:"processed_count,omitempty"`
 }
 
-// stateData represents a json with a single state filed
-type stateData struct {
-	State string `json:"state"`
-}
-
 // Checker calls import api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	hcClient := healthcheck.Client{
@@ -136,10 +160,10 @@ func (c *Client) GetImportJob(ctx context.Context, importJobID, serviceToken str
 }
 
 // UpdateImportJobState tells the Import API that the state has changed of an Import job
-func (c *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken string, newState string) error {
+func (c *Client) UpdateImportJobState(ctx context.Context, jobID, serviceToken string, newState State) error {
 	uri := fmt.Sprintf("%s/jobs/%s", c.url, jobID)
 
-	jsonUpload, err := json.Marshal(&stateData{newState})
+	jsonUpload, err := json.Marshal(newState.Json())
 	if err != nil {
 		return err
 	}
