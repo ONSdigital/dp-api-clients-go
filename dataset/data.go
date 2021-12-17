@@ -191,6 +191,7 @@ type Instances struct {
 type Metadata struct {
 	Version
 	DatasetDetails
+	DatasetLinks Links `json:"dataset_links,omitempty"`
 }
 
 // DownloadList represents a list of objects of containing information on the downloadable files
