@@ -474,14 +474,13 @@ func (c *Client) GetPublishedIndex(ctx context.Context, params *PublishedIndexRe
 	reqURL := "/publishedindex"
 
 	if params != nil {
-		reqURL = fmt.Sprintf("%s?offset=%d",reqURL, params.Offset)
+		reqURL = fmt.Sprintf("%s?offset=%d", reqURL, params.Offset)
 		if params.Limit != nil {
-			reqURL = fmt.Sprintf("%s&limit=%d",reqURL, *(params.Limit))
+			reqURL = fmt.Sprintf("%s&limit=%d", reqURL, *(params.Limit))
 		}
 	}
 
 	b, _, err := c.get(ctx, "", reqURL)
-
 	if err != nil {
 		return PublishedIndex{}, err
 	}

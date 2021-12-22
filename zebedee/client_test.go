@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -148,6 +147,7 @@ func filesize(w http.ResponseWriter, req *http.Request) {
 }
 
 func TestUnitClient(t *testing.T) {
+	t.Parallel()
 	portChan := make(chan int)
 	go mockZebedeeServer(portChan)
 
@@ -386,6 +386,7 @@ func TestUnitClient(t *testing.T) {
 }
 
 func TestClient_HealthChecker(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	timePriorHealthCheck := time.Now()
 	path := "/health"
@@ -531,7 +532,7 @@ func TestClient_HealthChecker(t *testing.T) {
 }
 
 func TestClient_PublishedDataEndpoint(t *testing.T) {
-
+	t.Parallel()
 	ctx := context.Background()
 	path := "/publisheddata"
 	testURIString := "/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02"
@@ -610,11 +611,12 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 }
 
 func TestClient_PublishedIndexEndpoint(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	path := "/publishedindex"
 
 	Convey("given a 200 response", t, func() {
-		documentContent, err := ioutil.ReadFile("./response_mocks/publishedindex.json")
+		documentContent, err := os.ReadFile("./response_mocks/publishedindex.json")
 		So(err, ShouldBeNil)
 		body := httpmocks.NewReadCloserMock(documentContent, nil)
 		response := httpmocks.NewResponseMock(body, http.StatusOK)
@@ -641,8 +643,6 @@ func TestClient_PublishedIndexEndpoint(t *testing.T) {
 				doCalls := httpClient.DoCalls()
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
-				//p := doCalls[0].Req.FormValue("offset")
-				//So(p, ShouldEqual, path)
 			})
 		})
 
