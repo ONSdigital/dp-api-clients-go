@@ -159,6 +159,7 @@ type HomepageContent struct {
 	URI             string              `json:"uri"`
 	Type            string              `json:"type"`
 	Description     HomepageDescription `json:"description"`
+	EmergencyBanner EmergencyBanner     `json:"emergencyBanner"`
 }
 
 type Intro struct {
@@ -181,6 +182,14 @@ type HomepageDescription struct {
 	Unit            string   `json:"unit"`
 	PreUnit         string   `json:"preUnit"`
 	Source          string   `json:"source"`
+}
+
+type EmergencyBanner struct {
+	Type        string `json:"type"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	URI         string `json:"uri"`
+	LinkText    string `json:"linkText"`
 }
 
 type Collection struct {

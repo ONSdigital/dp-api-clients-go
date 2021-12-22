@@ -99,7 +99,7 @@ func contentData(w http.ResponseWriter, req *http.Request) {
 	case "/bulletin/latest":
 		w.Write([]byte(`{"title":"latest release","edition":"2021","uri":"/bulletin/2021"}`))
 	case "/":
-		w.Write([]byte(`{"intro":{"title":"Welcome to the Office for National Statistics","markdown":"Test markdown"},"featuredContent":[{"title":"Featured Content One","description":"Featured Content One Description","uri":"/one","image":"testImage"}],"aroundONS":[{"title":"Around ONS One","description":"Around ONS One Description","uri":"/one","image":"testImage"}],"serviceMessage":"","description":{"keywords":[ "keywordOne", "keywordTwo" ],"metaDescription":"","unit":"","preUnit":"","source":""}}`))
+		w.Write([]byte(`{"intro":{"title":"Welcome to the Office for National Statistics","markdown":"Test markdown"},"featuredContent":[{"title":"Featured Content One","description":"Featured Content One Description","uri":"/one","image":"testImage"}],"aroundONS":[{"title":"Around ONS One","description":"Around ONS One Description","uri":"/one","image":"testImage"}],"serviceMessage":"","emergencyBanner":{"type":"banner_type","title":"Emergency banner title","description":"Emergency banner description","uri":"www.google.com","linkText":"More info"},"description":{"keywords":[ "keywordOne", "keywordTwo" ],"metaDescription":"","unit":"","preUnit":"","source":""}}`))
 	case "notFound":
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -198,6 +198,11 @@ func TestUnitClient(t *testing.T) {
 		So(m.AroundONS[0].ImageID, ShouldEqual, "testImage")
 		So(m.Description.Keywords[0], ShouldEqual, "keywordOne")
 		So(m.ServiceMessage, ShouldEqual, "")
+		So(m.EmergencyBanner.Title, ShouldEqual, "Emergency banner title")
+		So(m.EmergencyBanner.Type, ShouldEqual, "banner_type")
+		So(m.EmergencyBanner.Description, ShouldEqual, "Emergency banner description")
+		So(m.EmergencyBanner.URI, ShouldEqual, "www.google.com")
+		So(m.EmergencyBanner.LinkText, ShouldEqual, "More info")
 	})
 
 	Convey("test get dataset details", t, func() {
