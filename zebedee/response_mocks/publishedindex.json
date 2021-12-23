@@ -1,0 +1,17 @@
+{
+  "count": 3,
+  "items": [
+    {
+      "uri": "/releases"
+    },
+    {
+      "uri": "/economy/regionalaccounts/grossdisposablehouseholdincome/bulletins/regionalgrossdisposablehouseholdincomegdhi/2014-06-04"
+    },
+    {
+      "uri": "/businessindustryandtrade/tourismindustry/timeseries/gmaa"
+    }
+  ],
+  "limit": 3,
+  "offset": 0,
+  "total_count": 3
+}

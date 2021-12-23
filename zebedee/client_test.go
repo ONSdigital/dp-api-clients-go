@@ -147,6 +147,7 @@ func filesize(w http.ResponseWriter, req *http.Request) {
 }
 
 func TestUnitClient(t *testing.T) {
+	t.Parallel()
 	portChan := make(chan int)
 	go mockZebedeeServer(portChan)
 
@@ -390,6 +391,7 @@ func TestUnitClient(t *testing.T) {
 }
 
 func TestClient_HealthChecker(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	timePriorHealthCheck := time.Now()
 	path := "/health"
@@ -535,7 +537,7 @@ func TestClient_HealthChecker(t *testing.T) {
 }
 
 func TestClient_PublishedDataEndpoint(t *testing.T) {
-
+	t.Parallel()
 	ctx := context.Background()
 	path := "/publisheddata"
 	testURIString := "/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02"
@@ -547,7 +549,7 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 		httpClient := newMockHTTPClient(response, nil)
 		zebedeeClient := newZebedeeClient(httpClient)
 
-		Convey("when zebedeeClient.GetPublised is called", func() {
+		Convey("when zebedeeClient.GetPublishedData is called", func() {
 			testContent, err := zebedeeClient.GetPublishedData(ctx, testURIString)
 
 			Convey("then the expected content is returned", func() {
@@ -602,6 +604,97 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
 				So(err.Error(), ShouldEqual, "invalid response from zebedee: 404, path: /publisheddata")
 
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := httpClient.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
+			})
+		})
+	})
+}
+
+func TestClient_PublishedIndexEndpoint(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	path := "/publishedindex"
+
+	Convey("given a 200 response", t, func() {
+		documentContent, err := os.ReadFile("./response_mocks/publishedindex.json")
+		So(err, ShouldBeNil)
+		body := httpmocks.NewReadCloserMock(documentContent, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusOK)
+
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when zebedeeClient.GetPublishedIndex is called", func() {
+			m, err := zebedeeClient.GetPublishedIndex(ctx, nil)
+
+			Convey("then the expected content is returned", func() {
+				So(err, ShouldBeNil)
+				So(m.Count, ShouldEqual, 3)
+				So(m.Items, ShouldNotBeEmpty)
+				So(m.Items, ShouldHaveLength, 3)
+				mItem := m.Items[0]
+				So(mItem.URI, ShouldResemble, "/releases")
+				So(m.Limit, ShouldEqual, 3)
+				So(m.Offset, ShouldEqual, 0)
+				So(m.TotalCount, ShouldEqual, 3)
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := httpClient.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
+			})
+		})
+
+		Convey("when zebedeeClient.GetPublishedIndex is called with paging params", func() {
+			limit := 9
+			m, err := zebedeeClient.GetPublishedIndex(ctx, &PublishedIndexRequestParams{
+				Limit:  &limit,
+				Offset: 5,
+			})
+
+			Convey("then the expected content is returned", func() {
+				So(err, ShouldBeNil)
+				So(m.Count, ShouldEqual, 3)
+				So(m.Items, ShouldNotBeEmpty)
+				So(m.Items, ShouldHaveLength, 3)
+				mItem := m.Items[0]
+				So(mItem.URI, ShouldResemble, "/releases")
+				So(m.Limit, ShouldEqual, 3)
+				So(m.Offset, ShouldEqual, 0)
+				So(m.TotalCount, ShouldEqual, 3)
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := httpClient.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
+				req := doCalls[0].Req
+				So(req.FormValue("offset"), ShouldEqual, "5")
+				So(req.FormValue("limit"), ShouldEqual, "9")
+			})
+		})
+	})
+
+	Convey("given a 500 response", t, func() {
+		documentContent := []byte("{byte slice returned}")
+		body := httpmocks.NewReadCloserMock(documentContent, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusInternalServerError)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when zebedeeClient.GetPublishedIndex is called", func() {
+			_, err := zebedeeClient.GetPublishedIndex(ctx, nil)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
+				So(err.Error(), ShouldEqual, "invalid response from zebedee: 500, path: /publishedindex")
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {

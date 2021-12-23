@@ -235,3 +235,23 @@ type Bulletin struct {
 	Alerts           []Alert     `json:"alerts"`
 	LatestReleaseURI string      `json:"latestReleaseUri"`
 }
+
+// PublishedIndexRequestParams represents request parameters for making paged PublishedIndex requests
+type PublishedIndexRequestParams struct {
+	Limit  *int
+	Offset int
+}
+
+// PublishedIndex represents an index of published content
+type PublishedIndex struct {
+	Count      int                  `json:"count"`
+	Items      []PublishedIndexItem `json:"items"`
+	Limit      int                  `json:"limit"`
+	Offset     int                  `json:"offset"`
+	TotalCount int                  `json:"total_count"`
+}
+
+// PublishedIndexItem represents an individual content item returned from the PublishedIndex endpoint
+type PublishedIndexItem struct {
+	URI string `json:"uri"`
+}
