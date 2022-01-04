@@ -1,16 +1,13 @@
 package areas
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -257,35 +254,6 @@ func getMockAreaAPI(expectRequest http.Request, mockedHTTPResponse MockedHTTPRes
 		fmt.Fprintln(w, mockedHTTPResponse.Body)
 	}))
 	return New(ts.URL)
-}
-
-func newDatasetClient(httpClient *dphttp.ClienterMock) *Client {
-	healthClient := health.NewClientWithClienter("", testHost, httpClient)
-	datasetClient := NewWithHealthClient(healthClient)
-	return datasetClient
-}
-
-func createHTTPClientMock(mockedHTTPResponse ...MockedHTTPResponse) *dphttp.ClienterMock {
-	numCall := 0
-	return &dphttp.ClienterMock{
-		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
-			body, _ := json.Marshal(mockedHTTPResponse[numCall].Body)
-			resp := &http.Response{
-				StatusCode: mockedHTTPResponse[numCall].StatusCode,
-				Body:       ioutil.NopCloser(bytes.NewReader(body)),
-				Header:     http.Header{},
-			}
-			for hKey, hVal := range mockedHTTPResponse[numCall].Headers {
-				resp.Header.Set(hKey, hVal)
-			}
-			numCall++
-			return resp, nil
-		},
-		SetPathsWithNoRetriesFunc: func(paths []string) {},
-		GetPathsWithNoRetriesFunc: func() []string {
-			return []string{"/healthcheck"}
-		},
-	}
 }
 
 func newMockHTTPClient(r *http.Response, err error) *dphttp.ClienterMock {
