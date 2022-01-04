@@ -1,22 +1,39 @@
 package areas
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
+	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
 
 const (
-	testHost                 = "http://localhost:8080"
+	userAuthToken    = "iamatoken"
+	serviceAuthToken = "iamaservicetoken"
+	collectionID     = "iamacollectionID"
+	testHost         = "http://localhost:8080"
 )
 
-var initialState = health.CreateCheckState(service)
+var (
+	ctx          = context.Background()
+	initialState = health.CreateCheckState(service)
+)
+
+type MockedHTTPResponse struct {
+	StatusCode int
+	Body       interface{}
+	Headers    map[string]string
+}
 
 func TestClient_HealthChecker(t *testing.T) {
 	ctx := context.Background()
@@ -178,6 +195,97 @@ func TestClient_HealthChecker(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestClient_GetArea(t *testing.T) {
+
+	areaBody := `{
+	"code": "E92000001",
+	"name": "England",
+	"date_started": "Thu, 01 Jan 2009 00:00:00 GMT",
+	"date_end": "null",
+	"name_welsh": "Lloegr",
+	"limit": "1",
+	"total_count": "10",
+	"visible": true
+	}`
+
+	Convey("When bad request is returned", t, func() {
+		mockedAPI := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
+		_, err := mockedAPI.GetArea(ctx, userAuthToken, serviceAuthToken, collectionID, "E92000001")
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When a area is returned", t, func() {
+		mockedAPI := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: areaBody})
+		area, err := mockedAPI.GetArea(ctx, userAuthToken, serviceAuthToken, collectionID, "E92000001")
+		So(err, ShouldBeNil)
+		So(area, ShouldResemble, AreaDetails{
+			Code:        "E92000001",
+			Name:        "England",
+			DateStarted: "Thu, 01 Jan 2009 00:00:00 GMT",
+			DateEnd:     "null",
+			NameWelsh:   "Lloegr",
+			Limit:       "1",
+			TotalCount:  "10",
+			Visible:     true,
+		})
+	})
+
+	Convey("given a 200 status with valid empty body is returned", t, func() {
+		mockedAPI := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: "{}"})
+
+		Convey("when GetArea is called", func() {
+			instance, err := mockedAPI.GetArea(ctx, userAuthToken, serviceAuthToken, collectionID, "E92000001")
+
+			Convey("a positive response is returned with empty instance", func() {
+				So(err, ShouldBeNil)
+				So(instance, ShouldResemble, AreaDetails{})
+			})
+		})
+	})
+}
+
+func getMockAreaAPI(expectRequest http.Request, mockedHTTPResponse MockedHTTPResponse) *Client {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != expectRequest.Method {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("unexpected HTTP method used"))
+			return
+		}
+		w.WriteHeader(mockedHTTPResponse.StatusCode)
+		fmt.Fprintln(w, mockedHTTPResponse.Body)
+	}))
+	return New(ts.URL)
+}
+
+func newDatasetClient(httpClient *dphttp.ClienterMock) *Client {
+	healthClient := health.NewClientWithClienter("", testHost, httpClient)
+	datasetClient := NewWithHealthClient(healthClient)
+	return datasetClient
+}
+
+func createHTTPClientMock(mockedHTTPResponse ...MockedHTTPResponse) *dphttp.ClienterMock {
+	numCall := 0
+	return &dphttp.ClienterMock{
+		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			body, _ := json.Marshal(mockedHTTPResponse[numCall].Body)
+			resp := &http.Response{
+				StatusCode: mockedHTTPResponse[numCall].StatusCode,
+				Body:       ioutil.NopCloser(bytes.NewReader(body)),
+				Header:     http.Header{},
+			}
+			for hKey, hVal := range mockedHTTPResponse[numCall].Headers {
+				resp.Header.Set(hKey, hVal)
+			}
+			numCall++
+			return resp, nil
+		},
+		SetPathsWithNoRetriesFunc: func(paths []string) {},
+		GetPathsWithNoRetriesFunc: func() []string {
+			return []string{"/healthcheck"}
+		},
+	}
 }
 
 func newMockHTTPClient(r *http.Response, err error) *dphttp.ClienterMock {
