@@ -1,5 +1,7 @@
 package cantabular
 
+import "github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
+
 // ErrorResponse models the error response from cantabular
 type ErrorResponse struct {
 	Message string `json:"message"`
@@ -35,4 +37,18 @@ type StaticDatasetQueryRequest struct {
 // unmarshalled into the requests.
 type StaticDatasetQuery struct {
 	Dataset StaticDataset `json:"dataset" graphql:"dataset(name: $name)"`
+}
+
+// GetDimensionsResponse holds the response body for
+// POST [cantabular-ext]/graphql
+// with a ruleBase query to obtain static dataset variables, with 1-level relationships
+type GetDimensionsResponse struct {
+	Dataset gql.Dataset `json:"dataset"`
+}
+
+// GetDimensionOptionsResponse holds the response body for
+// POST [cantabular-ext]/graphql
+// with a query to obtain static dataset variables and categories, without values.
+type GetDimensionOptionsResponse struct {
+	Dataset StaticDatasetDimensionOptions `json:"dataset"`
 }
