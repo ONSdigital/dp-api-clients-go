@@ -86,8 +86,6 @@ func contentData(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte(`{"downloads":[{"title":"Latest","file":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02/labd02jul2015_tcm77-408195.xls"}],"section":{"markdown":""},"relatedDatasets":[{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputeslabd01"},{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/stoppagesofworklabd03"}],"relatedDocuments":[{"uri":"/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/uklabourmarket/2015-07-15"}],"relatedMethodology":[],"type":"dataset_landing_page","uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02","description":{"title":"Labour disputes by sector: LABD02","summary":"Labour disputes by sector.","keywords":["strike"],"metaDescription":"Labour disputes by sector.","nationalStatistic":true,"contact":{"email":"richard.clegg@ons.gsi.gov.uk\n","name":"Richard Clegg\n","telephone":"+44 (0)1633 455400 \n"},"releaseDate":"2015-07-14T23:00:00.000Z","nextRelease":"12 August 2015","datasetId":"","unit":"","preUnit":"","source":""}}`))
 	case "12345":
 		w.Write([]byte(`{"type":"dataset","uri":"www.google.com","downloads":[{"file":"test.txt"}],"supplementaryFiles":[{"title":"helloworld","file":"helloworld.txt"}],"versions":[{"uri":"www.google.com"}]}`))
-	case "absoluteDownloadURI":
-		w.Write([]byte(`{"type":"dataset","uri":"localhost","downloads":[{"file":"absoluteDownloadURI/test.txt"}],"supplementaryFiles":[{"title":"helloworld","file":"helloworld.txt"}],"versions":[{"uri":"www.google.com"}]}`))
 	case "pageTitle1":
 		w.Write([]byte(`{"title":"baby-names","edition":"2017","uri":"path/to/baby-names/2017"}`))
 	case "pageTitle2":
@@ -117,21 +115,6 @@ func parents(w http.ResponseWriter, req *http.Request) {
 }
 
 func filesize(w http.ResponseWriter, req *http.Request) {
-
-	switch uri := req.URL.Query().Get("uri"); uri {
-	case "filesize":
-	case "12345/helloworld.txt":
-	case "12345/test.txt":
-	case "absoluteDownloadURI/test.txt":
-	case "absoluteDownloadURI/helloworld.txt":
-		break
-
-	default:
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(errors.New("invalid path for get file size").Error()))
-		return
-	}
-
 	zebedeeResponse := struct {
 		FileSize int `json:"fileSize"`
 	}{
@@ -210,13 +193,6 @@ func TestUnitClient(t *testing.T) {
 		d, err := cli.GetDataset(ctx, testAccessToken, "", "", "12345")
 		So(err, ShouldBeNil)
 		So(d.URI, ShouldEqual, "www.google.com")
-		So(d.SupplementaryFiles[0].Title, ShouldEqual, "helloworld")
-	})
-
-	Convey("test get dataset details with absolute url in download section", t, func() {
-		d, err := cli.GetDataset(ctx, testAccessToken, "", "", "absoluteDownloadURI")
-		So(err, ShouldBeNil)
-		So(d.URI, ShouldEqual, "localhost")
 		So(d.SupplementaryFiles[0].Title, ShouldEqual, "helloworld")
 	})
 
