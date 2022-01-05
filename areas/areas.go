@@ -66,7 +66,7 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 
 // GetArea returns area information for a given area ID
 func (c *Client) GetArea(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, areaID string) (areaDetails AreaDetails, err error) {
-	uri := fmt.Sprintf("%s/areas/%s", c.hcCli.URL, areaID)
+	uri := fmt.Sprintf("%s/v1/areas/%s", c.hcCli.URL, areaID)
 
 	clientlog.Do(ctx, "retrieving area", service, uri)
 

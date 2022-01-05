@@ -197,15 +197,15 @@ func TestClient_HealthChecker(t *testing.T) {
 func TestClient_GetArea(t *testing.T) {
 
 	areaBody := `{
-	"code": "E92000001",
-	"name": "England",
-	"date_started": "Thu, 01 Jan 2009 00:00:00 GMT",
-	"date_end": "null",
-	"name_welsh": "Lloegr",
-	"limit": "1",
-	"total_count": "10",
-	"visible": true
-	}`
+		  "code": "E92000001",
+		  "date_end": null,
+		  "date_start": "Thu, 01 Jan 2009 00: 00: 00 GMT",
+		  "name": "England",
+		  "name_welsh": "Lloegr",
+		  "features": null,
+		  "visible": true,
+		 "area_type": "English"
+		}`
 
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
@@ -220,12 +220,11 @@ func TestClient_GetArea(t *testing.T) {
 		So(area, ShouldResemble, AreaDetails{
 			Code:        "E92000001",
 			Name:        "England",
-			DateStarted: "Thu, 01 Jan 2009 00:00:00 GMT",
-			DateEnd:     "null",
-			NameWelsh:   "Lloegr",
-			Limit:       "1",
-			TotalCount:  "10",
-			Visible:     true,
+			DateStarted: "Thu, 01 Jan 2009 00: 00: 00 GMT",
+			DateEnd:     "",
+			WelshName:   "Lloegr",
+			Visible: true,
+			AreaType: "English",
 		})
 	})
 
