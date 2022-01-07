@@ -3,6 +3,7 @@ dp-api-clients-go [![GoDoc](https://godoc.org/github.com/ONSdigital/dp-api-clien
 
 Common client code - in go - for ONS APIs:
 
+* areas
 * clientlog - logging
 * codelist
 * dataset
