@@ -136,8 +136,8 @@ func (c *Client) checkHealth(ctx context.Context, state *healthcheck.CheckState,
 		log.Error(ctx, "failed to request service health", err, logData)
 	} else {
 		code = res.StatusCode
-		defer closeResponseBody(ctx, res)
 	}
+	defer closeResponseBody(ctx, res)
 
 	switch code {
 	case 0: // When there is a problem with the client return error in message
