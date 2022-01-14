@@ -58,7 +58,7 @@ var (
 	// ErrHeaderNotFound returned if the requested header is not present in the provided request
 	ErrHeaderNotFound = errors.New("header not found")
 
-	// ErrValueEmpty returned if an empty value is passed to a SetX header function
+	// ErrValueEmpty returned if an empty value is passed when a non-empty value is required
 	ErrValueEmpty = errors.New("header not set as value was empty")
 
 	// ErrRequestNil return if SetX header function is called with a nil request
@@ -173,21 +173,25 @@ func getResponseHeader(resp *http.Response, headerName string) (string, error) {
 }
 
 // SetCollectionID set the collection ID header on the provided request. If the collection ID header is already present
-// in the request it will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+// in the request it will be overwritten by the new value. Empty values are allowed for this header
 func SetCollectionID(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, collectionIDHeader, headerValue)
+	err := setRequestHeader(req, collectionIDHeader, headerValue)
+	if err != nil && err != ErrValueEmpty {
+		return err
+	}
+	return nil
 }
 
 // SetServiceAuthToken set the service authentication token header on the provided request. If the authentication token is
-// already present it will be overwritten by the new value. If the header value is empty then returns ErrValueEmpty
-// Replaces deprecated SetUserAuthToken function
+// already present it will be overwritten by the new value. Empty values are allowed for this header.
+// Replaces deprecated SetUserAuthToken function.
 func SetServiceAuthToken(req *http.Request, headerValue string) error {
 	if req == nil {
 		return ErrRequestNil
 	}
 
 	if len(headerValue) == 0 {
-		return ErrValueEmpty
+		return nil
 	}
 
 	if !strings.HasPrefix(headerValue, bearerPrefix) {
@@ -198,12 +202,17 @@ func SetServiceAuthToken(req *http.Request, headerValue string) error {
 }
 
 // SetAuthToken set the access token header on the provided request. If the access token is
-// already present it will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+// already present it will be overwritten by the new value. Empty values are allowed for this header.
 func SetAuthToken(req *http.Request, headerValue string) error {
 	// TODO remove the userAuthTokenHeader once the X-Florence-Token has been removed
-	if err := setRequestHeader(req, userAuthTokenHeader, headerValue); err != nil {
+	err := setRequestHeader(req, userAuthTokenHeader, headerValue)
+	if err == ErrValueEmpty {
+		return nil
+	}
+	if err != nil {
 		return err
 	}
+
 	// Add bearer prefix if not present
 	if !strings.HasPrefix(headerValue, bearerPrefix) {
 		headerValue = bearerPrefix + headerValue
@@ -212,51 +221,83 @@ func SetAuthToken(req *http.Request, headerValue string) error {
 }
 
 // SetIDTokenHeader set the ID token  header on the provided request. If the authentication
-// token is already present it will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+// token is already present it will be overwritten by the new value. Empty values are allowed for this header.
 func SetIDTokenHeader(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, idTokenHeader, headerValue)
+	err := setRequestHeader(req, idTokenHeader, headerValue)
+	if err != nil && err != ErrValueEmpty {
+		return err
+	}
+	return nil
 }
 
 // SetRefreshTokenHeader set the refresh token header on the provided request. If the authentication
-// token is already present it will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+// token is already present it will be overwritten by the new value. Empty values are allowed for this header.
 func SetRefreshTokenHeader(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, refreshTokenHeader, headerValue)
+	err := setRequestHeader(req, refreshTokenHeader, headerValue)
+	if err != nil && err != ErrValueEmpty {
+		return err
+	}
+	return nil
 }
 
 // SetDownloadServiceToken set the download service auth token header on the provided request. If the authentication
-// token is already present it will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+// token is already present it will be overwritten by the new value. Empty values are allowed for this header.
 func SetDownloadServiceToken(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, downloadServiceTokenHeader, headerValue)
+	err := setRequestHeader(req, downloadServiceTokenHeader, headerValue)
+	if err != nil && err != ErrValueEmpty {
+		return err
+	}
+	return nil
 }
 
 // SetUserIdentity set the user identity header on the provided request. If a user identity token is already present it
-// will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+// will be overwritten by the new value. Empty values are allowed for this header.
 func SetUserIdentity(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, userIdentityHeader, headerValue)
+	err := setRequestHeader(req, userIdentityHeader, headerValue)
+	if err != nil && err != ErrValueEmpty {
+		return err
+	}
+	return nil
 }
 
 // SetRequestID set the unique request ID header on the provided request. If a request ID header is already present it
-// will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+// will be overwritten by the new value. Empty values are allowed for this header.
 func SetRequestID(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, requestIDHeader, headerValue)
+	err := setRequestHeader(req, requestIDHeader, headerValue)
+	if err != nil && err != ErrValueEmpty {
+		return err
+	}
+	return nil
 }
 
 // SetLocaleCode set the locale code header on the provided request. If this header is already present it
-// will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+// will be overwritten by the new value. Empty values are allowed for this header.
 func SetLocaleCode(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, localeCodeHeader, headerValue)
+	err := setRequestHeader(req, localeCodeHeader, headerValue)
+	if err != nil && err != ErrValueEmpty {
+		return err
+	}
+	return nil
 }
 
 // SetIfMatch set the If-Match header on the provided request. If this header is already present it
-// will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+// will be overwritten by the new value. Empty values are allowed for this header.
 func SetIfMatch(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, ifMatchHeader, headerValue)
+	err := setRequestHeader(req, ifMatchHeader, headerValue)
+	if err != nil && err != ErrValueEmpty {
+		return err
+	}
+	return nil
 }
 
 // SetETag set the ETag header on the provided request. If this header is already present it
-// will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+// will be overwritten by the new value. Empty values are allowed for this header.
 func SetETag(req *http.Request, headerValue string) error {
-	return setRequestHeader(req, eTagHeader, headerValue)
+	err := setRequestHeader(req, eTagHeader, headerValue)
+	if err != nil && err != ErrValueEmpty {
+		return err
+	}
+	return nil
 }
 
 func setRequestHeader(req *http.Request, headerName string, headerValue string) error {

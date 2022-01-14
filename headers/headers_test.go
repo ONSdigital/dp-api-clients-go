@@ -97,7 +97,7 @@ func setterTestCases(t *testing.T, fnName, headerName string, fnUnderTest func(r
 				return r.Header.Get(headerName)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, ErrValueEmpty)
+				So(err, ShouldBeNil)
 				So(val, ShouldBeEmpty)
 			},
 		},
@@ -189,7 +189,7 @@ func TestSetServiceAuthToken(t *testing.T) {
 				return r.Header.Get(serviceAuthTokenHeader)
 			},
 			assertResultFunc: func(err error, val string) {
-				So(err, ShouldResemble, ErrValueEmpty)
+				So(err, ShouldBeNil)
 				So(val, ShouldBeEmpty)
 			},
 		},
