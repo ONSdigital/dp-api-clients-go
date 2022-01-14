@@ -1,15 +1,19 @@
 package gql
 
-type Dataset struct {
+type DatasetRuleBase struct {
 	RuleBase RuleBase `json:"ruleBase"`
 }
 
-type RuleBase struct {
-	IsSourceOf MapFrom `json:"isSourceOf"`
-	Name       string  `json:"name"`
+type DatasetVariables struct {
+	Variables Variables `json:"variables"`
 }
 
-type MapFrom struct {
+type RuleBase struct {
+	IsSourceOf Variables `json:"isSourceOf"`
+	Name       string    `json:"name"`
+}
+
+type Variables struct {
 	Edges []Edge `json:"edges"`
 }
 
@@ -18,11 +22,11 @@ type Edge struct {
 }
 
 type Node struct {
-	Name       string     `json:"name"`
-	Label      string     `json:"label"`
-	Categories Categories `json:"categories"`
-	MapFrom    []MapFrom  `json:"mapFrom"`
-	FilterOnly string     `json:"filterOnly"`
+	Name       string      `json:"name"`
+	Label      string      `json:"label"`
+	Categories Categories  `json:"categories"`
+	MapFrom    []Variables `json:"mapFrom"`
+	FilterOnly string      `json:"filterOnly"`
 }
 
 type Categories struct {

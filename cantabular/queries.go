@@ -35,25 +35,48 @@ query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
 const QueryDimensions = `
 query($dataset: String!) {
 	dataset(name: $dataset) {
-		ruleBase {
-			name
-			isSourceOf {
-		  		edges {
-					node {
-						name
-						mapFrom {
-							edges {
-								node {
-									filterOnly
-									label
-									name
-								}
+		variables {
+			edges {
+				node {
+					name
+					mapFrom {
+						edges {
+							node {
+								filterOnly
+								label
+								name
 							}
 						}
-						label
-						categories {
-							totalCount
+					}
+					label
+					categories {
+						totalCount
+					}
+				}
+			}
+		}
+	}
+}`
+
+const QueryDimensionsByName = `
+query($dataset: String!, $variables: [String!]!) {
+	dataset(name: $dataset) {
+		variables(names: $variables) {
+			edges {
+				node {
+					name
+					mapFrom {
+						edges {
+							node {
+								filterOnly
+								label
+								name
+							}
 						}
+					}
+					label
+					categories {
+						totalCount
 					}
 				}
 			}

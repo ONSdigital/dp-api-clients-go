@@ -43,7 +43,7 @@ type StaticDatasetQuery struct {
 // POST [cantabular-ext]/graphql
 // with a ruleBase query to obtain static dataset variables, with 1-level relationships
 type GetDimensionsResponse struct {
-	Dataset gql.Dataset `json:"dataset"`
+	Dataset gql.DatasetVariables `json:"dataset"`
 }
 
 // GetDimensionOptionsResponse holds the response body for

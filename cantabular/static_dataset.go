@@ -89,19 +89,40 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 	return &q, nil
 }
 
-// GetDimensions performs a graphQL query to obtain the dimensions for the provided cantabular dataset.
-// It returns a RuleBaseResponse, containing nested edges and nodes according to the query structure
+// GetDimensions performs a graphQL query to obtain all the dimensions for the provided cantabular dataset.
 // The whole response is loaded to memory.
 func (c *Client) GetDimensions(ctx context.Context, dataset string) (*GetDimensionsResponse, error) {
-	req := StaticDatasetQueryRequest{
-		Dataset: dataset,
-	}
-
 	resp := &struct {
 		Data   GetDimensionsResponse `json:"data"`
 		Errors []gql.Error           `json:"errors,omitempty"`
 	}{}
-	if err := c.staticDatasetQueryUnmarshal(ctx, QueryDimensions, req, resp); err != nil {
+	req := StaticDatasetQueryRequest{
+		Dataset: dataset,
+	}
+	if err := c.queryUnmarshal(ctx, QueryDimensions, req, resp); err != nil {
+		return nil, err
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			http.StatusOK,
+			log.Data{"errors": resp.Errors},
+		)
+	}
+
+	return &resp.Data, nil
+}
+
+// GetDimensions performs a graphQL query to obtain the dimensions for the provided cantabular dataset.
+// It returns a RuleBaseResponse, containing nested edges and nodes according to the query structure
+// The whole response is loaded to memory.
+func (c *Client) GetDimensionsByName(ctx context.Context, req StaticDatasetQueryRequest) (*GetDimensionsResponse, error) {
+	resp := &struct {
+		Data   GetDimensionsResponse `json:"data"`
+		Errors []gql.Error           `json:"errors,omitempty"`
+	}{}
+	if err := c.queryUnmarshal(ctx, QueryDimensionsByName, req, resp); err != nil {
 		return nil, err
 	}
 
@@ -124,7 +145,7 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req StaticDatasetQuery
 		Data   GetDimensionOptionsResponse `json:"data"`
 		Errors []gql.Error                 `json:"errors,omitempty"`
 	}{}
-	if err := c.staticDatasetQueryUnmarshal(ctx, QueryDimensionOptions, req, resp); err != nil {
+	if err := c.queryUnmarshal(ctx, QueryDimensionOptions, req, resp); err != nil {
 		return nil, err
 	}
 
@@ -145,7 +166,7 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req StaticDatasetQuery
 // The number of CSV rows, including the header, is returned along with any error during the process.
 // Use this method if large query responses are expected.
 func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) (int32, error) {
-	res, err := c.staticDatasetQueryLowLevel(ctx, QueryStaticDataset, req)
+	res, err := c.queryLowLevel(ctx, QueryStaticDataset, req)
 	if err != nil {
 		return 0, err
 	}
@@ -160,18 +181,20 @@ func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticData
 	return rowCount, stream.Stream(ctx, res.Body, transform, consume)
 }
 
-// staticDatasetQueryUnmarshal uses staticDatasetQueryLowLevel to perform a graphQL query and then un-marshals the response body to the provided value pointer v
+// queryUnmarshal uses staticDatasetQueryLowLevel to perform a graphQL query and then un-marshals the response body to the provided value pointer v
 // This method handles the response body closing.
-func (c *Client) staticDatasetQueryUnmarshal(ctx context.Context, graphQLQuery string, req StaticDatasetQueryRequest, v interface{}) error {
+func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, req StaticDatasetQueryRequest, v interface{}) error {
 	url := fmt.Sprintf("%s/graphql", c.extApiHost)
 
-	res, err := c.staticDatasetQueryLowLevel(ctx, graphQLQuery, req)
+	res, err := c.queryLowLevel(ctx, graphQLQuery, req)
 	if err != nil {
 		return err
 	}
 	defer closeResponseBody(ctx, res)
 
 	b, err := ioutil.ReadAll(res.Body)
+	strB := string(b)
+	log.Info(ctx, "resp", log.Data{"str_B": strB})
 	if err != nil {
 		return dperrors.New(
 			fmt.Errorf("failed to read response body: %s", err),
@@ -196,11 +219,11 @@ func (c *Client) staticDatasetQueryUnmarshal(ctx context.Context, graphQLQuery s
 	return nil
 }
 
-// staticDatasetQueryLowLevel performs a query for a static dataset against the
-// Cantabular Extended API using the /graphql endpoint and the http client directly
+// queryLowLevel performs a query against the Cantabular Extended API
+// using the /graphql endpoint and the http client directly
 // If the call is successfull, the response body is returned
 // - Important: it's the caller's responsability to close the body once it has been fully processed.
-func (c *Client) staticDatasetQueryLowLevel(ctx context.Context, graphQLQuery string, req StaticDatasetQueryRequest) (*http.Response, error) {
+func (c *Client) queryLowLevel(ctx context.Context, graphQLQuery string, req StaticDatasetQueryRequest) (*http.Response, error) {
 	url := fmt.Sprintf("%s/graphql", c.extApiHost)
 
 	logData := log.Data{

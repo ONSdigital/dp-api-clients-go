@@ -383,6 +383,45 @@ func TestGetDimensionsUnhappy(t *testing.T) {
 	})
 }
 
+func TestGetDimensionsByNameHappy(t *testing.T) {
+	Convey("Given a correct getDimensions response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+
+		mockHttpClient := &dphttp.ClienterMock{
+			PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+				return Response(
+					[]byte(mockRespBodyGetDimensionsByName),
+					http.StatusOK,
+				), nil
+			},
+		}
+
+		cantabularClient := cantabular.NewClient(
+			cantabular.Config{
+				Host:       "cantabular.host",
+				ExtApiHost: "cantabular.ext.host",
+			},
+			mockHttpClient,
+			nil,
+		)
+
+		Convey("When the GetDimensions method is called", func() {
+			resp, err := cantabularClient.GetDimensionsByName(testCtx, cantabular.StaticDatasetQueryRequest{
+				Dataset:   "Teaching-Dataset",
+				Variables: []string{"Age", "Region"},
+			})
+
+			Convey("No error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedDimensionsByName)
+			})
+		})
+	})
+}
+
 func TestGetDimensionOptionsHappy(t *testing.T) {
 	Convey("Given a correct getDimensionOptions response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
@@ -584,44 +623,81 @@ var mockRespBodyGetDimensions = `
 {
 	"data": {
 		"dataset": {
-			"ruleBase": {
-				"isSourceOf": {
-					"edges": [
-						{
-							"node": {
-								"categories": {
-									"totalCount": 2
-								},
-								"label": "Country",
-								"mapFrom": [
-									{
-										"edges": [
-											{
-												"node": {
-													"filterOnly": "false",
-													"label": "Region",
-													"name": "Region"
-												}
-											}
-										]
-									}
-								],
-								"name": "Country"
-							}
-						},
-						{
-							"node": {
-								"categories": {
-									"totalCount": 10
-								},
-								"label": "Region",
-								"mapFrom": [],
-								"name": "Region"
-							}
+			"variables": {
+				"edges": [
+					{
+						"node": {
+							"categories": {
+								"totalCount":8
+							},
+							"label": "Age",
+							"mapFrom": [],
+							"name": "Age"
 						}
-					]
-				},
-				"name": "Region"
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount":2
+							},
+							"label": "Country",
+							"mapFrom": [
+								{
+									"edges": [
+										{
+											"node": {
+												"filterOnly": "false",
+												"label": "Region",
+												"name": "Region"
+											}
+										}
+									]
+								}
+							],
+							"name": "Country"
+						}
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount": 6
+							},
+							"label": "Health",
+							"mapFrom": [],
+							"name": "Health"
+						}
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount":5
+							},
+							"label": "Marital Status",
+							"mapFrom": [],
+							"name": "Marital Status"
+						}
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount":10
+							},
+							"label": "Region",
+							"mapFrom": [],
+							"name": "Region"
+						}
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount":2
+							},
+							"label": "Sex",
+							"mapFrom":[],
+							"name":"Sex"
+						}
+					}
+				]
 			}
 		}
 	}
@@ -629,41 +705,128 @@ var mockRespBodyGetDimensions = `
 
 // expectedDimensions is the expected response struct generated from a successful 'get dimensions' query for testing
 var expectedDimensions = cantabular.GetDimensionsResponse{
-	Dataset: gql.Dataset{
-		RuleBase: gql.RuleBase{
-			IsSourceOf: gql.MapFrom{
-				Edges: []gql.Edge{
-					{
-						Node: gql.Node{
-							Name:       "Country",
-							Label:      "Country",
-							Categories: gql.Categories{TotalCount: 2},
-							MapFrom: []gql.MapFrom{
-								{
-									Edges: []gql.Edge{
-										{
-											Node: gql.Node{
-												FilterOnly: "false",
-												Label:      "Region",
-												Name:       "Region",
-											},
+	Dataset: gql.DatasetVariables{
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:       "Age",
+						Label:      "Age",
+						Categories: gql.Categories{TotalCount: 8},
+						MapFrom:    []gql.Variables{},
+					},
+				},
+				{
+					Node: gql.Node{
+						Name:       "Country",
+						Label:      "Country",
+						Categories: gql.Categories{TotalCount: 2},
+						MapFrom: []gql.Variables{
+							{
+								Edges: []gql.Edge{
+									{
+										Node: gql.Node{
+											FilterOnly: "false",
+											Label:      "Region",
+											Name:       "Region",
 										},
 									},
 								},
 							},
 						},
 					},
-					{
-						Node: gql.Node{
-							Name:       "Region",
-							Label:      "Region",
-							Categories: gql.Categories{TotalCount: 10},
-							MapFrom:    []gql.MapFrom{},
-						},
+				},
+				{
+					Node: gql.Node{
+						Name:       "Health",
+						Label:      "Health",
+						Categories: gql.Categories{TotalCount: 6},
+						MapFrom:    []gql.Variables{},
+					},
+				},
+				{
+					Node: gql.Node{
+						Name:       "Marital Status",
+						Label:      "Marital Status",
+						Categories: gql.Categories{TotalCount: 5},
+						MapFrom:    []gql.Variables{},
+					},
+				},
+				{
+					Node: gql.Node{
+						Name:       "Region",
+						Label:      "Region",
+						Categories: gql.Categories{TotalCount: 10},
+						MapFrom:    []gql.Variables{},
+					},
+				},
+				{
+					Node: gql.Node{
+						Name:       "Sex",
+						Label:      "Sex",
+						Categories: gql.Categories{TotalCount: 2},
+						MapFrom:    []gql.Variables{},
 					},
 				},
 			},
-			Name: "Region",
+		},
+	},
+}
+
+// mockRespBodyGetDimensionsByName is a successful 'get dimensions by name' query respose that is returned from a mocked client for testing
+var mockRespBodyGetDimensionsByName = `{
+	"data": {
+		"dataset": {
+			"variables": {
+				"edges": [
+					{
+						"node": {
+							"categories": {
+								"totalCount": 8
+							},
+							"label": "Age",
+							"mapFrom": [],
+							"name": "Age"
+						}
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount": 10
+							},
+							"label": "Region",
+							"mapFrom": [],
+							"name": "Region"
+						}
+					}
+				]
+			}
+		}
+	}
+}`
+
+// expectedDimensionsByName is the expected response struct generated from a successful 'get dimensions by name' query for testing
+var expectedDimensionsByName = cantabular.GetDimensionsResponse{
+	Dataset: gql.DatasetVariables{
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:       "Age",
+						Label:      "Age",
+						Categories: gql.Categories{TotalCount: 8},
+						MapFrom:    []gql.Variables{},
+					},
+				},
+				{
+					Node: gql.Node{
+						Name:       "Region",
+						Label:      "Region",
+						Categories: gql.Categories{TotalCount: 10},
+						MapFrom:    []gql.Variables{},
+					},
+				},
+			},
 		},
 	},
 }
