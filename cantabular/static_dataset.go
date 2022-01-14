@@ -21,7 +21,7 @@ import (
 type Consumer = stream.Consumer
 
 // StaticDataset represents the 'dataset' field from a GraphQL static dataset
-// query response, containing a full Table
+// query response
 type StaticDataset struct {
 	Table Table `json:"table" graphql:"table(variables: $variables)"`
 }
@@ -166,7 +166,7 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req StaticDatasetQuery
 // The number of CSV rows, including the header, is returned along with any error during the process.
 // Use this method if large query responses are expected.
 func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) (int32, error) {
-	res, err := c.queryLowLevel(ctx, QueryStaticDataset, req)
+	res, err := c.postQuery(ctx, QueryStaticDataset, req)
 	if err != nil {
 		return 0, err
 	}
@@ -186,15 +186,13 @@ func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticData
 func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, req StaticDatasetQueryRequest, v interface{}) error {
 	url := fmt.Sprintf("%s/graphql", c.extApiHost)
 
-	res, err := c.queryLowLevel(ctx, graphQLQuery, req)
+	res, err := c.postQuery(ctx, graphQLQuery, req)
 	if err != nil {
 		return err
 	}
 	defer closeResponseBody(ctx, res)
 
 	b, err := ioutil.ReadAll(res.Body)
-	strB := string(b)
-	log.Info(ctx, "resp", log.Data{"str_B": strB})
 	if err != nil {
 		return dperrors.New(
 			fmt.Errorf("failed to read response body: %s", err),
@@ -219,11 +217,11 @@ func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, req St
 	return nil
 }
 
-// queryLowLevel performs a query against the Cantabular Extended API
+// postQuery performs a query against the Cantabular Extended API
 // using the /graphql endpoint and the http client directly
 // If the call is successfull, the response body is returned
 // - Important: it's the caller's responsability to close the body once it has been fully processed.
-func (c *Client) queryLowLevel(ctx context.Context, graphQLQuery string, req StaticDatasetQueryRequest) (*http.Response, error) {
+func (c *Client) postQuery(ctx context.Context, graphQLQuery string, req StaticDatasetQueryRequest) (*http.Response, error) {
 	url := fmt.Sprintf("%s/graphql", c.extApiHost)
 
 	logData := log.Data{
