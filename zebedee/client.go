@@ -369,9 +369,7 @@ func (c *Client) GetCollection(ctx context.Context, userAccessToken, collectionI
 }
 
 // GetBulletin retrieves a bulletin from zebedee
-func (c *Client) GetBulletin(ctx context.Context, userAccessToken, lang, uri string) (Bulletin, error) {
-	collectionID := ""
-
+func (c *Client) GetBulletin(ctx context.Context, userAccessToken, collectionID, lang, uri string) (Bulletin, error) {
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {

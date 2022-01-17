@@ -230,8 +230,10 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test GetBulletin", t, func() {
+		collectionId := ""
+		lang := "en"
 		Convey("returns the latest release of a bulletin", func() {
-			b, err := cli.GetBulletin(ctx, testAccessToken, "", "bulletin-latest-release")
+			b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, lang, "bulletin-latest-release")
 			So(err, ShouldBeNil)
 			So(b, ShouldNotBeEmpty)
 			So(b.Type, ShouldEqual, "bulletin")
@@ -295,7 +297,7 @@ func TestUnitClient(t *testing.T) {
 		})
 
 		Convey("returns a non-latest release of a bulletin", func() {
-			b, err := cli.GetBulletin(ctx, testAccessToken, "", "bulletin-not-latest-release")
+			b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, lang, "bulletin-not-latest-release")
 			So(err, ShouldBeNil)
 			So(b, ShouldNotBeEmpty)
 			So(b.Type, ShouldEqual, "bulletin")
@@ -359,7 +361,7 @@ func TestUnitClient(t *testing.T) {
 		})
 
 		Convey("returns an error if uri not found", func() {
-			b, err := cli.GetBulletin(ctx, testAccessToken, "", "notFound")
+			b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, lang, "notFound")
 			So(err, ShouldNotBeNil)
 			So(b, ShouldResemble, Bulletin{})
 		})
