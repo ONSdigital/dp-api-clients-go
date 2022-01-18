@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -24,16 +25,21 @@ import (
 const testHost = "http://localhost:8080"
 
 var (
-	testAccessToken = "test-access-token"
-	initialState    = health.CreateCheckState(service)
+	testAccessToken        = "test-access-token"
+	testCollectionID       = "test-collection"
+	testFileSize           = 5242880
+	testFileSizeCollection = 3313490
+	testLang               = "en"
+	initialState           = health.CreateCheckState(service)
 )
 
 func mockZebedeeServer(port chan int) {
 	r := mux.NewRouter()
 
 	r.Path("/data").HandlerFunc(contentData)
-	r.Path("/parents").HandlerFunc(parents)
+	r.Path("/data/{collectionID}").HandlerFunc(contentDataCollection)
 	r.Path("/filesize").HandlerFunc(filesize)
+	r.Path("/filesize/{collectionID}").HandlerFunc(filesizeCollection)
 
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -73,18 +79,15 @@ func newZebedeeClient(httpClient *dphttp.ClienterMock) *Client {
 func contentData(w http.ResponseWriter, req *http.Request) {
 	uri := req.URL.Query().Get("uri")
 
-	serviceAuthToken := req.Header.Get(dprequest.FlorenceHeaderKey)
-	if serviceAuthToken != testAccessToken {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("401 - No access token header set!"))
-	}
+	checkAccessToken(w, req)
+	checkLanguage(w, req)
 
 	switch uri {
 	case "foo":
 		w.Write([]byte(`{}`))
 	case "labour":
 		w.Write([]byte(`{"downloads":[{"title":"Latest","file":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02/labd02jul2015_tcm77-408195.xls"}],"section":{"markdown":""},"relatedDatasets":[{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputeslabd01"},{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/stoppagesofworklabd03"}],"relatedDocuments":[{"uri":"/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/uklabourmarket/2015-07-15"}],"relatedMethodology":[],"type":"dataset_landing_page","uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02","description":{"title":"Labour disputes by sector: LABD02","summary":"Labour disputes by sector.","keywords":["strike"],"metaDescription":"Labour disputes by sector.","nationalStatistic":true,"contact":{"email":"richard.clegg@ons.gsi.gov.uk\n","name":"Richard Clegg\n","telephone":"+44 (0)1633 455400 \n"},"releaseDate":"2015-07-14T23:00:00.000Z","nextRelease":"12 August 2015","datasetId":"","unit":"","preUnit":"","source":""}}`))
-	case "12345":
+	case "dataset":
 		w.Write([]byte(`{"type":"dataset","uri":"www.google.com","downloads":[{"file":"test.txt"}],"supplementaryFiles":[{"title":"helloworld","file":"helloworld.txt"}],"versions":[{"uri":"www.google.com"}]}`))
 	case "pageTitle1":
 		w.Write([]byte(`{"title":"baby-names","edition":"2017","uri":"path/to/baby-names/2017"}`))
@@ -95,7 +98,7 @@ func contentData(w http.ResponseWriter, req *http.Request) {
 	case "bulletin-not-latest-release":
 		w.Write([]byte(`{"relatedBulletins":[{"uri":"pageTitle1"}],"sections":[{"title":"Main points","markdown":"Main points markdown"},{"title":"Overview","markdown":"Overview markdown"}],"accordion":[{"title":"Background notes","markdown":"Notes markdown"}],"relatedData":[{"uri":"/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging"}],"charts":[{"title":"Figure 1.1","filename":"38d8c337","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337"}],"tables":[{"title":"Table 5.1","filename":"6f587872","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872"}],"images":[],"equations":[],"links":[{"uri":"pageTitle1"}, {"uri":"pageTitle2"}],"alerts":[{"date":"2021-09-30T07:10:46.230Z","markdown":"alert"}],"versions":[{"uri":"v1","updateDate":"2021-10-19T10:43:34.507Z","correctionNotice":"Notice"}],"type":"bulletin","uri":"/bulletin/2015-07-09","description":{"title":"UK Environmental Accounts","summary":"Measures the contribution of the environment to the economy","keywords":["fuel, energy"],"metaDescription":"Measures the contribution of the environment.","nationalStatistic":true,"latestRelease":false,"contact":{"email":"environment.accounts@ons.gsi.gov.uk","name":"Someone","telephone":"+44 (0)1633 455680"},"releaseDate":"2015-07-08T23:00:00.000Z","nextRelease":"","edition":"2015","unit":"","preUnit":"","source":""}}`))
 	case "/bulletin/latest":
-		w.Write([]byte(`{"title":"latest release","edition":"2021","uri":"/bulletin/2021"}`))
+		w.Write([]byte(`{"title":"latest release","edition":"2021","uri":"/bulletin/collection/2021"}`))
 	case "/":
 		w.Write([]byte(`{"intro":{"title":"Welcome to the Office for National Statistics","markdown":"Test markdown"},"featuredContent":[{"title":"Featured Content One","description":"Featured Content One Description","uri":"/one","image":"testImage"}],"aroundONS":[{"title":"Around ONS One","description":"Around ONS One Description","uri":"/one","image":"testImage"}],"serviceMessage":"","emergencyBanner":{"type":"notable_death","title":"Emergency banner title","description":"Emergency banner description","uri":"www.google.com","linkText":"More info"},"description":{"keywords":[ "keywordOne", "keywordTwo" ],"metaDescription":"","unit":"","preUnit":"","source":""}}`))
 	case "notFound":
@@ -104,21 +107,74 @@ func contentData(w http.ResponseWriter, req *http.Request) {
 
 }
 
-func parents(w http.ResponseWriter, req *http.Request) {
-	log.Info(context.Background(), "+++++++client_test : parents...", log.Data{"uriString": ""})
+func contentDataCollection(w http.ResponseWriter, req *http.Request) {
 	uri := req.URL.Query().Get("uri")
 
+	checkAccessToken(w, req)
+	checkLanguage(w, req)
+	checkCollection(w, req)
+
 	switch uri {
-	case "/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02":
-		w.Write([]byte(`[{"uri":"/","description":{"title":"Home"},"type":"home_page"},{"uri":"/employmentandlabourmarket","description":{"title":"Employment and labour market"},"type":"taxonomy_landing_page"},{"uri":"/employmentandlabourmarket/peopleinwork","description":{"title":"People in work"},"type":"taxonomy_landing_page"},{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions","description":{"title":"Workplace disputes and working conditions"},"type":"product_page"}]`))
+	// case "foo":
+	// 	w.Write([]byte(`{}`))
+	case "labour":
+		w.Write([]byte(`{"downloads":[{"title":"Latest","file":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02/labd02jul2015_tcm77-408195.xls"}],"section":{"markdown":""},"relatedDatasets":[{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputeslabd01"},{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/stoppagesofworklabd03"}],"relatedDocuments":[{"uri":"/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/uklabourmarket/2015-07-15"}],"relatedMethodology":[],"type":"dataset_landing_page","uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02","description":{"title":"Labour disputes by sector: LABD02 - publishing","summary":"Labour disputes by sector.","keywords":["strike"],"metaDescription":"Labour disputes by sector.","nationalStatistic":true,"contact":{"email":"richard.clegg@ons.gsi.gov.uk\n","name":"Richard Clegg\n","telephone":"+44 (0)1633 455400 \n"},"releaseDate":"2015-07-14T23:00:00.000Z","nextRelease":"12 August 2015","datasetId":"","unit":"","preUnit":"","source":""}}`))
+	case "dataset":
+		w.Write([]byte(`{"type":"dataset","uri":"www.google.com","downloads":[{"file":"testCollection.txt"}],"supplementaryFiles":[{"title":"helloworld","file":"helloworld.txt"}],"versions":[{"uri":"www.google.com"}]}`))
+	case "pageTitle1":
+		w.Write([]byte(`{"title":"baby-names","edition":"collection","uri":"path/to/baby-names/collection"}`))
+	case "pageTitle2":
+		w.Write([]byte(`{"title":"page-title","edition":"c2021","uri":"path/to/page-title/2021"}`))
+	case "bulletin-latest-release":
+		w.Write([]byte(`{"relatedBulletins":[{"uri":"pageTitle1"}],"sections":[{"title":"Main points","markdown":"Main points markdown"},{"title":"Overview","markdown":"Overview markdown"}],"accordion":[{"title":"Background notes","markdown":"Notes markdown"}],"relatedData":[{"uri":"/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging"}],"charts":[{"title":"Figure 1.1","filename":"38d8c337","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337"}],"tables":[{"title":"Table 5.1","filename":"6f587872","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872"}],"images":[],"equations":[],"links":[{"uri":"pageTitle1"}, {"uri":"pageTitle2"}],"alerts":[{"date":"2021-09-30T07:10:46.230Z","markdown":"alert"}],"versions":[{"uri":"v1","updateDate":"2021-10-19T10:43:34.507Z","correctionNotice":"Notice"}],"type":"bulletin","uri":"/bulletin/2015-07-09","description":{"title":"UK Environmental Accounts with collection","summary":"Measures the contribution of the environment to the economy","keywords":["fuel, energy"],"metaDescription":"Measures the contribution of the environment.","nationalStatistic":true,"latestRelease":true,"contact":{"email":"environment.accounts@ons.gsi.gov.uk","name":"Someone","telephone":"+44 (0)1633 455680"},"releaseDate":"2015-07-08T23:00:00.000Z","nextRelease":"","edition":"2015","unit":"","preUnit":"","source":""}}`))
+	case "bulletin-not-latest-release":
+		w.Write([]byte(`{"relatedBulletins":[{"uri":"pageTitle1"}],"sections":[{"title":"Main points","markdown":"Main points markdown"},{"title":"Overview","markdown":"Overview markdown"}],"accordion":[{"title":"Background notes","markdown":"Notes markdown"}],"relatedData":[{"uri":"/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging"}],"charts":[{"title":"Figure 1.1","filename":"38d8c337","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337"}],"tables":[{"title":"Table 5.1","filename":"6f587872","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872"}],"images":[],"equations":[],"links":[{"uri":"pageTitle1"}, {"uri":"pageTitle2"}],"alerts":[{"date":"2021-09-30T07:10:46.230Z","markdown":"alert"}],"versions":[{"uri":"v1","updateDate":"2021-10-19T10:43:34.507Z","correctionNotice":"Notice"}],"type":"bulletin","uri":"/bulletin/2015-07-09","description":{"title":"UK Environmental Accounts with collection","summary":"Measures the contribution of the environment to the economy","keywords":["fuel, energy"],"metaDescription":"Measures the contribution of the environment.","nationalStatistic":true,"latestRelease":false,"contact":{"email":"environment.accounts@ons.gsi.gov.uk","name":"Someone","telephone":"+44 (0)1633 455680"},"releaseDate":"2015-07-08T23:00:00.000Z","nextRelease":"","edition":"2015","unit":"","preUnit":"","source":""}}`))
+	case "/bulletin/latest":
+		w.Write([]byte(`{"title":"latest release","edition":"2021","uri":"/bulletin/2021"}`))
+	case "/":
+		w.Write([]byte(`{"intro":{"title":"Welcome to Publishing","markdown":"Test markdown"},"featuredContent":[{"title":"Featured Content One","description":"Featured Content One Description","uri":"/one","image":"testImage"}],"aroundONS":[{"title":"Around ONS One","description":"Around ONS One Description","uri":"/one","image":"testImage"}],"serviceMessage":"","emergencyBanner":{"type":"notable_death","title":"Emergency banner title","description":"Emergency banner description","uri":"www.google.com","linkText":"More info"},"description":{"keywords":[ "keywordOne", "keywordTwo" ],"metaDescription":"","unit":"","preUnit":"","source":""}}`))
+	}
+}
+
+func checkAccessToken(w http.ResponseWriter, req *http.Request) {
+	serviceAuthToken := req.Header.Get(dprequest.FlorenceHeaderKey)
+	if serviceAuthToken != testAccessToken {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("401 - No access token header set!"))
+	}
+}
+
+func checkCollection(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	collectionID := vars["collectionID"]
+	if collectionID != testCollectionID {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("400 - Wrong collection id set!"))
+	}
+}
+
+func checkLanguage(w http.ResponseWriter, req *http.Request) {
+	lang := req.URL.Query().Get("lang")
+	if lang != testLang {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("400 - Wrong language!"))
 	}
 }
 
 func filesize(w http.ResponseWriter, req *http.Request) {
+	writeFilesizeResponse(w, testFileSize)
+}
+
+func filesizeCollection(w http.ResponseWriter, req *http.Request) {
+	checkCollection(w, req)
+	writeFilesizeResponse(w, testFileSizeCollection)
+}
+
+func writeFilesizeResponse(w http.ResponseWriter, filesize int) {
 	zebedeeResponse := struct {
 		FileSize int `json:"fileSize"`
 	}{
-		FileSize: 5242880,
+		FileSize: filesize,
 	}
 
 	b, err := json.Marshal(zebedeeResponse)
@@ -138,12 +194,11 @@ func TestUnitClient(t *testing.T) {
 	cli := New(fmt.Sprintf("http://localhost:%d", port))
 
 	ctx := context.Background()
-	testCollectionID := "test-collection"
 
 	Convey("test get()", t, func() {
 
 		Convey("test get successfully returns response from zebedee with headers", func() {
-			b, h, err := cli.get(ctx, testAccessToken, "/data?uri=foo")
+			b, h, err := cli.get(ctx, testAccessToken, "/data?uri=foo&lang="+testLang)
 			So(err, ShouldBeNil)
 			So(len(h), ShouldEqual, 3)
 			So(h.Get("Content-Length"), ShouldEqual, "2")
@@ -163,14 +218,23 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test getLanding successfully returns a landing model", t, func() {
-		m, err := cli.GetDatasetLandingPage(ctx, testAccessToken, "", "", "labour")
+		m, err := cli.GetDatasetLandingPage(ctx, testAccessToken, "", testLang, "labour")
 		So(err, ShouldBeNil)
 		So(m, ShouldNotBeEmpty)
 		So(m.Type, ShouldEqual, "dataset_landing_page")
+		So(m.Description.Title, ShouldEqual, "Labour disputes by sector: LABD02")
+	})
+
+	Convey("test getLanding successfully returns a landing model when using a collection", t, func() {
+		m, err := cli.GetDatasetLandingPage(ctx, testAccessToken, testCollectionID, testLang, "labour")
+		So(err, ShouldBeNil)
+		So(m, ShouldNotBeEmpty)
+		So(m.Type, ShouldEqual, "dataset_landing_page")
+		So(m.Description.Title, ShouldEqual, "Labour disputes by sector: LABD02 - publishing")
 	})
 
 	Convey("GetHomepageContent() returns a homepage model", t, func() {
-		m, err := cli.GetHomepageContent(ctx, testAccessToken, "", "", "/")
+		m, err := cli.GetHomepageContent(ctx, testAccessToken, "", testLang, "/")
 		So(err, ShouldBeNil)
 		So(m, ShouldNotBeEmpty)
 		So(m.Intro.Title, ShouldEqual, "Welcome to the Office for National Statistics")
@@ -189,25 +253,72 @@ func TestUnitClient(t *testing.T) {
 		So(m.EmergencyBanner.LinkText, ShouldEqual, "More info")
 	})
 
+	Convey("GetHomepageContent() returns a homepage model when using a collection", t, func() {
+		m, err := cli.GetHomepageContent(ctx, testAccessToken, testCollectionID, testLang, "/")
+		So(err, ShouldBeNil)
+		So(m, ShouldNotBeEmpty)
+		So(m.Intro.Title, ShouldEqual, "Welcome to Publishing")
+		So(len(m.FeaturedContent), ShouldEqual, 1)
+		So(m.FeaturedContent[0].Title, ShouldEqual, "Featured Content One")
+		So(m.FeaturedContent[0].ImageID, ShouldEqual, "testImage")
+		So(len(m.AroundONS), ShouldEqual, 1)
+		So(m.AroundONS[0].Title, ShouldEqual, "Around ONS One")
+		So(m.AroundONS[0].ImageID, ShouldEqual, "testImage")
+		So(m.Description.Keywords[0], ShouldEqual, "keywordOne")
+		So(m.ServiceMessage, ShouldEqual, "")
+		So(m.EmergencyBanner.Title, ShouldEqual, "Emergency banner title")
+		So(m.EmergencyBanner.Type, ShouldEqual, "notable_death")
+		So(m.EmergencyBanner.Description, ShouldEqual, "Emergency banner description")
+		So(m.EmergencyBanner.URI, ShouldEqual, "www.google.com")
+		So(m.EmergencyBanner.LinkText, ShouldEqual, "More info")
+	})
+
 	Convey("test get dataset details", t, func() {
-		d, err := cli.GetDataset(ctx, testAccessToken, "", "", "12345")
+		d, err := cli.GetDataset(ctx, testAccessToken, "", testLang, "dataset")
 		So(err, ShouldBeNil)
 		So(d.URI, ShouldEqual, "www.google.com")
 		So(d.SupplementaryFiles[0].Title, ShouldEqual, "helloworld")
+		So(len(d.Downloads), ShouldEqual, 1)
+		So(d.Downloads[0].File, ShouldEqual, "test.txt")
+		So(d.Downloads[0].Size, ShouldEqual, strconv.Itoa(testFileSize))
+	})
+
+	Convey("test get dataset details when using a collection", t, func() {
+		d, err := cli.GetDataset(ctx, testAccessToken, testCollectionID, testLang, "dataset")
+		So(err, ShouldBeNil)
+		So(d.URI, ShouldEqual, "www.google.com")
+		So(d.SupplementaryFiles[0].Title, ShouldEqual, "helloworld")
+		So(len(d.Downloads), ShouldEqual, 1)
+		So(d.Downloads[0].File, ShouldEqual, "testCollection.txt")
+		So(d.Downloads[0].Size, ShouldEqual, strconv.Itoa(testFileSizeCollection))
 	})
 
 	Convey("test getFileSize returns human readable filesize", t, func() {
-		fs, err := cli.GetFileSize(ctx, testAccessToken, "", "", "filesize")
+		fs, err := cli.GetFileSize(ctx, testAccessToken, "", testLang, "filesize")
 		So(err, ShouldBeNil)
-		So(fs.Size, ShouldEqual, 5242880)
+		So(fs.Size, ShouldEqual, testFileSize)
+	})
+
+	Convey("test getFileSize returns human readable filesize when using a collection", t, func() {
+		fs, err := cli.GetFileSize(ctx, testAccessToken, testCollectionID, testLang, "filesize")
+		So(err, ShouldBeNil)
+		So(fs.Size, ShouldEqual, testFileSizeCollection)
 	})
 
 	Convey("test getPageTitle returns a correctly formatted page title", t, func() {
-		t, err := cli.GetPageTitle(ctx, testAccessToken, "", "", "pageTitle1")
+		t, err := cli.GetPageTitle(ctx, testAccessToken, "", testLang, "pageTitle1")
 		So(err, ShouldBeNil)
 		So(t.Title, ShouldEqual, "baby-names")
 		So(t.Edition, ShouldEqual, "2017")
 		So(t.URI, ShouldEqual, "path/to/baby-names/2017")
+	})
+
+	Convey("test getPageTitle returns a correctly formatted page title when using a collection", t, func() {
+		t, err := cli.GetPageTitle(ctx, testAccessToken, testCollectionID, testLang, "pageTitle1")
+		So(err, ShouldBeNil)
+		So(t.Title, ShouldEqual, "baby-names")
+		So(t.Edition, ShouldEqual, "collection")
+		So(t.URI, ShouldEqual, "path/to/baby-names/collection")
 	})
 
 	Convey("test createRequestURL", t, func() {
@@ -230,138 +341,267 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test GetBulletin", t, func() {
-		collectionId := ""
-		lang := "en"
-		Convey("returns the latest release of a bulletin", func() {
-			b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, lang, "bulletin-latest-release")
-			So(err, ShouldBeNil)
-			So(b, ShouldNotBeEmpty)
-			So(b.Type, ShouldEqual, "bulletin")
-			So(b.URI, ShouldEqual, "/bulletin/2015-07-09")
-			So(b.RelatedBulletins, ShouldNotBeEmpty)
-			So(len(b.RelatedBulletins), ShouldEqual, 1)
-			So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle1")
-			So(b.RelatedBulletins[0].Title, ShouldEqual, "baby-names: 2017")
-			So(b.Links, ShouldNotBeEmpty)
-			So(len(b.Links), ShouldEqual, 2)
-			So(b.Links[0].URI, ShouldEqual, "pageTitle1")
-			So(b.Links[0].Title, ShouldEqual, "baby-names: 2017")
-			So(b.Links[1].URI, ShouldEqual, "pageTitle2")
-			So(b.Links[1].Title, ShouldEqual, "page-title: 2021")
-			So(b.Sections, ShouldNotBeEmpty)
-			So(len(b.Sections), ShouldEqual, 2)
-			So(b.Sections[0].Title, ShouldEqual, "Main points")
-			So(b.Sections[0].Markdown, ShouldEqual, "Main points markdown")
-			So(b.Sections[1].Title, ShouldEqual, "Overview")
-			So(b.Sections[1].Markdown, ShouldEqual, "Overview markdown")
-			So(b.Accordion, ShouldNotBeEmpty)
-			So(len(b.Accordion), ShouldEqual, 1)
-			So(b.Accordion[0].Title, ShouldEqual, "Background notes")
-			So(b.Accordion[0].Markdown, ShouldEqual, "Notes markdown")
-			So(b.RelatedData, ShouldNotBeEmpty)
-			So(len(b.RelatedData), ShouldEqual, 1)
-			So(b.RelatedData[0].URI, ShouldEqual, "/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging")
-			So(b.Charts, ShouldNotBeEmpty)
-			So(len(b.Charts), ShouldEqual, 1)
-			So(b.Charts[0].Title, ShouldEqual, "Figure 1.1")
-			So(b.Charts[0].Filename, ShouldEqual, "38d8c337")
-			So(b.Charts[0].URI, ShouldEqual, "/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337")
-			So(b.Tables, ShouldNotBeEmpty)
-			So(len(b.Tables), ShouldEqual, 1)
-			So(b.Tables[0].Title, ShouldEqual, "Table 5.1")
-			So(b.Tables[0].Filename, ShouldEqual, "6f587872")
-			So(b.Tables[0].URI, ShouldEqual, "/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872")
-			So(b.Versions, ShouldNotBeEmpty)
-			So(len(b.Versions), ShouldEqual, 1)
-			So(b.Versions[0].ReleaseDate, ShouldEqual, "2021-10-19T10:43:34.507Z")
-			So(b.Versions[0].Notice, ShouldEqual, "Notice")
-			So(b.Versions[0].URI, ShouldEqual, "v1")
-			So(b.Alerts, ShouldNotBeEmpty)
-			So(len(b.Alerts), ShouldEqual, 1)
-			So(b.Alerts[0].Markdown, ShouldEqual, "alert")
-			So(b.Alerts[0].Date, ShouldEqual, "2021-09-30T07:10:46.230Z")
-			So(b.Description, ShouldNotBeEmpty)
-			So(b.Description.Title, ShouldEqual, "UK Environmental Accounts")
-			So(b.Description.Summary, ShouldEqual, "Measures the contribution of the environment to the economy")
-			So(b.Description.Title, ShouldEqual, "UK Environmental Accounts")
-			So(b.Description.MetaDescription, ShouldEqual, "Measures the contribution of the environment.")
-			So(b.Description.NationalStatistic, ShouldBeTrue)
-			So(b.Description.LatestRelease, ShouldBeTrue)
-			So(b.LatestReleaseURI, ShouldBeBlank)
-			So(b.Description.Edition, ShouldEqual, "2015")
-			So(b.Description.ReleaseDate, ShouldEqual, "2015-07-08T23:00:00.000Z")
-			So(b.Description.Contact, ShouldNotBeEmpty)
-			So(b.Description.Contact.Email, ShouldEqual, "environment.accounts@ons.gsi.gov.uk")
-			So(b.Description.Contact.Name, ShouldEqual, "Someone")
-			So(b.Description.Contact.Telephone, ShouldEqual, "+44 (0)1633 455680")
+		Convey("when using a collection", func() {
+			collectionId := testCollectionID
+			Convey("returns the latest release of a bulletin", func() {
+				b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, testLang, "bulletin-latest-release")
+				So(err, ShouldBeNil)
+				So(b, ShouldNotBeEmpty)
+				So(b.Type, ShouldEqual, "bulletin")
+				So(b.URI, ShouldEqual, "/bulletin/2015-07-09")
+				So(b.RelatedBulletins, ShouldNotBeEmpty)
+				So(len(b.RelatedBulletins), ShouldEqual, 1)
+				So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle1")
+				So(b.RelatedBulletins[0].Title, ShouldEqual, "baby-names: collection")
+				So(b.Links, ShouldNotBeEmpty)
+				So(len(b.Links), ShouldEqual, 2)
+				So(b.Links[0].URI, ShouldEqual, "pageTitle1")
+				So(b.Links[0].Title, ShouldEqual, "baby-names: collection")
+				So(b.Links[1].URI, ShouldEqual, "pageTitle2")
+				So(b.Links[1].Title, ShouldEqual, "page-title: c2021")
+				So(b.Sections, ShouldNotBeEmpty)
+				So(len(b.Sections), ShouldEqual, 2)
+				So(b.Sections[0].Title, ShouldEqual, "Main points")
+				So(b.Sections[0].Markdown, ShouldEqual, "Main points markdown")
+				So(b.Sections[1].Title, ShouldEqual, "Overview")
+				So(b.Sections[1].Markdown, ShouldEqual, "Overview markdown")
+				So(b.Accordion, ShouldNotBeEmpty)
+				So(len(b.Accordion), ShouldEqual, 1)
+				So(b.Accordion[0].Title, ShouldEqual, "Background notes")
+				So(b.Accordion[0].Markdown, ShouldEqual, "Notes markdown")
+				So(b.RelatedData, ShouldNotBeEmpty)
+				So(len(b.RelatedData), ShouldEqual, 1)
+				So(b.RelatedData[0].URI, ShouldEqual, "/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging")
+				So(b.Charts, ShouldNotBeEmpty)
+				So(len(b.Charts), ShouldEqual, 1)
+				So(b.Charts[0].Title, ShouldEqual, "Figure 1.1")
+				So(b.Charts[0].Filename, ShouldEqual, "38d8c337")
+				So(b.Charts[0].URI, ShouldEqual, "/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337")
+				So(b.Tables, ShouldNotBeEmpty)
+				So(len(b.Tables), ShouldEqual, 1)
+				So(b.Tables[0].Title, ShouldEqual, "Table 5.1")
+				So(b.Tables[0].Filename, ShouldEqual, "6f587872")
+				So(b.Tables[0].URI, ShouldEqual, "/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872")
+				So(b.Versions, ShouldNotBeEmpty)
+				So(len(b.Versions), ShouldEqual, 1)
+				So(b.Versions[0].ReleaseDate, ShouldEqual, "2021-10-19T10:43:34.507Z")
+				So(b.Versions[0].Notice, ShouldEqual, "Notice")
+				So(b.Versions[0].URI, ShouldEqual, "v1")
+				So(b.Alerts, ShouldNotBeEmpty)
+				So(len(b.Alerts), ShouldEqual, 1)
+				So(b.Alerts[0].Markdown, ShouldEqual, "alert")
+				So(b.Alerts[0].Date, ShouldEqual, "2021-09-30T07:10:46.230Z")
+				So(b.Description, ShouldNotBeEmpty)
+				So(b.Description.Title, ShouldEqual, "UK Environmental Accounts with collection")
+				So(b.Description.Summary, ShouldEqual, "Measures the contribution of the environment to the economy")
+				So(b.Description.MetaDescription, ShouldEqual, "Measures the contribution of the environment.")
+				So(b.Description.NationalStatistic, ShouldBeTrue)
+				So(b.Description.LatestRelease, ShouldBeTrue)
+				So(b.LatestReleaseURI, ShouldBeBlank)
+				So(b.Description.Edition, ShouldEqual, "2015")
+				So(b.Description.ReleaseDate, ShouldEqual, "2015-07-08T23:00:00.000Z")
+				So(b.Description.Contact, ShouldNotBeEmpty)
+				So(b.Description.Contact.Email, ShouldEqual, "environment.accounts@ons.gsi.gov.uk")
+				So(b.Description.Contact.Name, ShouldEqual, "Someone")
+				So(b.Description.Contact.Telephone, ShouldEqual, "+44 (0)1633 455680")
+			})
+
+			Convey("returns a non-latest release of a bulletin", func() {
+				b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, testLang, "bulletin-not-latest-release")
+				So(err, ShouldBeNil)
+				So(b, ShouldNotBeEmpty)
+				So(b.Type, ShouldEqual, "bulletin")
+				So(b.URI, ShouldEqual, "/bulletin/2015-07-09")
+				So(b.RelatedBulletins, ShouldNotBeEmpty)
+				So(len(b.RelatedBulletins), ShouldEqual, 1)
+				So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle1")
+				So(b.RelatedBulletins[0].Title, ShouldEqual, "baby-names: collection")
+				So(b.Links, ShouldNotBeEmpty)
+				So(len(b.Links), ShouldEqual, 2)
+				So(b.Links[0].URI, ShouldEqual, "pageTitle1")
+				So(b.Links[0].Title, ShouldEqual, "baby-names: collection")
+				So(b.Links[1].URI, ShouldEqual, "pageTitle2")
+				So(b.Links[1].Title, ShouldEqual, "page-title: c2021")
+				So(b.Sections, ShouldNotBeEmpty)
+				So(len(b.Sections), ShouldEqual, 2)
+				So(b.Sections[0].Title, ShouldEqual, "Main points")
+				So(b.Sections[0].Markdown, ShouldEqual, "Main points markdown")
+				So(b.Sections[1].Title, ShouldEqual, "Overview")
+				So(b.Sections[1].Markdown, ShouldEqual, "Overview markdown")
+				So(b.Accordion, ShouldNotBeEmpty)
+				So(len(b.Accordion), ShouldEqual, 1)
+				So(b.Accordion[0].Title, ShouldEqual, "Background notes")
+				So(b.Accordion[0].Markdown, ShouldEqual, "Notes markdown")
+				So(b.RelatedData, ShouldNotBeEmpty)
+				So(len(b.RelatedData), ShouldEqual, 1)
+				So(b.RelatedData[0].URI, ShouldEqual, "/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging")
+				So(b.Charts, ShouldNotBeEmpty)
+				So(len(b.Charts), ShouldEqual, 1)
+				So(b.Charts[0].Title, ShouldEqual, "Figure 1.1")
+				So(b.Charts[0].Filename, ShouldEqual, "38d8c337")
+				So(b.Charts[0].URI, ShouldEqual, "/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337")
+				So(b.Tables, ShouldNotBeEmpty)
+				So(len(b.Tables), ShouldEqual, 1)
+				So(b.Tables[0].Title, ShouldEqual, "Table 5.1")
+				So(b.Tables[0].Filename, ShouldEqual, "6f587872")
+				So(b.Tables[0].URI, ShouldEqual, "/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872")
+				So(b.Versions, ShouldNotBeEmpty)
+				So(len(b.Versions), ShouldEqual, 1)
+				So(b.Versions[0].ReleaseDate, ShouldEqual, "2021-10-19T10:43:34.507Z")
+				So(b.Versions[0].Notice, ShouldEqual, "Notice")
+				So(b.Versions[0].URI, ShouldEqual, "v1")
+				So(b.Alerts, ShouldNotBeEmpty)
+				So(len(b.Alerts), ShouldEqual, 1)
+				So(b.Alerts[0].Markdown, ShouldEqual, "alert")
+				So(b.Alerts[0].Date, ShouldEqual, "2021-09-30T07:10:46.230Z")
+				So(b.Description, ShouldNotBeEmpty)
+				So(b.Description.Title, ShouldEqual, "UK Environmental Accounts with collection")
+				So(b.Description.Summary, ShouldEqual, "Measures the contribution of the environment to the economy")
+				So(b.Description.MetaDescription, ShouldEqual, "Measures the contribution of the environment.")
+				So(b.Description.NationalStatistic, ShouldBeTrue)
+				So(b.Description.LatestRelease, ShouldBeFalse)
+				So(b.LatestReleaseURI, ShouldEqual, "/bulletin/2021")
+				So(b.Description.Edition, ShouldEqual, "2015")
+				So(b.Description.ReleaseDate, ShouldEqual, "2015-07-08T23:00:00.000Z")
+				So(b.Description.Contact, ShouldNotBeEmpty)
+				So(b.Description.Contact.Email, ShouldEqual, "environment.accounts@ons.gsi.gov.uk")
+				So(b.Description.Contact.Name, ShouldEqual, "Someone")
+				So(b.Description.Contact.Telephone, ShouldEqual, "+44 (0)1633 455680")
+			})
 		})
 
-		Convey("returns a non-latest release of a bulletin", func() {
-			b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, lang, "bulletin-not-latest-release")
-			So(err, ShouldBeNil)
-			So(b, ShouldNotBeEmpty)
-			So(b.Type, ShouldEqual, "bulletin")
-			So(b.URI, ShouldEqual, "/bulletin/2015-07-09")
-			So(b.RelatedBulletins, ShouldNotBeEmpty)
-			So(len(b.RelatedBulletins), ShouldEqual, 1)
-			So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle1")
-			So(b.RelatedBulletins[0].Title, ShouldEqual, "baby-names: 2017")
-			So(b.Links, ShouldNotBeEmpty)
-			So(len(b.Links), ShouldEqual, 2)
-			So(b.Links[0].URI, ShouldEqual, "pageTitle1")
-			So(b.Links[0].Title, ShouldEqual, "baby-names: 2017")
-			So(b.Links[1].URI, ShouldEqual, "pageTitle2")
-			So(b.Links[1].Title, ShouldEqual, "page-title: 2021")
-			So(b.Sections, ShouldNotBeEmpty)
-			So(len(b.Sections), ShouldEqual, 2)
-			So(b.Sections[0].Title, ShouldEqual, "Main points")
-			So(b.Sections[0].Markdown, ShouldEqual, "Main points markdown")
-			So(b.Sections[1].Title, ShouldEqual, "Overview")
-			So(b.Sections[1].Markdown, ShouldEqual, "Overview markdown")
-			So(b.Accordion, ShouldNotBeEmpty)
-			So(len(b.Accordion), ShouldEqual, 1)
-			So(b.Accordion[0].Title, ShouldEqual, "Background notes")
-			So(b.Accordion[0].Markdown, ShouldEqual, "Notes markdown")
-			So(b.RelatedData, ShouldNotBeEmpty)
-			So(len(b.RelatedData), ShouldEqual, 1)
-			So(b.RelatedData[0].URI, ShouldEqual, "/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging")
-			So(b.Charts, ShouldNotBeEmpty)
-			So(len(b.Charts), ShouldEqual, 1)
-			So(b.Charts[0].Title, ShouldEqual, "Figure 1.1")
-			So(b.Charts[0].Filename, ShouldEqual, "38d8c337")
-			So(b.Charts[0].URI, ShouldEqual, "/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337")
-			So(b.Tables, ShouldNotBeEmpty)
-			So(len(b.Tables), ShouldEqual, 1)
-			So(b.Tables[0].Title, ShouldEqual, "Table 5.1")
-			So(b.Tables[0].Filename, ShouldEqual, "6f587872")
-			So(b.Tables[0].URI, ShouldEqual, "/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872")
-			So(b.Versions, ShouldNotBeEmpty)
-			So(len(b.Versions), ShouldEqual, 1)
-			So(b.Versions[0].ReleaseDate, ShouldEqual, "2021-10-19T10:43:34.507Z")
-			So(b.Versions[0].Notice, ShouldEqual, "Notice")
-			So(b.Versions[0].URI, ShouldEqual, "v1")
-			So(b.Alerts, ShouldNotBeEmpty)
-			So(len(b.Alerts), ShouldEqual, 1)
-			So(b.Alerts[0].Markdown, ShouldEqual, "alert")
-			So(b.Alerts[0].Date, ShouldEqual, "2021-09-30T07:10:46.230Z")
-			So(b.Description, ShouldNotBeEmpty)
-			So(b.Description.Title, ShouldEqual, "UK Environmental Accounts")
-			So(b.Description.Summary, ShouldEqual, "Measures the contribution of the environment to the economy")
-			So(b.Description.Title, ShouldEqual, "UK Environmental Accounts")
-			So(b.Description.MetaDescription, ShouldEqual, "Measures the contribution of the environment.")
-			So(b.Description.NationalStatistic, ShouldBeTrue)
-			So(b.Description.LatestRelease, ShouldBeFalse)
-			So(b.LatestReleaseURI, ShouldEqual, "/bulletin/2021")
-			So(b.Description.Edition, ShouldEqual, "2015")
-			So(b.Description.ReleaseDate, ShouldEqual, "2015-07-08T23:00:00.000Z")
-			So(b.Description.Contact, ShouldNotBeEmpty)
-			So(b.Description.Contact.Email, ShouldEqual, "environment.accounts@ons.gsi.gov.uk")
-			So(b.Description.Contact.Name, ShouldEqual, "Someone")
-			So(b.Description.Contact.Telephone, ShouldEqual, "+44 (0)1633 455680")
+		Convey("when not using a collection", func() {
+			collectionId := ""
+			Convey("returns the latest release of a bulletin", func() {
+				b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, testLang, "bulletin-latest-release")
+				So(err, ShouldBeNil)
+				So(b, ShouldNotBeEmpty)
+				So(b.Type, ShouldEqual, "bulletin")
+				So(b.URI, ShouldEqual, "/bulletin/2015-07-09")
+				So(b.RelatedBulletins, ShouldNotBeEmpty)
+				So(len(b.RelatedBulletins), ShouldEqual, 1)
+				So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle1")
+				So(b.RelatedBulletins[0].Title, ShouldEqual, "baby-names: 2017")
+				So(b.Links, ShouldNotBeEmpty)
+				So(len(b.Links), ShouldEqual, 2)
+				So(b.Links[0].URI, ShouldEqual, "pageTitle1")
+				So(b.Links[0].Title, ShouldEqual, "baby-names: 2017")
+				So(b.Links[1].URI, ShouldEqual, "pageTitle2")
+				So(b.Links[1].Title, ShouldEqual, "page-title: 2021")
+				So(b.Sections, ShouldNotBeEmpty)
+				So(len(b.Sections), ShouldEqual, 2)
+				So(b.Sections[0].Title, ShouldEqual, "Main points")
+				So(b.Sections[0].Markdown, ShouldEqual, "Main points markdown")
+				So(b.Sections[1].Title, ShouldEqual, "Overview")
+				So(b.Sections[1].Markdown, ShouldEqual, "Overview markdown")
+				So(b.Accordion, ShouldNotBeEmpty)
+				So(len(b.Accordion), ShouldEqual, 1)
+				So(b.Accordion[0].Title, ShouldEqual, "Background notes")
+				So(b.Accordion[0].Markdown, ShouldEqual, "Notes markdown")
+				So(b.RelatedData, ShouldNotBeEmpty)
+				So(len(b.RelatedData), ShouldEqual, 1)
+				So(b.RelatedData[0].URI, ShouldEqual, "/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging")
+				So(b.Charts, ShouldNotBeEmpty)
+				So(len(b.Charts), ShouldEqual, 1)
+				So(b.Charts[0].Title, ShouldEqual, "Figure 1.1")
+				So(b.Charts[0].Filename, ShouldEqual, "38d8c337")
+				So(b.Charts[0].URI, ShouldEqual, "/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337")
+				So(b.Tables, ShouldNotBeEmpty)
+				So(len(b.Tables), ShouldEqual, 1)
+				So(b.Tables[0].Title, ShouldEqual, "Table 5.1")
+				So(b.Tables[0].Filename, ShouldEqual, "6f587872")
+				So(b.Tables[0].URI, ShouldEqual, "/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872")
+				So(b.Versions, ShouldNotBeEmpty)
+				So(len(b.Versions), ShouldEqual, 1)
+				So(b.Versions[0].ReleaseDate, ShouldEqual, "2021-10-19T10:43:34.507Z")
+				So(b.Versions[0].Notice, ShouldEqual, "Notice")
+				So(b.Versions[0].URI, ShouldEqual, "v1")
+				So(b.Alerts, ShouldNotBeEmpty)
+				So(len(b.Alerts), ShouldEqual, 1)
+				So(b.Alerts[0].Markdown, ShouldEqual, "alert")
+				So(b.Alerts[0].Date, ShouldEqual, "2021-09-30T07:10:46.230Z")
+				So(b.Description, ShouldNotBeEmpty)
+				So(b.Description.Title, ShouldEqual, "UK Environmental Accounts")
+				So(b.Description.Summary, ShouldEqual, "Measures the contribution of the environment to the economy")
+				So(b.Description.Title, ShouldEqual, "UK Environmental Accounts")
+				So(b.Description.MetaDescription, ShouldEqual, "Measures the contribution of the environment.")
+				So(b.Description.NationalStatistic, ShouldBeTrue)
+				So(b.Description.LatestRelease, ShouldBeTrue)
+				So(b.LatestReleaseURI, ShouldBeBlank)
+				So(b.Description.Edition, ShouldEqual, "2015")
+				So(b.Description.ReleaseDate, ShouldEqual, "2015-07-08T23:00:00.000Z")
+				So(b.Description.Contact, ShouldNotBeEmpty)
+				So(b.Description.Contact.Email, ShouldEqual, "environment.accounts@ons.gsi.gov.uk")
+				So(b.Description.Contact.Name, ShouldEqual, "Someone")
+				So(b.Description.Contact.Telephone, ShouldEqual, "+44 (0)1633 455680")
+			})
+
+			Convey("returns a non-latest release of a bulletin", func() {
+				b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, testLang, "bulletin-not-latest-release")
+				So(err, ShouldBeNil)
+				So(b, ShouldNotBeEmpty)
+				So(b.Type, ShouldEqual, "bulletin")
+				So(b.URI, ShouldEqual, "/bulletin/2015-07-09")
+				So(b.RelatedBulletins, ShouldNotBeEmpty)
+				So(len(b.RelatedBulletins), ShouldEqual, 1)
+				So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle1")
+				So(b.RelatedBulletins[0].Title, ShouldEqual, "baby-names: 2017")
+				So(b.Links, ShouldNotBeEmpty)
+				So(len(b.Links), ShouldEqual, 2)
+				So(b.Links[0].URI, ShouldEqual, "pageTitle1")
+				So(b.Links[0].Title, ShouldEqual, "baby-names: 2017")
+				So(b.Links[1].URI, ShouldEqual, "pageTitle2")
+				So(b.Links[1].Title, ShouldEqual, "page-title: 2021")
+				So(b.Sections, ShouldNotBeEmpty)
+				So(len(b.Sections), ShouldEqual, 2)
+				So(b.Sections[0].Title, ShouldEqual, "Main points")
+				So(b.Sections[0].Markdown, ShouldEqual, "Main points markdown")
+				So(b.Sections[1].Title, ShouldEqual, "Overview")
+				So(b.Sections[1].Markdown, ShouldEqual, "Overview markdown")
+				So(b.Accordion, ShouldNotBeEmpty)
+				So(len(b.Accordion), ShouldEqual, 1)
+				So(b.Accordion[0].Title, ShouldEqual, "Background notes")
+				So(b.Accordion[0].Markdown, ShouldEqual, "Notes markdown")
+				So(b.RelatedData, ShouldNotBeEmpty)
+				So(len(b.RelatedData), ShouldEqual, 1)
+				So(b.RelatedData[0].URI, ShouldEqual, "/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging")
+				So(b.Charts, ShouldNotBeEmpty)
+				So(len(b.Charts), ShouldEqual, 1)
+				So(b.Charts[0].Title, ShouldEqual, "Figure 1.1")
+				So(b.Charts[0].Filename, ShouldEqual, "38d8c337")
+				So(b.Charts[0].URI, ShouldEqual, "/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337")
+				So(b.Tables, ShouldNotBeEmpty)
+				So(len(b.Tables), ShouldEqual, 1)
+				So(b.Tables[0].Title, ShouldEqual, "Table 5.1")
+				So(b.Tables[0].Filename, ShouldEqual, "6f587872")
+				So(b.Tables[0].URI, ShouldEqual, "/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872")
+				So(b.Versions, ShouldNotBeEmpty)
+				So(len(b.Versions), ShouldEqual, 1)
+				So(b.Versions[0].ReleaseDate, ShouldEqual, "2021-10-19T10:43:34.507Z")
+				So(b.Versions[0].Notice, ShouldEqual, "Notice")
+				So(b.Versions[0].URI, ShouldEqual, "v1")
+				So(b.Alerts, ShouldNotBeEmpty)
+				So(len(b.Alerts), ShouldEqual, 1)
+				So(b.Alerts[0].Markdown, ShouldEqual, "alert")
+				So(b.Alerts[0].Date, ShouldEqual, "2021-09-30T07:10:46.230Z")
+				So(b.Description, ShouldNotBeEmpty)
+				So(b.Description.Title, ShouldEqual, "UK Environmental Accounts")
+				So(b.Description.Summary, ShouldEqual, "Measures the contribution of the environment to the economy")
+				So(b.Description.MetaDescription, ShouldEqual, "Measures the contribution of the environment.")
+				So(b.Description.NationalStatistic, ShouldBeTrue)
+				So(b.Description.LatestRelease, ShouldBeFalse)
+				So(b.LatestReleaseURI, ShouldEqual, "/bulletin/collection/2021")
+				So(b.Description.Edition, ShouldEqual, "2015")
+				So(b.Description.ReleaseDate, ShouldEqual, "2015-07-08T23:00:00.000Z")
+				So(b.Description.Contact, ShouldNotBeEmpty)
+				So(b.Description.Contact.Email, ShouldEqual, "environment.accounts@ons.gsi.gov.uk")
+				So(b.Description.Contact.Name, ShouldEqual, "Someone")
+				So(b.Description.Contact.Telephone, ShouldEqual, "+44 (0)1633 455680")
+			})
 		})
 
 		Convey("returns an error if uri not found", func() {
-			b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, lang, "notFound")
+			b, err := cli.GetBulletin(ctx, testAccessToken, "", testLang, "notFound")
 			So(err, ShouldNotBeNil)
 			So(b, ShouldResemble, Bulletin{})
 		})
