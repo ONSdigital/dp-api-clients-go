@@ -149,6 +149,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	addCollectionIDHeader(req, collectionID)
 	dprequest.AddFlorenceHeader(req, userAuthToken)
 	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
+	dprequest.SetLocaleCode(req)
 	return c.hcCli.Client.Do(ctx, req)
 }
 
