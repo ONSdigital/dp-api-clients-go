@@ -79,9 +79,10 @@ func TestGetLegacyBulletin(t *testing.T) {
 	})
 
 	Convey("Given that 200 OK is returned by articles API with an invalid body", t, func() {
+		responseBody := "invalidBulletin"
 		httpClient := newMockHTTPClient(&http.Response{
 			StatusCode: http.StatusOK,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte("invalidBulletin"))),
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(responseBody))),
 		}, nil)
 		articlesClient := newArticlesClient(httpClient)
 
@@ -105,7 +106,42 @@ func TestGetLegacyBulletin(t *testing.T) {
 				So(err, ShouldResemble, dperrors.New(
 					errors.New("failed to unmarshal response body: invalid character 'i' looking for beginning of value"),
 					http.StatusInternalServerError,
-					log.Data{"response_body": "invalidBulletin"}),
+					log.Data{"response_body": responseBody}),
+				)
+				So(bulletin, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given that 200 OK is returned by articles API with an empty body", t, func() {
+		responseBody := ""
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(responseBody))),
+		}, nil)
+		articlesClient := newArticlesClient(httpClient)
+
+		Convey("When GetLegacyBulletin is called", func() {
+			bulletin, err := articlesClient.GetLegacyBulletin(context.Background(), accessToken, collectionId, lang, url)
+
+			Convey("Then the expected call to the articles API is made", func() {
+				So(httpClient.DoCalls(), ShouldHaveLength, 1)
+				So(httpClient.DoCalls()[0].Req.URL.String(), ShouldEqual, expectedArticlesApiUrl)
+				So(httpClient.DoCalls()[0].Req.Method, ShouldEqual, http.MethodGet)
+
+				collectionHeader, err := headers.GetCollectionID(httpClient.DoCalls()[0].Req)
+				So(err, ShouldBeNil)
+				So(collectionHeader, ShouldEqual, collectionId)
+
+				authTokenHeader, err := headers.GetUserAuthToken(httpClient.DoCalls()[0].Req)
+				So(err, ShouldBeNil)
+				So(authTokenHeader, ShouldEqual, accessToken)
+			})
+			Convey("And an error is returned", func() {
+				So(err, ShouldResemble, dperrors.New(
+					errors.New("failed to unmarshal response body: unexpected end of JSON input"),
+					http.StatusInternalServerError,
+					log.Data{"response_body": responseBody}),
 				)
 				So(bulletin, ShouldBeNil)
 			})

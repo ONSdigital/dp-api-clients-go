@@ -51,10 +51,6 @@ func (c *Client) GetLegacyBulletin(ctx context.Context, userAccessToken, collect
 		)
 	}
 
-	if len(b) == 0 {
-		b = []byte("[response body empty]")
-	}
-
 	var bulletin Bulletin
 	if err = json.Unmarshal(b, &bulletin); err != nil {
 		return nil, dperrors.New(
