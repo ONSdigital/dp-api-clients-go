@@ -40,12 +40,12 @@ func (c *Client) URL() string {
 	return c.hcCli.URL
 }
 
-// HealthClient returns the underlying Healthcheck Client for this image API client
+// HealthClient returns the underlying Healthcheck Client for this articles API client
 func (c *Client) HealthClient() *health.Client {
 	return c.hcCli
 }
 
-// Checker calls image api health endpoint and returns a check object to the caller.
+// Checker calls articles API health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *healthcheck.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
