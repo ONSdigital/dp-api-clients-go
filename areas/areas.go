@@ -150,7 +150,6 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	addCollectionIDHeader(req, collectionID)
 	dprequest.AddFlorenceHeader(req, userAuthToken)
 	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
-	ctx.Value("acceptedHeaders")
 	return c.hcCli.Client.Do(ctx, req)
 }
 
