@@ -260,6 +260,11 @@ func TestSetLocaleCode(t *testing.T) {
 	execSetHeaderTestCases(t, cases)
 }
 
+func TestSetAcceptedLang(t *testing.T) {
+	cases := setterTestCases(t, "SetAcceptedLang", acceptedLangHeader, SetAcceptedLang, false)
+	execSetHeaderTestCases(t, cases)
+}
+
 func TestSetIfMatch(t *testing.T) {
 	cases := setterTestCases(t, "SetIfMatch", ifMatchHeader, SetIfMatch, false)
 	execSetHeaderTestCases(t, cases)
