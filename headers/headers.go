@@ -42,6 +42,9 @@ const (
 	// localeCodeHeader is the locale code header name
 	localeCodeHeader = "LocaleCode"
 
+	// acceptedLangHeader indicates the natural language and locale that the client prefers
+	acceptedLangHeader = "Accept-Language"
+
 	// ifMatchHeader is the If-Match header name
 	ifMatchHeader = "If-Match"
 
@@ -274,6 +277,14 @@ func SetRequestID(req *http.Request, headerValue string) error {
 // will be overwritten by the new value. Empty values are allowed for this header.
 func SetLocaleCode(req *http.Request, headerValue string) error {
 	err := setRequestHeader(req, localeCodeHeader, headerValue)
+	if err != nil && err != ErrValueEmpty {
+		return err
+	}
+	return nil
+}
+
+func SetAcceptedLang(req *http.Request, headerValue string) error {
+	err := setRequestHeader(req, acceptedLangHeader, headerValue)
 	if err != nil && err != ErrValueEmpty {
 		return err
 	}

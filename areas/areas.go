@@ -65,12 +65,12 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 }
 
 // GetArea returns area information for a given area ID
-func (c *Client) GetArea(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, areaID string) (areaDetails AreaDetails, err error) {
+func (c *Client) GetArea(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, areaID, acceptLang string) (areaDetails AreaDetails, err error) {
 	uri := fmt.Sprintf("%s/v1/areas/%s", c.hcCli.URL, areaID)
 
 	clientlog.Do(ctx, "retrieving area", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "", acceptLang)
 	if err != nil {
 		return
 	}
@@ -135,7 +135,7 @@ func addCollectionIDHeader(r *http.Request, collectionID string) {
 // It is the callers responsibility to ensure response.Body is closed on completion.
 // If url.Values are provided, they will be added as query parameters in the URL.
 // NOTE: Only one of the tokens 'userAuthToken' or 'serviceAuthToken' needs to have a value.
-func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, values url.Values, ifMatch string) (*http.Response, error) {
+func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, values url.Values, ifMatch, acceptLang string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, err
@@ -146,6 +146,7 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	}
 
 	headers.SetIfMatch(req, ifMatch)
+	headers.SetAcceptedLang(req, acceptLang)
 	addCollectionIDHeader(req, collectionID)
 	dprequest.AddFlorenceHeader(req, userAuthToken)
 	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
