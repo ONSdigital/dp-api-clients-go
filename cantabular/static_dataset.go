@@ -1,7 +1,6 @@
 package cantabular
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -96,10 +95,39 @@ func (c *Client) GetDimensions(ctx context.Context, dataset string) (*GetDimensi
 		Data   GetDimensionsResponse `json:"data"`
 		Errors []gql.Error           `json:"errors,omitempty"`
 	}{}
-	req := StaticDatasetQueryRequest{
+
+	data := QueryData{
 		Dataset: dataset,
 	}
-	if err := c.queryUnmarshal(ctx, QueryDimensions, req, resp); err != nil {
+
+	if err := c.queryUnmarshal(ctx, QueryDimensions, data, resp); err != nil {
+		return nil, err
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			http.StatusOK,
+			log.Data{"errors": resp.Errors},
+		)
+	}
+
+	return &resp.Data, nil
+}
+
+// GetGeographyDimensions performs a graphQL query to obtain the geography dimensions for the provided cantabular dataset.
+// The whole response is loaded to memory.
+func (c *Client) GetGeographyDimensions(ctx context.Context, dataset string) (*GetDimensionsResponse, error) {
+	resp := &struct {
+		Data   GetDimensionsResponse `json:"data"`
+		Errors []gql.Error           `json:"errors,omitempty"`
+	}{}
+
+	data := QueryData{
+		Dataset: dataset,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryDimensions, data, resp); err != nil {
 		return nil, err
 	}
 
@@ -117,12 +145,12 @@ func (c *Client) GetDimensions(ctx context.Context, dataset string) (*GetDimensi
 // GetDimensions performs a graphQL query to obtain the dimensions for the provided cantabular dataset.
 // It returns a RuleBaseResponse, containing nested edges and nodes according to the query structure
 // The whole response is loaded to memory.
-func (c *Client) GetDimensionsByName(ctx context.Context, req StaticDatasetQueryRequest) (*GetDimensionsResponse, error) {
+func (c *Client) GetDimensionsByName(ctx context.Context, req GetDimensionsByNameRequest) (*GetDimensionsResponse, error) {
 	resp := &struct {
 		Data   GetDimensionsResponse `json:"data"`
 		Errors []gql.Error           `json:"errors,omitempty"`
 	}{}
-	if err := c.queryUnmarshal(ctx, QueryDimensionsByName, req, resp); err != nil {
+	if err := c.queryUnmarshal(ctx, QueryDimensionsByName, QueryData(req), resp); err != nil {
 		return nil, err
 	}
 
@@ -140,12 +168,13 @@ func (c *Client) GetDimensionsByName(ctx context.Context, req StaticDatasetQuery
 // GetDimensionOptions performs a graphQL query to obtain the requested dimension options.
 // It returns a Table with a list of Cantabular dimensions, where 'Variable' is the dimension and 'Categories' are the options
 // The whole response is loaded to memory.
-func (c *Client) GetDimensionOptions(ctx context.Context, req StaticDatasetQueryRequest) (*GetDimensionOptionsResponse, error) {
+func (c *Client) GetDimensionOptions(ctx context.Context, req GetDimensionOptionsRequest) (*GetDimensionOptionsResponse, error) {
 	resp := &struct {
 		Data   GetDimensionOptionsResponse `json:"data"`
 		Errors []gql.Error                 `json:"errors,omitempty"`
 	}{}
-	if err := c.queryUnmarshal(ctx, QueryDimensionOptions, req, resp); err != nil {
+
+	if err := c.queryUnmarshal(ctx, QueryDimensionOptions, QueryData(req), resp); err != nil {
 		return nil, err
 	}
 
@@ -166,7 +195,7 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req StaticDatasetQuery
 // The number of CSV rows, including the header, is returned along with any error during the process.
 // Use this method if large query responses are expected.
 func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) (int32, error) {
-	res, err := c.postQuery(ctx, QueryStaticDataset, req)
+	res, err := c.postQuery(ctx, QueryStaticDataset, QueryData(req))
 	if err != nil {
 		return 0, err
 	}
@@ -181,12 +210,12 @@ func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticData
 	return rowCount, stream.Stream(ctx, res.Body, transform, consume)
 }
 
-// queryUnmarshal uses staticDatasetQueryLowLevel to perform a graphQL query and then un-marshals the response body to the provided value pointer v
+// queryUnmarshal uses postQuery to perform a graphQL query and then un-marshals the response body to the provided value pointer v
 // This method handles the response body closing.
-func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, req StaticDatasetQueryRequest, v interface{}) error {
+func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, data QueryData, v interface{}) error {
 	url := fmt.Sprintf("%s/graphql", c.extApiHost)
 
-	res, err := c.postQuery(ctx, graphQLQuery, req)
+	res, err := c.postQuery(ctx, graphQLQuery, data)
 	if err != nil {
 		return err
 	}
@@ -221,29 +250,17 @@ func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, req St
 // using the /graphql endpoint and the http client directly
 // If the call is successfull, the response body is returned
 // - Important: it's the caller's responsability to close the body once it has been fully processed.
-func (c *Client) postQuery(ctx context.Context, graphQLQuery string, req StaticDatasetQueryRequest) (*http.Response, error) {
+func (c *Client) postQuery(ctx context.Context, graphQLQuery string, data QueryData) (*http.Response, error) {
 	url := fmt.Sprintf("%s/graphql", c.extApiHost)
 
 	logData := log.Data{
-		"url":     url,
-		"request": req,
+		"url":        url,
+		"query_data": data,
 	}
 
-	// Encoder the graphQL query with the provided dataset and variables
-	var b bytes.Buffer
-	enc := json.NewEncoder(&b)
-	if err := enc.Encode(map[string]interface{}{
-		"query": graphQLQuery,
-		"variables": map[string]interface{}{
-			"dataset":   req.Dataset,
-			"variables": req.Variables,
-		},
-	}); err != nil {
-		return nil, dperrors.New(
-			fmt.Errorf("failed to encode GraphQL query: %w", err),
-			http.StatusInternalServerError,
-			logData,
-		)
+	b, err := data.encode(graphQLQuery)
+	if err != nil {
+		return nil, dperrors.New(err, http.StatusInternalServerError, logData)
 	}
 
 	// Do a POST call to graphQL endpoint

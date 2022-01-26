@@ -39,11 +39,34 @@ type StaticDatasetQuery struct {
 	Dataset StaticDataset `json:"dataset" graphql:"dataset(name: $name)"`
 }
 
+// GetDimensionsByNameRequest holds the request variables required from the
+// caller for making a request to obtain dimensions (Cantabular variables) by name
+// POST [cantabular-ext]/graphql
+type GetDimensionsByNameRequest struct {
+	Dataset   string   `json:"dataset"`
+	Variables []string `json:"variables"`
+}
+
 // GetDimensionsResponse holds the response body for
 // POST [cantabular-ext]/graphql
 // with a ruleBase query to obtain static dataset variables, with 1-level relationships
 type GetDimensionsResponse struct {
 	Dataset gql.DatasetVariables `json:"dataset"`
+}
+
+// GetGeographyDimensionsResponse holds the response body for
+// POST [cantabular-ext]/graphql
+// with a query to obtain geography variables
+type GetGeographyDimensionsResponse struct {
+	Dataset gql.DatasetRuleBase `json:"dataset"`
+}
+
+// GetDimensionOptionsRequest holds the request variables required from the
+// caller for making a request to obtain dimension options
+// POST [cantabular-ext]/graphql
+type GetDimensionOptionsRequest struct {
+	Dataset   string   `json:"dataset"`
+	Variables []string `json:"variables"`
 }
 
 // GetDimensionOptionsResponse holds the response body for
