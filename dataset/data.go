@@ -82,11 +82,10 @@ type Event struct {
 
 // CodeList holds one of the codelists corresponding to a new Instance
 type CodeList struct {
-	ID                    string `json:"id"`
-	HRef                  string `json:"href"`
-	Name                  string `json:"name"`
-	IsHierarchy           bool   `json:"is_hierarchy"`
-	IsCantabularGeography bool   `json:"is_cantabular_geography"`
+	ID          string `json:"id"`
+	HRef        string `json:"href"`
+	Name        string `json:"name"`
+	IsHierarchy bool   `json:"is_hierarchy"`
 }
 
 // Version represents a version within a dataset
