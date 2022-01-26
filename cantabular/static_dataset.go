@@ -96,11 +96,7 @@ func (c *Client) GetDimensions(ctx context.Context, dataset string) (*GetDimensi
 		Errors []gql.Error           `json:"errors,omitempty"`
 	}{}
 
-	data := QueryData{
-		Dataset: dataset,
-	}
-
-	if err := c.queryUnmarshal(ctx, QueryDimensions, data, resp); err != nil {
+	if err := c.queryUnmarshal(ctx, QueryDimensions, QueryData{Dataset: dataset}, resp); err != nil {
 		return nil, err
 	}
 
@@ -117,17 +113,13 @@ func (c *Client) GetDimensions(ctx context.Context, dataset string) (*GetDimensi
 
 // GetGeographyDimensions performs a graphQL query to obtain the geography dimensions for the provided cantabular dataset.
 // The whole response is loaded to memory.
-func (c *Client) GetGeographyDimensions(ctx context.Context, dataset string) (*GetDimensionsResponse, error) {
+func (c *Client) GetGeographyDimensions(ctx context.Context, dataset string) (*GetGeographyDimensionsResponse, error) {
 	resp := &struct {
-		Data   GetDimensionsResponse `json:"data"`
-		Errors []gql.Error           `json:"errors,omitempty"`
+		Data   GetGeographyDimensionsResponse `json:"data"`
+		Errors []gql.Error                    `json:"errors,omitempty"`
 	}{}
 
-	data := QueryData{
-		Dataset: dataset,
-	}
-
-	if err := c.queryUnmarshal(ctx, QueryDimensions, data, resp); err != nil {
+	if err := c.queryUnmarshal(ctx, QueryGeographyDimensions, QueryData{Dataset: dataset}, resp); err != nil {
 		return nil, err
 	}
 

@@ -422,6 +422,42 @@ func TestGetDimensionsByNameHappy(t *testing.T) {
 	})
 }
 
+func TestGetGeographyDimensionsHappy(t *testing.T) {
+	Convey("Given a correct getGeographyDimensions response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+
+		mockHttpClient := &dphttp.ClienterMock{
+			PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+				return Response(
+					[]byte(mockRespBodyGetGeographyDimensions),
+					http.StatusOK,
+				), nil
+			},
+		}
+
+		cantabularClient := cantabular.NewClient(
+			cantabular.Config{
+				Host:       "cantabular.host",
+				ExtApiHost: "cantabular.ext.host",
+			},
+			mockHttpClient,
+			nil,
+		)
+
+		Convey("When the GetDimensions method is called", func() {
+			resp, err := cantabularClient.GetGeographyDimensions(testCtx, "Teaching-Dataset")
+
+			Convey("No error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedGeographyDimensions)
+			})
+		})
+	})
+}
+
 func TestGetDimensionOptionsHappy(t *testing.T) {
 	Convey("Given a correct getDimensionOptions response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
@@ -769,6 +805,99 @@ var expectedDimensions = cantabular.GetDimensionsResponse{
 					},
 				},
 			},
+		},
+	},
+}
+
+// mockRespBodyGetGeographyDimensions is a successful 'get geography dimensions' query respose that is returned from a mocked client for testing
+var mockRespBodyGetGeographyDimensions = `
+{
+	"data": {
+		"dataset": {
+			"ruleBase": {
+				"isSourceOf": {
+					"edges": [
+						{
+							"node": {
+								"categories": {
+									"totalCount": 2
+								},
+								"label": "Country",
+								"mapFrom": [
+									{
+										"edges": [
+											{
+												"node": {
+													"filterOnly": "false",
+													"label": "Region",
+													"name": "Region"
+												}
+											}
+										]
+									}
+								],
+								"name": "Country"
+							}
+						},
+						{
+							"node": {
+								"categories": {
+									"totalCount": 10
+								},
+								"label": "Region",
+								"mapFrom": [],
+								"name": "Region"
+							}
+						}
+					]
+				},
+				"name": "Region"
+			}
+		}
+	}
+}
+`
+
+var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
+	Dataset: gql.DatasetRuleBase{
+		RuleBase: gql.RuleBase{
+			IsSourceOf: gql.Variables{
+				Edges: []gql.Edge{
+					{
+						Node: gql.Node{
+							Name:       "Country",
+							Label:      "Country",
+							Categories: gql.Categories{TotalCount: 2},
+							MapFrom: []gql.Variables{
+								{
+									Edges: []gql.Edge{
+										{
+											Node: gql.Node{
+												Name:       "Region",
+												Label:      "Region",
+												Categories: gql.Categories{TotalCount: 0},
+												MapFrom:    []gql.Variables(nil),
+												FilterOnly: "false",
+											},
+										},
+									},
+								},
+							},
+							FilterOnly: "",
+						},
+					},
+					{
+						Node: gql.Node{
+							Name:       "Region",
+							Label:      "Region",
+							Categories: gql.Categories{TotalCount: 10},
+							MapFrom:    []gql.Variables{},
+							FilterOnly: "",
+						},
+					},
+				},
+			},
+			Name: "Region",
 		},
 	},
 }
