@@ -250,7 +250,7 @@ func (c *Client) postQuery(ctx context.Context, graphQLQuery string, data QueryD
 		"query_data": data,
 	}
 
-	b, err := data.encode(graphQLQuery)
+	b, err := data.Encode(graphQLQuery)
 	if err != nil {
 		return nil, dperrors.New(err, http.StatusInternalServerError, logData)
 	}

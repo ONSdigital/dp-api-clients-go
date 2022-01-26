@@ -127,9 +127,9 @@ type QueryData struct {
 	Variables []string
 }
 
-// encode the provided graphQL query with the data in QueryData
+// Encode the provided graphQL query with the data in QueryData
 // returns a byte buffer with the encoded query, along with any encoding error that might happen
-func (data *QueryData) encode(query string) (bytes.Buffer, error) {
+func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 	if err := enc.Encode(map[string]interface{}{
