@@ -253,8 +253,8 @@ func TestGetDimensionOptionsHappy(t *testing.T) {
 
 		Convey("When GetDimensionOptions is called", func() {
 			req := cantabular.GetDimensionOptionsRequest{
-				Dataset:   "Teaching-Dataset",
-				Variables: []string{"Country", "Age", "Occupation"},
+				Dataset:        "Teaching-Dataset",
+				DimensionNames: []string{"Country", "Age", "Occupation"},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
@@ -290,8 +290,8 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 
 		Convey("When the GetDimensionOptions method is called", func() {
 			req := cantabular.GetDimensionOptionsRequest{
-				Dataset:   "InexistentDataset",
-				Variables: []string{"Country", "Age", "Occupation"},
+				Dataset:        "InexistentDataset",
+				DimensionNames: []string{"Country", "Age", "Occupation"},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
@@ -310,8 +310,8 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 
 		Convey("When the GetDimensionOptions method is called", func() {
 			req := cantabular.GetDimensionOptionsRequest{
-				Dataset:   "Teaching-Dataset",
-				Variables: []string{"Country", "Age", "inexistentVariable"},
+				Dataset:        "Teaching-Dataset",
+				DimensionNames: []string{"Country", "Age", "inexistentVariable"},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
@@ -331,8 +331,8 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 
 		Convey("When GetDimensionOptions is called", func() {
 			req := cantabular.GetDimensionOptionsRequest{
-				Dataset:   "Teaching-Dataset",
-				Variables: []string{"Country", "Age", "Occupation"},
+				Dataset:        "Teaching-Dataset",
+				DimensionNames: []string{"Country", "Age", "Occupation"},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 

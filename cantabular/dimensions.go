@@ -93,7 +93,12 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req GetDimensionOption
 		Errors []gql.Error                 `json:"errors,omitempty"`
 	}{}
 
-	if err := c.queryUnmarshal(ctx, QueryDimensionOptions, QueryData(req), resp); err != nil {
+	data := QueryData{
+		Dataset:   req.Dataset,
+		Variables: req.DimensionNames,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryDimensionOptions, QueryData(data), resp); err != nil {
 		return nil, err
 	}
 
