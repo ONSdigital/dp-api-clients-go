@@ -43,8 +43,8 @@ type StaticDatasetQuery struct {
 // caller for making a request to obtain dimensions (Cantabular variables) by name
 // POST [cantabular-ext]/graphql
 type GetDimensionsByNameRequest struct {
-	Dataset   string   `json:"dataset"`
-	Variables []string `json:"variables"`
+	Dataset        string
+	DimensionNames []string
 }
 
 // GetDimensionsResponse holds the response body for
@@ -65,8 +65,8 @@ type GetGeographyDimensionsResponse struct {
 // caller for making a request to obtain dimension options
 // POST [cantabular-ext]/graphql
 type GetDimensionOptionsRequest struct {
-	Dataset   string   `json:"dataset"`
-	Variables []string `json:"variables"`
+	Dataset   string
+	Variables []string
 }
 
 // GetDimensionOptionsResponse holds the response body for

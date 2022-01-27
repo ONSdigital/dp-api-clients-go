@@ -211,7 +211,6 @@ func TestStream(t *testing.T) {
 }
 
 func TestStaticDatasetQueryHappy(t *testing.T) {
-
 	Convey("Given a correct response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
 
@@ -235,7 +234,7 @@ func TestStaticDatasetQueryHappy(t *testing.T) {
 			req := cantabular.StaticDatasetQueryRequest{}
 			_, err := cantabularClient.StaticDatasetQuery(testCtx, req)
 
-			Convey("No error should be returned", func() {
+			Convey("Then no error should be returned", func() {
 				So(err, ShouldBeNil)
 			})
 		})
@@ -299,294 +298,6 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 			Convey("An error should be returned with status code 400 Bad Request", func() {
 				So(err, ShouldNotBeNil)
 				So(dperrors.StatusCode(err), ShouldEqual, http.StatusBadRequest)
-			})
-		})
-	})
-}
-
-func TestGetDimensionsHappy(t *testing.T) {
-	Convey("Given a correct getDimensions response from the /graphql endpoint", t, func() {
-		testCtx := context.Background()
-
-		mockHttpClient := &dphttp.ClienterMock{
-			PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
-				return Response(
-					[]byte(mockRespBodyGetDimensions),
-					http.StatusOK,
-				), nil
-			},
-		}
-
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
-				Host:       "cantabular.host",
-				ExtApiHost: "cantabular.ext.host",
-			},
-			mockHttpClient,
-			nil,
-		)
-
-		Convey("When the GetDimensions method is called", func() {
-			resp, err := cantabularClient.GetDimensions(testCtx, "Teaching-Dataset")
-
-			Convey("No error should be returned", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("And the expected response is returned", func() {
-				So(*resp, ShouldResemble, expectedDimensions)
-			})
-		})
-	})
-}
-
-func TestGetDimensionsUnhappy(t *testing.T) {
-	Convey("Given a mocked cantabular client that returns a no-dataset graphql error", t, func() {
-		testCtx := context.Background()
-
-		mockHttpClient := &dphttp.ClienterMock{
-			PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
-				return Response(
-					[]byte(mockRespBodyNoDataset),
-					http.StatusOK,
-				), nil
-			},
-		}
-
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
-				Host:       "cantabular.host",
-				ExtApiHost: "cantabular.ext.host",
-			},
-			mockHttpClient,
-			nil,
-		)
-
-		Convey("Then the expected error is returned", func() {
-			resp, err := cantabularClient.GetDimensions(testCtx, "InexistentDataset")
-
-			So(err, ShouldResemble, dperrors.New(
-				errors.New("error(s) returned by graphQL query"),
-				http.StatusOK,
-				log.Data{
-					"errors": []gql.Error{
-						{
-							Message:   "404 Not Found: dataset not loaded in this server",
-							Path:      []string{"dataset"},
-							Locations: []gql.Location{{Line: 2, Column: 2}},
-						},
-					},
-				},
-			))
-			So(resp, ShouldBeNil)
-		})
-	})
-}
-
-func TestGetDimensionsByNameHappy(t *testing.T) {
-	Convey("Given a correct getDimensions response from the /graphql endpoint", t, func() {
-		testCtx := context.Background()
-
-		mockHttpClient := &dphttp.ClienterMock{
-			PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
-				return Response(
-					[]byte(mockRespBodyGetDimensionsByName),
-					http.StatusOK,
-				), nil
-			},
-		}
-
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
-				Host:       "cantabular.host",
-				ExtApiHost: "cantabular.ext.host",
-			},
-			mockHttpClient,
-			nil,
-		)
-
-		Convey("When the GetDimensions method is called", func() {
-			resp, err := cantabularClient.GetDimensionsByName(testCtx, cantabular.GetDimensionsByNameRequest{
-				Dataset:   "Teaching-Dataset",
-				Variables: []string{"Age", "Region"},
-			})
-
-			Convey("No error should be returned", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("And the expected response is returned", func() {
-				So(*resp, ShouldResemble, expectedDimensionsByName)
-			})
-		})
-	})
-}
-
-func TestGetGeographyDimensionsHappy(t *testing.T) {
-	Convey("Given a correct getGeographyDimensions response from the /graphql endpoint", t, func() {
-		testCtx := context.Background()
-
-		mockHttpClient := &dphttp.ClienterMock{
-			PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
-				return Response(
-					[]byte(mockRespBodyGetGeographyDimensions),
-					http.StatusOK,
-				), nil
-			},
-		}
-
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
-				Host:       "cantabular.host",
-				ExtApiHost: "cantabular.ext.host",
-			},
-			mockHttpClient,
-			nil,
-		)
-
-		Convey("When the GetDimensions method is called", func() {
-			resp, err := cantabularClient.GetGeographyDimensions(testCtx, "Teaching-Dataset")
-
-			Convey("No error should be returned", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("And the expected response is returned", func() {
-				So(*resp, ShouldResemble, expectedGeographyDimensions)
-			})
-		})
-	})
-}
-
-func TestGetDimensionOptionsHappy(t *testing.T) {
-	Convey("Given a correct getDimensionOptions response from the /graphql endpoint", t, func() {
-		testCtx := context.Background()
-
-		mockHttpClient := &dphttp.ClienterMock{
-			PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
-				return Response(
-					[]byte(mockRespBodyGetDimensionOptions),
-					http.StatusOK,
-				), nil
-			},
-		}
-
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
-				Host:       "cantabular.host",
-				ExtApiHost: "cantabular.ext.host",
-			},
-			mockHttpClient,
-			nil,
-		)
-
-		Convey("When the GetDimensionOptions method is called", func() {
-			req := cantabular.GetDimensionOptionsRequest{
-				Dataset:   "Teaching-Dataset",
-				Variables: []string{"Country", "Age", "Occupation"},
-			}
-			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
-
-			Convey("No error should be returned", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("And the expected response is returned", func() {
-				So(*resp, ShouldResemble, expectedDimensionOptions)
-			})
-		})
-	})
-}
-
-func TestGetDimensionOptionsUnhappy(t *testing.T) {
-	testCtx := context.Background()
-
-	Convey("Given a mocked cantabular client that returns a no-dataset graphql error", t, func() {
-		mockHttpClient := &dphttp.ClienterMock{
-			PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
-				return Response(
-					[]byte(mockRespBodyNoDataset),
-					http.StatusOK,
-				), nil
-			},
-		}
-
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
-				Host:       "cantabular.host",
-				ExtApiHost: "cantabular.ext.host",
-			},
-			mockHttpClient,
-			nil,
-		)
-
-		Convey("When the GetDimensionOptions method is called", func() {
-			req := cantabular.GetDimensionOptionsRequest{
-				Dataset:   "InexistentDataset",
-				Variables: []string{"Country", "Age", "Occupation"},
-			}
-			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
-
-			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, dperrors.New(
-					errors.New("error(s) returned by graphQL query"),
-					http.StatusOK,
-					log.Data{
-						"errors": []gql.Error{
-							{
-								Message:   "404 Not Found: dataset not loaded in this server",
-								Path:      []string{"dataset"},
-								Locations: []gql.Location{{Line: 2, Column: 2}},
-							},
-						},
-					},
-				))
-				So(resp, ShouldBeNil)
-			})
-		})
-	})
-
-	Convey("Given a mocked cantabular client that returns a no-variable graphql error", t, func() {
-		mockHttpClient := &dphttp.ClienterMock{
-			PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
-				return Response(
-					[]byte(mockRespBodyNoVariable),
-					http.StatusOK,
-				), nil
-			},
-		}
-
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
-				Host:       "cantabular.host",
-				ExtApiHost: "cantabular.ext.host",
-			},
-			mockHttpClient,
-			nil,
-		)
-
-		Convey("When the GetDimensionOptions method is called", func() {
-			req := cantabular.GetDimensionOptionsRequest{
-				Dataset:   "Teaching-Dataset",
-				Variables: []string{"Country", "Age", "inexistentVariable"},
-			}
-			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
-
-			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, dperrors.New(
-					errors.New("error(s) returned by graphQL query"),
-					http.StatusOK,
-					log.Data{
-						"errors": []gql.Error{
-							{
-								Message:   "400 Bad Request: variable at position 3 does not exist",
-								Path:      []string{"dataset", "table"},
-								Locations: []gql.Location{{Line: 4, Column: 3}},
-							},
-						},
-					},
-				))
-				So(resp, ShouldBeNil)
 			})
 		})
 	})
@@ -1154,6 +865,34 @@ var mockRespBodyNoDataset = `
 	]
 }`
 
+// expectedNoDatasetErr is the expected error returned by a client when a no-dataset response is received from cantabular
+var expectedNoDatasetErr = dperrors.New(
+	errors.New("error(s) returned by graphQL query"),
+	http.StatusOK,
+	log.Data{
+		"errors": []gql.Error{
+			{
+				Message:   "404 Not Found: dataset not loaded in this server",
+				Path:      []string{"dataset"},
+				Locations: []gql.Location{{Line: 2, Column: 2}},
+			},
+		},
+	},
+)
+
+// mockRespBodyNoDataset is an error response that is returned from a mocked client for testing
+// when an internal error (http 500 code) happens
+var mockRespInternalServerErr = `{"message": "internal server error"}`
+
+// expectedInternalServeError is the expected error returned by a client when an internal error (http 500) happens
+var expectedInternalServeError = dperrors.New(
+	errors.New("internal server error"),
+	http.StatusInternalServerError,
+	log.Data{
+		"url": "cantabular.ext.host/graphql",
+	},
+)
+
 // mockRespBodyNoVariable is an error response that is returned from a mocked client for testing
 // when a wrong Variable name is provided in the query
 var mockRespBodyNoVariable = `
@@ -1177,6 +916,20 @@ var mockRespBodyNoVariable = `
 		}
 	]
 }`
+
+var expectedNoVariableErr = dperrors.New(
+	errors.New("error(s) returned by graphQL query"),
+	http.StatusOK,
+	log.Data{
+		"errors": []gql.Error{
+			{
+				Message:   "400 Bad Request: variable at position 3 does not exist",
+				Path:      []string{"dataset", "table"},
+				Locations: []gql.Location{{Line: 4, Column: 3}},
+			},
+		},
+	},
+)
 
 // mockRespBodyNoTable is an error response that is returned from a mocked client for testing
 // when a wrong variable is provided in the query
