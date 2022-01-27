@@ -17,10 +17,11 @@ type Recipe struct {
 
 // CodeList holds one of the codelists corresponding to a recipe
 type CodeList struct {
-	ID          string `json:"id,omitempty"`
-	HRef        string `json:"href,omitempty"`
-	Name        string `json:"name,omitempty"`
-	IsHierarchy *bool  `json:"is_hierarchy,omitempty"`
+	ID                    string `json:"id,omitempty"`
+	HRef                  string `json:"href,omitempty"`
+	Name                  string `json:"name,omitempty"`
+	IsHierarchy           *bool  `json:"is_hierarchy,omitempty"`
+	IsCantabularGeography *bool  `json:"is_cantabular_geography,omitempty"`
 }
 
 // Instance holds one of the output_instances corresponding to a recipe
