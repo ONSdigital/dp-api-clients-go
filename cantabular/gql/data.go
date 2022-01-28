@@ -26,7 +26,7 @@ type Node struct {
 	Label      string      `json:"label"`
 	Categories Categories  `json:"categories"`
 	MapFrom    []Variables `json:"mapFrom"`
-	FilterOnly string      `json:"filterOnly"`
+	FilterOnly string      `json:"filterOnly,omitempty"`
 }
 
 type Categories struct {
