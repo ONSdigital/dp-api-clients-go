@@ -66,7 +66,7 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 
 // GetArea returns area information for a given area ID
 func (c *Client) GetArea(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, areaID, acceptLang string) (areaDetails AreaDetails, err error) {
-	uri := fmt.Sprintf("http://%s/v1/areas/%s", c.hcCli.URL, areaID)
+	uri := fmt.Sprintf("%s/v1/areas/%s", c.hcCli.URL, areaID)
 	clientlog.Do(ctx, "retrieving area", service, uri)
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "", acceptLang)
 	if err != nil {
@@ -105,7 +105,7 @@ func (c *Client) GetArea(ctx context.Context, userAuthToken, serviceAuthToken, c
 
 // GetRelations gets the child areas
 func (c *Client) GetRelations(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, areaID, acceptLang string) (relations []Relation, err error) {
-	uri := fmt.Sprintf("http://%s/v1/areas/%s/relations", c.hcCli.URL, areaID)
+	uri := fmt.Sprintf("%s/v1/areas/%s/relations", c.hcCli.URL, areaID)
 	clientlog.Do(ctx, "retrieving area relations", service, uri)
 	// Do request
 	res, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "", acceptLang)
