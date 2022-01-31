@@ -6,12 +6,12 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-type ListDatasetsListItem struct {
+type ListDatasetsItem struct {
 	Name graphql.String
 }
 
 type ListDatasetsQuery struct {
-	Datasets []ListDatasetsListItem
+	Datasets []ListDatasetsItem
 }
 
 func (c *Client) ListDatasets(ctx context.Context) ([]string, error) {

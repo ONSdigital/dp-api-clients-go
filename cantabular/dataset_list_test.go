@@ -10,7 +10,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestDatasetListHappy(t *testing.T) {
+func TestListDatasetsHappy(t *testing.T) {
 
 	Convey("Should request dataset names from cantabular", t, func() {
 
@@ -22,7 +22,7 @@ func TestDatasetListHappy(t *testing.T) {
 		mockGQLClient := &mock.GraphQLClientMock{
 			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
 				DatasetListQuery := query.(*cantabular.ListDatasetsQuery)
-				DatasetListQuery.Datasets = []cantabular.ListDatasetsListItem{
+				DatasetListQuery.Datasets = []cantabular.ListDatasetsItem{
 					{Name: "dataset 1"},
 					{Name: "dataset 2"},
 				}
@@ -41,7 +41,7 @@ func TestDatasetListHappy(t *testing.T) {
 	})
 }
 
-func TestDatasetListUnhappy(t *testing.T) {
+func TestListDatasetsUnhappy(t *testing.T) {
 
 	fakeConfig := cantabular.Config{
 		Host:       "cantabular.host",
