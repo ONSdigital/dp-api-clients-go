@@ -9,5 +9,12 @@ type AreaDetails struct {
 	WelshName     string                 `json:"name_welsh,omitempty"`
 	GeometricData map[string]interface{} `json:"geometry"`
 	Visible       bool                   `json:"visible,omitempty"`
-	AreaType      string                 `json:"area_type",omitempty"`
+	AreaType      string                 `json:"area_type,omitempty"`
+}
+
+// Relation represents a response relation model from area api
+type Relation struct {
+	AreaCode string `json:"area_code,omitempty"`
+	AreaName string `json:"area_name,omitempty"`
+	Href     string `json:"href,omitempty"`
 }
