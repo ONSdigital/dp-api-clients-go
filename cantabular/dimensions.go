@@ -3,7 +3,6 @@ package cantabular
 import (
 	"context"
 	"errors"
-	"net/http"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
@@ -25,7 +24,7 @@ func (c *Client) GetDimensions(ctx context.Context, dataset string) (*GetDimensi
 	if resp != nil && len(resp.Errors) != 0 {
 		return nil, dperrors.New(
 			errors.New("error(s) returned by graphQL query"),
-			http.StatusOK,
+			resp.Errors[0].StatusCode(),
 			log.Data{"errors": resp.Errors},
 		)
 	}
@@ -48,7 +47,7 @@ func (c *Client) GetGeographyDimensions(ctx context.Context, dataset string) (*G
 	if resp != nil && len(resp.Errors) != 0 {
 		return nil, dperrors.New(
 			errors.New("error(s) returned by graphQL query"),
-			http.StatusOK,
+			resp.Errors[0].StatusCode(),
 			log.Data{"errors": resp.Errors},
 		)
 	}
@@ -76,7 +75,7 @@ func (c *Client) GetDimensionsByName(ctx context.Context, req GetDimensionsByNam
 	if resp != nil && len(resp.Errors) != 0 {
 		return nil, dperrors.New(
 			errors.New("error(s) returned by graphQL query"),
-			http.StatusOK,
+			resp.Errors[0].StatusCode(),
 			log.Data{"errors": resp.Errors},
 		)
 	}
@@ -105,7 +104,7 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req GetDimensionOption
 	if resp != nil && len(resp.Errors) != 0 {
 		return nil, dperrors.New(
 			errors.New("error(s) returned by graphQL query"),
-			http.StatusOK,
+			resp.Errors[0].StatusCode(),
 			log.Data{"errors": resp.Errors},
 		)
 	}

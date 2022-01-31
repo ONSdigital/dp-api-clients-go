@@ -391,7 +391,7 @@ var mockRespBodyNoDataset = `
 // expectedNoDatasetErr is the expected error returned by a client when a no-dataset response is received from cantabular
 var expectedNoDatasetErr = dperrors.New(
 	errors.New("error(s) returned by graphQL query"),
-	http.StatusOK,
+	http.StatusNotFound,
 	log.Data{
 		"errors": []gql.Error{
 			{
@@ -442,7 +442,7 @@ var mockRespBodyNoVariable = `
 
 var expectedNoVariableErr = dperrors.New(
 	errors.New("error(s) returned by graphQL query"),
-	http.StatusOK,
+	http.StatusBadRequest,
 	log.Data{
 		"errors": []gql.Error{
 			{
