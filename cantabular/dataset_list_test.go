@@ -61,7 +61,7 @@ func TestListDatasetsUnhappy(t *testing.T) {
 		Convey("Population types should return an error", func() {
 			actualList, actualErr := cantabularClient.ListDatasets(context.Background())
 			SoMsg("error should be populated", actualErr, ShouldEqual, expectedError)
-			SoMsg("DatasetList returned should be nil", actualList, ShouldBeNil)
+			SoMsg("list returned should be nil", actualList, ShouldBeNil)
 		})
 	})
 }
