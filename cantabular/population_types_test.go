@@ -10,7 +10,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestPopulationTypesHappy(t *testing.T) {
+func TestBlobsHappy(t *testing.T) {
 
 	Convey("Population types should request dataset names from cantabular", t, func() {
 
@@ -21,8 +21,8 @@ func TestPopulationTypesHappy(t *testing.T) {
 
 		mockGQLClient := &mock.GraphQLClientMock{
 			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
-				PopulationTypesQuery := query.(*cantabular.PopulationTypeQuery)
-				PopulationTypesQuery.Datasets = []cantabular.PopulationTypeQueryDataset{
+				BlobsQuery := query.(*cantabular.BlobQuery)
+				BlobsQuery.Datasets = []cantabular.BlobQueryDataset{
 					{Name: "blob 1"},
 					{Name: "blob 2"},
 				}
@@ -31,17 +31,17 @@ func TestPopulationTypesHappy(t *testing.T) {
 		}
 
 		cantabularClient := cantabular.NewClient(fakeConfig, nil, mockGQLClient)
-		PopulationTypes, err := cantabularClient.GetPopulationTypes(context.Background())
+		Blobs, err := cantabularClient.GetBlobs(context.Background())
 
 		actualQueryCall := mockGQLClient.QueryCalls()[0]
 		SoMsg("context should be passed through", actualQueryCall.Ctx, ShouldEqual, context.Background())
 		SoMsg("no error should be returned", err, ShouldBeNil)
 		expectedNames := []string{"blob 1", "blob 2"}
-		SoMsg("returned list of names should match expected", PopulationTypes, ShouldResemble, expectedNames)
+		SoMsg("returned list of names should match expected", Blobs, ShouldResemble, expectedNames)
 	})
 }
 
-func TestPopulationTypesUnhappy(t *testing.T) {
+func TestBlobsUnhappy(t *testing.T) {
 
 	fakeConfig := cantabular.Config{
 		Host:       "cantabular.host",
@@ -59,9 +59,9 @@ func TestPopulationTypesUnhappy(t *testing.T) {
 		cantabularClient := cantabular.NewClient(fakeConfig, nil, mockGQLClient)
 
 		Convey("Population types should return an error", func() {
-			actualPopulationTypes, actualErr := cantabularClient.GetPopulationTypes(context.Background())
+			actualBlobs, actualErr := cantabularClient.GetBlobs(context.Background())
 			SoMsg("error should be populated", actualErr, ShouldEqual, expectedError)
-			SoMsg("PopulationTypes returned should be nil", actualPopulationTypes, ShouldBeNil)
+			SoMsg("Blobs returned should be nil", actualBlobs, ShouldBeNil)
 		})
 	})
 }
