@@ -10,9 +10,9 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestBlobsHappy(t *testing.T) {
+func TestDatasetListHappy(t *testing.T) {
 
-	Convey("Population types should request dataset names from cantabular", t, func() {
+	Convey("Should request dataset names from cantabular", t, func() {
 
 		fakeConfig := cantabular.Config{
 			Host:       "cantabular.host",
@@ -21,27 +21,27 @@ func TestBlobsHappy(t *testing.T) {
 
 		mockGQLClient := &mock.GraphQLClientMock{
 			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
-				BlobsQuery := query.(*cantabular.BlobQuery)
-				BlobsQuery.Datasets = []cantabular.BlobQueryDataset{
-					{Name: "blob 1"},
-					{Name: "blob 2"},
+				DatasetListQuery := query.(*cantabular.DatasetListQuery)
+				DatasetListQuery.Datasets = []cantabular.DatasetListItem{
+					{Name: "dataset 1"},
+					{Name: "dataset 2"},
 				}
 				return nil
 			},
 		}
 
 		cantabularClient := cantabular.NewClient(fakeConfig, nil, mockGQLClient)
-		Blobs, err := cantabularClient.GetBlobs(context.Background())
+		DatasetList, err := cantabularClient.ListDatasets(context.Background())
 
 		actualQueryCall := mockGQLClient.QueryCalls()[0]
 		SoMsg("context should be passed through", actualQueryCall.Ctx, ShouldEqual, context.Background())
 		SoMsg("no error should be returned", err, ShouldBeNil)
-		expectedNames := []string{"blob 1", "blob 2"}
-		SoMsg("returned list of names should match expected", Blobs, ShouldResemble, expectedNames)
+		expectedNames := []string{"dataset 1", "dataset 2"}
+		SoMsg("returned list of names should match expected", DatasetList, ShouldResemble, expectedNames)
 	})
 }
 
-func TestBlobsUnhappy(t *testing.T) {
+func TestDatasetListUnhappy(t *testing.T) {
 
 	fakeConfig := cantabular.Config{
 		Host:       "cantabular.host",
@@ -59,9 +59,9 @@ func TestBlobsUnhappy(t *testing.T) {
 		cantabularClient := cantabular.NewClient(fakeConfig, nil, mockGQLClient)
 
 		Convey("Population types should return an error", func() {
-			actualBlobs, actualErr := cantabularClient.GetBlobs(context.Background())
+			actualDatasetList, actualErr := cantabularClient.ListDatasets(context.Background())
 			SoMsg("error should be populated", actualErr, ShouldEqual, expectedError)
-			SoMsg("Blobs returned should be nil", actualBlobs, ShouldBeNil)
+			SoMsg("DatasetList returned should be nil", actualDatasetList, ShouldBeNil)
 		})
 	})
 }

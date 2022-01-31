@@ -6,16 +6,16 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-type BlobQueryDataset struct {
+type DatasetListItem struct {
 	Name graphql.String
 }
 
-type BlobQuery struct {
-	Datasets []BlobQueryDataset
+type DatasetListQuery struct {
+	Datasets []DatasetListItem
 }
 
-func (c *Client) GetBlobs(ctx context.Context) ([]string, error) {
-	var query BlobQuery
+func (c *Client) ListDatasets(ctx context.Context) ([]string, error) {
+	var query DatasetListQuery
 	if err := c.gqlClient.Query(ctx, &query, nil); err != nil {
 		return nil, err
 	}
