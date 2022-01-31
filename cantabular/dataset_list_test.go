@@ -10,9 +10,9 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestPopulationTypesHappy(t *testing.T) {
+func TestListDatasetsHappy(t *testing.T) {
 
-	Convey("Population types should request dataset names from cantabular", t, func() {
+	Convey("Should request dataset names from cantabular", t, func() {
 
 		fakeConfig := cantabular.Config{
 			Host:       "cantabular.host",
@@ -21,27 +21,27 @@ func TestPopulationTypesHappy(t *testing.T) {
 
 		mockGQLClient := &mock.GraphQLClientMock{
 			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
-				PopulationTypesQuery := query.(*cantabular.PopulationTypeQuery)
-				PopulationTypesQuery.Datasets = []cantabular.PopulationTypeQueryDataset{
-					{Name: "blob 1"},
-					{Name: "blob 2"},
+				list := query.(*cantabular.ListDatasetsQuery)
+				list.Datasets = []cantabular.ListDatasetsItem{
+					{Name: "dataset 1"},
+					{Name: "dataset 2"},
 				}
 				return nil
 			},
 		}
 
 		cantabularClient := cantabular.NewClient(fakeConfig, nil, mockGQLClient)
-		PopulationTypes, err := cantabularClient.GetPopulationTypes(context.Background())
+		list, err := cantabularClient.ListDatasets(context.Background())
 
 		actualQueryCall := mockGQLClient.QueryCalls()[0]
 		SoMsg("context should be passed through", actualQueryCall.Ctx, ShouldEqual, context.Background())
 		SoMsg("no error should be returned", err, ShouldBeNil)
-		expectedNames := []string{"blob 1", "blob 2"}
-		SoMsg("returned list of names should match expected", PopulationTypes, ShouldResemble, expectedNames)
+		expectedNames := []string{"dataset 1", "dataset 2"}
+		SoMsg("returned list of names should match expected", list, ShouldResemble, expectedNames)
 	})
 }
 
-func TestPopulationTypesUnhappy(t *testing.T) {
+func TestListDatasetsUnhappy(t *testing.T) {
 
 	fakeConfig := cantabular.Config{
 		Host:       "cantabular.host",
@@ -59,9 +59,9 @@ func TestPopulationTypesUnhappy(t *testing.T) {
 		cantabularClient := cantabular.NewClient(fakeConfig, nil, mockGQLClient)
 
 		Convey("Population types should return an error", func() {
-			actualPopulationTypes, actualErr := cantabularClient.GetPopulationTypes(context.Background())
+			actualList, actualErr := cantabularClient.ListDatasets(context.Background())
 			SoMsg("error should be populated", actualErr, ShouldEqual, expectedError)
-			SoMsg("PopulationTypes returned should be nil", actualPopulationTypes, ShouldBeNil)
+			SoMsg("list returned should be nil", actualList, ShouldBeNil)
 		})
 	})
 }

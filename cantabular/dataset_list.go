@@ -6,16 +6,16 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-type PopulationTypeQueryDataset struct {
+type ListDatasetsItem struct {
 	Name graphql.String
 }
 
-type PopulationTypeQuery struct {
-	Datasets []PopulationTypeQueryDataset
+type ListDatasetsQuery struct {
+	Datasets []ListDatasetsItem
 }
 
-func (c *Client) GetPopulationTypes(ctx context.Context) ([]string, error) {
-	var query PopulationTypeQuery
+func (c *Client) ListDatasets(ctx context.Context) ([]string, error) {
+	var query ListDatasetsQuery
 	if err := c.gqlClient.Query(ctx, &query, nil); err != nil {
 		return nil, err
 	}
