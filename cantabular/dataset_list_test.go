@@ -21,8 +21,8 @@ func TestDatasetListHappy(t *testing.T) {
 
 		mockGQLClient := &mock.GraphQLClientMock{
 			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
-				DatasetListQuery := query.(*cantabular.DatasetListQuery)
-				DatasetListQuery.Datasets = []cantabular.DatasetListItem{
+				DatasetListQuery := query.(*cantabular.ListDatasetsQuery)
+				DatasetListQuery.Datasets = []cantabular.ListDatasetsListItem{
 					{Name: "dataset 1"},
 					{Name: "dataset 2"},
 				}

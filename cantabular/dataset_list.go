@@ -6,16 +6,16 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
-type DatasetListItem struct {
+type ListDatasetsListItem struct {
 	Name graphql.String
 }
 
-type DatasetListQuery struct {
-	Datasets []DatasetListItem
+type ListDatasetsQuery struct {
+	Datasets []ListDatasetsListItem
 }
 
 func (c *Client) ListDatasets(ctx context.Context) ([]string, error) {
-	var query DatasetListQuery
+	var query ListDatasetsQuery
 	if err := c.gqlClient.Query(ctx, &query, nil); err != nil {
 		return nil, err
 	}
