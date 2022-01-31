@@ -31,13 +31,13 @@ func TestDatasetListHappy(t *testing.T) {
 		}
 
 		cantabularClient := cantabular.NewClient(fakeConfig, nil, mockGQLClient)
-		DatasetList, err := cantabularClient.ListDatasets(context.Background())
+		list, err := cantabularClient.ListDatasets(context.Background())
 
 		actualQueryCall := mockGQLClient.QueryCalls()[0]
 		SoMsg("context should be passed through", actualQueryCall.Ctx, ShouldEqual, context.Background())
 		SoMsg("no error should be returned", err, ShouldBeNil)
 		expectedNames := []string{"dataset 1", "dataset 2"}
-		SoMsg("returned list of names should match expected", DatasetList, ShouldResemble, expectedNames)
+		SoMsg("returned list of names should match expected", list, ShouldResemble, expectedNames)
 	})
 }
 
@@ -59,9 +59,9 @@ func TestDatasetListUnhappy(t *testing.T) {
 		cantabularClient := cantabular.NewClient(fakeConfig, nil, mockGQLClient)
 
 		Convey("Population types should return an error", func() {
-			actualDatasetList, actualErr := cantabularClient.ListDatasets(context.Background())
+			actualList, actualErr := cantabularClient.ListDatasets(context.Background())
 			SoMsg("error should be populated", actualErr, ShouldEqual, expectedError)
-			SoMsg("DatasetList returned should be nil", actualDatasetList, ShouldBeNil)
+			SoMsg("DatasetList returned should be nil", actualList, ShouldBeNil)
 		})
 	})
 }
