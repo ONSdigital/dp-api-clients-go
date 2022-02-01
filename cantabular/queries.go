@@ -70,7 +70,7 @@ query($dataset: String!) {
 	}
 }`
 
-// QueryDimensions is the graphQL query to obtain dimensions by name (subset of variables, without categories)
+// QueryDimensionsByName is the graphQL query to obtain dimensions by name (subset of variables, without categories)
 const QueryDimensionsByName = `
 query($dataset: String!, $variables: [String!]!) {
 	dataset(name: $dataset) {
@@ -156,10 +156,10 @@ func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, data Q
 	url := fmt.Sprintf("%s/graphql", c.extApiHost)
 
 	res, err := c.postQuery(ctx, graphQLQuery, data)
+	defer closeResponseBody(ctx, res)
 	if err != nil {
 		return err
 	}
-	defer closeResponseBody(ctx, res)
 
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {

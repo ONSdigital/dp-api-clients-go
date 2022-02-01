@@ -148,7 +148,7 @@ func TestStream(t *testing.T) {
 		Convey("And an http client that refuses to connect", func() {
 			mockHttpClient := &dphttp.ClienterMock{
 				PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
-					return nil, errors.New(`Post "cantabular.ext.host/graphql": dial tcp 127.0.0.1:8493: connect: connection refused`)
+					return nil, errors.New(`post "cantabular.ext.host/graphql": dial tcp 127.0.0.1:8493: connect: connection refused`)
 				},
 			}
 
@@ -167,7 +167,7 @@ func TestStream(t *testing.T) {
 					Variables: []string{"city", "siblings"},
 				}
 				_, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
-				So(err.Error(), ShouldResemble, `failed to make GraphQL query: failed to make request: Post "cantabular.ext.host/graphql": dial tcp 127.0.0.1:8493: connect: connection refused`)
+				So(err.Error(), ShouldResemble, `failed to make GraphQL query: failed to make request: post "cantabular.ext.host/graphql": dial tcp 127.0.0.1:8493: connect: connection refused`)
 				So(out, ShouldEqual, "")
 			})
 		})
