@@ -132,12 +132,13 @@ func (c *Client) checkHealth(ctx context.Context, state *healthcheck.CheckState,
 	code := 0
 
 	res, err := c.httpGet(ctx, reqURL)
+	defer closeResponseBody(ctx, res)
+
 	if err != nil {
 		log.Error(ctx, "failed to request service health", err, logData)
 	} else {
 		code = res.StatusCode
 	}
-	defer closeResponseBody(ctx, res)
 
 	switch code {
 	case 0: // When there is a problem with the client return error in message

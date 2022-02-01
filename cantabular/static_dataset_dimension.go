@@ -61,9 +61,11 @@ func (it *Iterator) Next() error {
 }
 
 // CategoryAtColumn returns the i-th coordinate of the current cell
-func (it *Iterator) CategoryAtColumn(i int) Category {
-	it.checkNotAtEnd()
-	return it.dims[i].Categories[it.dimIndices[i]]
+func (it *Iterator) CategoryAtColumn(i int) (Category, error) {
+	if err := it.checkNotAtEnd(); err != nil {
+		return Category{}, err
+	}
+	return it.dims[i].Categories[it.dimIndices[i]], nil
 }
 
 func (it *Iterator) checkNotAtEnd() error {

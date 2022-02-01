@@ -3,7 +3,6 @@ package cantabular
 import (
 	"context"
 	"errors"
-	"net/http"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
@@ -18,14 +17,18 @@ func (c *Client) GetDimensions(ctx context.Context, dataset string) (*GetDimensi
 		Errors []gql.Error           `json:"errors,omitempty"`
 	}{}
 
-	if err := c.queryUnmarshal(ctx, QueryDimensions, QueryData{Dataset: dataset}, resp); err != nil {
+	data := QueryData{
+		Dataset: dataset,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryDimensions, data, resp); err != nil {
 		return nil, err
 	}
 
 	if resp != nil && len(resp.Errors) != 0 {
 		return nil, dperrors.New(
 			errors.New("error(s) returned by graphQL query"),
-			http.StatusOK,
+			resp.Errors[0].StatusCode(),
 			log.Data{"errors": resp.Errors},
 		)
 	}
@@ -41,14 +44,18 @@ func (c *Client) GetGeographyDimensions(ctx context.Context, dataset string) (*G
 		Errors []gql.Error                    `json:"errors,omitempty"`
 	}{}
 
-	if err := c.queryUnmarshal(ctx, QueryGeographyDimensions, QueryData{Dataset: dataset}, resp); err != nil {
+	data := QueryData{
+		Dataset: dataset,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryGeographyDimensions, data, resp); err != nil {
 		return nil, err
 	}
 
 	if resp != nil && len(resp.Errors) != 0 {
 		return nil, dperrors.New(
 			errors.New("error(s) returned by graphQL query"),
-			http.StatusOK,
+			resp.Errors[0].StatusCode(),
 			log.Data{"errors": resp.Errors},
 		)
 	}
@@ -76,7 +83,7 @@ func (c *Client) GetDimensionsByName(ctx context.Context, req GetDimensionsByNam
 	if resp != nil && len(resp.Errors) != 0 {
 		return nil, dperrors.New(
 			errors.New("error(s) returned by graphQL query"),
-			http.StatusOK,
+			resp.Errors[0].StatusCode(),
 			log.Data{"errors": resp.Errors},
 		)
 	}
@@ -98,14 +105,14 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req GetDimensionOption
 		Variables: req.DimensionNames,
 	}
 
-	if err := c.queryUnmarshal(ctx, QueryDimensionOptions, QueryData(data), resp); err != nil {
+	if err := c.queryUnmarshal(ctx, QueryDimensionOptions, data, resp); err != nil {
 		return nil, err
 	}
 
 	if resp != nil && len(resp.Errors) != 0 {
 		return nil, dperrors.New(
 			errors.New("error(s) returned by graphQL query"),
-			http.StatusOK,
+			resp.Errors[0].StatusCode(),
 			log.Data{"errors": resp.Errors},
 		)
 	}

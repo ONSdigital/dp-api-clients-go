@@ -279,7 +279,10 @@ func decodeValues(ctx context.Context, dec jsonstream.Decoder, dims Dimensions, 
 		if err != nil {
 			return 0, fmt.Errorf("error decoding count: %w", err)
 		}
-		row := ti.createCSVRow(dims, count.String())
+		row, err := ti.createCSVRow(dims, count.String())
+		if err != nil {
+			return 0, fmt.Errorf("error parsing a csv row: %w", err)
+		}
 		if err = cw.Write(row); err != nil {
 			return 0, fmt.Errorf("error writing a csv row: %w", err)
 		}
@@ -324,12 +327,16 @@ func createCSVRow(dims []Dimension, index, count int) []string {
 
 // createCSVRow creates an array of strings corresponding to a csv row
 // for the provided dimensions and count, using the pointer receiver iterator to determine the column value
-func (it *Iterator) createCSVRow(dims []Dimension, count string) []string {
+func (it *Iterator) createCSVRow(dims []Dimension, count string) ([]string, error) {
 	row := make([]string, len(dims)+1)
 	for i := range dims {
-		row[i+1] = it.CategoryAtColumn(i).Label
+		category, err := it.CategoryAtColumn(i)
+		if err != nil {
+			return []string{}, fmt.Errorf("failed to find category at column %d, : %w", i, err)
+		}
+		row[i+1] = category.Label
 	}
 	row[0] = count
 
-	return row
+	return row, nil
 }

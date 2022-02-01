@@ -93,15 +93,19 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) (int32, error) {
 	res, err := c.postQuery(ctx, QueryStaticDataset, QueryData(req))
 	if err != nil {
+		closeResponseBody(ctx, res) // close response body, as it is not passed to the Stream func
 		return 0, err
 	}
 	var rowCount int32
 
+	// transform will be executed by Stream when processing the data into 'csv' format.
 	transform := func(ctx context.Context, body io.Reader, pipeWriter io.Writer) error {
 		if rowCount, err = GraphQLJSONToCSV(ctx, body, pipeWriter); err != nil {
 			return err
 		}
 		return nil
 	}
+
+	// Stream is responsible for closing the response body
 	return rowCount, stream.Stream(ctx, res.Body, transform, consume)
 }
