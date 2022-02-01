@@ -243,6 +243,50 @@ func TestClient_GetArea(t *testing.T) {
 	})
 }
 
+func TestClient_GetRelations(t *testing.T) {
+
+	relationsBody := `[
+			{
+				"area_code": "E12000001",
+				"area_name": "North East",
+				"href": "/v1/area/E12000001"
+			},
+			{
+				"area_code": "E12000002",
+				"area_name": "North West",
+				"href": "/v1/area/E12000002"
+			},
+			{
+				"area_code": "E12000003",
+				"area_name": "Yorkshire and The Humbe",
+				"href": "/v1/area/E12000003"
+			}
+		]`
+	acceptedLang := "en-GB,en-US;q=0.9,en;q=0.8"
+	Convey("When a bad request is returned", t, func() {
+		mockedApi := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: http.StatusBadRequest, Body: ""})
+		_, err := mockedApi.GetRelations(ctx, userAuthToken, serviceAuthToken, collectionID, "E92000001", acceptedLang)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When relations are returned", t, func() {
+		mockedApi := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: relationsBody})
+		relations, err := mockedApi.GetRelations(ctx, userAuthToken, serviceAuthToken, collectionID, "E92000001", acceptedLang)
+		So(err, ShouldBeNil)
+		So(relations, ShouldResemble, relations)
+	})
+	Convey("given a 200 status with valid empty body is returned", t, func() {
+		mockedApi := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: "[]"})
+		Convey("when GetRelations is called", func() {
+			instance, err := mockedApi.GetRelations(ctx, userAuthToken, serviceAuthToken, collectionID, "92000001", acceptedLang)
+			Convey("a positive response is returned with empty instance", func() {
+				So(err, ShouldBeNil)
+				So(instance, ShouldResemble, []Relation{})
+			})
+		})
+	})
+}
+
 func getMockAreaAPI(expectRequest http.Request, mockedHTTPResponse MockedHTTPResponse) *Client {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != expectRequest.Method {
