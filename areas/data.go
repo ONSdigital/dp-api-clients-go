@@ -18,3 +18,12 @@ type Relation struct {
 	AreaName string `json:"area_name,omitempty"`
 	Href     string `json:"href,omitempty"`
 }
+
+type Ancestor struct {
+	Name      string     `json:"name,omitempty"`
+	Level     string     `json:"level,omitempty"`
+	Code      string     `json:"code,omitempty"`
+	Ancestors []Ancestor `json:"ancestors"`
+	Siblings  []Ancestor `json:"siblings"`
+	Children  []Ancestor `json:"children"`
+}

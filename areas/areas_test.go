@@ -262,6 +262,7 @@ func TestClient_GetRelations(t *testing.T) {
 				"href": "/v1/area/E12000003"
 			}
 		]`
+	expected := []Relation{Relation{AreaCode: "E12000001", AreaName: "North East", Href: "/v1/area/E12000001"}, Relation{AreaCode: "E12000002", AreaName: "North West", Href: "/v1/area/E12000002"}, Relation{AreaCode: "E12000003", AreaName: "Yorkshire and The Humbe", Href: "/v1/area/E12000003"}}
 	acceptedLang := "en-GB,en-US;q=0.9,en;q=0.8"
 	Convey("When a bad request is returned", t, func() {
 		mockedApi := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: http.StatusBadRequest, Body: ""})
@@ -273,7 +274,7 @@ func TestClient_GetRelations(t *testing.T) {
 		mockedApi := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: relationsBody})
 		relations, err := mockedApi.GetRelations(ctx, userAuthToken, serviceAuthToken, collectionID, "E92000001", acceptedLang)
 		So(err, ShouldBeNil)
-		So(relations, ShouldResemble, relations)
+		So(relations, ShouldResemble, expected)
 	})
 	Convey("given a 200 status with valid empty body is returned", t, func() {
 		mockedApi := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: "[]"})
@@ -282,6 +283,48 @@ func TestClient_GetRelations(t *testing.T) {
 			Convey("a positive response is returned with empty instance", func() {
 				So(err, ShouldBeNil)
 				So(instance, ShouldResemble, []Relation{})
+			})
+		})
+	})
+}
+
+func TestClient_GetAncestors(t *testing.T) {
+	expectedDidsburyEast := []Ancestor{Ancestor{Name: "England", Level: "", Code: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "North West", Level: "", Code: "E12000002", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "Manchester", Level: "", Code: "E08000003", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "Didsbury East", Level: "", Code: "E05011362", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}
+	expectedManchester := []Ancestor{Ancestor{Name: "England", Level: "", Code: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "North West", Level: "", Code: "E12000002", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "Manchester", Level: "", Code: "E08000003", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}
+	expectedNorthWest := []Ancestor{Ancestor{Name: "England", Level: "", Code: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "North West", Level: "", Code: "E12000002", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}
+	expectedEngland := []Ancestor{Ancestor{Name: "England", Level: "", Code: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}
+
+	Convey("Didsbury East code returns correct response body", t, func() {
+		mockedApi := getMockAreaAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: nil}) // TODO unstub
+		instance, err := mockedApi.GetAncestors("E05011362")
+		So(err, ShouldBeNil)
+		So(instance, ShouldResemble, expectedDidsburyEast)
+	})
+	Convey("Manchester code returns correct response body", t, func() {
+		mockedApi := getMockAreaAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: nil}) // TODO unstub
+		instance, err := mockedApi.GetAncestors("E08000003")
+		So(err, ShouldBeNil)
+		So(instance, ShouldResemble, expectedManchester)
+	})
+	Convey("NorthWest code returns correct response body", t, func() {
+		mockedApi := getMockAreaAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: nil}) // TODO unstub
+		instance, err := mockedApi.GetAncestors("E12000002")
+		So(err, ShouldBeNil)
+		So(instance, ShouldResemble, expectedNorthWest)
+	})
+	Convey("England code returns correct response body", t, func() {
+		mockedApi := getMockAreaAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: nil}) // TODO unstub
+		instance, err := mockedApi.GetAncestors("E92000001")
+		So(err, ShouldBeNil)
+		So(instance, ShouldResemble, expectedEngland)
+	})
+	Convey("given a 200 status with valid empty body is returned", t, func() {
+		mockedApi := getMockAreaAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: "{}"})
+		Convey("when GetRelations is called", func() {
+			instance, err := mockedApi.GetAncestors("<RANDOM>")
+			Convey("a positive response is returned with empty instance", func() {
+				So(err, ShouldBeNil)
+				So(instance, ShouldResemble, []Ancestor{}) // TODO this will fail when un stubbed - should be []Ancestor{}
 			})
 		})
 	})
