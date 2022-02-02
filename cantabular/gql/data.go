@@ -14,6 +14,11 @@ type RuleBase struct {
 }
 
 type Variables struct {
+	Edges  []Edge `json:"edges"`
+	Search Search `json:"search,omitempty"`
+}
+
+type Search struct {
 	Edges []Edge `json:"edges"`
 }
 

@@ -91,7 +91,12 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 // The number of CSV rows, including the header, is returned along with any error during the process.
 // Use this method if large query responses are expected.
 func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) (int32, error) {
-	res, err := c.postQuery(ctx, QueryStaticDataset, QueryData(req))
+	data := QueryData{
+		Dataset:   req.Dataset,
+		Variables: req.Variables,
+	}
+
+	res, err := c.postQuery(ctx, QueryStaticDataset, data)
 	if err != nil {
 		closeResponseBody(ctx, res) // close response body, as it is not passed to the Stream func
 		return 0, err

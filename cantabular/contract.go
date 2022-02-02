@@ -47,6 +47,14 @@ type GetDimensionsByNameRequest struct {
 	DimensionNames []string
 }
 
+// SearchDimensionsRequest holds the request variables required from the
+// caller for making a request to search dimensions (Cantabular variables) by text
+// POST [cantabular-ext]/graphql
+type SearchDimensionsRequest struct {
+	Dataset string
+	Text    string
+}
+
 // GetDimensionsResponse holds the response body for
 // POST [cantabular-ext]/graphql
 // with a query to obtain variables

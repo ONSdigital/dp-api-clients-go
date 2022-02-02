@@ -127,9 +127,36 @@ query($dataset: String!) {
 	}
 }`
 
-// QueryData holds the required variables to encode a graphql query
+const QueryDimensionsSearch = `
+query($dataset: String!, $text: String!) {
+	dataset(name: $dataset) {
+		variables {
+			search(text: $text) {
+				edges {
+					node {
+						name
+						label
+						mapFrom {
+							totalCount
+							edges {
+								node {
+									name
+									label
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+// QueryData holds all the possible required variables to encode any of the graphql queries defined in this file.
 type QueryData struct {
 	Dataset   string
+	Text      string
 	Variables []string
 }
 
@@ -143,6 +170,7 @@ func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 		"variables": map[string]interface{}{
 			"dataset":   data.Dataset,
 			"variables": data.Variables,
+			"text":      data.Text,
 		},
 	}); err != nil {
 		return b, fmt.Errorf("failed to encode GraphQL query: %w", err)
