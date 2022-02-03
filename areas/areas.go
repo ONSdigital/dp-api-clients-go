@@ -112,6 +112,7 @@ func (c *Client) GetRelations(ctx context.Context, userAuthToken, serviceAuthTok
 	if err != nil {
 		return
 	}
+
 	defer closeResponseBody(ctx, res)
 
 	if res.StatusCode != http.StatusOK {
@@ -124,6 +125,15 @@ func (c *Client) GetRelations(ctx context.Context, userAuthToken, serviceAuthTok
 		return
 	}
 	err = json.Unmarshal(b, &relations)
+	return
+}
+
+// GetAncestors gets ancestors data from areas api
+func (c *Client) GetAncestors(code string) (ancestors []Ancestor, err error) {
+	err = json.Unmarshal([]byte(StubbedAncestorAPIResponse(code)), &ancestors)
+	if err != nil {
+		return
+	}
 	return
 }
 
