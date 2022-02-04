@@ -2,11 +2,13 @@ package filterflex
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	"github.com/ONSdigital/log.go/v2/log"
+
+	"github.com/pkg/errors"
 )
 
 const service = "cantabular-filter-flex-api"
@@ -48,7 +50,13 @@ func (c *Client) ForwardRequest(req *http.Request) (*http.Response, error) {
 
 	proxyReq, err := http.NewRequest(req.Method, uri, req.Body)
 	if err != nil{
-		return nil, fmt.Errorf("failed to create proxy request: %w", err)
+		return nil, &Error{
+			err:     errors.Wrap(err, "failed to create proxy request"),
+			logData: log.Data{
+				"target_uri":     uri,
+				"request_method": req.Method,
+			},
+		}
 	}
 
 	proxyReq.Header = req.Header
