@@ -91,6 +91,34 @@ func (c *Client) GetDimensionsByName(ctx context.Context, req GetDimensionsByNam
 	return &resp.Data, nil
 }
 
+// SearchDimensionsRequest performs a graphQL query to obtain the dimensions that match the provided text in the provided cantabular dataset.
+// The whole response is loaded to memory.
+func (c *Client) SearchDimensions(ctx context.Context, req SearchDimensionsRequest) (*GetDimensionsResponse, error) {
+	resp := &struct {
+		Data   GetDimensionsResponse `json:"data"`
+		Errors []gql.Error           `json:"errors,omitempty"`
+	}{}
+
+	data := QueryData{
+		Dataset: req.Dataset,
+		Text:    req.Text,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryDimensionsSearch, data, resp); err != nil {
+		return nil, err
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			resp.Errors[0].StatusCode(),
+			log.Data{"errors": resp.Errors},
+		)
+	}
+
+	return &resp.Data, nil
+}
+
 // GetDimensionOptions performs a graphQL query to obtain the requested dimension options.
 // It returns a Table with a list of Cantabular dimensions, where 'Variable' is the dimension and 'Categories' are the options
 // The whole response is loaded to memory.

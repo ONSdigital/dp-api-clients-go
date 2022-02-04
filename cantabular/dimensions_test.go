@@ -246,6 +246,86 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 	})
 }
 
+func TestSearchDimensionsHappy(t *testing.T) {
+	Convey("Given a correct searchDimensions response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodySearchDimensions, http.StatusOK)
+
+		Convey("When SearchDimensions is called", func() {
+			resp, err := cantabularClient.SearchDimensions(testCtx, cantabular.SearchDimensionsRequest{
+				Dataset: "Teaching-Dataset",
+				Text:    "country",
+			})
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryDimensionsSearch,
+					cantabular.QueryData{
+						Dataset: "Teaching-Dataset",
+						Text:    "country",
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedSearchDimensionsResponse)
+			})
+		})
+	})
+}
+
+func TestSearchDimensionsUnhappy(t *testing.T) {
+	testCtx := context.Background()
+
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When the SearchDimensions method is called", func() {
+			req := cantabular.SearchDimensionsRequest{
+				Dataset: "InexistentDataset",
+				Text:    "country",
+			}
+			resp, err := cantabularClient.SearchDimensions(testCtx, req)
+
+			Convey("Then the expected error is returned", func() {
+				So(err, ShouldResemble, expectedNoDatasetErr)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When SearchDimensions is called", func() {
+			req := cantabular.SearchDimensionsRequest{
+				Dataset: "Teaching-Dataset",
+				Text:    "country",
+			}
+			resp, err := cantabularClient.SearchDimensions(testCtx, req)
+
+			Convey("Then the expected error is returned", func() {
+				So(err, ShouldResemble, expectedInternalServeError)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestGetDimensionOptionsHappy(t *testing.T) {
 	Convey("Given a correct getDimensionOptions response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
@@ -670,6 +750,84 @@ var expectedDimensionsByName = cantabular.GetDimensionsResponse{
 						Label:      "Region",
 						Categories: gql.Categories{TotalCount: 10},
 						MapFrom:    []gql.Variables{},
+					},
+				},
+			},
+		},
+	},
+}
+
+// mockRespBodySearchDimensions is a successful 'search dimensions' query respose that is returned from a mocked client for testing
+var mockRespBodySearchDimensions = `{
+	"data": {
+		"dataset": {
+			"variables": {
+				"search": {
+					"edges": [
+						{
+							"node": {
+								"label": "Country",
+								"mapFrom": [
+									{
+										"edges": [
+											{
+												"node": {
+													"label": "Region",
+													"name": "Region"
+												}
+											}
+										],
+										"totalCount": 1
+									}
+								],
+								"name": "Country"
+							}
+						},
+						{
+							"node": {
+								"label": "Country of Birth",
+								"mapFrom": [],
+								"name": "Country of Birth"
+							}
+						}
+					]
+				}
+			}
+		}
+	}
+}
+`
+
+// expectedSearchDimensionsResponse is the expected response struct generated from a successful 'search dimensions' query for testing
+var expectedSearchDimensionsResponse = cantabular.GetDimensionsResponse{
+	Dataset: gql.DatasetVariables{
+		Variables: gql.Variables{
+			Search: gql.Search{
+				Edges: []gql.Edge{
+					{
+						Node: gql.Node{
+							Name:  "Country",
+							Label: "Country",
+							MapFrom: []gql.Variables{
+								{
+									Edges: []gql.Edge{
+										{
+											Node: gql.Node{
+												Name:  "Region",
+												Label: "Region",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Node: gql.Node{
+							Name:    "Country of Birth",
+							Label:   "Country of Birth",
+							MapFrom: []gql.Variables{},
+						},
 					},
 				},
 			},
