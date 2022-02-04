@@ -43,8 +43,9 @@ func (c *Client) Checker(ctx context.Context, check *healthcheck.CheckState) err
 
 // ForwardRequest is used for forwarding a request from another service. Initially
 // implemented for fowarding requests for Cantabular based datasets from dp-filter-api.
-// The provided request is expected have any required headers as the orignal request
-// will have been made using the relevant api-client.
+// The provided request is expected have any required headers as the original request
+// will have been made using the relevant api-client. Note that the caller is responsible
+// for closing the response body as with making a regular http request.
 func (c *Client) ForwardRequest(req *http.Request) (*http.Response, error) {
 	uri := c.cfg.HostURL + req.URL.Path
 
