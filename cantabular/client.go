@@ -190,3 +190,14 @@ func (c *Client) errorResponse(url string, res *http.Response) error {
 		},
 	)
 }
+
+// StatusCode provides a callback function whereby users can check a returned
+// error for an embedded HTTP status code
+func (c *Client) StatusCode(err error) int {
+	var cerr coder
+	if errors.As(err, &cerr) {
+		return cerr.Code()
+	}
+
+	return 0
+}

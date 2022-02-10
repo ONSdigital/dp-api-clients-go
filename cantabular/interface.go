@@ -18,3 +18,7 @@ type httpClient interface {
 type GraphQLClient interface {
 	Query(ctx context.Context, query interface{}, vars map[string]interface{}) error
 }
+
+type coder interface{
+	Code() int
+}

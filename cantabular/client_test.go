@@ -13,6 +13,26 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+type testError struct{
+	err        error
+	statusCode int
+}
+
+func (e *testError) Error() string {
+	if e. err == nil{
+		return "nil"
+	}
+	return e.err.Error()
+}
+
+func (e *testError) Unwrap() error {
+	return e.err
+}
+
+func (e *testError) Code() int {
+	return e.statusCode
+}
+
 func TestChecker(t *testing.T) {
 	testCtx := context.Background()
 
@@ -172,6 +192,27 @@ func TestChecker(t *testing.T) {
 				So(*check.LastFailure(), ShouldHappenBetween, beforeCall, time.Now().UTC())
 				So(err, ShouldBeNil)
 			})
+		})
+	})
+}
+
+func TestStatusCode(t *testing.T) {
+	client := cantabular.NewClient(
+		cantabular.Config{},
+		nil,
+		nil,
+	)
+
+	Convey("Given an error with embedded status code", t, func() {
+		err := &testError{
+			statusCode: http.StatusTeapot,
+		}
+
+		Convey("When StatusCode(err) is called", func() {
+			status := client.StatusCode(err)
+			expected := http.StatusTeapot
+
+			So(status, ShouldEqual, expected)
 		})
 	})
 }
