@@ -13,13 +13,13 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-type testError struct{
+type testError struct {
 	err        error
 	statusCode int
 }
 
 func (e *testError) Error() string {
-	if e. err == nil{
+	if e.err == nil {
 		return "nil"
 	}
 	return e.err.Error()

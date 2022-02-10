@@ -78,12 +78,3 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 
 	return &resp, nil
 }
-
-// closeResponseBody closes the response body and logs an error if unsuccessful
-func closeResponseBody(ctx context.Context, resp *http.Response) {
-	if resp != nil && resp.Body != nil {
-		if err := resp.Body.Close(); err != nil {
-			log.Error(ctx, "error closing http response body", err)
-		}
-	}
-}
