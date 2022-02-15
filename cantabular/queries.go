@@ -158,6 +158,14 @@ type QueryData struct {
 	Dataset   string
 	Text      string
 	Variables []string
+	Filters   []Filter
+}
+
+// Filter holds the fields for the Cantabular GraphQL 'Filter' object used for specifying categories
+// returned in tables
+type Filter struct{
+	Codes    []string `json:"codes"`
+	Variable string   `json:"variable"`
 }
 
 // Encode the provided graphQL query with the data in QueryData
@@ -165,13 +173,17 @@ type QueryData struct {
 func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
+	vars  := map[string]interface{}{
+		"dataset":   data.Dataset,
+		"variables": data.Variables,
+		"text":      data.Text,
+	}
+	if len(data.Filters) > 0{
+		vars["filters"] = data.Filters
+	}
 	if err := enc.Encode(map[string]interface{}{
-		"query": query,
-		"variables": map[string]interface{}{
-			"dataset":   data.Dataset,
-			"variables": data.Variables,
-			"text":      data.Text,
-		},
+		"query":     query,
+		"variables": vars,
 	}); err != nil {
 		return b, fmt.Errorf("failed to encode GraphQL query: %w", err)
 	}

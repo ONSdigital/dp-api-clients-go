@@ -131,6 +131,7 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req GetDimensionOption
 	data := QueryData{
 		Dataset:   req.Dataset,
 		Variables: req.DimensionNames,
+		Filters:   req.Filters,
 	}
 
 	if err := c.queryUnmarshal(ctx, QueryDimensionOptions, data, resp); err != nil {

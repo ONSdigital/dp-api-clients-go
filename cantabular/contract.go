@@ -77,6 +77,7 @@ type GetGeographyDimensionsResponse struct {
 type GetDimensionOptionsRequest struct {
 	Dataset        string
 	DimensionNames []string
+	Filters        []Filter
 }
 
 // GetDimensionOptionsResponse holds the response body for
