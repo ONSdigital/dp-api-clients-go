@@ -335,6 +335,37 @@ func TestGetDimensionOptionsHappy(t *testing.T) {
 			req := cantabular.GetDimensionOptionsRequest{
 				Dataset:        "Teaching-Dataset",
 				DimensionNames: []string{"Country", "Age", "Occupation"},
+				Filters:        []cantabular.Filter{{Variable:"Country", Codes: []string{"E", "W"}}},
+			}
+			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryDimensionOptions,
+					cantabular.QueryData{
+						Dataset:   "Teaching-Dataset",
+						Variables: []string{"Country", "Age", "Occupation"},
+						Filters:   []cantabular.Filter{{Variable:"Country", Codes: []string{"E", "W"}}},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedDimensionOptions)
+			})
+		})
+
+		Convey("When GetDimensionOptions is called without filters", func() {
+			req := cantabular.GetDimensionOptionsRequest{
+				Dataset:        "Teaching-Dataset",
+				DimensionNames: []string{"Country", "Age", "Occupation"},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
