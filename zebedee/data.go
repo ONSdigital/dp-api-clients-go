@@ -28,6 +28,12 @@ type PageTitle struct {
 	URI     string `json:"uri"`
 }
 
+// PageDescription represents the content returned by zebedee when requesting a page description
+type PageDescription struct {
+	URI         string      `json:"uri"`
+	Description Description `json:"description"`
+}
+
 // SupplementaryFile represents a SupplementaryFile within a dataset
 type SupplementaryFile struct {
 	Title string `json:"title"`
@@ -74,21 +80,26 @@ type DatasetLandingPage struct {
 
 // Description represents a page description
 type Description struct {
-	Title             string   `json:"title"`
-	Edition           string   `json:"edition"`
-	Summary           string   `json:"summary"`
-	Keywords          []string `json:"keywords"`
-	MetaDescription   string   `json:"metaDescription"`
-	NationalStatistic bool     `json:"nationalStatistic"`
-	LatestRelease     bool     `json:"latestRelease"`
-	Contact           Contact  `json:"contact"`
-	ReleaseDate       string   `json:"releaseDate"`
-	NextRelease       string   `json:"nextRelease"`
-	DatasetID         string   `json:"datasetId"`
-	Unit              string   `json:"unit"`
-	PreUnit           string   `json:"preUnit"`
-	Source            string   `json:"source"`
-	VersionLabel      string   `json:"versionLabel"`
+	Title              string   `json:"title"`
+	Edition            string   `json:"edition"`
+	Summary            string   `json:"summary"`
+	Keywords           []string `json:"keywords"`
+	MetaDescription    string   `json:"metaDescription"`
+	NationalStatistic  bool     `json:"nationalStatistic"`
+	LatestRelease      bool     `json:"latestRelease"`
+	Contact            Contact  `json:"contact"`
+	ReleaseDate        string   `json:"releaseDate"`
+	NextRelease        string   `json:"nextRelease"`
+	DatasetID          string   `json:"datasetId"`
+	Unit               string   `json:"unit"`
+	PreUnit            string   `json:"preUnit"`
+	Source             string   `json:"source"`
+	VersionLabel       string   `json:"versionLabel"`
+	Finalised          bool     `json:"finalised,omitempty"`
+	Cancelled          bool     `json:"cancelled,omitempty"`
+	CancellationNotice []string `json:"cancellationNotice,omitempty"`
+	Published          bool     `json:"published,omitempty"`
+	ProvisionalDate    string   `json:"provisionalDate,omitempty"`
 }
 
 // Contact represents a contact within dataset landing page
@@ -125,8 +136,9 @@ type Related = Link
 
 // Link represents any link on website
 type Link struct {
-	Title string `json:"title"`
-	URI   string `json:"uri"`
+	Title   string `json:"title"`
+	Summary string `json:"summary,omitempty"`
+	URI     string `json:"uri"`
 }
 
 // TimeseriesMainFigure represents timeseries data for main figure on the homepage
@@ -234,6 +246,23 @@ type Bulletin struct {
 	Versions         []Version   `json:"versions"`
 	Alerts           []Alert     `json:"alerts"`
 	LatestReleaseURI string      `json:"latestReleaseUri"`
+}
+
+type Release struct {
+	Markdown                  []string            `json:"markdown"`
+	RelatedDocuments          []Link              `json:"relatedDocuments"`
+	RelatedDatasets           []Link              `json:"relatedDatasets"`
+	RelatedMethodology        []Link              `json:"relatedMethodology"`
+	RelatedMethodologyArticle []Link              `json:"relatedMethodologyArticle"`
+	Links                     []Link              `json:"links"`
+	DateChanges               []ReleaseDateChange `json:"dateChanges"`
+	URI                       string              `json:"uri"`
+	Description               Description         `json:"description"`
+}
+
+type ReleaseDateChange struct {
+	Date         string `json:"previousDate"`
+	ChangeNotice string `json:"changeNotice"`
 }
 
 // PublishedIndexRequestParams represents request parameters for making paged PublishedIndex requests

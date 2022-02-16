@@ -302,6 +302,22 @@ func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, collectionID
 	return pt, nil
 }
 
+// GetPageDescription retrieves a page description from zebedee
+func (c *Client) GetPageDescription(ctx context.Context, userAccessToken, collectionID, lang, uri string) (PageDescription, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri+"&description")
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
+	if err != nil {
+		return PageDescription{}, err
+	}
+
+	var desc PageDescription
+	if err = json.Unmarshal(b, &desc); err != nil {
+		return desc, err
+	}
+
+	return desc, nil
+}
+
 func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, collectionID, lang, uri string) (TimeseriesMainFigure, error) {
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
@@ -423,6 +439,55 @@ func (c *Client) GetBulletin(ctx context.Context, userAccessToken, collectionID,
 	wg.Wait()
 
 	return bulletin, nil
+}
+
+// GetRelease retrieves a release from zebedee
+func (c *Client) GetRelease(ctx context.Context, userAccessToken, collectionID, lang, uri string) (Release, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
+	if err != nil {
+		return Release{}, err
+	}
+
+	var release Release
+	if err = json.Unmarshal(b, &release); err != nil {
+		return release, err
+	}
+
+	related := [][]Link{
+		release.RelatedDocuments,
+		release.RelatedDatasets,
+		release.RelatedMethodology,
+		release.RelatedMethodologyArticle,
+		release.Links,
+	}
+
+	// Concurrently resolve any URIs where we need more data from another page
+	var wg sync.WaitGroup
+	// We use this buffered channel to limit the number of concurrent calls we make to zebedee
+	sem := make(chan int, 10)
+
+	for _, element := range related {
+		for i, e := range element {
+			sem <- 1
+			wg.Add(1)
+			go func(i int, e Link, element []Link) {
+				defer func() {
+					<-sem
+					wg.Done()
+				}()
+				t, _ := c.GetPageDescription(ctx, userAccessToken, collectionID, lang, e.URI)
+				element[i].Title = t.Description.Title
+				if t.Description.Edition != "" {
+					element[i].Title += fmt.Sprintf(": %s", t.Description.Edition)
+				}
+				element[i].Summary = t.Description.Summary
+			}(i, e, element)
+		}
+	}
+	wg.Wait()
+
+	return release, nil
 }
 
 // GetResourceBody returns body of a resource e.g. JSON definition of a table
