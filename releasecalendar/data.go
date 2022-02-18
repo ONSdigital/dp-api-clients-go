@@ -2,21 +2,21 @@ package releasecalendar
 
 // Release represents a release
 type Release struct {
-	DateChanges               []ReleaseDateChange `json:"dateChanges"`
+	DateChanges               []ReleaseDateChange `json:"date_changes"`
 	Description               ReleaseDescription  `json:"description"`
 	Links                     []Link              `json:"links"`
 	Markdown                  []string            `json:"markdown"`
-	RelatedDatasets           []Link              `json:"relatedDatasets"`
-	RelatedDocuments          []Link              `json:"relatedDocuments"`
-	RelatedMethodology        []Link              `json:"relatedMethodology"`
-	RelatedMethodologyArticle []Link              `json:"relatedMethodologyArticle"`
+	RelatedDatasets           []Link              `json:"related_datasets"`
+	RelatedDocuments          []Link              `json:"related_documents"`
+	RelatedMethodology        []Link              `json:"related_methodology"`
+	RelatedMethodologyArticle []Link              `json:"related_methodology_article"`
 	URI                       string              `json:"uri"`
 }
 
 // ReleaseDateChange represent a date change of a release
 type ReleaseDateChange struct {
-	ChangeNotice string `json:"changeNotice"`
-	Date         string `json:"previousDate"`
+	ChangeNotice string `json:"change_notice"`
+	Date         string `json:"previous_date"`
 }
 
 // Link represents a link to a related resource
@@ -28,15 +28,15 @@ type Link struct {
 
 // ReleaseDescription represents the description of a release
 type ReleaseDescription struct {
-	CancellationNotice []string `json:"cancellationNotice"`
+	CancellationNotice []string `json:"cancellation_notice"`
 	Cancelled          bool     `json:"cancelled"`
 	Contact            Contact  `json:"contact"`
 	Finalised          bool     `json:"finalised"`
-	NationalStatistic  bool     `json:"nationalStatistic"`
-	NextRelease        string   `json:"nextRelease"`
-	ProvisionalDate    string   `json:"provisionalDate"`
+	NationalStatistic  bool     `json:"national_statistic"`
+	NextRelease        string   `json:"next_release"`
+	ProvisionalDate    string   `json:"provisional_date"`
 	Published          bool     `json:"published"`
-	ReleaseDate        string   `json:"releaseDate"`
+	ReleaseDate        string   `json:"release_date"`
 	Summary            string   `json:"summary"`
 	Title              string   `json:"title"`
 }
