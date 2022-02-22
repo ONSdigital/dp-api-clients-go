@@ -17,6 +17,7 @@ Common client code - in go - for ONS APIs:
 * importapi
 * renderer
 * search
+* interactives
 
 
 ## Usage
