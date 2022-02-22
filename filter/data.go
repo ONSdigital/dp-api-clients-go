@@ -59,6 +59,7 @@ type Model struct {
 	InstanceID  string              `json:"instance_id"`
 	Links       Links               `json:"links"`
 	DatasetID   string              `json:"dataset_id"`
+	Dataset     Dataset             `json:"dataset,omitempty"`
 	Edition     string              `json:"edition"`
 	Version     string              `json:"version"`
 	State       string              `json:"state"`

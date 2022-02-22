@@ -904,6 +904,7 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 		FilterID:    "",
 		InstanceID:  "",
 		Links:       Links{},
+		Dataset:     Dataset{},
 		DatasetID:   "",
 		Edition:     "",
 		Version:     "",
