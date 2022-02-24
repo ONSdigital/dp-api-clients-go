@@ -55,7 +55,7 @@ func (c *Client) Checker(ctx context.Context, check *healthcheck.CheckState) err
 
 // GetLegacyRelease returns a legacy release
 func (c *Client) GetLegacyRelease(ctx context.Context, userAccessToken, collectionID, lang, uri string) (*Release, error) {
-	url := fmt.Sprintf("%s/releasecalendar/legacy?url=%s&lang=%s", c.hcCli.URL, uri, lang)
+	url := fmt.Sprintf("%s/releases/legacy?url=%s&lang=%s", c.hcCli.URL, uri, lang)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

@@ -47,7 +47,7 @@ func TestGetLegacyRelease(t *testing.T) {
 	collectionId := "collection"
 	lang := "en"
 	url := "/releases/gdpukregionsandcountriesapriltojune2021"
-	expectedReleaseCalendarApiUrl := fmt.Sprintf("%s/releasecalendar/legacy?url=%s&lang=%s", testHost, url, lang)
+	expectedReleaseCalendarApiUrl := fmt.Sprintf("%s/releases/legacy?url=%s&lang=%s", testHost, url, lang)
 	expectedRelease := Release{
 		URI:      url,
 		Markdown: []string{"markdown1", "markdown 2"},
