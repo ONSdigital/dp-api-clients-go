@@ -86,3 +86,15 @@ type GetDimensionOptionsRequest struct {
 type GetDimensionOptionsResponse struct {
 	Dataset StaticDatasetDimensionOptions `json:"dataset"`
 }
+
+type GetAreasRequest struct {
+	Dataset  string `schema:"dataset" validate:"required"`
+	AreaType string `schema:"area-type"`
+}
+
+// GetAreasResponse holds the response body for
+// POST [cantabular-ext]/graphql
+// with a query to obtain static dataset variables and categories, without values.
+type GetAreasResponse struct {
+	Dataset gql.DatasetRuleBase `json:"dataset"`
+}
