@@ -44,7 +44,7 @@ type CreateBlueprint struct {
 	Dataset        Dataset          `json:"dataset"`
 	Dimensions     []ModelDimension `json:"dimensions"`
 	FilterID       string           `json:"filter_id"`
-	PopulationType string           `json:"population_type"`
+	PopulationType string           `json:"population_type,omitempty"`
 }
 
 // Dataset represents the dataset fields required to create a filter blueprint
