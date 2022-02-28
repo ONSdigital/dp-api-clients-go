@@ -227,6 +227,7 @@ func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 	}); err != nil {
 		return b, fmt.Errorf("failed to encode GraphQL query: %w", err)
 	}
+
 	return b, nil
 }
 
