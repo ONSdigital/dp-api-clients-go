@@ -429,11 +429,11 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return "", "", err
 	}
 
-	cb := CreateBlueprint{Dataset: Dataset{DatasetID: datasetID, Edition: edition, Version: ver}}
+	cb := CreateBlueprint{Dataset: Dataset{DatasetID: datasetID, Edition: edition, Version: ver}, PopulationType: "Example"}
 
 	var dimensions []ModelDimension
 	for _, name := range names {
-		dimensions = append(dimensions, ModelDimension{Name: name})
+		dimensions = append(dimensions, ModelDimension{Name: name, DimensionURL: "http://api.localhost:23200/v1/" + name})
 	}
 
 	cb.Dimensions = dimensions
@@ -443,12 +443,15 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return "", "", err
 	}
 
+	fmt.Println("the body here is %w", b)
+
 	uri := c.hcCli.URL + "/filters"
 	clientlog.Do(ctx, "attempting to create filter blueprint", service, uri, log.Data{
-		"method":    "POST",
-		"datasetID": datasetID,
-		"edition":   edition,
-		"version":   version,
+		"method":          "POST",
+		"datasetID":       datasetID,
+		"edition":         edition,
+		"version":         version,
+		"population-type": "Example",
 	})
 
 	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
