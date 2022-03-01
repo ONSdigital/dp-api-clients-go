@@ -27,3 +27,7 @@ type Ancestor struct {
 	Siblings  []Ancestor `json:"siblings"`
 	Children  []Ancestor `json:"children"`
 }
+
+type Ancestors struct {
+	Ancestors []Ancestor `json:"ancestors"`
+}
