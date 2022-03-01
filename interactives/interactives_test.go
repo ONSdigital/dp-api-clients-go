@@ -23,21 +23,25 @@ const (
 	testHost         = "http://localhost:8080"
 )
 
+var (
+	ctx                = context.Background()
+	successful, failed bool
+	checkRequestBase   = func(httpClient *dphttp.ClienterMock, expectedMethod string, expectedUri string) {
+		So(len(httpClient.DoCalls()), ShouldEqual, 1)
+		So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldResemble, expectedUri)
+		So(httpClient.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
+		So(httpClient.DoCalls()[0].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
+	}
+)
+
 type MockedHTTPResponse struct {
 	StatusCode int
 	Body       interface{}
 	Headers    map[string]string
 }
 
-var (
-	ctx = context.Background()
-)
-
-var checkRequestBase = func(httpClient *dphttp.ClienterMock, expectedMethod string, expectedUri string) {
-	So(len(httpClient.DoCalls()), ShouldEqual, 1)
-	So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldResemble, expectedUri)
-	So(httpClient.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
-	So(httpClient.DoCalls()[0].Req.Header.Get(dprequest.AuthHeaderKey), ShouldEqual, "Bearer "+serviceAuthToken)
+func init() {
+	successful = true
 }
 
 func TestClient_GetInteractives(t *testing.T) {
@@ -121,13 +125,13 @@ func TestClient_GetInteractives(t *testing.T) {
 }
 
 func TestClient_PutInteractive(t *testing.T) {
-	checkResponse := func(httpClient *dphttp.ClienterMock, expectedInteractive InteractiveUpdated) {
+	checkResponse := func(httpClient *dphttp.ClienterMock, expectedInteractive InteractiveUpdate) {
 
 		checkRequestBase(httpClient, http.MethodPut, "/interactives/123")
 
 		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 
-		var actualInteractive InteractiveUpdated
+		var actualInteractive InteractiveUpdate
 		err := json.Unmarshal(actualBody, &actualInteractive)
 		So(err, ShouldBeNil)
 		So(actualInteractive, ShouldResemble, expectedInteractive)
@@ -138,7 +142,7 @@ func TestClient_PutInteractive(t *testing.T) {
 		interactiveClient := newInteractivesClient(httpClient)
 
 		Convey("when put interactive is called", func() {
-			inter := InteractiveUpdated{ImportStatus: true}
+			inter := InteractiveUpdate{ImportSuccessful: &successful}
 			err := interactiveClient.PutInteractive(ctx, userAuthToken, serviceAuthToken, "123", inter)
 
 			Convey("then no error is returned", func() {
@@ -157,7 +161,7 @@ func TestClient_PutInteractive(t *testing.T) {
 		interactivesClient := newInteractivesClient(httpClient)
 
 		Convey("when put interactive is called", func() {
-			v := InteractiveUpdated{ImportStatus: false}
+			v := InteractiveUpdate{ImportSuccessful: &failed}
 			err := interactivesClient.PutInteractive(ctx, userAuthToken, serviceAuthToken, "123", v)
 
 			Convey("then the expected error is returned", func() {
@@ -175,7 +179,7 @@ func TestClient_PutInteractive(t *testing.T) {
 		interactivesClient := newInteractivesClient(httpClient)
 
 		Convey("when put interactive is called", func() {
-			v := InteractiveUpdated{ImportStatus: false}
+			v := InteractiveUpdate{ImportSuccessful: &failed}
 			err := interactivesClient.PutInteractive(ctx, userAuthToken, serviceAuthToken, "123", v)
 
 			Convey("then the expected error is returned", func() {
