@@ -25,7 +25,7 @@ const (
 
 var (
 	ctx                = context.Background()
-	successful, failed bool
+	successful, failed = true, false
 	checkRequestBase   = func(httpClient *dphttp.ClienterMock, expectedMethod string, expectedUri string) {
 		So(len(httpClient.DoCalls()), ShouldEqual, 1)
 		So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldResemble, expectedUri)
@@ -38,10 +38,6 @@ type MockedHTTPResponse struct {
 	StatusCode int
 	Body       interface{}
 	Headers    map[string]string
-}
-
-func init() {
-	successful = true
 }
 
 func TestClient_GetInteractives(t *testing.T) {
