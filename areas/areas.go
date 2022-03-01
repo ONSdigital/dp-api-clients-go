@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/v2/log"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 )
 
 const service = "areas-api"
@@ -129,8 +130,26 @@ func (c *Client) GetRelations(ctx context.Context, userAuthToken, serviceAuthTok
 }
 
 // GetAncestors gets ancestors data from areas api
-func (c *Client) GetAncestors(code string) (ancestors []Ancestor, err error) {
-	err = json.Unmarshal([]byte(StubbedAncestorAPIResponse(code)), &ancestors)
+func (c *Client) GetAncestors(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, areaID, acceptLang string) (ancestors Ancestors, err error) {
+	uri := fmt.Sprintf("%s/v1/areas/%s", c.hcCli.URL, areaID)
+	clientlog.Do(ctx, "retrieving ancestors", service, uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "", acceptLang)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewAreaAPIResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &ancestors.Ancestors)
 	if err != nil {
 		return
 	}
