@@ -22,7 +22,7 @@ type Relation struct {
 type Ancestor struct {
 	Name      string     `json:"name,omitempty"`
 	Level     string     `json:"level,omitempty"`
-	Code      string     `json:"code,omitempty"`
+	Id        string     `json:"id,omitempty"`
 	Ancestors []Ancestor `json:"ancestors"`
 	Siblings  []Ancestor `json:"siblings"`
 	Children  []Ancestor `json:"children"`
