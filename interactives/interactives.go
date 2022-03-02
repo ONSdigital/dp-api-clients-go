@@ -142,12 +142,12 @@ func (c *Client) GetInteractives(ctx context.Context, userAuthToken, serviceAuth
 }
 
 // PutInteractive update the dataset
-func (c *Client) PutInteractive(ctx context.Context, userAuthToken, serviceAuthToken, interactiveID string, mData InteractiveUpdated) error {
+func (c *Client) PutInteractive(ctx context.Context, userAuthToken, serviceAuthToken, interactiveID string, update InteractiveUpdate) error {
 	uri := fmt.Sprintf("%s/interactives/%s", c.hcCli.URL, interactiveID)
 
 	clientlog.Do(ctx, "updating interactive", service, uri)
 
-	payload, err := json.Marshal(mData)
+	payload, err := json.Marshal(update)
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to marshall interactive")
 	}
