@@ -291,17 +291,17 @@ func TestClient_GetRelations(t *testing.T) {
 }
 
 func TestClient_GetAncestors(t *testing.T) {
-	expectedDidsburyEast := Ancestors{Ancestors: []Ancestor{Ancestor{Name: "Manchester", Level: "", Code: "E08000003", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "North West", Level: "", Code: "E12000002", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "England", Level: "", Code: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}}
-	expectedManchester := Ancestors{Ancestors: []Ancestor{Ancestor{Name: "North West", Level: "", Code: "E12000002", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "England", Level: "", Code: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}}
-	expectedNorthWest := Ancestors{Ancestors: []Ancestor{Ancestor{Name: "England", Level: "", Code: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}}
+	expectedDidsburyEast := Ancestors{Ancestors: []Ancestor{Ancestor{Name: "Manchester", Level: "", Id: "E08000003", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "North West", Level: "", Id: "E12000002", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "England", Level: "", Id: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}}
+	expectedManchester := Ancestors{Ancestors: []Ancestor{Ancestor{Name: "North West", Level: "", Id: "E12000002", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "England", Level: "", Id: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}}
+	expectedNorthWest := Ancestors{Ancestors: []Ancestor{Ancestor{Name: "England", Level: "", Id: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}}
 	expectedEngland := Ancestors{Ancestors: []Ancestor{}}
 	acceptedLang := "en-GB,en-US;q=0.9,en;q=0.8"
 
 	testData := []string{
-		`{ "name": "Didsbury East", "level": "", "code": "E05011362", "ancestors": [], "siblings": [], "children": [] }`,
-		`{ "name": "Manchester", "level": "", "code": "E08000003", "ancestors": [], "siblings": [], "children": [] }`,
-		`{ "name": "North West", "level": "", "code": "E12000002", "ancestors": [], "siblings": [], "children": [] }`,
-		`{ "name": "England", "level": "", "code": "E92000001", "ancestors": [], "siblings": [], "children": [] }`,
+		`{ "name": "Didsbury East", "level": "", "id": "E05011362", "ancestors": [], "siblings": [], "children": [] }`,
+		`{ "name": "Manchester", "level": "", "id": "E08000003", "ancestors": [], "siblings": [], "children": [] }`,
+		`{ "name": "North West", "level": "", "id": "E12000002", "ancestors": [], "siblings": [], "children": [] }`,
+		`{ "name": "England", "level": "", "id": "E92000001", "ancestors": [], "siblings": [], "children": [] }`,
 	}
 
 	Convey("Didsbury East code returns correct response body", t, func() {
@@ -378,6 +378,5 @@ func getAncestry(ancestors ...string) string {
 	for _, a := range ancestors {
 		data = append(data, a)
 	}
-	fmt.Sprintf(`[%s]`, strings.Join(data, ","))
 	return fmt.Sprintf(`[%s]`, strings.Join(data, ","))
 }
