@@ -15,10 +15,10 @@ Common client code - in go - for ONS APIs:
 * identity
 * image
 * importapi
+* interactives
+* releasecalendar
 * renderer
 * search
-* interactives
-
 
 ## Usage
 

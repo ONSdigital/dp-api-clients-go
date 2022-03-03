@@ -3,15 +3,17 @@ package areas
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"time"
 )
 
 const (
@@ -289,42 +291,50 @@ func TestClient_GetRelations(t *testing.T) {
 }
 
 func TestClient_GetAncestors(t *testing.T) {
-	expectedDidsburyEast := []Ancestor{Ancestor{Name: "England", Level: "", Code: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "North West", Level: "", Code: "E12000002", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "Manchester", Level: "", Code: "E08000003", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "Didsbury East", Level: "", Code: "E05011362", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}
-	expectedManchester := []Ancestor{Ancestor{Name: "England", Level: "", Code: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "North West", Level: "", Code: "E12000002", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "Manchester", Level: "", Code: "E08000003", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}
-	expectedNorthWest := []Ancestor{Ancestor{Name: "England", Level: "", Code: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "North West", Level: "", Code: "E12000002", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}
-	expectedEngland := []Ancestor{Ancestor{Name: "England", Level: "", Code: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}
+	expectedDidsburyEast := Ancestors{Ancestors: []Ancestor{Ancestor{Name: "Manchester", Level: "", Id: "E08000003", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "North West", Level: "", Id: "E12000002", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "England", Level: "", Id: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}}
+	expectedManchester := Ancestors{Ancestors: []Ancestor{Ancestor{Name: "North West", Level: "", Id: "E12000002", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}, Ancestor{Name: "England", Level: "", Id: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}}
+	expectedNorthWest := Ancestors{Ancestors: []Ancestor{Ancestor{Name: "England", Level: "", Id: "E92000001", Ancestors: []Ancestor{}, Siblings: []Ancestor{}, Children: []Ancestor{}}}}
+	expectedEngland := Ancestors{Ancestors: []Ancestor{}}
+	acceptedLang := "en-GB,en-US;q=0.9,en;q=0.8"
+
+	testData := []string{
+		`{ "name": "Didsbury East", "level": "", "id": "E05011362", "ancestors": [], "siblings": [], "children": [] }`,
+		`{ "name": "Manchester", "level": "", "id": "E08000003", "ancestors": [], "siblings": [], "children": [] }`,
+		`{ "name": "North West", "level": "", "id": "E12000002", "ancestors": [], "siblings": [], "children": [] }`,
+		`{ "name": "England", "level": "", "id": "E92000001", "ancestors": [], "siblings": [], "children": [] }`,
+	}
 
 	Convey("Didsbury East code returns correct response body", t, func() {
-		mockedApi := getMockAreaAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: nil}) // TODO unstub
-		instance, err := mockedApi.GetAncestors("E05011362")
+		mockedApi := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: getAncestry(testData[1], testData[2], testData[3])})
+		ancestors, err := mockedApi.GetAncestors(ctx, userAuthToken, serviceAuthToken, collectionID, "E05011362", acceptedLang)
 		So(err, ShouldBeNil)
-		So(instance, ShouldResemble, expectedDidsburyEast)
+		So(ancestors, ShouldResemble, expectedDidsburyEast)
 	})
 	Convey("Manchester code returns correct response body", t, func() {
-		mockedApi := getMockAreaAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: nil}) // TODO unstub
-		instance, err := mockedApi.GetAncestors("E08000003")
+		mockedApi := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: getAncestry(testData[2], testData[3])})
+		ancestors, err := mockedApi.GetAncestors(ctx, userAuthToken, serviceAuthToken, collectionID, "E92000001", acceptedLang)
 		So(err, ShouldBeNil)
-		So(instance, ShouldResemble, expectedManchester)
+		So(ancestors, ShouldResemble, expectedManchester)
 	})
 	Convey("NorthWest code returns correct response body", t, func() {
-		mockedApi := getMockAreaAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: nil}) // TODO unstub
-		instance, err := mockedApi.GetAncestors("E12000002")
+		mockedApi := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: getAncestry(testData[3])})
+		ancestors, err := mockedApi.GetAncestors(ctx, userAuthToken, serviceAuthToken, collectionID, "E92000001", acceptedLang)
 		So(err, ShouldBeNil)
-		So(instance, ShouldResemble, expectedNorthWest)
+		So(ancestors, ShouldResemble, expectedNorthWest)
 	})
 	Convey("England code returns correct response body", t, func() {
-		mockedApi := getMockAreaAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: nil}) // TODO unstub
-		instance, err := mockedApi.GetAncestors("E92000001")
+		mockedApi := getMockAreaAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: getAncestry("")})
+		ancestors, err := mockedApi.GetAncestors(ctx, userAuthToken, serviceAuthToken, collectionID, "E92000001", acceptedLang)
 		So(err, ShouldBeNil)
-		So(instance, ShouldResemble, expectedEngland)
+		So(ancestors, ShouldResemble, expectedEngland)
 	})
 	Convey("given a 200 status with valid empty body is returned", t, func() {
-		mockedApi := getMockAreaAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: "{}"})
+		mockedApi := getMockAreaAPI(http.Request{Method: http.MethodGet}, MockedHTTPResponse{StatusCode: http.StatusOK, Body: getAncestry("")})
 		Convey("when GetRelations is called", func() {
-			instance, err := mockedApi.GetAncestors("<RANDOM>")
+			instance, err := mockedApi.GetAncestors(ctx, userAuthToken, serviceAuthToken, collectionID, "<RANDOM>", acceptedLang)
 			Convey("a positive response is returned with empty instance", func() {
 				So(err, ShouldBeNil)
-				So(instance, ShouldResemble, []Ancestor{}) // TODO this will fail when un stubbed - should be []Ancestor{}
+				So(instance, ShouldResemble, Ancestors{Ancestors: []Ancestor{}})
 			})
 		})
 	})
@@ -361,4 +371,12 @@ func newAreasClient(clienter *dphttp.ClienterMock) *Client {
 	healthClient := health.NewClientWithClienter("", testHost, clienter)
 	areasClient := NewWithHealthClient(healthClient)
 	return areasClient
+}
+
+func getAncestry(ancestors ...string) string {
+	var data []string
+	for _, a := range ancestors {
+		data = append(data, a)
+	}
+	return fmt.Sprintf(`[%s]`, strings.Join(data, ","))
 }

@@ -13,6 +13,7 @@ type Recipe struct {
 	InputFiles      []file     `json:"files,omitempty"`
 	OutputInstances []Instance `json:"output_instances,omitempty"`
 	CantabularBlob  string     `json:"cantabular_blob,omitempty"`
+	PopulationType  string     `json:"population_type,omitempty"`
 }
 
 // CodeList holds one of the codelists corresponding to a recipe
