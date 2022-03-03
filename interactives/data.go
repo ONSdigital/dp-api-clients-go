@@ -1,9 +1,25 @@
 package interactives
 
+import "time"
+
+type InteractiveMetadata struct { // TODO : Geography
+	Title           string    `json:"title"`
+	PrimaryTopic    string    `json:"primary_topic"`
+	Topics          []string  `json:"topics"`
+	Surveys         []string  `json:"surveys"`
+	ReleaseDate     time.Time `json:"release_date"`
+	Uri             string    `json:"uri"`
+	Edition         string    `json:"edition,omitempty"`
+	Keywords        []string  `json:"keywords,omitempty"`
+	MetaDescription string    `json:"meta_description,omitempty"`
+	Source          string    `json:"source,omitempty"`
+	Summary         string    `json:"summary,omitempty"`
+}
+
 type Interactive struct {
-	ID       string              `json:"id,omitempty"`
-	Metadata map[string]string   `json:"metadata,omitempty"`
-	Archive  *InteractiveArchive `json:"archive,omitempty"`
+	ID       string               `json:"id,omitempty"`
+	Metadata *InteractiveMetadata `json:"metadata,omitempty"`
+	Archive  *InteractiveArchive  `json:"archive,omitempty"`
 }
 
 type InteractiveArchive struct {

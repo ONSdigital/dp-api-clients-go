@@ -106,14 +106,14 @@ func TestClient_GetInteractives(t *testing.T) {
 			Convey("the expected error response is returned, with an empty options struct", func() {
 				So(err, ShouldResemble, &ErrInvalidInteractivesAPIResponse{
 					actualCode: 404,
-					uri:        fmt.Sprintf("http://localhost:8080/interactives"),
+					uri:        "http://localhost:8080/interactives",
 					body:       "{\"items\":null,\"count\":0,\"offset\":0,\"limit\":0,\"total_count\":0}",
 				})
 				So(options, ShouldResemble, List{})
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
-				expectedURI := fmt.Sprintf("/interactives")
+				expectedURI := "/interactives"
 				checkRequestBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})
