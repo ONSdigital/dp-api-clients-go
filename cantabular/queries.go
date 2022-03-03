@@ -153,43 +153,34 @@ query($dataset: String!, $text: String!) {
 }`
 
 // QueryDimensionsByName is the graphQL query to obtain dimensions by name (subset of variables, without categories)
-const QueryAreasByAreaType = `
+const QueryAreasByArea = `
 query($dataset: String!, $text: String!) {
 	dataset(name: $dataset) {
-	  ruleBase 
-	  {
-		isSourceOf {
-		  search(text: $text) {
-		  edges {
-			node {
-			  name
-			  mapFrom {
-				edges {
-				  node {
-					label
-					name
-				  }
+		ruleBase 
+		{
+		  isSourceOf {
+			categorySearch(text: $text){
+		   		edges {
+			  		node { 
+						code
+						label
+						variable {
+				  			mapFrom{
+								edges{
+					  				node{
+										name
+										label
+										 }
+									}
+				 				 }
+							 name 
+						}
+					  } 
+	  				}
 				}
-			  }
-			  categories{
-				edges{
-				  node{
-					label
-					code
-					variable
-                    {
-                      name
-                    }
-				  }
-				}
-				totalCount
-			  }
-			}
-		  }
-		  }
-		}
+	  		}
+	  	}
 	  }
-	}
   }
 `
 

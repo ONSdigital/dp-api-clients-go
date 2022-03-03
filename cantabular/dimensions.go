@@ -3,7 +3,6 @@ package cantabular
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
@@ -161,9 +160,7 @@ func (c *Client) GetAreas(ctx context.Context, req QueryData) (*GetAreasResponse
 		Text:    req.Text,
 	}
 
-	fmt.Printf(QueryAreasByAreaType)
-
-	if err := c.queryUnmarshal(ctx, QueryAreasByAreaType, data, resp); err != nil {
+	if err := c.queryUnmarshal(ctx, QueryAreasByArea, data, resp); err != nil {
 		return nil, err
 	}
 
