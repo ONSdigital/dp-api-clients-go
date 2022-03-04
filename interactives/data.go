@@ -36,6 +36,7 @@ type InteractiveFile struct {
 
 type InteractiveUpdate struct {
 	ImportSuccessful *bool       `json:"import_successful,omitempty"`
+	ImportMessage    string      `json:"import_message,omitempty"`
 	Interactive      Interactive `json:"interactive,omitempty"`
 }
 
