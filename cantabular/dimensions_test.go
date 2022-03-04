@@ -52,7 +52,7 @@ func TestGetDimensionsUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetDimensions(testCtx, "InexistentDataset")
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoDatasetErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
 			})
 
 			Convey("And no response is returned", func() {
@@ -119,7 +119,7 @@ func TestGetGeographyDimensionsUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetGeographyDimensions(testCtx, "InexistentDataset")
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoDatasetErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
 			})
 
 			Convey("And no response is returned", func() {
@@ -195,7 +195,8 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetDimensionsByName(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoDatasetErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
+
 			})
 
 			Convey("And no response is returned", func() {
@@ -215,7 +216,7 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetDimensionsByName(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoVariableErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusBadRequest)
 			})
 
 			Convey("And no response is returned", func() {
@@ -295,7 +296,7 @@ func TestSearchDimensionsUnhappy(t *testing.T) {
 			resp, err := cantabularClient.SearchDimensions(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoDatasetErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
 			})
 
 			Convey("And no response is returned", func() {
@@ -407,7 +408,7 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoDatasetErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
 			})
 
 			Convey("And no response is returned", func() {
@@ -427,7 +428,7 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoVariableErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusBadRequest)
 			})
 
 			Convey("And no response is returned", func() {
@@ -509,7 +510,7 @@ func TestGetAreasUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetAreas(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoDatasetErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
 			})
 
 			Convey("And no response is returned", func() {
@@ -531,7 +532,7 @@ func TestGetAreasUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetAreas(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoDatasetErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
 			})
 
 			Convey("And no response is returned", func() {
@@ -574,7 +575,7 @@ func TestGetAreasUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetAreas(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedInternalServeError)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 			})
 
 			Convey("And no response is returned", func() {

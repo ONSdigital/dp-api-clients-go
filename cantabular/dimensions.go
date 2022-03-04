@@ -2,7 +2,8 @@ package cantabular
 
 import (
 	"context"
-	"errors"
+
+	"github.com/pkg/errors"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
@@ -155,13 +156,8 @@ func (c *Client) GetAreas(ctx context.Context, req QueryData) (*GetAreasResponse
 		Errors []gql.Error      `json:"errors,omitempty"`
 	}{}
 
-	data := QueryData{
-		Dataset: req.Dataset,
-		Text:    req.Text,
-	}
-
-	if err := c.queryUnmarshal(ctx, QueryAreasByArea, data, resp); err != nil {
-		return nil, err
+	if err := c.queryUnmarshal(ctx, QueryAreasByArea, req, resp); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal query")
 	}
 
 	if resp != nil && len(resp.Errors) != 0 {
