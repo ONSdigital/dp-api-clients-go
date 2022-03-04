@@ -2,7 +2,8 @@ package cantabular
 
 import (
 	"context"
-	"errors"
+
+	"github.com/pkg/errors"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
@@ -136,6 +137,27 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req GetDimensionOption
 
 	if err := c.queryUnmarshal(ctx, QueryDimensionOptions, data, resp); err != nil {
 		return nil, err
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			resp.Errors[0].StatusCode(),
+			log.Data{"errors": resp.Errors},
+		)
+	}
+
+	return &resp.Data, nil
+}
+
+func (c *Client) GetAreas(ctx context.Context, req QueryData) (*GetAreasResponse, error) {
+	resp := &struct {
+		Data   GetAreasResponse `json:"data"`
+		Errors []gql.Error      `json:"errors,omitempty"`
+	}{}
+
+	if err := c.queryUnmarshal(ctx, QueryAreasByArea, req, resp); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal query")
 	}
 
 	if resp != nil && len(resp.Errors) != 0 {

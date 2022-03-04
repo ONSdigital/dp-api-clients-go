@@ -52,7 +52,7 @@ func TestGetDimensionsUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetDimensions(testCtx, "InexistentDataset")
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoDatasetErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
 			})
 
 			Convey("And no response is returned", func() {
@@ -119,7 +119,7 @@ func TestGetGeographyDimensionsUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetGeographyDimensions(testCtx, "InexistentDataset")
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoDatasetErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
 			})
 
 			Convey("And no response is returned", func() {
@@ -195,7 +195,8 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetDimensionsByName(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoDatasetErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
+
 			})
 
 			Convey("And no response is returned", func() {
@@ -215,7 +216,7 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetDimensionsByName(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoVariableErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusBadRequest)
 			})
 
 			Convey("And no response is returned", func() {
@@ -295,7 +296,7 @@ func TestSearchDimensionsUnhappy(t *testing.T) {
 			resp, err := cantabularClient.SearchDimensions(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoDatasetErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
 			})
 
 			Convey("And no response is returned", func() {
@@ -335,7 +336,7 @@ func TestGetDimensionOptionsHappy(t *testing.T) {
 			req := cantabular.GetDimensionOptionsRequest{
 				Dataset:        "Teaching-Dataset",
 				DimensionNames: []string{"Country", "Age", "Occupation"},
-				Filters:        []cantabular.Filter{{Variable:"Country", Codes: []string{"E", "W"}}},
+				Filters:        []cantabular.Filter{{Variable: "Country", Codes: []string{"E", "W"}}},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
@@ -352,7 +353,7 @@ func TestGetDimensionOptionsHappy(t *testing.T) {
 					cantabular.QueryData{
 						Dataset:   "Teaching-Dataset",
 						Variables: []string{"Country", "Age", "Occupation"},
-						Filters:   []cantabular.Filter{{Variable:"Country", Codes: []string{"E", "W"}}},
+						Filters:   []cantabular.Filter{{Variable: "Country", Codes: []string{"E", "W"}}},
 					},
 				)
 			})
@@ -407,7 +408,7 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoDatasetErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
 			})
 
 			Convey("And no response is returned", func() {
@@ -427,7 +428,7 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedNoVariableErr)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusBadRequest)
 			})
 
 			Convey("And no response is returned", func() {
@@ -449,6 +450,132 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 
 			Convey("Then the expected error is returned", func() {
 				So(err, ShouldResemble, expectedInternalServeError)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestGetAreasHappy(t *testing.T) {
+	Convey("Given a correct getAreas response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetAreas, http.StatusOK)
+
+		Convey("When GetAreas is called", func() {
+			req := cantabular.QueryData{
+				Dataset: "Example",
+				Text:    "London",
+			}
+
+			resp, err := cantabularClient.GetAreas(testCtx, req)
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryAreasByArea,
+					cantabular.QueryData{
+						Dataset: "Example",
+						Text:    "London",
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedAreas)
+			})
+		})
+	})
+}
+
+func TestGetAreasUnhappy(t *testing.T) {
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When GetAreas is called", func() {
+			req := cantabular.QueryData{
+				Dataset: "Test",
+				Text:    "London",
+			}
+
+			resp, err := cantabularClient.GetAreas(testCtx, req)
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When GetAreas is called", func() {
+			req := cantabular.QueryData{
+				Dataset: "Test",
+				Text:    "London",
+			}
+
+			resp, err := cantabularClient.GetAreas(testCtx, req)
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given no areas are returned from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespBodyNoAreasFound, http.StatusOK)
+
+		Convey("When GetAreas is called", func() {
+			req := cantabular.QueryData{
+				Dataset: "Example",
+				Text:    "Rio",
+			}
+
+			resp, err := cantabularClient.GetAreas(testCtx, req)
+
+			Convey("Then the expected error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And no response is returned", func() {
+				So(*resp, ShouldResemble, expectedAreasNotFound)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When GetAreas is called", func() {
+			req := cantabular.QueryData{
+				Dataset: "Teaching-Dataset",
+				Text:    "London",
+			}
+			resp, err := cantabularClient.GetAreas(testCtx, req)
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 			})
 
 			Convey("And no response is returned", func() {
@@ -1031,6 +1158,89 @@ var expectedDimensionOptions = cantabular.GetDimensionOptionsResponse{
 						{Code: "9", Label: "Elementary Occupations"},
 						{Code: "-9", Label: "N/A"},
 					},
+				},
+			},
+		},
+	},
+}
+
+// mockRespBodyGetAreas is a successful 'get areas' query respose that is returned from a mocked client for testing
+var mockRespBodyGetAreas = `
+{
+	"data": {
+	  "dataset": {
+		"ruleBase": {
+		  "isSourceOf": {
+			"categorySearch": {
+			  "edges": [
+				{
+				  "node": {
+					"code": "0",
+					"label": "london",
+					"variable": {
+					  "mapFrom": [],
+					  "name": "city"
+					}
+				  }
+				}
+			  ]
+			}
+		  }
+		}
+	  }
+	}
+  }
+`
+
+// mockRespBodyGetAreasNotFound is a 'get areas' query respose that is returned from a mocked client for testing
+var mockRespBodyNoAreasFound = `
+{
+	"data": {
+	  "dataset": {
+		"ruleBase": {
+		  "isSourceOf": {
+			"categorySearch": {
+			  "edges": []
+			}
+		  }
+		}
+	  }
+	}
+  }
+`
+
+var expectedAreas = cantabular.GetAreasResponse{
+	Dataset: gql.DatasetRuleBase{
+		RuleBase: gql.RuleBase{
+			IsSourceOf: gql.Variables{
+				CategorySearch: gql.Search{
+					Edges: []gql.Edge{
+						{
+
+							Node: gql.Node{
+								Code:  "0",
+								Name:  "",
+								Label: "london",
+								Variable: gql.Variable{
+									Name: "city",
+								},
+							},
+						},
+					},
+				},
+			},
+			Name: "",
+		},
+	},
+}
+
+var expectedAreasNotFound = cantabular.GetAreasResponse{
+	Dataset: gql.DatasetRuleBase{
+		RuleBase: gql.RuleBase{
+			IsSourceOf: gql.Variables{
+				Search: gql.Search{},
+				CategorySearch: gql.Search{
+					Edges: []gql.Edge{},
 				},
 			},
 		},

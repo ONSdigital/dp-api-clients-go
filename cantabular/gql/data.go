@@ -14,8 +14,9 @@ type RuleBase struct {
 }
 
 type Variables struct {
-	Edges  []Edge `json:"edges"`
-	Search Search `json:"search,omitempty"`
+	Edges          []Edge `json:"edges"`
+	Search         Search `json:"search,omitempty"`
+	CategorySearch Search `json:"categorySearch,omitempty"`
 }
 
 type Search struct {
@@ -28,12 +29,19 @@ type Edge struct {
 
 type Node struct {
 	Name       string      `json:"name"`
+	Code       string      `json:"code"`
 	Label      string      `json:"label"`
 	Categories Categories  `json:"categories"`
 	MapFrom    []Variables `json:"mapFrom"`
 	FilterOnly string      `json:"filterOnly,omitempty"`
+	Variable   Variable    `json:"variable"`
 }
 
 type Categories struct {
-	TotalCount int `json:"totalCount"`
+	TotalCount int    `json:"totalCount"`
+	Edges      []Edge `json:"edges"`
+}
+
+type Variable struct {
+	Name string `json:"name"`
 }

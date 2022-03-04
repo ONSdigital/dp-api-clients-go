@@ -150,7 +150,38 @@ query($dataset: String!, $text: String!) {
 			}
 		}
 	}
-}
+}`
+
+// QueryDimensionsByName is the graphQL query to obtain dimensions by name (subset of variables, without categories)
+const QueryAreasByArea = `
+query($dataset: String!, $text: String!) {
+	dataset(name: $dataset) {
+		ruleBase 
+		{
+		  isSourceOf {
+			categorySearch(text: $text){
+		   		edges {
+			  		node { 
+						code
+						label
+						variable {
+				  			mapFrom{
+								edges{
+					  				node{
+										name
+										label
+										 }
+									}
+				 				 }
+							 name 
+						}
+					  } 
+	  				}
+				}
+	  		}
+	  	}
+	  }
+  }
 `
 
 // QueryData holds all the possible required variables to encode any of the graphql queries defined in this file.
@@ -163,7 +194,7 @@ type QueryData struct {
 
 // Filter holds the fields for the Cantabular GraphQL 'Filter' object used for specifying categories
 // returned in tables
-type Filter struct{
+type Filter struct {
 	Codes    []string `json:"codes"`
 	Variable string   `json:"variable"`
 }
@@ -173,12 +204,12 @@ type Filter struct{
 func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
-	vars  := map[string]interface{}{
+	vars := map[string]interface{}{
 		"dataset":   data.Dataset,
 		"variables": data.Variables,
 		"text":      data.Text,
 	}
-	if len(data.Filters) > 0{
+	if len(data.Filters) > 0 {
 		vars["filters"] = data.Filters
 	}
 	if err := enc.Encode(map[string]interface{}{
@@ -187,6 +218,7 @@ func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 	}); err != nil {
 		return b, fmt.Errorf("failed to encode GraphQL query: %w", err)
 	}
+
 	return b, nil
 }
 
