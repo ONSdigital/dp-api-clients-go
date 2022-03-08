@@ -1114,7 +1114,7 @@ func (c *Client) CreateFilter(ctx context.Context, userAuthToken, serviceAuthTok
 	uri := c.hcCli.URL + "/filters"
 	clientlog.Do(ctx, "attempting to create filter", service, uri, log.Data{
 		"method":          "POST",
-		"datasetID":       datasetID,
+		"dataset_id":      datasetID,
 		"edition":         edition,
 		"version":         version,
 		"population_type": populationType,
