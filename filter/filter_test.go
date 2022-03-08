@@ -899,6 +899,91 @@ func TestClient_CreateBlueprint(t *testing.T) {
 	})
 }
 
+func TestClient_CreateFilter(t *testing.T) {
+	datasetID := "foo"
+	edition := "quux"
+	version := "1"
+	names := []string{"quuz", "corge"}
+	populationType := "pop"
+
+	checkRequest := func(httpClient *dphttp.ClienterMock, expectedFilterID string) {
+		So(len(httpClient.DoCalls()), ShouldEqual, 1)
+
+		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+		var actualVersion CreateFilterResponse
+		err := json.Unmarshal(actualBody, &actualVersion)
+		So(err, ShouldBeNil)
+		So(actualVersion.FilterID, ShouldResemble, expectedFilterID)
+	}
+
+	Convey("Given a valid Filter is returned", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusCreated,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
+			Header:     http.Header{},
+		}
+		r.Header.Set("ETag", testETag)
+		httpClient := newMockHTTPClient(r, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when CreateFilter is called", func() {
+			bp, eTag, err := filterClient.CreateFilter(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
+
+			Convey("then the expected eTag is returned, with no error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, testETag)
+			})
+
+			Convey("and dphttp client is called one time with the expected parameters", func() {
+				checkRequest(httpClient, bp)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("foo")
+		httpClient := newMockHTTPClient(nil, mockErr)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when CreateFilter is called", func() {
+			bp, _, err := filterClient.CreateFilter(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+
+			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
+				checkRequest(httpClient, bp)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		url := "http://localhost:8080"
+		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusCreated, 500, url + "/filters"}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when CreateFilter is called", func() {
+			bp, _, err := filterClient.CreateFilter(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
+			})
+
+			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
+				checkRequest(httpClient, bp)
+			})
+		})
+	})
+}
+
 func TestClient_UpdateBlueprint(t *testing.T) {
 	model := Model{
 		FilterID:    "",

@@ -1084,3 +1084,81 @@ func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serv
 	// do the request
 	return c.hcCli.Client.Do(ctx, req)
 }
+
+// CreateFilter creates a filter and returns the associated filterID and eTag
+func (c *Client) CreateFilter(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, populationType string, names []string) (filterID, eTag string, err error) {
+	ver, err := strconv.Atoi(version)
+	if err != nil {
+		return "", "", err
+	}
+
+	var dimensions []Dimension
+	for _, name := range names {
+		dimensions = append(dimensions, Dimension{Name: name})
+	}
+
+	filter := CreateFilterRequest{
+		Dataset: Dataset{
+			DatasetID: datasetID,
+			Edition:   edition,
+			Version:   ver,
+		},
+		Dimensions:     dimensions,
+		PopulationType: populationType,
+	}
+
+	data, err := json.Marshal(filter)
+	if err != nil {
+		return "", "", err
+	}
+	uri := c.hcCli.URL + "/filters"
+	clientlog.Do(ctx, "attempting to create filter", service, uri, log.Data{
+		"method":    "POST",
+		"datasetID": datasetID,
+		"edition":   edition,
+		"version":   version,
+	})
+
+	request, err := http.NewRequest("POST", uri, bytes.NewBuffer(data))
+	if err != nil {
+		return "", "", err
+	}
+
+	if err = headers.SetCollectionID(request, collectionID); err != nil {
+		return "", "", fmt.Errorf("failed to set collection id: %w", err)
+	}
+	if err = headers.SetAuthToken(request, userAuthToken); err != nil {
+		return "", "", fmt.Errorf("failed to set auth token: %w", err)
+	}
+	if err = headers.SetServiceAuthToken(request, serviceAuthToken); err != nil {
+		return "", "", fmt.Errorf("failed to set service auth token: %w", err)
+	}
+	if err = headers.SetDownloadServiceToken(request, downloadServiceToken); err != nil {
+		return "", "", fmt.Errorf("failed to set download service token: %w", err)
+	}
+
+	response, err := c.hcCli.Client.Do(ctx, request)
+	if err != nil {
+		return "", "", err
+	}
+	defer closeResponseBody(ctx, response)
+	if response.StatusCode != http.StatusCreated {
+		return "", "", ErrInvalidFilterAPIResponse{http.StatusCreated, response.StatusCode, uri}
+	}
+
+	eTag, err = headers.GetResponseETag(response)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return "", "", err
+	}
+
+	data, err = ioutil.ReadAll(response.Body)
+	if err != nil {
+		return "", "", err
+	}
+	var filterResponse CreateFilterResponse
+	if err = json.Unmarshal(data, &filterResponse); err != nil {
+		return "", "", err
+	}
+
+	return filterResponse.FilterID, eTag, nil
+}

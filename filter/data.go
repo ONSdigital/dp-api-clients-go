@@ -21,7 +21,7 @@ type Dimensions struct {
 // Dimension represents a dimension response from the filter api
 type Dimension struct {
 	Name string `json:"name"`
-	URI  string `json:"dimension_url"`
+	URI  string `json:"dimension_url,omitempty"`
 }
 
 // DimensionOption represents a dimension option from the filter api
@@ -44,6 +44,18 @@ type CreateBlueprint struct {
 	Dataset    Dataset          `json:"dataset"`
 	Dimensions []ModelDimension `json:"dimensions"`
 	FilterID   string           `json:"filter_id"`
+}
+
+// CreateFilterRequest represents the fields required to create a filter
+type CreateFilterRequest struct {
+	Dataset        Dataset     `json:"dataset"`
+	Dimensions     []Dimension `json:"dimensions"`
+	PopulationType string      `json:"population_type"`
+}
+
+// CreateFilterResponse is the response body for POST /filters
+type CreateFilterResponse struct {
+	FilterID string `json:"filter_id"`
 }
 
 // Dataset represents the dataset fields required to create a filter blueprint
