@@ -422,6 +422,10 @@ func (c *Client) GetDimensionOptionsBatchProcess(ctx context.Context, userAuthTo
 	return eTag, batch.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
 }
 
+func (c *Client) CreateFlexibleFilterBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, names []string, populationType string) (filterID, eTag string, err error) {
+	return "", "", nil
+}
+
 // CreateBlueprint creates a filter blueprint and returns the associated filterID and eTag
 func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, names []string) (filterID, eTag string, err error) {
 	ver, err := strconv.Atoi(version)
