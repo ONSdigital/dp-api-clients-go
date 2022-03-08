@@ -11,7 +11,7 @@ const (
 
 // Dimensions represents a dimensions response from the filter api
 type Dimensions struct {
-	Items      []Dimension `json:"items"`
+	Dimensions []Dimension `json:"dimensions"`
 	Count      int         `json:"count"`
 	Offset     int         `json:"offset"`
 	Limit      int         `json:"limit"`
@@ -20,8 +20,10 @@ type Dimensions struct {
 
 // Dimension represents a dimension response from the filter api
 type Dimension struct {
-	Name string `json:"name"`
-	URI  string `json:"dimension_url"`
+	Name       string   `json:"name"`
+	URI        string   `json:"dimension_url"`
+	IsAreaType bool     `json:"is_area_type,omitempty"`
+	Options    []string `json:"options,omitempty"`
 }
 
 // DimensionOption represents a dimension option from the filter api
