@@ -36,8 +36,7 @@ var initialState = health.CreateCheckState(service)
 
 // client with no retries, no backoff
 var (
-	client = &dphttp.Client{HTTPClient: &http.Client{}}
-	ctx    = context.Background()
+	ctx = context.Background()
 )
 
 // checkRequest validates request method, uri and headers
@@ -1782,7 +1781,6 @@ func TestClient_GetPreview(t *testing.T) {
 func newMockHTTPClient(r *http.Response, err error) *dphttp.ClienterMock {
 	return &dphttp.ClienterMock{
 		SetPathsWithNoRetriesFunc: func(paths []string) {
-			return
 		},
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			return r, err
