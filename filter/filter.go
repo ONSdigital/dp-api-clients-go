@@ -422,8 +422,37 @@ func (c *Client) GetDimensionOptionsBatchProcess(ctx context.Context, userAuthTo
 	return eTag, batch.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
 }
 
-func (c *Client) CreateFlexibleFilterBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, names []string, populationType string) (filterID, eTag string, err error) {
-	return "", "", nil
+// CreateFlexibleBlueprint creates a flexible filter blueprint and returns the associated filterID and eTag
+func (c *Client) CreateFlexibleBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, names []string, population_type string) (filterID, eTag string, err error) {
+	ver, err := strconv.Atoi(version)
+	if err != nil {
+		return "", "", err
+	}
+
+	cb := createFlexBlueprintRequest{Dataset: Dataset{DatasetID: datasetID, Edition: edition, Version: ver}, PopulationType: population_type}
+
+	var dimensions []ModelDimension
+	for _, name := range names {
+		dimensions = append(dimensions, ModelDimension{Name: name})
+	}
+
+	cb.Dimensions = dimensions
+	reqBody, err := json.Marshal(cb)
+	if err != nil {
+		return "", "", err
+	}
+
+	respBody, eTag, err := c.postToFilters(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, reqBody)
+	if err != nil {
+		return "", "", err
+	}
+
+	var respData createFlexBlueprintResponse
+	if err = json.Unmarshal(respBody, &respData); err != nil {
+		return "", "", err
+	}
+
+	return respData.FilterID, eTag, nil
 }
 
 // CreateBlueprint creates a filter blueprint and returns the associated filterID and eTag
@@ -433,7 +462,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return "", "", err
 	}
 
-	cb := CreateBlueprint{Dataset: Dataset{DatasetID: datasetID, Edition: edition, Version: ver}}
+	cb := createBlueprint{Dataset: Dataset{DatasetID: datasetID, Edition: edition, Version: ver}}
 
 	var dimensions []ModelDimension
 	for _, name := range names {
@@ -441,11 +470,24 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	}
 
 	cb.Dimensions = dimensions
-
-	b, err := json.Marshal(cb)
+	reqBody, err := json.Marshal(cb)
 	if err != nil {
 		return "", "", err
 	}
+
+	respBody, eTag, err := c.postToFilters(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, reqBody)
+	if err != nil {
+		return "", "", err
+	}
+
+	if err = json.Unmarshal(respBody, &cb); err != nil {
+		return "", "", err
+	}
+
+	return cb.FilterID, eTag, nil
+}
+
+func (c *Client) postToFilters(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, reqBody []byte) ([]byte, string, error) {
 
 	uri := c.hcCli.URL + "/filters"
 	clientlog.Do(ctx, "attempting to create filter blueprint", service, uri, log.Data{
@@ -455,50 +497,45 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		"version":   version,
 	})
 
-	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(reqBody))
 	if err != nil {
-		return "", "", err
+		return nil, "", err
 	}
 
 	if err = headers.SetCollectionID(req, collectionID); err != nil {
-		return "", "", fmt.Errorf("failed to set collection id: %w", err)
+		return nil, "", fmt.Errorf("failed to set collection id: %w", err)
 	}
 	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return "", "", fmt.Errorf("failed to set auth token: %w", err)
+		return nil, "", fmt.Errorf("failed to set auth token: %w", err)
 	}
 	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return "", "", fmt.Errorf("failed to set service auth token: %w", err)
+		return nil, "", fmt.Errorf("failed to set service auth token: %w", err)
 	}
 	if err = headers.SetDownloadServiceToken(req, downloadServiceToken); err != nil {
-		return "", "", fmt.Errorf("failed to set download service token: %w", err)
+		return nil, "", fmt.Errorf("failed to set download service token: %w", err)
 	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
-		return "", "", err
+		return nil, "", err
 	}
 
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", "", ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
+		return nil, "", ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
 	}
 
-	eTag, err = headers.GetResponseETag(resp)
+	eTag, err := headers.GetResponseETag(resp)
 	if err != nil && err != headers.ErrHeaderNotFound {
-		return "", "", err
+		return nil, "", err
 	}
 
-	b, err = ioutil.ReadAll(resp.Body)
+	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", "", err
+		return nil, "", err
 	}
-
-	if err = json.Unmarshal(b, &cb); err != nil {
-		return "", "", err
-	}
-
-	return cb.FilterID, eTag, nil
+	return data, eTag, nil
 }
 
 // UpdateBlueprint will update a blueprint with a given filter model, providing the required IfMatch value to be sure the update is done in the expected object

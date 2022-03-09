@@ -39,11 +39,21 @@ type DimensionOptions struct {
 	TotalCount int               `json:"total_count"`
 }
 
-// CreateBlueprint represents the fields required to create a filter blueprint
-type CreateBlueprint struct {
+// createBlueprint represents the fields required to create a filter blueprint
+type createBlueprint struct {
 	Dataset    Dataset          `json:"dataset"`
 	Dimensions []ModelDimension `json:"dimensions"`
 	FilterID   string           `json:"filter_id"`
+}
+
+type createFlexBlueprintRequest struct {
+	Dataset        Dataset          `json:"dataset"`
+	Dimensions     []ModelDimension `json:"dimensions"`
+	PopulationType string           `json:"population_type"`
+}
+
+type createFlexBlueprintResponse struct {
+	FilterID string `json:"filter_id"`
 }
 
 // Dataset represents the dataset fields required to create a filter blueprint
