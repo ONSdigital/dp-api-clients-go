@@ -351,6 +351,7 @@ func TestClient_GetDimension(t *testing.T) {
 	dimensionBody := `{
 		"dimension_url": "www.ons.gov.uk",
 		"name": "quuz",
+		"is_area_type": false,
 		"options": ["corge"]}`
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
@@ -376,8 +377,10 @@ func TestClient_GetDimension(t *testing.T) {
 		dim, eTag, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldBeNil)
 		So(dim, ShouldResemble, Dimension{
-			Name: "quuz",
-			URI:  "www.ons.gov.uk",
+			Name:       "quuz",
+			URI:        "www.ons.gov.uk",
+			Options:    []string{"corge"},
+			IsAreaType: boolToPtr(false),
 		})
 		So(eTag, ShouldResemble, testETag)
 	})
@@ -387,8 +390,10 @@ func TestClient_GetDimension(t *testing.T) {
 		dim, eTag, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldBeNil)
 		So(dim, ShouldResemble, Dimension{
-			Name: "quuz",
-			URI:  "www.ons.gov.uk",
+			Name:       "quuz",
+			URI:        "www.ons.gov.uk",
+			Options:    []string{"corge"},
+			IsAreaType: boolToPtr(false),
 		})
 		So(eTag, ShouldResemble, testETag)
 	})
@@ -398,8 +403,19 @@ func TestClient_GetDimensions(t *testing.T) {
 	filterOutputID := "foo"
 	dimensionBody := `{
 		"items": [
-			{ "dimension_url": "www.ons.gov.uk/dim1", "name": "DimensionOne" },
-			{ "dimension_url": "www.ons.gov.uk/dim2", "name": "DimensionTwo" }],
+			{
+				"dimension_url": "www.ons.gov.uk/dim1",
+				"name": "DimensionOne",
+				"options": ["one"],
+				"is_area_type": false
+			},
+			{
+				"dimension_url": "www.ons.gov.uk/dim2",
+				"name": "DimensionTwo",
+				"options": ["two"],
+				"is_area_type": true
+			}
+		],
 		"count": 2,
 		"offset": 1,
 		"limit": 20,
@@ -435,8 +451,19 @@ func TestClient_GetDimensions(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(dims, ShouldResemble, Dimensions{
 			Items: []Dimension{
-				{URI: "www.ons.gov.uk/dim1", Name: "DimensionOne"},
-				{URI: "www.ons.gov.uk/dim2", Name: "DimensionTwo"}},
+				{
+					URI:        "www.ons.gov.uk/dim1",
+					Name:       "DimensionOne",
+					Options:    []string{"one"},
+					IsAreaType: boolToPtr(false),
+				},
+				{
+					URI:        "www.ons.gov.uk/dim2",
+					Name:       "DimensionTwo",
+					Options:    []string{"two"},
+					IsAreaType: boolToPtr(true),
+				},
+			},
 			Count:      2,
 			Offset:     1,
 			Limit:      20,
@@ -454,8 +481,19 @@ func TestClient_GetDimensions(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(dims, ShouldResemble, Dimensions{
 				Items: []Dimension{
-					{URI: "www.ons.gov.uk/dim1", Name: "DimensionOne"},
-					{URI: "www.ons.gov.uk/dim2", Name: "DimensionTwo"}},
+					{
+						URI:        "www.ons.gov.uk/dim1",
+						Name:       "DimensionOne",
+						Options:    []string{"one"},
+						IsAreaType: boolToPtr(false),
+					},
+					{
+						URI:        "www.ons.gov.uk/dim2",
+						Name:       "DimensionTwo",
+						Options:    []string{"two"},
+						IsAreaType: boolToPtr(true),
+					},
+				},
 				Count:      2,
 				Offset:     1,
 				Limit:      20,
@@ -1728,4 +1766,8 @@ func getMockfilterAPI(expectRequest http.Request, mockedHTTPResponse ...MockedHT
 		numCall++
 	}))
 	return New(ts.URL)
+}
+
+func boolToPtr(val bool) *bool {
+	return &val
 }
