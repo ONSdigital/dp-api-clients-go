@@ -141,7 +141,6 @@ func (c *Client) GetOutputBytes(ctx context.Context, userAuthToken, serviceAuthT
 
 // UpdateFilterOutput performs a PUT operation to update the filter with the provided filterOutput model
 func (c *Client) UpdateFilterOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, filterJobID string, model *Model) error {
-
 	b, err := json.Marshal(model)
 	if err != nil {
 		return err
@@ -163,15 +162,9 @@ func (c *Client) UpdateFilterOutputBytes(ctx context.Context, userAuthToken, ser
 	if err != nil {
 		return err
 	}
-
-	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return fmt.Errorf("failed to set service auth token: %w", err)
-	}
-	if err = headers.SetDownloadServiceToken(req, downloadServiceToken); err != nil {
-		return fmt.Errorf("failed to set download service token: %w", err)
+	// set headers
+	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, downloadServiceToken, "", ""); err != nil {
+		return err
 	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
@@ -205,15 +198,9 @@ func (c *Client) AddEvent(ctx context.Context, userAuthToken, serviceAuthToken, 
 	if err != nil {
 		return err
 	}
-
-	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return fmt.Errorf("failed to set service auth token: %w", err)
-	}
-	if err = headers.SetDownloadServiceToken(req, downloadServiceToken); err != nil {
-		return fmt.Errorf("failed to set download service token: %w", err)
+	// set headers
+	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, downloadServiceToken, "", ""); err != nil {
+		return err
 	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
@@ -327,7 +314,6 @@ func (c *Client) GetDimensionOptions(ctx context.Context, userAuthToken, service
 
 // GetDimensionOptionsBytes retrieves a list of the dimension options as a byte array
 func (c *Client) GetDimensionOptionsBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, q *QueryParams) (body []byte, eTag string, err error) {
-
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options", c.hcCli.URL, filterID, name)
 	if q != nil {
 		if err := q.Validate(); err != nil {
@@ -455,25 +441,15 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	if err != nil {
 		return "", "", err
 	}
-
-	if err = headers.SetCollectionID(req, collectionID); err != nil {
-		return "", "", fmt.Errorf("failed to set collection id: %w", err)
-	}
-	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return "", "", fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return "", "", fmt.Errorf("failed to set service auth token: %w", err)
-	}
-	if err = headers.SetDownloadServiceToken(req, downloadServiceToken); err != nil {
-		return "", "", fmt.Errorf("failed to set download service token: %w", err)
+	// set headers
+	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, ""); err != nil {
+		return "", "", err
 	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return "", "", err
 	}
-
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
@@ -519,18 +495,9 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	if err != nil {
 		return m, "", err
 	}
-
-	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return m, "", fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return m, "", fmt.Errorf("failed to set service auth token: %w", err)
-	}
-	if err = headers.SetDownloadServiceToken(req, downloadServiceToken); err != nil {
-		return m, "", fmt.Errorf("failed to set download service token: %w", err)
-	}
-	if err = headers.SetIfMatch(req, ifMatch); err != nil {
-		return m, "", fmt.Errorf("failed to set if match: %w", err)
+	// set headers
+	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, "", collectionID, ifMatch); err != nil {
+		return m, "", err
 	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
@@ -574,18 +541,9 @@ func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAu
 	if err != nil {
 		return "", err
 	}
-
-	if err = headers.SetCollectionID(req, collectionID); err != nil {
-		return "", fmt.Errorf("failed to set collection id: %w", err)
-	}
-	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return "", fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return "", fmt.Errorf("failed to set service auth token: %w", err)
-	}
-	if err = headers.SetIfMatch(req, ifMatch); err != nil {
-		return "", fmt.Errorf("failed to set if match: %w", err)
+	// set headers
+	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, "", collectionID, ifMatch); err != nil {
+		return "", err
 	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
@@ -755,17 +713,9 @@ func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, servic
 		"value":  value,
 	})
 
-	if err = headers.SetCollectionID(req, collectionID); err != nil {
-		return "", fmt.Errorf("failed to set collection id: %w", err)
-	}
-	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return "", fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return "", fmt.Errorf("failed to set service auth token: %w", err)
-	}
-	if err = headers.SetIfMatch(req, ifMatch); err != nil {
-		return "", fmt.Errorf("failed to set if match: %w", err)
+	// set headers
+	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, "", collectionID, ifMatch); err != nil {
+		return "", err
 	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
@@ -800,25 +750,15 @@ func (c *Client) RemoveDimension(ctx context.Context, userAuthToken, serviceAuth
 	if err != nil {
 		return "", err
 	}
-
-	if err = headers.SetCollectionID(req, collectionID); err != nil {
-		return "", fmt.Errorf("failed to set collection id: %w", err)
-	}
-	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return "", fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return "", fmt.Errorf("failed to set service auth token: %w", err)
-	}
-	if err = headers.SetIfMatch(req, ifMatch); err != nil {
-		return "", fmt.Errorf("failed to set if match: %w", err)
+	// set headers
+	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, "", collectionID, ifMatch); err != nil {
+		return "", err
 	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return "", err
 	}
-
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusNoContent {
@@ -846,25 +786,15 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 	if err != nil {
 		return "", err
 	}
-
-	if err = headers.SetCollectionID(req, collectionID); err != nil {
-		return "", fmt.Errorf("failed to set collection id: %w", err)
-	}
-	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return "", fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return "", fmt.Errorf("failed to set service auth token: %w", err)
-	}
-	if err = headers.SetIfMatch(req, ifMatch); err != nil {
-		return "", fmt.Errorf("failed to set if match: %w", err)
+	// set headers
+	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, "", collectionID, ifMatch); err != nil {
+		return "", err
 	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return "", err
 	}
-
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
@@ -941,25 +871,15 @@ func (c *Client) SetDimensionValues(ctx context.Context, userAuthToken, serviceA
 	if err != nil {
 		return "", err
 	}
-
-	if err = headers.SetCollectionID(req, collectionID); err != nil {
-		return "", fmt.Errorf("failed to set collection id: %w", err)
-	}
-	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return "", fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return "", fmt.Errorf("failed to set service auth token: %w", err)
-	}
-	if err = headers.SetIfMatch(req, ifMatch); err != nil {
-		return "", fmt.Errorf("failed to set if match: %w", err)
+	// set headers
+	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, "", collectionID, ifMatch); err != nil {
+		return "", err
 	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return "", err
 	}
-
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
@@ -997,7 +917,6 @@ func (c *Client) GetPreviewBytes(ctx context.Context, userAuthToken, serviceAuth
 	if err != nil {
 		return nil, err
 	}
-
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
@@ -1014,15 +933,9 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	if err != nil {
 		return nil, err
 	}
-
-	if err = headers.SetCollectionID(req, collectionID); err != nil {
-		return nil, fmt.Errorf("failed to set collection id: %w", err)
-	}
-	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return nil, fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return nil, fmt.Errorf("failed to set service auth token: %w", err)
+	// set headers
+	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, "", collectionID, ""); err != nil {
+		return nil, err
 	}
 	return c.hcCli.Client.Do(ctx, req)
 }
@@ -1034,18 +947,9 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	if err != nil {
 		return nil, err
 	}
-
-	if err = headers.SetCollectionID(req, collectionID); err != nil {
-		return nil, fmt.Errorf("failed to set collection id: %w", err)
-	}
-	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return nil, fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return nil, fmt.Errorf("failed to set service auth token: %w", err)
-	}
-	if err = headers.SetDownloadServiceToken(req, downloadServiceAuthToken); err != nil {
-		return nil, fmt.Errorf("failed to set download service token: %w", err)
+	// set headers
+	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, ""); err != nil {
+		return nil, err
 	}
 	return c.hcCli.Client.Do(ctx, req)
 }
@@ -1054,7 +958,6 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 // It sets the user and service authentication and coollectionID as a request header. Returns the http.Response and any error.
 // It is the caller's responsibility to ensure response.Body is closed on completion.
 func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri, ifMatch string, patchBody []dprequest.Patch) (*http.Response, error) {
-
 	// marshal the reuest body, as an array with the provided patch operation (http patch always accepts a list of patch operations)
 	b, err := json.Marshal(patchBody)
 	if err != nil {
@@ -1066,23 +969,43 @@ func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serv
 	if err != nil {
 		return nil, err
 	}
-
 	// set headers
-	if err = headers.SetCollectionID(req, collectionID); err != nil {
-		return nil, fmt.Errorf("failed to set collection id: %w", err)
-	}
-	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return nil, fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return nil, fmt.Errorf("failed to set service auth token: %w", err)
-	}
-	if err = headers.SetIfMatch(req, ifMatch); err != nil {
-		return nil, fmt.Errorf("failed to set if match: %w", err)
+	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, "", collectionID, ifMatch); err != nil {
+		return nil, err
 	}
 
 	// do the request
 	return c.hcCli.Client.Do(ctx, req)
+}
+
+// SetHeaders sets the auth headers to request
+func (c *Client) SetHeaders(request *http.Request, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, ifMatch string) error {
+	if collectionID != "" {
+		if err := headers.SetCollectionID(request, collectionID); err != nil {
+			return fmt.Errorf("failed to set collection id: %w", err)
+		}
+	}
+	if userAuthToken != "" {
+		if err := headers.SetAuthToken(request, userAuthToken); err != nil {
+			return fmt.Errorf("failed to set auth token: %w", err)
+		}
+	}
+	if serviceAuthToken != "" {
+		if err := headers.SetServiceAuthToken(request, serviceAuthToken); err != nil {
+			return fmt.Errorf("failed to set service auth token: %w", err)
+		}
+	}
+	if downloadServiceToken != "" {
+		if err := headers.SetDownloadServiceToken(request, downloadServiceToken); err != nil {
+			return fmt.Errorf("failed to set download service token: %w", err)
+		}
+	}
+	if ifMatch != "" {
+		if err := headers.SetIfMatch(request, ifMatch); err != nil {
+			return fmt.Errorf("failed to set if match: %w", err)
+		}
+	}
+	return nil
 }
 
 // CreateFilter creates a filter and returns the associated filterID and eTag
@@ -1112,6 +1035,7 @@ func (c *Client) CreateFilter(ctx context.Context, userAuthToken, serviceAuthTok
 		return "", "", err
 	}
 	uri := c.hcCli.URL + "/filters"
+
 	clientlog.Do(ctx, "attempting to create filter", service, uri, log.Data{
 		"method":          "POST",
 		"dataset_id":      datasetID,
@@ -1124,18 +1048,8 @@ func (c *Client) CreateFilter(ctx context.Context, userAuthToken, serviceAuthTok
 	if err != nil {
 		return "", "", err
 	}
-
-	if err = headers.SetCollectionID(request, collectionID); err != nil {
-		return "", "", fmt.Errorf("failed to set collection id: %w", err)
-	}
-	if err = headers.SetAuthToken(request, userAuthToken); err != nil {
-		return "", "", fmt.Errorf("failed to set auth token: %w", err)
-	}
-	if err = headers.SetServiceAuthToken(request, serviceAuthToken); err != nil {
-		return "", "", fmt.Errorf("failed to set service auth token: %w", err)
-	}
-	if err = headers.SetDownloadServiceToken(request, downloadServiceToken); err != nil {
-		return "", "", fmt.Errorf("failed to set download service token: %w", err)
+	if err := c.SetHeaders(request, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, ""); err != nil {
+		return "", "", err
 	}
 
 	response, err := c.hcCli.Client.Do(ctx, request)
