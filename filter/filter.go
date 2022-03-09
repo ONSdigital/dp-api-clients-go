@@ -429,20 +429,23 @@ func (c *Client) CreateFlexibleBlueprint(ctx context.Context, userAuthToken, ser
 		return "", "", err
 	}
 
-	cb := createFlexBlueprintRequest{Dataset: Dataset{DatasetID: datasetID, Edition: edition, Version: ver}, PopulationType: population_type}
-
-	var dimensions []ModelDimension
-	for _, name := range names {
-		dimensions = append(dimensions, ModelDimension{Name: name})
+	dimensions := make([]ModelDimension, len(names))
+	for i, name := range names {
+		dimensions[i] = ModelDimension{Name: name}
 	}
 
-	cb.Dimensions = dimensions
+	cb := createFlexBlueprintRequest{
+		Dimensions:     dimensions,
+		Dataset:        Dataset{DatasetID: datasetID, Edition: edition, Version: ver},
+		PopulationType: population_type,
+	}
+
 	reqBody, err := json.Marshal(cb)
 	if err != nil {
 		return "", "", err
 	}
 
-	respBody, eTag, err := c.postToFilters(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, reqBody)
+	respBody, eTag, err := c.postBlueprint(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, reqBody)
 	if err != nil {
 		return "", "", err
 	}
@@ -462,20 +465,22 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return "", "", err
 	}
 
-	cb := createBlueprint{Dataset: Dataset{DatasetID: datasetID, Edition: edition, Version: ver}}
-
-	var dimensions []ModelDimension
-	for _, name := range names {
-		dimensions = append(dimensions, ModelDimension{Name: name})
+	dimensions := make([]ModelDimension, len(names))
+	for i, name := range names {
+		dimensions[i] = ModelDimension{Name: name}
 	}
 
-	cb.Dimensions = dimensions
+	cb := createBlueprint{
+		Dimensions: dimensions,
+		Dataset:    Dataset{DatasetID: datasetID, Edition: edition, Version: ver},
+	}
+
 	reqBody, err := json.Marshal(cb)
 	if err != nil {
 		return "", "", err
 	}
 
-	respBody, eTag, err := c.postToFilters(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, reqBody)
+	respBody, eTag, err := c.postBlueprint(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, reqBody)
 	if err != nil {
 		return "", "", err
 	}
@@ -487,7 +492,7 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	return cb.FilterID, eTag, nil
 }
 
-func (c *Client) postToFilters(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, reqBody []byte) ([]byte, string, error) {
+func (c *Client) postBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, reqBody []byte) ([]byte, string, error) {
 
 	uri := c.hcCli.URL + "/filters"
 	clientlog.Do(ctx, "attempting to create filter blueprint", service, uri, log.Data{
