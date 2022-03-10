@@ -898,7 +898,7 @@ func TestClient_CreateBlueprint(t *testing.T) {
 	})
 }
 
-func TestClient_CreateBlueprintWithPopulationType(t *testing.T) {
+func TestClient_CreateFlexiableBlueprint(t *testing.T) {
 	datasetID := "foo"
 	edition := "quux"
 	version := "1"
@@ -927,7 +927,7 @@ func TestClient_CreateBlueprintWithPopulationType(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprintWithPopolutionType is called", func() {
-			bp, eTag, err := filterClient.CreateBlueprintWithPopolutionType(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
+			bp, eTag, err := filterClient.CreateFlexiableBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
 
 			Convey("then the expected eTag is returned, with no error", func() {
 				So(err, ShouldBeNil)
@@ -947,7 +947,7 @@ func TestClient_CreateBlueprintWithPopulationType(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprintWithPopolutionType is called", func() {
-			bp, _, err := filterClient.CreateBlueprintWithPopolutionType(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
+			bp, _, err := filterClient.CreateFlexiableBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -970,7 +970,7 @@ func TestClient_CreateBlueprintWithPopulationType(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when CreateBlueprintWithPopolutionType is called", func() {
-			bp, _, err := filterClient.CreateBlueprintWithPopolutionType(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
+			bp, _, err := filterClient.CreateFlexiableBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())

@@ -413,8 +413,8 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	return c.doCreateBlueprint(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, "", names)
 }
 
-// CreateBlueprintWithPopolutionType creates a filter blueprint with extra populution type and returns the associated filterID and eTag
-func (c *Client) CreateBlueprintWithPopolutionType(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, populationType string, names []string) (string, string, error) {
+// CreateFlexiableBlueprint creates a flexiable filter blueprint and returns the associated filterID and eTag
+func (c *Client) CreateFlexiableBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, populationType string, names []string) (string, string, error) {
 	return c.doCreateBlueprint(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, populationType, names)
 }
 
