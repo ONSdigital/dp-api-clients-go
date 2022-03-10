@@ -41,20 +41,13 @@ type DimensionOptions struct {
 
 // CreateBlueprint represents the fields required to create a filter blueprint
 type CreateBlueprint struct {
-	Dataset    Dataset          `json:"dataset"`
-	Dimensions []ModelDimension `json:"dimensions"`
-	FilterID   string           `json:"filter_id"`
-}
-
-// CreateFilterRequest represents the fields required to create a filter
-type CreateFilterRequest struct {
 	Dataset        Dataset     `json:"dataset"`
 	Dimensions     []Dimension `json:"dimensions"`
-	PopulationType string      `json:"population_type"`
+	PopulationType string      `json:"population_type,omitempty"`
 }
 
-// CreateFilterResponse is the response body for POST /filters
-type CreateFilterResponse struct {
+// CreateBlueprintResponse is the response body for POST /filters
+type CreateBlueprintResponse struct {
 	FilterID string `json:"filter_id"`
 }
 

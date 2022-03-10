@@ -824,7 +824,7 @@ func TestClient_CreateBlueprint(t *testing.T) {
 		So(len(httpClient.DoCalls()), ShouldEqual, 1)
 
 		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
-		var actualVersion CreateBlueprint
+		var actualVersion CreateBlueprintResponse
 		err := json.Unmarshal(actualBody, &actualVersion)
 		So(err, ShouldBeNil)
 		So(actualVersion.FilterID, ShouldResemble, expectedFilterID)
@@ -898,24 +898,24 @@ func TestClient_CreateBlueprint(t *testing.T) {
 	})
 }
 
-func TestClient_CreateFilter(t *testing.T) {
+func TestClient_CreateBlueprintWithPopulationType(t *testing.T) {
 	datasetID := "foo"
 	edition := "quux"
 	version := "1"
 	names := []string{"quuz", "corge"}
-	populationType := "pop"
+	populationType := "population"
 
 	checkRequest := func(httpClient *dphttp.ClienterMock, expectedFilterID string) {
 		So(len(httpClient.DoCalls()), ShouldEqual, 1)
 
 		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
-		var actualVersion CreateFilterResponse
+		var actualVersion CreateBlueprintResponse
 		err := json.Unmarshal(actualBody, &actualVersion)
 		So(err, ShouldBeNil)
 		So(actualVersion.FilterID, ShouldResemble, expectedFilterID)
 	}
 
-	Convey("Given a valid Filter is returned", t, func() {
+	Convey("Given a valid Blueprint is returned", t, func() {
 		r := &http.Response{
 			StatusCode: http.StatusCreated,
 			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
@@ -926,8 +926,8 @@ func TestClient_CreateFilter(t *testing.T) {
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when CreateFilter is called", func() {
-			bp, eTag, err := filterClient.CreateFilter(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
+		Convey("when CreateBlueprintWithPopolutionType is called", func() {
+			bp, eTag, err := filterClient.CreateBlueprintWithPopolutionType(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
 
 			Convey("then the expected eTag is returned, with no error", func() {
 				So(err, ShouldBeNil)
@@ -946,8 +946,8 @@ func TestClient_CreateFilter(t *testing.T) {
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when CreateFilter is called", func() {
-			bp, _, err := filterClient.CreateFilter(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
+		Convey("when CreateBlueprintWithPopolutionType is called", func() {
+			bp, _, err := filterClient.CreateBlueprintWithPopolutionType(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -969,8 +969,8 @@ func TestClient_CreateFilter(t *testing.T) {
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when CreateFilter is called", func() {
-			bp, _, err := filterClient.CreateFilter(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
+		Convey("when CreateBlueprintWithPopolutionType is called", func() {
+			bp, _, err := filterClient.CreateBlueprintWithPopolutionType(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, populationType, names)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())

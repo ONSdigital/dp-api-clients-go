@@ -409,68 +409,13 @@ func (c *Client) GetDimensionOptionsBatchProcess(ctx context.Context, userAuthTo
 }
 
 // CreateBlueprint creates a filter blueprint and returns the associated filterID and eTag
-func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, names []string) (filterID, eTag string, err error) {
-	ver, err := strconv.Atoi(version)
-	if err != nil {
-		return "", "", err
-	}
+func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, names []string) (string, string, error) {
+	return c.doCreateBlueprint(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, "", names)
+}
 
-	cb := CreateBlueprint{Dataset: Dataset{DatasetID: datasetID, Edition: edition, Version: ver}}
-
-	var dimensions []ModelDimension
-	for _, name := range names {
-		dimensions = append(dimensions, ModelDimension{Name: name})
-	}
-
-	cb.Dimensions = dimensions
-
-	b, err := json.Marshal(cb)
-	if err != nil {
-		return "", "", err
-	}
-
-	uri := c.hcCli.URL + "/filters"
-	clientlog.Do(ctx, "attempting to create filter blueprint", service, uri, log.Data{
-		"method":    "POST",
-		"datasetID": datasetID,
-		"edition":   edition,
-		"version":   version,
-	})
-
-	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
-	if err != nil {
-		return "", "", err
-	}
-	// set headers
-	if err := c.SetHeaders(req, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, ""); err != nil {
-		return "", "", err
-	}
-
-	resp, err := c.hcCli.Client.Do(ctx, req)
-	if err != nil {
-		return "", "", err
-	}
-	defer closeResponseBody(ctx, resp)
-
-	if resp.StatusCode != http.StatusCreated {
-		return "", "", ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
-	}
-
-	eTag, err = headers.GetResponseETag(resp)
-	if err != nil && err != headers.ErrHeaderNotFound {
-		return "", "", err
-	}
-
-	b, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", "", err
-	}
-
-	if err = json.Unmarshal(b, &cb); err != nil {
-		return "", "", err
-	}
-
-	return cb.FilterID, eTag, nil
+// CreateBlueprintWithPopolutionType creates a filter blueprint with extra populution type and returns the associated filterID and eTag
+func (c *Client) CreateBlueprintWithPopolutionType(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, populationType string, names []string) (string, string, error) {
+	return c.doCreateBlueprint(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, populationType, names)
 }
 
 // UpdateBlueprint will update a blueprint with a given filter model, providing the required IfMatch value to be sure the update is done in the expected object
@@ -1008,8 +953,8 @@ func (c *Client) SetHeaders(request *http.Request, userAuthToken, serviceAuthTok
 	return nil
 }
 
-// CreateFilter creates a filter and returns the associated filterID and eTag
-func (c *Client) CreateFilter(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, populationType string, names []string) (filterID, eTag string, err error) {
+// doCreateBlueprint sends a CreateBlueprint request and returns the associated filterID and eTag
+func (c *Client) doCreateBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, populationType string, names []string) (filterID, eTag string, err error) {
 	ver, err := strconv.Atoi(version)
 	if err != nil {
 		return "", "", err
@@ -1020,7 +965,7 @@ func (c *Client) CreateFilter(ctx context.Context, userAuthToken, serviceAuthTok
 		dimensions = append(dimensions, Dimension{Name: name})
 	}
 
-	filter := CreateFilterRequest{
+	blueprint := CreateBlueprint{
 		Dataset: Dataset{
 			DatasetID: datasetID,
 			Edition:   edition,
@@ -1030,13 +975,13 @@ func (c *Client) CreateFilter(ctx context.Context, userAuthToken, serviceAuthTok
 		PopulationType: populationType,
 	}
 
-	data, err := json.Marshal(filter)
+	data, err := json.Marshal(blueprint)
 	if err != nil {
 		return "", "", err
 	}
 	uri := c.hcCli.URL + "/filters"
 
-	clientlog.Do(ctx, "attempting to create filter", service, uri, log.Data{
+	clientlog.Do(ctx, "attempting to create filter blueprint", service, uri, log.Data{
 		"method":          "POST",
 		"dataset_id":      datasetID,
 		"edition":         edition,
@@ -1070,10 +1015,10 @@ func (c *Client) CreateFilter(ctx context.Context, userAuthToken, serviceAuthTok
 	if err != nil {
 		return "", "", err
 	}
-	var filterResponse CreateFilterResponse
-	if err = json.Unmarshal(data, &filterResponse); err != nil {
+	var blueprintResponse CreateBlueprintResponse
+	if err = json.Unmarshal(data, &blueprintResponse); err != nil {
 		return "", "", err
 	}
 
-	return filterResponse.FilterID, eTag, nil
+	return blueprintResponse.FilterID, eTag, nil
 }
