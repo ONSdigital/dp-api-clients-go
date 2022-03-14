@@ -1,7 +1,9 @@
 package upload
 
 import (
+	"context"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 )
 
 const service = "upload-api"
@@ -35,4 +37,9 @@ func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
 	return &Client{
 		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
 	}
+}
+
+// Checker calls image api health endpoint and returns a check object to the caller.
+func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
+	return c.hcCli.Checker(ctx, check)
 }
