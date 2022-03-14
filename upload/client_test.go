@@ -12,30 +12,6 @@ import (
 	"time"
 )
 
-const (
-	//userAuthToken    = "iamatoken"
-	//serviceAuthToken = "iamaservicetoken"
-	//collectionID     = "iamacollectionID"
-	testHost = "http://localhost:8080"
-)
-
-func TestClient_New(t *testing.T) {
-	Convey("NewAPIClient creates a new API client with the expected URL and name", t, func() {
-		uploadClient := upload.NewAPIClient(testHost)
-		So(uploadClient.URL(), ShouldEqual, testHost)
-		So(uploadClient.HealthClient().Name, ShouldEqual, "upload-api")
-	})
-
-	Convey("Given an existing healthcheck client", t, func() {
-		hcClient := health.NewClient("generic", testHost)
-		Convey("The creating a new upload API client providing it, results in a new client with the expected URL and name", func() {
-			uploadClient := upload.NewWithHealthClient(hcClient)
-			So(uploadClient.URL(), ShouldEqual, testHost)
-			So(uploadClient.HealthClient().Name, ShouldEqual, "upload-api")
-		})
-	})
-}
-
 func TestHealthCheck(t *testing.T) {
 	Convey("Given the upload service is health", t, func() {
 		timePriorHealthCheck := time.Now()

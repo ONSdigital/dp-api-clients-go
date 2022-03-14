@@ -21,24 +21,6 @@ func NewAPIClient(uploadAPIURL string) *Client {
 	}
 }
 
-// URL returns the URL used by this client
-func (c *Client) URL() string {
-	return c.hcCli.URL
-}
-
-// HealthClient returns the underlying Healthcheck Client for this image API client
-func (c *Client) HealthClient() *healthcheck.Client {
-	return c.hcCli
-}
-
-// NewWithHealthClient creates a new instance of ImageAPI Client,
-// reusing the URL and Clienter from the provided healthcheck client.
-func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
-	return &Client{
-		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
-	}
-}
-
 // Checker calls image api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
