@@ -3,6 +3,7 @@ package filterflex
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
@@ -47,14 +48,19 @@ func (c *Client) Checker(ctx context.Context, check *healthcheck.CheckState) err
 // will have been made using the relevant api-client. Note that the caller is responsible
 // for closing the response body as with making a regular http request.
 func (c *Client) ForwardRequest(req *http.Request) (*http.Response, error) {
-	uri := c.cfg.HostURL + req.URL.Path
+	parsedHostURL, err := url.Parse(c.cfg.HostURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse config host url")
+	}
+	parsedHostURL.Path = req.URL.Path
+	parsedHostURL.RawQuery = req.URL.Query().Encode()
 
-	proxyReq, err := http.NewRequest(req.Method, uri, req.Body)
-	if err != nil{
+	proxyReq, err := http.NewRequest(req.Method, parsedHostURL.String(), req.Body)
+	if err != nil {
 		return nil, &Error{
-			err:     errors.Wrap(err, "failed to create proxy request"),
+			err: errors.Wrap(err, "failed to create proxy request"),
 			logData: log.Data{
-				"target_uri":     uri,
+				"target_uri":     parsedHostURL.String(),
 				"request_method": req.Method,
 			},
 		}
