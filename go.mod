@@ -27,5 +27,4 @@ require (
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/sys v0.0.0-20210414055047-fe65e336abe0 // indirect
-	golang.org/x/tools v0.0.0-20190425150028-36563e24a262 // indirect
 )
