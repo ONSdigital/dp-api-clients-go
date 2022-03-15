@@ -45,9 +45,7 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
 
-func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata Metadata) error {
-	buff := &bytes.Buffer{}
-	formWriter := multipart.NewWriter(buff)
+func (c *Client) writeMetadataFormFields(formWriter *multipart.Writer, metadata Metadata) {
 	if metadata.CollectionID != nil {
 		formWriter.WriteField("collectionId", *metadata.CollectionID)
 	}
@@ -61,21 +59,30 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 	formWriter.WriteField("licenceURL", metadata.LicenseURL)
 	formWriter.WriteField("resumableChunkNumber", "1")
 	formWriter.WriteField("resumableTotalChunks", "1")
+}
 
+func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata Metadata) error {
+	buff := &bytes.Buffer{}
+	formWriter := multipart.NewWriter(buff)
+
+	c.writeMetadataFormFields(formWriter, metadata)
+	c.writeFileFormField(formWriter, metadata, fileContent)
+
+	formWriter.Close()
+
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload", c.hcCli.URL), buff)
+	req.Header.Set("Content-Type", formWriter.FormDataContentType())
+
+	dphttp.DefaultClient.Do(ctx, req)
+
+	return nil
+}
+
+func (c *Client) writeFileFormField(formWriter *multipart.Writer, metadata Metadata, fileContent io.ReadCloser) {
 	part, _ := formWriter.CreateFormFile("file", metadata.FileName)
 
 	fileContentBytes := make([]byte, metadata.FileSizeBytes)
 	fileContent.Read(fileContentBytes)
 
 	part.Write(fileContentBytes)
-
-	formWriter.Close()
-
-	defaultClient := dphttp.DefaultClient
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload", c.hcCli.URL), buff)
-	req.Header.Set("Content-Type", formWriter.FormDataContentType())
-
-	defaultClient.Do(ctx, req)
-
-	return nil
 }
