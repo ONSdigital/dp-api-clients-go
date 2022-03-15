@@ -43,100 +43,111 @@ const (
 )
 
 func TestHealthCheck(t *testing.T) {
-	Convey("Given the upload service is health", t, func() {
-		timePriorHealthCheck := time.Now()
+	timePriorHealthCheck := time.Now()
+
+	Convey("Given the upload service is healthy", t, func() {
+
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }))
 		defer s.Close()
 
-		state := health.CreateCheckState("testing")
+		c := upload.NewAPIClient(s.URL)
 
 		Convey("When we check that state of the service", func() {
-			c := upload.NewAPIClient(s.URL)
+			state := health.CreateCheckState("testing")
 			c.Checker(context.Background(), &state)
 
-			So(state.Status(), ShouldEqual, healthcheck.StatusOK)
-			So(state.StatusCode(), ShouldEqual, 200)
-			So(state.Message(), ShouldContainSubstring, "is ok")
+			Convey("Then the health check should be successful", func() {
+				So(state.Status(), ShouldEqual, healthcheck.StatusOK)
+				So(state.StatusCode(), ShouldEqual, 200)
+				So(state.Message(), ShouldContainSubstring, "is ok")
+			})
 
-			So(*state.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
-			So(*state.LastSuccess(), ShouldHappenAfter, timePriorHealthCheck)
-			So(state.LastFailure(), ShouldBeNil)
+			Convey("And the timestamps are logged appropriately", func() {
+				So(*state.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
+				So(*state.LastSuccess(), ShouldHappenAfter, timePriorHealthCheck)
+				So(state.LastFailure(), ShouldBeNil)
+			})
 		})
 	})
 
 	Convey("Given the upload service is failing", t, func() {
-		timePriorHealthCheck := time.Now()
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusInternalServerError) }))
 		defer s.Close()
 
-		state := health.CreateCheckState("testing")
+		c := upload.NewAPIClient(s.URL)
 
 		Convey("When we check the state of the service", func() {
-			c := upload.NewAPIClient(s.URL)
+			state := health.CreateCheckState("testing")
 			c.Checker(context.Background(), &state)
 
-			So(state.Status(), ShouldEqual, healthcheck.StatusCritical)
-			So(state.StatusCode(), ShouldEqual, 500)
-			So(state.Message(), ShouldContainSubstring, "unavailable or non-functioning")
+			Convey("Then the health check should be successful", func() {
+				So(state.Status(), ShouldEqual, healthcheck.StatusCritical)
+				So(state.StatusCode(), ShouldEqual, 500)
+				So(state.Message(), ShouldContainSubstring, "unavailable or non-functioning")
+			})
 
-			So(*state.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
-			So(state.LastSuccess(), ShouldBeNil)
-			So(*state.LastFailure(), ShouldHappenAfter, timePriorHealthCheck)
+			Convey("And the timestamps are logged appropriately", func() {
+				So(*state.LastChecked(), ShouldHappenAfter, timePriorHealthCheck)
+				So(state.LastSuccess(), ShouldBeNil)
+				So(*state.LastFailure(), ShouldHappenAfter, timePriorHealthCheck)
+			})
 		})
 	})
 }
 
 func TestUpload(t *testing.T) {
-	Convey("Given the client uploads a single chunk file", t, func() {
-		fileContent := "testing"
-		f := io.NopCloser(strings.NewReader(fileContent))
+	Convey("Given the upload service is running", t, func() {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			extractFields(r)
 
-		Convey("And the file belongs to a collection", func() {
+			w.WriteHeader(http.StatusCreated)
+		}))
+		defer s.Close()
+		c := upload.NewAPIClient(s.URL)
 
-			metadata := upload.Metadata{
-				CollectionID:  collectionID,
-				FileName:      filename,
-				Path:          path,
-				IsPublishable: isPublishable,
-				Title:         title,
-				FileSizeBytes: int64(len(fileContent)),
-				FileType:      fileType,
-				License:       license,
-				LicenseURL:    licenseURL,
-			}
+		Convey("And the file is a single chunk", func() {
+			fileContent := "testing"
+			f := io.NopCloser(strings.NewReader(fileContent))
 
-			Convey("When the upload is successful", func() {
-				ctx := context.Background()
+			Convey("When I upload the file with metadata containing a collection ID", func() {
+				metadata := upload.Metadata{
+					CollectionID:  collectionID,
+					FileName:      filename,
+					Path:          path,
+					IsPublishable: isPublishable,
+					Title:         title,
+					FileSizeBytes: int64(len(fileContent)),
+					FileType:      fileType,
+					License:       license,
+					LicenseURL:    licenseURL,
+				}
 
-				s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					extractFields(r)
+				err := c.Upload(context.Background(), f, metadata)
 
-					w.WriteHeader(http.StatusCreated)
-				},
-				))
-				c := upload.NewAPIClient(s.URL)
+				Convey("Then the file is successfully uploaded", func() {
+					So(err, ShouldBeNil)
+					So(actualMethod, ShouldEqual, http.MethodPost)
+					So(actualContent, ShouldEqual, fileContent)
+				})
 
-				err := c.Upload(ctx, f, metadata)
+				Convey("And the resumable data was calculated", func() {
+					So(actualResumableFilename, ShouldEqual, filename)
+					So(actualResumableTotalSize, ShouldEqual, fmt.Sprintf("%d", len(fileContent)))
+					So(actualResumableChunkNumber, ShouldEqual, "1")
+					So(actualResumableTotalChunks, ShouldEqual, "1")
+					So(actualResumableType, ShouldEqual, fileType)
+				})
 
-				So(err, ShouldBeNil)
-				So(actualMethod, ShouldEqual, http.MethodPost)
-
-				So(actualCollectionId, ShouldEqual, collectionID)
-				So(actualResumableFilename, ShouldEqual, filename)
-				So(actualPath, ShouldEqual, path)
-				So(actualIsPublishable, ShouldEqual, strconv.FormatBool(isPublishable))
-				So(actualTitle, ShouldEqual, title)
-				So(actualResumableTotalSize, ShouldEqual, fmt.Sprintf("%d", len(fileContent)))
-				So(actualResumableType, ShouldEqual, fileType)
-				So(actualLicence, ShouldEqual, license)
-				So(actualLicenceURL, ShouldEqual, licenseURL)
-				So(actualResumableChunkNumber, ShouldEqual, "1")
-				So(actualResumableTotalChunks, ShouldEqual, "1")
-
-				So(actualContent, ShouldEqual, fileContent)
+				Convey("And the file metadata is sent with the file", func() {
+					So(actualCollectionId, ShouldEqual, collectionID)
+					So(actualPath, ShouldEqual, path)
+					So(actualIsPublishable, ShouldEqual, strconv.FormatBool(isPublishable))
+					So(actualTitle, ShouldEqual, title)
+					So(actualLicence, ShouldEqual, license)
+					So(actualLicenceURL, ShouldEqual, licenseURL)
+				})
 			})
 		})
-
 	})
 }
 
