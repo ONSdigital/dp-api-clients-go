@@ -13,7 +13,10 @@ import (
 	"strconv"
 )
 
-const service = "upload-api"
+const (
+	service   = "upload-api"
+	chunkSize = 5 * 1024 * 1024
+)
 
 type Metadata struct {
 	CollectionID  *string
@@ -65,8 +68,12 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 	buff := &bytes.Buffer{}
 	formWriter := multipart.NewWriter(buff)
 
-	c.writeMetadataFormFields(formWriter, metadata)
-	c.writeFileFormField(formWriter, metadata, fileContent)
+	totalChunks := metadata.FileSizeBytes / chunkSize
+
+	for {
+		c.writeMetadataFormFields(formWriter, metadata)
+		c.writeFileFormField(formWriter, metadata, fileContent)
+	}
 
 	formWriter.Close()
 

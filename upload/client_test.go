@@ -2,6 +2,8 @@ package upload_test
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/upload"
@@ -30,7 +32,9 @@ var (
 	actualLicenceURL           string
 	actualResumableChunkNumber string
 	actualResumableTotalChunks string
-	actualMethod               string
+
+	actualMethod     string
+	numberOfAPICalls int
 
 	collectionID = "123456"
 )
@@ -49,7 +53,6 @@ func TestHealthCheck(t *testing.T) {
 	timePriorHealthCheck := time.Now()
 
 	Convey("Given the upload service is healthy", t, func() {
-
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }))
 		defer s.Close()
 
@@ -100,6 +103,8 @@ func TestHealthCheck(t *testing.T) {
 
 func TestUpload(t *testing.T) {
 	Convey("Given the upload service is running", t, func() {
+		numberOfAPICalls = 0
+		actualContent = ""
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			extractFields(r)
 
@@ -189,10 +194,61 @@ func TestUpload(t *testing.T) {
 				})
 			})
 		})
+
+		Convey("And the file is multiple chucks", func() {
+			expectedContentLength := 6 * 1024 * 1024
+
+			contentBytes := make([]byte, expectedContentLength)
+			rand.Read(contentBytes)
+
+			fileContent := hex.EncodeToString(contentBytes)
+			f := io.NopCloser(strings.NewReader(fileContent))
+
+			Convey("When I upload the file with metadata containing a collection ID", func() {
+				metadata := upload.Metadata{
+					CollectionID:  &collectionID,
+					FileName:      filename,
+					Path:          path,
+					IsPublishable: isPublishable,
+					Title:         title,
+					FileSizeBytes: int64(expectedContentLength),
+					FileType:      fileType,
+					License:       license,
+					LicenseURL:    licenseURL,
+				}
+
+				err := c.Upload(context.Background(), f, metadata)
+
+				Convey("Then the file is successfully uploaded in 5 Megabyte chunk", func() {
+					So(err, ShouldBeNil)
+					So(actualMethod, ShouldEqual, http.MethodPost)
+					//So(actualContent, ShouldEqual, fileContent)
+					So(numberOfAPICalls, ShouldEqual, 2)
+				})
+
+				Convey("And the resumable data was calculated", func() {
+					So(actualResumableFilename, ShouldEqual, filename)
+					So(actualResumableTotalSize, ShouldEqual, fmt.Sprintf("%d", expectedContentLength))
+					So(actualResumableChunkNumber, ShouldEqual, "2")
+					So(actualResumableTotalChunks, ShouldEqual, "2")
+					So(actualResumableType, ShouldEqual, fileType)
+				})
+
+				Convey("And the file metadata is sent with the file", func() {
+					So(actualCollectionId, ShouldEqual, collectionID)
+					So(actualPath, ShouldEqual, path)
+					So(actualIsPublishable, ShouldEqual, strconv.FormatBool(isPublishable))
+					So(actualTitle, ShouldEqual, title)
+					So(actualLicence, ShouldEqual, license)
+					So(actualLicenceURL, ShouldEqual, licenseURL)
+				})
+			})
+		})
 	})
 }
 
 func extractFields(r *http.Request) {
+	numberOfAPICalls++
 	r.ParseMultipartForm(4)
 
 	actualHasCollectionID = r.Form.Has("collectionId")
@@ -212,5 +268,5 @@ func extractFields(r *http.Request) {
 
 	content, _, _ := r.FormFile("file")
 	by, _ := io.ReadAll(content)
-	actualContent = string(by)
+	actualContent = actualContent + string(by)
 }
