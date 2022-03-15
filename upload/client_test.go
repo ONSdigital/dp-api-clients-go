@@ -2,14 +2,13 @@ package upload_test
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/upload"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	. "github.com/smartystreets/goconvey/convey"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -197,12 +196,8 @@ func TestUpload(t *testing.T) {
 		})
 
 		Convey("And the file is multiple chunks", func() {
-			expectedContentLength := 6 * 1024 * 1024
+			expectedContentLength, fileContent := generateTestContent()
 
-			contentBytes := make([]byte, expectedContentLength)
-			rand.Read(contentBytes)
-
-			fileContent := hex.EncodeToString(contentBytes)
 			f := io.NopCloser(strings.NewReader(fileContent))
 
 			Convey("When I upload the multi-chunk file with metadata containing a collection ID", func() {
@@ -224,7 +219,15 @@ func TestUpload(t *testing.T) {
 				Convey("Then the file is successfully uploaded in 5 Megabyte chunk", func() {
 					So(err, ShouldBeNil)
 					So(actualMethod, ShouldEqual, http.MethodPost)
-					//So(actualContent, ShouldEqual, fileContent)
+
+					actualContentStart := actualContent[:20]
+					expectedContentStart := fileContent[:20]
+
+					actualContentEnd := actualContent[len(actualContent)-20 : len(actualContent)-1]
+					expectedContentEnd := fileContent[len(fileContent)-20 : len(fileContent)-1]
+
+					So(actualContentStart, ShouldEqual, expectedContentStart)
+					So(actualContentEnd, ShouldEqual, expectedContentEnd)
 					So(numberOfAPICalls, ShouldEqual, 2)
 				})
 
@@ -274,4 +277,16 @@ func extractFields(r *http.Request) {
 	contentBytes, _ := io.ReadAll(contentReader)
 
 	actualContent = actualContent + string(contentBytes)
+}
+
+func generateTestContent() (int, string) {
+	size := 6 * 1024 * 1024
+
+	var letters = []rune("abcdefghijklmnopqrstuvwxyz")
+	output := make([]rune, size)
+	for i := range output {
+		output[i] = letters[rand.Intn(len(letters))]
+	}
+
+	return size, string(output)
 }

@@ -99,7 +99,7 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 		br := bytes.NewReader(outBuff)
 
 		c.writeMetadataFormFields(formWriter, metadata, chunkContext)
-		_, err = c.writeFileFormField(formWriter, metadata, io.NopCloser(br))
+		_, err = c.writeFileFormField(formWriter, metadata, br, len(outBuff))
 
 		if err != nil {
 			log.Error(ctx, "error writing form file content to request buffer", err)
@@ -122,10 +122,10 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 	return nil
 }
 
-func (c *Client) writeFileFormField(formWriter *multipart.Writer, metadata Metadata, fileContent io.ReadCloser) (int, error) {
+func (c *Client) writeFileFormField(formWriter *multipart.Writer, metadata Metadata, fileContent io.Reader, fileSizeBytes int) (int, error) {
 	part, _ := formWriter.CreateFormFile("file", metadata.FileName)
 
-	fileContentBytes := make([]byte, metadata.FileSizeBytes)
+	fileContentBytes := make([]byte, fileSizeBytes)
 	fileContent.Read(fileContentBytes)
 
 	return part.Write(fileContentBytes)
