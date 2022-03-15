@@ -17,22 +17,25 @@ import (
 )
 
 var (
-	actualContent, actualCollectionId string
-	actualResumableFilename           string
-	actualPath                        string
-	actualIsPublishable               string
-	actualTitle                       string
-	actualResumableTotalSize          string
-	actualResumableType               string
-	actualLicence                     string
-	actualLicenceURL                  string
-	actualResumableChunkNumber        string
-	actualResumableTotalChunks        string
-	actualMethod                      string
+	actualContent              string
+	actualHasCollectionID      bool
+	actualCollectionId         string
+	actualResumableFilename    string
+	actualPath                 string
+	actualIsPublishable        string
+	actualTitle                string
+	actualResumableTotalSize   string
+	actualResumableType        string
+	actualLicence              string
+	actualLicenceURL           string
+	actualResumableChunkNumber string
+	actualResumableTotalChunks string
+	actualMethod               string
+
+	collectionID = "123456"
 )
 
 const (
-	collectionID  = "123456"
 	filename      = "file.txt"
 	path          = "data/file.txt"
 	isPublishable = false
@@ -111,7 +114,7 @@ func TestUpload(t *testing.T) {
 
 			Convey("When I upload the file with metadata containing a collection ID", func() {
 				metadata := upload.Metadata{
-					CollectionID:  collectionID,
+					CollectionID:  &collectionID,
 					FileName:      filename,
 					Path:          path,
 					IsPublishable: isPublishable,
@@ -147,12 +150,52 @@ func TestUpload(t *testing.T) {
 					So(actualLicenceURL, ShouldEqual, licenseURL)
 				})
 			})
+
+			Convey("When I upload the file with metadata not containing a collection ID", func() {
+				metadata := upload.Metadata{
+					FileName:      filename,
+					Path:          path,
+					IsPublishable: isPublishable,
+					Title:         title,
+					FileSizeBytes: int64(len(fileContent)),
+					FileType:      fileType,
+					License:       license,
+					LicenseURL:    licenseURL,
+				}
+
+				err := c.Upload(context.Background(), f, metadata)
+
+				Convey("Then the file is successfully uploaded", func() {
+					So(err, ShouldBeNil)
+					So(actualMethod, ShouldEqual, http.MethodPost)
+					So(actualContent, ShouldEqual, fileContent)
+				})
+
+				Convey("And the resumable data was calculated", func() {
+					So(actualResumableFilename, ShouldEqual, filename)
+					So(actualResumableTotalSize, ShouldEqual, fmt.Sprintf("%d", len(fileContent)))
+					So(actualResumableChunkNumber, ShouldEqual, "1")
+					So(actualResumableTotalChunks, ShouldEqual, "1")
+					So(actualResumableType, ShouldEqual, fileType)
+				})
+
+				Convey("And the file metadata is sent with the file", func() {
+					So(actualHasCollectionID, ShouldBeFalse)
+					So(actualPath, ShouldEqual, path)
+					So(actualIsPublishable, ShouldEqual, strconv.FormatBool(isPublishable))
+					So(actualTitle, ShouldEqual, title)
+					So(actualLicence, ShouldEqual, license)
+					So(actualLicenceURL, ShouldEqual, licenseURL)
+				})
+			})
 		})
 	})
 }
 
 func extractFields(r *http.Request) {
 	r.ParseMultipartForm(4)
+
+	actualHasCollectionID = r.Form.Has("collectionId")
 
 	actualCollectionId = r.Form.Get("collectionId")
 	actualResumableFilename = r.Form.Get("resumableFilename")

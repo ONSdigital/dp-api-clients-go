@@ -16,7 +16,7 @@ import (
 const service = "upload-api"
 
 type Metadata struct {
-	CollectionID  string
+	CollectionID  *string
 	FileName      string
 	Path          string
 	IsPublishable bool
@@ -48,7 +48,9 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata Metadata) error {
 	buff := &bytes.Buffer{}
 	formWriter := multipart.NewWriter(buff)
-	formWriter.WriteField("collectionId", metadata.CollectionID)
+	if metadata.CollectionID != nil {
+		formWriter.WriteField("collectionId", *metadata.CollectionID)
+	}
 	formWriter.WriteField("resumableFilename", metadata.FileName)
 	formWriter.WriteField("path", metadata.Path)
 	formWriter.WriteField("isPublishable", strconv.FormatBool(metadata.IsPublishable))
