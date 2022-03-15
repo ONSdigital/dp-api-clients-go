@@ -7,7 +7,9 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
+	"github.com/ONSdigital/log.go/v2/log"
 	"io"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -36,6 +38,11 @@ type Client struct {
 	hcCli *healthcheck.Client
 }
 
+type ChunkContext struct {
+	Current int
+	Total   int
+}
+
 // NewAPIClient creates a new instance of Upload Client with a given image API URL
 func NewAPIClient(uploadAPIURL string) *Client {
 	return &Client{
@@ -48,7 +55,7 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
 
-func (c *Client) writeMetadataFormFields(formWriter *multipart.Writer, metadata Metadata) {
+func (c *Client) writeMetadataFormFields(formWriter *multipart.Writer, metadata Metadata, chunk ChunkContext) {
 	if metadata.CollectionID != nil {
 		formWriter.WriteField("collectionId", *metadata.CollectionID)
 	}
@@ -60,36 +67,66 @@ func (c *Client) writeMetadataFormFields(formWriter *multipart.Writer, metadata 
 	formWriter.WriteField("resumableType", metadata.FileType)
 	formWriter.WriteField("licence", metadata.License)
 	formWriter.WriteField("licenceURL", metadata.LicenseURL)
-	formWriter.WriteField("resumableChunkNumber", "1")
-	formWriter.WriteField("resumableTotalChunks", "1")
+	formWriter.WriteField("resumableChunkNumber", fmt.Sprintf("%d", chunk.Current))
+	formWriter.WriteField("resumableTotalChunks", fmt.Sprintf("%d", chunk.Total))
 }
 
 func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata Metadata) error {
-	buff := &bytes.Buffer{}
-	formWriter := multipart.NewWriter(buff)
+	totalChunks := int(math.Ceil(float64(metadata.FileSizeBytes) / chunkSize))
 
-	totalChunks := metadata.FileSizeBytes / chunkSize
+	for i := 1; i <= totalChunks; i++ {
+		reqBuff := &bytes.Buffer{}
+		chunkContext := ChunkContext{
+			Current: i,
+			Total:   totalChunks,
+		}
+		formWriter := multipart.NewWriter(reqBuff)
 
-	for {
-		c.writeMetadataFormFields(formWriter, metadata)
-		c.writeFileFormField(formWriter, metadata, fileContent)
+		readBuff := make([]byte, chunkSize)
+		bytesRead, err := fileContent.Read(readBuff)
+
+		var outBuff []byte
+
+		if bytesRead == chunkSize {
+			outBuff = readBuff
+		} else if bytesRead < chunkSize {
+			outBuff = readBuff[:bytesRead]
+		} else if err != nil {
+			log.Error(ctx, "error reading chunk", err)
+			return err
+		}
+
+		br := bytes.NewReader(outBuff)
+
+		c.writeMetadataFormFields(formWriter, metadata, chunkContext)
+		_, err = c.writeFileFormField(formWriter, metadata, io.NopCloser(br))
+
+		if err != nil {
+			log.Error(ctx, "error writing form file content to request buffer", err)
+		}
+
+		formWriter.Close()
+
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload", c.hcCli.URL), reqBuff)
+
+		if err != nil {
+			log.Error(ctx, "error creating request", err)
+			return err
+		}
+
+		req.Header.Set("Content-Type", formWriter.FormDataContentType())
+
+		dphttp.DefaultClient.Do(ctx, req)
 	}
-
-	formWriter.Close()
-
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload", c.hcCli.URL), buff)
-	req.Header.Set("Content-Type", formWriter.FormDataContentType())
-
-	dphttp.DefaultClient.Do(ctx, req)
 
 	return nil
 }
 
-func (c *Client) writeFileFormField(formWriter *multipart.Writer, metadata Metadata, fileContent io.ReadCloser) {
+func (c *Client) writeFileFormField(formWriter *multipart.Writer, metadata Metadata, fileContent io.ReadCloser) (int, error) {
 	part, _ := formWriter.CreateFormFile("file", metadata.FileName)
 
 	fileContentBytes := make([]byte, metadata.FileSizeBytes)
 	fileContent.Read(fileContentBytes)
 
-	part.Write(fileContentBytes)
+	return part.Write(fileContentBytes)
 }

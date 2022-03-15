@@ -103,7 +103,6 @@ func TestHealthCheck(t *testing.T) {
 
 func TestUpload(t *testing.T) {
 	Convey("Given the upload service is running", t, func() {
-		numberOfAPICalls = 0
 		actualContent = ""
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			extractFields(r)
@@ -117,7 +116,7 @@ func TestUpload(t *testing.T) {
 			fileContent := "testing"
 			f := io.NopCloser(strings.NewReader(fileContent))
 
-			Convey("When I upload the file with metadata containing a collection ID", func() {
+			Convey("When I upload the single-chunk file with metadata containing a collection ID", func() {
 				metadata := upload.Metadata{
 					CollectionID:  &collectionID,
 					FileName:      filename,
@@ -130,6 +129,7 @@ func TestUpload(t *testing.T) {
 					LicenseURL:    licenseURL,
 				}
 
+				numberOfAPICalls = 0
 				err := c.Upload(context.Background(), f, metadata)
 
 				Convey("Then the file is successfully uploaded", func() {
@@ -156,7 +156,7 @@ func TestUpload(t *testing.T) {
 				})
 			})
 
-			Convey("When I upload the file with metadata not containing a collection ID", func() {
+			Convey("When I upload the single-chunk file with metadata not containing a collection ID", func() {
 				metadata := upload.Metadata{
 					FileName:      filename,
 					Path:          path,
@@ -168,6 +168,7 @@ func TestUpload(t *testing.T) {
 					LicenseURL:    licenseURL,
 				}
 
+				numberOfAPICalls = 0
 				err := c.Upload(context.Background(), f, metadata)
 
 				Convey("Then the file is successfully uploaded", func() {
@@ -195,7 +196,7 @@ func TestUpload(t *testing.T) {
 			})
 		})
 
-		Convey("And the file is multiple chucks", func() {
+		Convey("And the file is multiple chunks", func() {
 			expectedContentLength := 6 * 1024 * 1024
 
 			contentBytes := make([]byte, expectedContentLength)
@@ -204,7 +205,7 @@ func TestUpload(t *testing.T) {
 			fileContent := hex.EncodeToString(contentBytes)
 			f := io.NopCloser(strings.NewReader(fileContent))
 
-			Convey("When I upload the file with metadata containing a collection ID", func() {
+			Convey("When I upload the multi-chunk file with metadata containing a collection ID", func() {
 				metadata := upload.Metadata{
 					CollectionID:  &collectionID,
 					FileName:      filename,
@@ -217,6 +218,7 @@ func TestUpload(t *testing.T) {
 					LicenseURL:    licenseURL,
 				}
 
+				numberOfAPICalls = 0
 				err := c.Upload(context.Background(), f, metadata)
 
 				Convey("Then the file is successfully uploaded in 5 Megabyte chunk", func() {
@@ -249,7 +251,8 @@ func TestUpload(t *testing.T) {
 
 func extractFields(r *http.Request) {
 	numberOfAPICalls++
-	r.ParseMultipartForm(4)
+	maxMemory := int64(7 * 1024 * 1024)
+	r.ParseMultipartForm(maxMemory)
 
 	actualHasCollectionID = r.Form.Has("collectionId")
 
@@ -266,7 +269,9 @@ func extractFields(r *http.Request) {
 	actualResumableTotalChunks = r.Form.Get("resumableTotalChunks")
 	actualMethod = r.Method
 
-	content, _, _ := r.FormFile("file")
-	by, _ := io.ReadAll(content)
-	actualContent = actualContent + string(by)
+	contentReader, _, _ := r.FormFile("file")
+
+	contentBytes, _ := io.ReadAll(contentReader)
+
+	actualContent = actualContent + string(contentBytes)
 }
