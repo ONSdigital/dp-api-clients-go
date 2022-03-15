@@ -926,6 +926,69 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 	return eTag, nil
 }
 
+// AddFlexDimension adds a new dimension to a filter job, with additional Cantabular-only fields
+func (c *Client) AddFlexDimension(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, name string, options []string, isAreaType bool, ifMatch string) (eTag string, err error) {
+	uri := fmt.Sprintf("%s/filters/%s/dimensions", c.hcCli.URL, id)
+
+	clientlog.Do(ctx, "adding dimension to filter job", service, uri, log.Data{
+		"method":       "POST",
+		"filter":       id,
+		"dimension":    name,
+		"options":      options,
+		"is_area_type": isAreaType,
+	})
+
+	reqBody, err := json.Marshal(createFlexDimensionRequest{
+		Name:       name,
+		IsAreaType: isAreaType,
+		Options:    options,
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal flex request body: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return "", fmt.Errorf("failed to make request to filter API: %w", err)
+	}
+
+	if err = headers.SetCollectionID(req, collectionID); err != nil {
+		return "", fmt.Errorf("failed to set collection id: %w", err)
+	}
+
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return "", fmt.Errorf("failed to set auth token: %w", err)
+	}
+
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return "", fmt.Errorf("failed to set service auth token: %w", err)
+	}
+
+	if err = headers.SetIfMatch(req, ifMatch); err != nil {
+		return "", fmt.Errorf("failed to set if match: %w", err)
+	}
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return "", fmt.Errorf("failed to make filter request: %w", err)
+	}
+
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusCreated {
+		err = &ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
+		return "", err
+	}
+
+	eTag, err = headers.GetResponseETag(resp)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return "", fmt.Errorf("unable to get reponse etag: %w", err)
+	}
+
+	return eTag, nil
+}
+
 // GetJobState will return the current state of the filter job unmarshalled as a Model struct
 func (c *Client) GetJobState(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterID string) (m Model, eTag string, err error) {
 	b, eTag, err := c.GetJobStateBytes(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterID)

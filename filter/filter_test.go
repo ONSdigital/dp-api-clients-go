@@ -1357,6 +1357,107 @@ func TestClient_AddDimension(t *testing.T) {
 	})
 }
 
+func TestClient_AddFlexDimension(t *testing.T) {
+	const filterID = "baz"
+	const name = "quz"
+	const isAreaType = true
+	const newETag = "eb31e352f140b8a965d008f5505153bc6c4f5b48"
+	options := []string{"test"}
+
+	Convey("Given a dimension is provided", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusCreated,
+			Header:     http.Header{"Etag": []string{newETag}},
+		}
+
+		httpClient := newMockHTTPClient(r, nil)
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when AddFlexDimension is called", func() {
+			eTag, err := filterClient.AddFlexDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, isAreaType, testETag)
+			calls := httpClient.DoCalls()
+
+			Convey("then the API should have been called once", func() {
+				So(calls, ShouldHaveLength, 1)
+			})
+
+			Convey("then the correct headers should be sent", func() {
+				headers := calls[0].Req.Header
+
+				Convey("then the expected ifMatch value is sent", func() {
+					So(headers.Get("If-Match"), ShouldEqual, testETag)
+				})
+
+				Convey("then the collection ID header is sent", func() {
+					So(headers.Get("Collection-Id"), ShouldEqual, testCollectionID)
+				})
+
+				Convey("then the auth token is sent", func() {
+					So(headers.Get("X-Florence-Token"), ShouldEqual, testUserAuthToken)
+				})
+
+				Convey("then the service token is sent", func() {
+					So(headers.Get("Authorization"), ShouldEqual, fmt.Sprintf("Bearer %s", testServiceToken))
+				})
+			})
+
+			Convey("then the request URL should contain the filter ID and name", func() {
+				calledPath := calls[0].Req.URL.Path
+				So(calledPath, ShouldEqual, fmt.Sprintf("/filters/%s/dimensions", filterID))
+			})
+
+			Convey("then the request body contains the passed dimension data", func() {
+				var expectedDimension createFlexDimensionRequest
+				err = json.NewDecoder(calls[0].Req.Body).Decode(&expectedDimension)
+				So(err, ShouldBeNil)
+
+				So(expectedDimension.Name, ShouldEqual, name)
+				So(expectedDimension.IsAreaType, ShouldEqual, isAreaType)
+				So(expectedDimension.Options, ShouldResemble, options)
+			})
+
+			Convey("then the expected eTag is returned", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETag)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("foo")
+		httpClient := newMockHTTPClient(nil, mockErr)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when AddFlexDimension is called", func() {
+			_, err := filterClient.AddFlexDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, nil, false, testETag)
+
+			Convey("then the error contains the original client error", func() {
+				So(errors.Is(err, mockErr), ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{StatusCode: http.StatusInternalServerError}, nil)
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when AddFlexDimension is called", func() {
+			_, err := filterClient.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, testETag)
+
+			Convey("then the error contains the original response error", func() {
+				var filterErr *ErrInvalidFilterAPIResponse
+				ok := errors.As(err, &filterErr)
+				So(ok, ShouldBeTrue)
+
+				So(filterErr.ExpectedCode, ShouldEqual, http.StatusCreated)
+				So(filterErr.ActualCode, ShouldEqual, http.StatusInternalServerError)
+				So(filterErr.URI, ShouldEqual, "http://localhost:8080/filters/baz/dimensions/quz")
+			})
+		})
+	})
+}
+
 func TestClient_AddDimensionValues(t *testing.T) {
 	filterID := "baz"
 	name := "quz"
