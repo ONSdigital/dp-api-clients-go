@@ -2,17 +2,21 @@ package upload_test
 
 import (
 	"context"
+	"crypto/md5"
+	"errors"
 	"fmt"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/upload"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	. "github.com/smartystreets/goconvey/convey"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
+	"testing/iotest"
 	"time"
 )
 
@@ -30,7 +34,9 @@ var (
 	actualLicenceURL           string
 	actualResumableChunkNumber string
 	actualResumableTotalChunks string
-	actualMethod               string
+
+	actualMethod     string
+	numberOfAPICalls int
 
 	collectionID = "123456"
 )
@@ -49,7 +55,6 @@ func TestHealthCheck(t *testing.T) {
 	timePriorHealthCheck := time.Now()
 
 	Convey("Given the upload service is healthy", t, func() {
-
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }))
 		defer s.Close()
 
@@ -100,6 +105,7 @@ func TestHealthCheck(t *testing.T) {
 
 func TestUpload(t *testing.T) {
 	Convey("Given the upload service is running", t, func() {
+		actualContent = ""
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			extractFields(r)
 
@@ -112,20 +118,9 @@ func TestUpload(t *testing.T) {
 			fileContent := "testing"
 			f := io.NopCloser(strings.NewReader(fileContent))
 
-			Convey("When I upload the file with metadata containing a collection ID", func() {
-				metadata := upload.Metadata{
-					CollectionID:  &collectionID,
-					FileName:      filename,
-					Path:          path,
-					IsPublishable: isPublishable,
-					Title:         title,
-					FileSizeBytes: int64(len(fileContent)),
-					FileType:      fileType,
-					License:       license,
-					LicenseURL:    licenseURL,
-				}
-
-				err := c.Upload(context.Background(), f, metadata)
+			Convey("When I upload the single-chunk file with metadata containing a collection ID", func() {
+				numberOfAPICalls = 0
+				err := c.Upload(context.Background(), f, CreateMetadata(int64(len(fileContent)), &collectionID))
 
 				Convey("Then the file is successfully uploaded", func() {
 					So(err, ShouldBeNil)
@@ -151,19 +146,9 @@ func TestUpload(t *testing.T) {
 				})
 			})
 
-			Convey("When I upload the file with metadata not containing a collection ID", func() {
-				metadata := upload.Metadata{
-					FileName:      filename,
-					Path:          path,
-					IsPublishable: isPublishable,
-					Title:         title,
-					FileSizeBytes: int64(len(fileContent)),
-					FileType:      fileType,
-					License:       license,
-					LicenseURL:    licenseURL,
-				}
-
-				err := c.Upload(context.Background(), f, metadata)
+			Convey("When I upload the single-chunk file with metadata not containing a collection ID", func() {
+				numberOfAPICalls = 0
+				err := c.Upload(context.Background(), f, CreateMetadata(int64(len(fileContent)), nil))
 
 				Convey("Then the file is successfully uploaded", func() {
 					So(err, ShouldBeNil)
@@ -189,11 +174,94 @@ func TestUpload(t *testing.T) {
 				})
 			})
 		})
+
+		Convey("And the file is multiple chunks", func() {
+			expectedContentLength, fileContent := generateTestContent()
+
+			f := io.NopCloser(strings.NewReader(fileContent))
+
+			Convey("When I upload the multi-chunk file with metadata containing a collection ID", func() {
+				numberOfAPICalls = 0
+				err := c.Upload(context.Background(), f, CreateMetadata(expectedContentLength, &collectionID))
+
+				Convey("Then the file is successfully uploaded in 5 Megabyte chunk", func() {
+					So(err, ShouldBeNil)
+					So(actualMethod, ShouldEqual, http.MethodPost)
+
+					actualContentStart := actualContent[:20]
+					expectedContentStart := fileContent[:20]
+
+					actualContentEnd := actualContent[len(actualContent)-20 : len(actualContent)-1]
+					expectedContentEnd := fileContent[len(fileContent)-20 : len(fileContent)-1]
+
+					actualHash := md5.Sum([]byte(actualContent))
+					expectedHash := md5.Sum([]byte(fileContent))
+
+					SoMsg("Checksum failure", actualHash, ShouldEqual, expectedHash)
+					SoMsg("First 20 bytes does not match", actualContentStart, ShouldEqual, expectedContentStart)
+					SoMsg("Last 20 bytes does not match", actualContentEnd, ShouldEqual, expectedContentEnd)
+					SoMsg("Did not receive the expected number of API calls", numberOfAPICalls, ShouldEqual, 2)
+				})
+
+				Convey("And the resumable data was calculated", func() {
+					So(actualResumableFilename, ShouldEqual, filename)
+					So(actualResumableTotalSize, ShouldEqual, fmt.Sprintf("%d", expectedContentLength))
+					So(actualResumableChunkNumber, ShouldEqual, "2")
+					So(actualResumableTotalChunks, ShouldEqual, "2")
+					So(actualResumableType, ShouldEqual, fileType)
+				})
+
+				Convey("And the file metadata is sent with the file", func() {
+					So(actualCollectionId, ShouldEqual, collectionID)
+					So(actualPath, ShouldEqual, path)
+					So(actualIsPublishable, ShouldEqual, strconv.FormatBool(isPublishable))
+					So(actualTitle, ShouldEqual, title)
+					So(actualLicence, ShouldEqual, license)
+					So(actualLicenceURL, ShouldEqual, licenseURL)
+				})
+			})
+		})
+	})
+
+	Convey("Given the fileContent Reader error", t, func() {
+		expectedError := "testing"
+		errReader := io.NopCloser(iotest.ErrReader(errors.New(expectedError)))
+
+		c := upload.NewAPIClient("http://testing.com")
+
+		Convey("When I upload the file", func() {
+			expectedContentLength, _ := generateTestContent()
+
+			err := c.Upload(context.Background(), errReader, CreateMetadata(expectedContentLength, &collectionID))
+
+			Convey("Then an error is returned", func() {
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+		})
+	})
+
+	Convey("Given the dp-upload-service URL is unavailable", t, func() {
+		expectedContentLength, fileContent := generateTestContent()
+
+		f := io.NopCloser(strings.NewReader(fileContent))
+
+		c := upload.NewAPIClient("BAD DP-UPLOAD-SERVICE URL")
+
+		Convey("When I upload the file", func() {
+			err := c.Upload(context.Background(), f, CreateMetadata(expectedContentLength, &collectionID))
+
+			Convey("Then an error is returned", func() {
+				So(err, ShouldBeError)
+			})
+		})
 	})
 }
 
 func extractFields(r *http.Request) {
-	r.ParseMultipartForm(4)
+	numberOfAPICalls++
+	maxMemory := int64(7 * 1024 * 1024)
+	r.ParseMultipartForm(maxMemory)
 
 	actualHasCollectionID = r.Form.Has("collectionId")
 
@@ -210,7 +278,35 @@ func extractFields(r *http.Request) {
 	actualResumableTotalChunks = r.Form.Get("resumableTotalChunks")
 	actualMethod = r.Method
 
-	content, _, _ := r.FormFile("file")
-	by, _ := io.ReadAll(content)
-	actualContent = string(by)
+	contentReader, _, _ := r.FormFile("file")
+
+	contentBytes, _ := io.ReadAll(contentReader)
+
+	actualContent = actualContent + string(contentBytes)
+}
+
+func generateTestContent() (int64, string) {
+	size := int64(6 * 1024 * 1024)
+
+	var letters = []rune("abcdefghijklmnopqrstuvwxyz")
+	output := make([]rune, size)
+	for i := range output {
+		output[i] = letters[rand.Intn(len(letters))]
+	}
+
+	return size, string(output)
+}
+
+func CreateMetadata(expectedContentLength int64, collectionID *string) upload.Metadata {
+	return upload.Metadata{
+		CollectionID:  collectionID,
+		FileName:      filename,
+		Path:          path,
+		IsPublishable: isPublishable,
+		Title:         title,
+		FileSizeBytes: expectedContentLength,
+		FileType:      fileType,
+		License:       license,
+		LicenseURL:    licenseURL,
+	}
 }

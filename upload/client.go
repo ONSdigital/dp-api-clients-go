@@ -7,13 +7,18 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
+	"github.com/ONSdigital/log.go/v2/log"
 	"io"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"strconv"
 )
 
-const service = "upload-api"
+const (
+	service   = "upload-api"
+	chunkSize = 5 * 1024 * 1024
+)
 
 type Metadata struct {
 	CollectionID  *string
@@ -33,6 +38,11 @@ type Client struct {
 	hcCli *healthcheck.Client
 }
 
+type ChunkContext struct {
+	Current int
+	Total   int
+}
+
 // NewAPIClient creates a new instance of Upload Client with a given image API URL
 func NewAPIClient(uploadAPIURL string) *Client {
 	return &Client{
@@ -45,7 +55,7 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
 
-func (c *Client) writeMetadataFormFields(formWriter *multipart.Writer, metadata Metadata) {
+func (c *Client) writeMetadataFormFields(formWriter *multipart.Writer, metadata Metadata, chunk ChunkContext) {
 	if metadata.CollectionID != nil {
 		formWriter.WriteField("collectionId", *metadata.CollectionID)
 	}
@@ -57,32 +67,73 @@ func (c *Client) writeMetadataFormFields(formWriter *multipart.Writer, metadata 
 	formWriter.WriteField("resumableType", metadata.FileType)
 	formWriter.WriteField("licence", metadata.License)
 	formWriter.WriteField("licenceURL", metadata.LicenseURL)
-	formWriter.WriteField("resumableChunkNumber", "1")
-	formWriter.WriteField("resumableTotalChunks", "1")
+	formWriter.WriteField("resumableChunkNumber", fmt.Sprintf("%d", chunk.Current))
+	formWriter.WriteField("resumableTotalChunks", fmt.Sprintf("%d", chunk.Total))
 }
 
 func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata Metadata) error {
-	buff := &bytes.Buffer{}
-	formWriter := multipart.NewWriter(buff)
+	totalChunks := int(math.Ceil(float64(metadata.FileSizeBytes) / chunkSize))
 
-	c.writeMetadataFormFields(formWriter, metadata)
-	c.writeFileFormField(formWriter, metadata, fileContent)
+	for i := 1; i <= totalChunks; i++ {
+		reqBuff := &bytes.Buffer{}
+		chunkContext := ChunkContext{
+			Current: i,
+			Total:   totalChunks,
+		}
+		formWriter := multipart.NewWriter(reqBuff)
 
-	formWriter.Close()
+		readBuff := make([]byte, chunkSize)
+		bytesRead, err := fileContent.Read(readBuff)
 
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload", c.hcCli.URL), buff)
-	req.Header.Set("Content-Type", formWriter.FormDataContentType())
+		if err != nil {
+			log.Error(ctx, "file content read error", err)
+			formWriter.Close()
+			return err
+		}
 
-	dphttp.DefaultClient.Do(ctx, req)
+		var outBuff []byte
+
+		if bytesRead == chunkSize {
+			outBuff = readBuff
+		} else if bytesRead < chunkSize {
+			outBuff = readBuff[:bytesRead]
+		}
+
+		br := bytes.NewReader(outBuff)
+
+		c.writeMetadataFormFields(formWriter, metadata, chunkContext)
+		_, err = c.writeFileFormField(formWriter, metadata, br, len(outBuff))
+
+		if err != nil {
+			log.Error(ctx, "error writing form file content to request buffer", err)
+			formWriter.Close()
+			return err
+		}
+
+		formWriter.Close()
+
+		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload", c.hcCli.URL), reqBuff)
+
+		req.Header.Set("Content-Type", formWriter.FormDataContentType())
+
+		_, err = dphttp.DefaultClient.Do(ctx, req)
+		if err != nil {
+			log.Error(ctx, "failed request", err, log.Data{"request": req})
+			return err
+		}
+	}
 
 	return nil
 }
 
-func (c *Client) writeFileFormField(formWriter *multipart.Writer, metadata Metadata, fileContent io.ReadCloser) {
-	part, _ := formWriter.CreateFormFile("file", metadata.FileName)
+func (c *Client) writeFileFormField(formWriter *multipart.Writer, metadata Metadata, fileContent io.Reader, fileSizeBytes int) (int, error) {
+	part, err := formWriter.CreateFormFile("file", metadata.FileName)
+	if err != nil {
+		return 0, err
+	}
 
-	fileContentBytes := make([]byte, metadata.FileSizeBytes)
+	fileContentBytes := make([]byte, fileSizeBytes)
 	fileContent.Read(fileContentBytes)
 
-	part.Write(fileContentBytes)
+	return part.Write(fileContentBytes)
 }
