@@ -96,7 +96,7 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 			http.StatusNotFound:
 			je := jsonErrors{}
 			json.NewDecoder(resp.Body).Decode(&je)
-			msgs := []string{}
+			var msgs []string
 			for _, e := range je.Errors {
 				msgs = append(msgs, fmt.Sprintf("%s: %s", e.Code, e.Description))
 			}
