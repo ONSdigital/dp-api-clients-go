@@ -6,12 +6,12 @@ import (
 )
 
 type jsonError struct {
-	Code        string `json:"code"`
+	Code        string `json:"errorCode"`
 	Description string `json:"description"`
 }
 
 type jsonErrors struct {
-	Error []jsonError `json:"errors"`
+	Errors []jsonError `json:"errors"`
 }
 
 func writeError(w http.ResponseWriter, errs jsonErrors, httpCode int) {
@@ -24,5 +24,5 @@ func writeError(w http.ResponseWriter, errs jsonErrors, httpCode int) {
 }
 
 func buildErrors(err error, code string) jsonErrors {
-	return jsonErrors{Error: []jsonError{{Description: err.Error(), Code: code}}}
+	return jsonErrors{Errors: []jsonError{{Description: err.Error(), Code: code}}}
 }

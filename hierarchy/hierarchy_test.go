@@ -39,7 +39,7 @@ func TestErrInvalidHierarchyAPIResponse(t *testing.T) {
 			})
 		})
 
-		Convey("Then Error() returns the expected error message", func() {
+		Convey("Then Errors() returns the expected error message", func() {
 			So(err.Error(), ShouldResemble, "invalid response from hierarchy api - should be: 200, got: 400, path: /hierarchies/foo/bar")
 		})
 

@@ -15,6 +15,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -87,10 +88,21 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 		}
 		statusCode := resp.StatusCode
 
-		if statusCode == http.StatusInternalServerError {
+		switch statusCode {
+		case http.StatusInternalServerError,
+			http.StatusBadRequest,
+			http.StatusUnauthorized,
+			http.StatusForbidden,
+			http.StatusNotFound:
 			je := jsonErrors{}
 			json.NewDecoder(resp.Body).Decode(&je)
-			return errors.New(fmt.Sprintf("%s: %s", je.Error[0].Code, je.Error[0].Description))
+			msgs := []string{}
+			for _, e := range je.Errors {
+				msgs = append(msgs, fmt.Sprintf("%s: %s", e.Code, e.Description))
+			}
+
+			return errors.New(strings.Join(msgs, "\n"))
+
 		}
 	}
 

@@ -35,7 +35,7 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 	b := new(bytes.Buffer)
 	w := csv.NewWriter(b)
 
-	// aux func to write to the csv writer, returning any error (returned by w.Write or w.Error)
+	// aux func to write to the csv writer, returning any error (returned by w.Write or w.Errors)
 	write := func(record []string) error {
 		if err := w.Write(record); err != nil {
 			return err

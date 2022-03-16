@@ -273,13 +273,81 @@ func TestErrorCases(t *testing.T) {
 		})
 	})
 
-	Convey("Given that dp-upload returns a 500 error", t, func() {
-		code := "InternalError"
-		description := "the database broke"
+	responseTests := []struct {
+		testDescription  string
+		errorCode        string
+		errorDescription string
+		statusCode       int
+	}{
+		{
+			testDescription:  "Given that dp-upload returns a 500 error",
+			errorCode:        "InternalError",
+			errorDescription: "the database broke",
+			statusCode:       http.StatusInternalServerError,
+		},
+		{
+			testDescription:  "Given that dp-upload returns a 400 error",
+			errorCode:        "BadRequest",
+			errorDescription: "error getting file from form",
+			statusCode:       http.StatusBadRequest,
+		},
+		{
+			testDescription:  "Given that dp-upload returns a 401 error",
+			errorCode:        "Unauthorized",
+			errorDescription: "unauthorized attempt to access upload service",
+			statusCode:       http.StatusUnauthorized,
+		},
+		{
+			testDescription:  "Given that dp-upload returns a 403 error",
+			errorCode:        "Forbidden",
+			errorDescription: "forbidden attempt to access upload service",
+			statusCode:       http.StatusForbidden,
+		},
+		{
+			testDescription:  "Given that dp-upload returns a 404 error",
+			errorCode:        "NotFound",
+			errorDescription: "still have not find what you were looking for",
+			statusCode:       http.StatusNotFound,
+		},
+	}
+
+	for _, responseTest := range responseTests {
+		Convey(responseTest.testDescription, t, func() {
+			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				errorBody := fmt.Sprintf(`{"errors": [{"errorCode": "%s", "description": "%s"}]}`, responseTest.errorCode, responseTest.errorDescription)
+				w.WriteHeader(responseTest.statusCode)
+				w.Write([]byte(errorBody))
+			}))
+
+			c := upload.NewAPIClient(s.URL)
+
+			Convey("When an upload is attempted", func() {
+				metadata := CreateMetadata(1, nil)
+				_, fileContent := generateTestContent()
+				f := io.NopCloser(strings.NewReader(fileContent))
+				err := c.Upload(context.Background(), f, metadata)
+
+				Convey("Then an error is returned", func() {
+					expectedError := fmt.Sprintf("%s: %s", responseTest.errorCode, responseTest.errorDescription)
+					So(err, ShouldBeError)
+					So(err.Error(), ShouldEqual, expectedError)
+				})
+			})
+		})
+	}
+
+	Convey("Given dp-upload returns multiple errors", t, func() {
+		errorCode := "ValidationError"
+		firstErrorDescription := "path required"
+		secondErrorDescription := "type required"
 
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			errorBody := fmt.Sprintf(`{"errors": [{"code": "%s", "description": "%s"}]}`, code, description)
-			w.WriteHeader(http.StatusInternalServerError)
+			firstError := fmt.Sprintf(`{"errorCode": "%s", "description": "%s"}`, errorCode, firstErrorDescription)
+			secondError := fmt.Sprintf(`{"errorCode": "%s", "description": "%s"}`, errorCode, secondErrorDescription)
+
+			errorBody := fmt.Sprintf(`{"errors": [%s, %s]}`, firstError, secondError)
+
+			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(errorBody))
 		}))
 
@@ -292,7 +360,10 @@ func TestErrorCases(t *testing.T) {
 			err := c.Upload(context.Background(), f, metadata)
 
 			Convey("Then an error is returned", func() {
-				expectedError := fmt.Sprintf("%s: %s", code, description)
+				firstExpectedError := fmt.Sprintf("%s: %s", errorCode, firstErrorDescription)
+				secondExpectedError := fmt.Sprintf("%s: %s", errorCode, secondErrorDescription)
+
+				expectedError := fmt.Sprintf("%s\n%s", firstExpectedError, secondExpectedError)
 				So(err, ShouldBeError)
 				So(err.Error(), ShouldEqual, expectedError)
 			})
