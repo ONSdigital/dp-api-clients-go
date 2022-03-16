@@ -3,6 +3,7 @@ package upload
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
@@ -16,8 +17,14 @@ import (
 )
 
 const (
-	service   = "upload-api"
-	chunkSize = 5 * 1024 * 1024
+	service     = "upload-api"
+	chunkSize   = 5 * 1024 * 1024
+	maxChunks   = 1000
+	MaxFileSize = chunkSize * maxChunks
+)
+
+var (
+	ErrFileTooLarge = errors.New(fmt.Sprintf("file too large, max file size: %d MB", MaxFileSize>>20))
 )
 
 type Metadata struct {
@@ -72,6 +79,10 @@ func (c *Client) writeMetadataFormFields(formWriter *multipart.Writer, metadata 
 }
 
 func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata Metadata) error {
+	if metadata.FileSizeBytes > MaxFileSize {
+		return ErrFileTooLarge
+	}
+
 	totalChunks := int(math.Ceil(float64(metadata.FileSizeBytes) / chunkSize))
 
 	for i := 1; i <= totalChunks; i++ {

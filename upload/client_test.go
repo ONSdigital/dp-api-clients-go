@@ -258,6 +258,22 @@ func TestUpload(t *testing.T) {
 	})
 }
 
+func TestErrorCases(t *testing.T) {
+	Convey("Given I have a file greater than 50GB", t, func() {
+		c := upload.NewAPIClient("")
+		metadata := CreateMetadata(upload.MaxFileSize+1, nil)
+		_, fileContent := generateTestContent()
+		f := io.NopCloser(strings.NewReader(fileContent))
+
+		Convey("when I upload the file", func() {
+			err := c.Upload(context.Background(), f, metadata)
+			Convey("Then a file size too large error is returned", func() {
+				So(err, ShouldBeError, upload.ErrFileTooLarge)
+			})
+		})
+	})
+}
+
 func extractFields(r *http.Request) {
 	numberOfAPICalls++
 	maxMemory := int64(7 * 1024 * 1024)
