@@ -5,16 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/pkg/errors"
+	"io/ioutil"
+	"mime/multipart"
+	"net/http"
+	"net/url"
 )
 
 const (
@@ -179,11 +179,22 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	return c.hcCli.Client.Do(ctx, req)
 }
 
-func (c *Client) doPutWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, uri string, payload []byte) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPut, uri, bytes.NewBuffer(payload))
+func (c *Client) doPutWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, uri string, update []byte) (*http.Response, error) {
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
+	if err := writer.WriteField(UpdateFormFieldKey, string(update)); err != nil {
+		return nil, err
+	}
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, uri, payload)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", writer.FormDataContentType())
 
 	dprequest.AddFlorenceHeader(req, userAuthToken)
 	dprequest.AddServiceTokenHeader(req, serviceAuthToken)

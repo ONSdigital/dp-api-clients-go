@@ -2,6 +2,10 @@ package interactives
 
 import "time"
 
+const (
+	UpdateFormFieldKey = "update"
+)
+
 type InteractiveMetadata struct { // TODO : Geography
 	Title           string    `json:"title"`
 	PrimaryTopic    string    `json:"primary_topic"`

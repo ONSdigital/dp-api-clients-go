@@ -125,10 +125,13 @@ func TestClient_PutInteractive(t *testing.T) {
 
 		checkRequestBase(httpClient, http.MethodPut, "/interactives/123")
 
-		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+		firstReq := httpClient.DoCalls()[0].Req
+		err := firstReq.ParseMultipartForm(50)
+		updateModelJson := firstReq.FormValue(UpdateFormFieldKey)
 
 		var actualInteractive InteractiveUpdate
-		err := json.Unmarshal(actualBody, &actualInteractive)
+		err = json.Unmarshal([]byte(updateModelJson), &actualInteractive)
+
 		So(err, ShouldBeNil)
 		So(actualInteractive, ShouldResemble, expectedInteractive)
 	}
