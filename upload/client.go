@@ -3,6 +3,7 @@ package upload
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
@@ -19,7 +20,7 @@ import (
 const (
 	service     = "upload-api"
 	chunkSize   = 5 * 1024 * 1024
-	maxChunks   = 1000
+	maxChunks   = 10000
 	MaxFileSize = chunkSize * maxChunks
 )
 
@@ -127,10 +128,17 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 
 		req.Header.Set("Content-Type", formWriter.FormDataContentType())
 
-		_, err = dphttp.DefaultClient.Do(ctx, req)
+		resp, err := dphttp.DefaultClient.Do(ctx, req)
 		if err != nil {
 			log.Error(ctx, "failed request", err, log.Data{"request": req})
 			return err
+		}
+		statusCode := resp.StatusCode
+
+		if statusCode == http.StatusInternalServerError {
+			je := jsonErrors{}
+			json.NewDecoder(resp.Body).Decode(&je)
+			return errors.New(fmt.Sprintf("%s: %s", je.Error[0].Code, je.Error[0].Description))
 		}
 	}
 

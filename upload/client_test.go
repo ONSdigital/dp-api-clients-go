@@ -272,6 +272,32 @@ func TestErrorCases(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given that dp-upload returns a 500 error", t, func() {
+		code := "InternalError"
+		description := "the database broke"
+
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			errorBody := fmt.Sprintf(`{"errors": [{"code": "%s", "description": "%s"}]}`, code, description)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(errorBody))
+		}))
+
+		c := upload.NewAPIClient(s.URL)
+
+		Convey("When an upload is attempted", func() {
+			metadata := CreateMetadata(1, nil)
+			_, fileContent := generateTestContent()
+			f := io.NopCloser(strings.NewReader(fileContent))
+			err := c.Upload(context.Background(), f, metadata)
+
+			Convey("Then an error is returned", func() {
+				expectedError := fmt.Sprintf("%s: %s", code, description)
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+		})
+	})
 }
 
 func extractFields(r *http.Request) {
