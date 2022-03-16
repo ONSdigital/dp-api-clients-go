@@ -119,20 +119,8 @@ func TestUpload(t *testing.T) {
 			f := io.NopCloser(strings.NewReader(fileContent))
 
 			Convey("When I upload the single-chunk file with metadata containing a collection ID", func() {
-				metadata := upload.Metadata{
-					CollectionID:  &collectionID,
-					FileName:      filename,
-					Path:          path,
-					IsPublishable: isPublishable,
-					Title:         title,
-					FileSizeBytes: int64(len(fileContent)),
-					FileType:      fileType,
-					License:       license,
-					LicenseURL:    licenseURL,
-				}
-
 				numberOfAPICalls = 0
-				err := c.Upload(context.Background(), f, metadata)
+				err := c.Upload(context.Background(), f, CreateMetadata(int64(len(fileContent)), &collectionID))
 
 				Convey("Then the file is successfully uploaded", func() {
 					So(err, ShouldBeNil)
@@ -159,19 +147,8 @@ func TestUpload(t *testing.T) {
 			})
 
 			Convey("When I upload the single-chunk file with metadata not containing a collection ID", func() {
-				metadata := upload.Metadata{
-					FileName:      filename,
-					Path:          path,
-					IsPublishable: isPublishable,
-					Title:         title,
-					FileSizeBytes: int64(len(fileContent)),
-					FileType:      fileType,
-					License:       license,
-					LicenseURL:    licenseURL,
-				}
-
 				numberOfAPICalls = 0
-				err := c.Upload(context.Background(), f, metadata)
+				err := c.Upload(context.Background(), f, CreateMetadata(int64(len(fileContent)), nil))
 
 				Convey("Then the file is successfully uploaded", func() {
 					So(err, ShouldBeNil)
@@ -204,20 +181,8 @@ func TestUpload(t *testing.T) {
 			f := io.NopCloser(strings.NewReader(fileContent))
 
 			Convey("When I upload the multi-chunk file with metadata containing a collection ID", func() {
-				metadata := upload.Metadata{
-					CollectionID:  &collectionID,
-					FileName:      filename,
-					Path:          path,
-					IsPublishable: isPublishable,
-					Title:         title,
-					FileSizeBytes: expectedContentLength,
-					FileType:      fileType,
-					License:       license,
-					LicenseURL:    licenseURL,
-				}
-
 				numberOfAPICalls = 0
-				err := c.Upload(context.Background(), f, metadata)
+				err := c.Upload(context.Background(), f, CreateMetadata(expectedContentLength, &collectionID))
 
 				Convey("Then the file is successfully uploaded in 5 Megabyte chunk", func() {
 					So(err, ShouldBeNil)
@@ -266,19 +231,8 @@ func TestUpload(t *testing.T) {
 
 		Convey("When I upload the file", func() {
 			expectedContentLength, _ := generateTestContent()
-			metadata := upload.Metadata{
-				CollectionID:  &collectionID,
-				FileName:      filename,
-				Path:          path,
-				IsPublishable: isPublishable,
-				Title:         title,
-				FileSizeBytes: expectedContentLength,
-				FileType:      fileType,
-				License:       license,
-				LicenseURL:    licenseURL,
-			}
 
-			err := c.Upload(context.Background(), errReader, metadata)
+			err := c.Upload(context.Background(), errReader, CreateMetadata(expectedContentLength, &collectionID))
 
 			Convey("Then an error is returned", func() {
 				So(err, ShouldBeError)
@@ -295,19 +249,7 @@ func TestUpload(t *testing.T) {
 		c := upload.NewAPIClient("BAD DP-UPLOAD-SERVICE URL")
 
 		Convey("When I upload the file", func() {
-			metadata := upload.Metadata{
-				CollectionID:  &collectionID,
-				FileName:      filename,
-				Path:          path,
-				IsPublishable: isPublishable,
-				Title:         title,
-				FileSizeBytes: expectedContentLength,
-				FileType:      fileType,
-				License:       license,
-				LicenseURL:    licenseURL,
-			}
-
-			err := c.Upload(context.Background(), f, metadata)
+			err := c.Upload(context.Background(), f, CreateMetadata(expectedContentLength, &collectionID))
 
 			Convey("Then an error is returned", func() {
 				So(err, ShouldBeError)
@@ -353,4 +295,18 @@ func generateTestContent() (int64, string) {
 	}
 
 	return size, string(output)
+}
+
+func CreateMetadata(expectedContentLength int64, collectionID *string) upload.Metadata {
+	return upload.Metadata{
+		CollectionID:  collectionID,
+		FileName:      filename,
+		Path:          path,
+		IsPublishable: isPublishable,
+		Title:         title,
+		FileSizeBytes: expectedContentLength,
+		FileType:      fileType,
+		License:       license,
+		LicenseURL:    licenseURL,
+	}
 }
