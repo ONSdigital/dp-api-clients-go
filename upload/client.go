@@ -85,15 +85,18 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 		readBuff := make([]byte, chunkSize)
 		bytesRead, err := fileContent.Read(readBuff)
 
+		if err != nil {
+			log.Error(ctx, "file content read error", err)
+			formWriter.Close()
+			return err
+		}
+
 		var outBuff []byte
 
 		if bytesRead == chunkSize {
 			outBuff = readBuff
 		} else if bytesRead < chunkSize {
 			outBuff = readBuff[:bytesRead]
-		} else if err != nil {
-			log.Error(ctx, "error reading chunk", err)
-			return err
 		}
 
 		br := bytes.NewReader(outBuff)
@@ -103,27 +106,31 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 
 		if err != nil {
 			log.Error(ctx, "error writing form file content to request buffer", err)
+			formWriter.Close()
+			return err
 		}
 
 		formWriter.Close()
 
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload", c.hcCli.URL), reqBuff)
-
-		if err != nil {
-			log.Error(ctx, "error creating request", err)
-			return err
-		}
+		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload", c.hcCli.URL), reqBuff)
 
 		req.Header.Set("Content-Type", formWriter.FormDataContentType())
 
-		dphttp.DefaultClient.Do(ctx, req)
+		_, err = dphttp.DefaultClient.Do(ctx, req)
+		if err != nil {
+			log.Error(ctx, "failed request", err, log.Data{"request": req})
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (c *Client) writeFileFormField(formWriter *multipart.Writer, metadata Metadata, fileContent io.Reader, fileSizeBytes int) (int, error) {
-	part, _ := formWriter.CreateFormFile("file", metadata.FileName)
+	part, err := formWriter.CreateFormFile("file", metadata.FileName)
+	if err != nil {
+		return 0, err
+	}
 
 	fileContentBytes := make([]byte, fileSizeBytes)
 	fileContent.Read(fileContentBytes)

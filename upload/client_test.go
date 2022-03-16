@@ -2,6 +2,8 @@ package upload_test
 
 import (
 	"context"
+	"crypto/md5"
+	"errors"
 	"fmt"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/upload"
@@ -14,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"testing/iotest"
 	"time"
 )
 
@@ -207,7 +210,7 @@ func TestUpload(t *testing.T) {
 					Path:          path,
 					IsPublishable: isPublishable,
 					Title:         title,
-					FileSizeBytes: int64(expectedContentLength),
+					FileSizeBytes: expectedContentLength,
 					FileType:      fileType,
 					License:       license,
 					LicenseURL:    licenseURL,
@@ -226,9 +229,13 @@ func TestUpload(t *testing.T) {
 					actualContentEnd := actualContent[len(actualContent)-20 : len(actualContent)-1]
 					expectedContentEnd := fileContent[len(fileContent)-20 : len(fileContent)-1]
 
-					So(actualContentStart, ShouldEqual, expectedContentStart)
-					So(actualContentEnd, ShouldEqual, expectedContentEnd)
-					So(numberOfAPICalls, ShouldEqual, 2)
+					actualHash := md5.Sum([]byte(actualContent))
+					expectedHash := md5.Sum([]byte(fileContent))
+
+					SoMsg("Checksum failure", actualHash, ShouldEqual, expectedHash)
+					SoMsg("First 20 bytes does not match", actualContentStart, ShouldEqual, expectedContentStart)
+					SoMsg("Last 20 bytes does not match", actualContentEnd, ShouldEqual, expectedContentEnd)
+					SoMsg("Did not receive the expected number of API calls", numberOfAPICalls, ShouldEqual, 2)
 				})
 
 				Convey("And the resumable data was calculated", func() {
@@ -247,6 +254,63 @@ func TestUpload(t *testing.T) {
 					So(actualLicence, ShouldEqual, license)
 					So(actualLicenceURL, ShouldEqual, licenseURL)
 				})
+			})
+		})
+	})
+
+	Convey("Given the fileContent Reader error", t, func() {
+		expectedError := "testing"
+		errReader := io.NopCloser(iotest.ErrReader(errors.New(expectedError)))
+
+		c := upload.NewAPIClient("http://testing.com")
+
+		Convey("When I upload the file", func() {
+			expectedContentLength, _ := generateTestContent()
+			metadata := upload.Metadata{
+				CollectionID:  &collectionID,
+				FileName:      filename,
+				Path:          path,
+				IsPublishable: isPublishable,
+				Title:         title,
+				FileSizeBytes: expectedContentLength,
+				FileType:      fileType,
+				License:       license,
+				LicenseURL:    licenseURL,
+			}
+
+			err := c.Upload(context.Background(), errReader, metadata)
+
+			Convey("Then an error is returned", func() {
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+		})
+	})
+
+	Convey("Given the dp-upload-service URL is unavailable", t, func() {
+		expectedContentLength, fileContent := generateTestContent()
+
+		f := io.NopCloser(strings.NewReader(fileContent))
+
+		c := upload.NewAPIClient("BAD DP-UPLOAD-SERVICE URL")
+
+		Convey("When I upload the file", func() {
+			metadata := upload.Metadata{
+				CollectionID:  &collectionID,
+				FileName:      filename,
+				Path:          path,
+				IsPublishable: isPublishable,
+				Title:         title,
+				FileSizeBytes: expectedContentLength,
+				FileType:      fileType,
+				License:       license,
+				LicenseURL:    licenseURL,
+			}
+
+			err := c.Upload(context.Background(), f, metadata)
+
+			Convey("Then an error is returned", func() {
+				So(err, ShouldBeError)
 			})
 		})
 	})
@@ -279,8 +343,8 @@ func extractFields(r *http.Request) {
 	actualContent = actualContent + string(contentBytes)
 }
 
-func generateTestContent() (int, string) {
-	size := 6 * 1024 * 1024
+func generateTestContent() (int64, string) {
+	size := int64(6 * 1024 * 1024)
 
 	var letters = []rune("abcdefghijklmnopqrstuvwxyz")
 	output := make([]rune, size)
