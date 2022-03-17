@@ -3,17 +3,20 @@ package search
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"testing"
 	"time"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 
-	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -184,7 +187,7 @@ func TestClient_GetSearch(t *testing.T) {
 			_, err := searchClient.GetSearch(ctx, userAuthToken, serviceAuthToken, collectionID, v)
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 400, path: "+testHost+"/search?limit=a").Error())
+				So(err.Error(), ShouldResemble, fmt.Errorf("invalid response from dp-search-api - should be: 200, got: 400, path: "+testHost+"/search?limit=a").Error())
 
 			})
 
@@ -204,7 +207,7 @@ func TestClient_GetSearch(t *testing.T) {
 			_, err := searchClient.GetSearch(ctx, userAuthToken, serviceAuthToken, collectionID, v)
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 500, path: "+testHost+"/search?limit=housing").Error())
+				So(err.Error(), ShouldResemble, fmt.Errorf("invalid response from dp-search-api - should be: 200, got: 500, path: "+testHost+"/search?limit=housing").Error())
 
 			})
 
@@ -274,7 +277,7 @@ func TestClient_GetDepartments(t *testing.T) {
 			_, err := searchClient.GetDepartments(ctx, userAuthToken, serviceAuthToken, collectionID, v)
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 400, path: "+testHost+"/departments/search?limit=a").Error())
+				So(err.Error(), ShouldResemble, fmt.Errorf("invalid response from dp-search-api - should be: 200, got: 400, path: "+testHost+"/departments/search?limit=a").Error())
 
 			})
 
@@ -294,12 +297,154 @@ func TestClient_GetDepartments(t *testing.T) {
 			_, err := searchClient.GetDepartments(ctx, userAuthToken, serviceAuthToken, collectionID, v)
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response from dp-search-api - should be: 200, got: 500, path: "+testHost+"/departments/search?limit=housing").Error())
+				So(err.Error(), ShouldResemble, fmt.Errorf("invalid response from dp-search-api - should be: 200, got: 500, path: "+testHost+"/departments/search?limit=housing").Error())
 
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {
 				checkResponseBase(httpClient, http.MethodGet, "/departments/search?limit=housing")
+			})
+		})
+	})
+}
+
+func TestClient_GetReleases(t *testing.T) {
+	releaseResponse := ReleaseResponse{
+		Took: 100,
+		Breakdown: Breakdown{
+			Total: 11,
+		},
+		Releases: []Release{
+			{
+				URI: "/releases/title1",
+				Description: ReleaseDescription{
+					Title:       "Public Sector Employment, UK: September 2021",
+					Summary:     "A summary for Title 1",
+					ReleaseDate: time.Now().AddDate(0, 0, -10).UTC().Format(time.RFC3339),
+					Published:   true,
+					Finalised:   true,
+					Contact:     &Contact{Name: "test publisher", Email: "testpublisher@ons.gov.uk"},
+					NextRelease: "To be announced",
+				},
+			},
+			{
+				URI: "/releases/title2",
+				DateChanges: []ReleaseDateChange{
+					{
+						Date:         "2015-09-22T12:30:23.221Z",
+						ChangeNotice: "Something happened to change the date",
+					},
+				},
+				Description: ReleaseDescription{
+					Title:       "Labour market in the regions of the UK: December 2021",
+					Summary:     "A summary for Title 2",
+					ReleaseDate: time.Now().AddDate(0, 0, -15).UTC().Format(time.RFC3339),
+					Published:   true,
+					Finalised:   true,
+					Postponed:   true,
+				},
+			},
+		},
+	}
+	releaseResponseBody, _ := json.Marshal(releaseResponse)
+
+	Convey("given a 200 status is returned with a list of release calendar entries", t, func() {
+		httpClient := createHTTPClientMock(http.StatusOK, releaseResponseBody)
+		searchClient := newSearchClient(httpClient)
+
+		Convey("when GetReleases is called", func() {
+			v := url.Values{}
+			v.Set("limit", "1")
+			v.Set("q", "answer")
+			rr, err := searchClient.GetReleases(ctx, userAuthToken, serviceAuthToken, collectionID, v)
+
+			Convey("the expected call to the search API is made", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/search/releases?limit=1&q=answer")
+				collectionHeader, err := headers.GetCollectionID(httpClient.DoCalls()[0].Req)
+				So(err, ShouldBeNil)
+				So(collectionHeader, ShouldEqual, collectionID)
+
+				authTokenHeader, err := headers.GetUserAuthToken(httpClient.DoCalls()[0].Req)
+				So(err, ShouldBeNil)
+				So(authTokenHeader, ShouldEqual, userAuthToken)
+
+			})
+
+			Convey("and the expected calendar is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(rr, ShouldResemble, releaseResponse)
+			})
+		})
+	})
+
+	Convey("Given that 200 OK is returned by the API with an invalid body", t, func() {
+		responseBody := "invalidRelease"
+		httpClient := createHTTPClientMock(http.StatusOK, []byte(responseBody))
+		searchClient := newSearchClient(httpClient)
+
+		Convey("when GetReleases is called", func() {
+			v := url.Values{}
+			v.Set("limit", "1")
+			v.Set("q", "answer")
+			rr, err := searchClient.GetReleases(ctx, userAuthToken, serviceAuthToken, collectionID, v)
+
+			Convey("the expected call to the search API is made", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/search/releases?limit=1&q=answer")
+				collectionHeader, err := headers.GetCollectionID(httpClient.DoCalls()[0].Req)
+				So(err, ShouldBeNil)
+				So(collectionHeader, ShouldEqual, collectionID)
+
+				authTokenHeader, err := headers.GetUserAuthToken(httpClient.DoCalls()[0].Req)
+				So(err, ShouldBeNil)
+				So(authTokenHeader, ShouldEqual, userAuthToken)
+
+			})
+
+			Convey("And an error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(rr, ShouldBeZeroValue)
+			})
+		})
+	})
+
+	Convey("given a 400 status is returned", t, func() {
+		httpClient := createHTTPClientMock(http.StatusBadRequest, nil)
+		searchClient := newSearchClient(httpClient)
+
+		Convey("when GetSearch is called", func() {
+			v := url.Values{}
+			v.Set("limit", "1")
+			v.Set("q", "answer")
+			_, err := searchClient.GetReleases(ctx, userAuthToken, serviceAuthToken, collectionID, v)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, fmt.Errorf("invalid response from dp-search-api - should be: 200, got: 400, path: "+testHost+"/search/releases?limit=1&q=answer").Error())
+
+			})
+
+			Convey("and dphttpclient.Do is called once", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/search/releases?limit=1&q=answer")
+			})
+		})
+	})
+
+	Convey("given a 500 status is returned", t, func() {
+		httpClient := createHTTPClientMock(http.StatusInternalServerError, nil)
+		searchClient := newSearchClient(httpClient)
+
+		Convey("when GetSearch is called", func() {
+			v := url.Values{}
+			v.Set("limit", "1")
+			v.Set("q", "answer")
+			_, err := searchClient.GetReleases(ctx, userAuthToken, serviceAuthToken, collectionID, v)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, fmt.Errorf("invalid response from dp-search-api - should be: 200, got: 500, path: "+testHost+"/search/releases?limit=1&q=answer").Error())
+
+			})
+
+			Convey("and dphttpclient.Do is called once", func() {
+				checkResponseBase(httpClient, http.MethodGet, "/search/releases?limit=1&q=answer")
 			})
 		})
 	})

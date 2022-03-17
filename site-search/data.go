@@ -46,7 +46,7 @@ type Description struct {
 	Highlight         Highlight `json:"highlight,omitempty"`
 }
 
-// Hightlight contains specfic metadata with search keyword(s) highlighted
+// Highlight contains specific metadata with search keyword(s) highlighted
 type Highlight struct {
 	Title           string    `json:"title,omitempty"`
 	Keywords        *[]string `json:"keywords,omitempty"`
@@ -100,4 +100,56 @@ type DepartmentItem struct {
 // DepartmentMatch represents a department matches term
 type DepartmentMatch struct {
 	Terms *[]MatchDetails `json:"terms"`
+}
+
+// ReleaseResponse represents response from /search/releases endpoint
+type ReleaseResponse struct {
+	Took      int       `json:"took"`
+	Breakdown Breakdown `json:"breakdown"`
+	Releases  []Release `json:"releases"`
+}
+
+type Breakdown struct {
+	Total       int `json:"total"`
+	Provisional int `json:"provisional,omitempty"`
+	Confirmed   int `json:"confirmed,omitempty"`
+	Postponed   int `json:"postponed,omitempty"`
+	Published   int `json:"published,omitempty"`
+	Cancelled   int `json:"cancelled,omitempty"`
+	Census      int `json:"census,omitempty"`
+}
+
+type Release struct {
+	URI         string              `json:"uri"`
+	DateChanges []ReleaseDateChange `json:"date_changes"`
+	Description ReleaseDescription  `json:"description"`
+	Highlight   *Highlight          `json:"highlight,omitempty"`
+}
+
+type ReleaseDateChange struct {
+	ChangeNotice string `json:"change_notice"`
+	Date         string `json:"previous_date"`
+}
+
+type ReleaseDescription struct {
+	Title              string   `json:"title"`
+	Summary            string   `json:"summary"`
+	ReleaseDate        string   `json:"release_date"`
+	Published          bool     `json:"published"`
+	Cancelled          bool     `json:"cancelled"`
+	Finalised          bool     `json:"finalised"`
+	Postponed          bool     `json:"postponed"`
+	Census             bool     `json:"census"`
+	NationalStatistic  bool     `json:"national_statistic"`
+	Keywords           []string `json:"keywords,omitempty"`
+	NextRelease        string   `json:"next_release,omitempty"`
+	ProvisionalDate    string   `json:"provisional_date,omitempty"`
+	CancellationNotice []string `json:"cancellation_notice,omitempty"`
+	Edition            string   `json:"edition,omitempty"`
+	DatasetID          string   `json:"dataset_id,omitempty"`
+	LatestRelease      *bool    `json:"latest_release,omitempty"`
+	MetaDescription    string   `json:"meta_description,omitempty"`
+	Language           string   `json:"language,omitempty"`
+	Source             string   `json:"source,omitempty"`
+	Contact            *Contact `json:"contact,omitempty"`
 }
