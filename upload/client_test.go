@@ -109,7 +109,12 @@ func TestUpload(t *testing.T) {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			extractFields(r)
 
-			w.WriteHeader(http.StatusCreated)
+			if actualResumableChunkNumber == actualResumableTotalChunks {
+				w.WriteHeader(http.StatusCreated)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
 		}))
 		defer s.Close()
 		c := upload.NewAPIClient(s.URL)
@@ -400,8 +405,10 @@ func TestErrorCases(t *testing.T) {
 
 func extractFields(r *http.Request) {
 	numberOfAPICalls++
-	maxMemory := int64(7 * 1024 * 1024)
-	r.ParseMultipartForm(maxMemory)
+
+	actualMethod = r.Method
+
+	r.ParseMultipartForm(int64(7 * 1024 * 1024))
 
 	actualHasCollectionID = r.Form.Has("collectionId")
 
@@ -416,12 +423,9 @@ func extractFields(r *http.Request) {
 	actualLicenceURL = r.Form.Get("licenceURL")
 	actualResumableChunkNumber = r.Form.Get("resumableChunkNumber")
 	actualResumableTotalChunks = r.Form.Get("resumableTotalChunks")
-	actualMethod = r.Method
 
 	contentReader, _, _ := r.FormFile("file")
-
 	contentBytes, _ := io.ReadAll(contentReader)
-
 	actualContent = actualContent + string(contentBytes)
 }
 
