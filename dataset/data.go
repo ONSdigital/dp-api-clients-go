@@ -209,6 +209,16 @@ type Download struct {
 	Public  string `json:"public,omitempty"`
 	Private string `json:"private,omitempty"`
 }
+type EditionsDetails struct {
+	ID      string  `json:"id"`
+	Next    Edition `json:"next,omitempty"`
+	Current Edition `json:"current"`
+	Edition
+}
+
+type EditionItems struct {
+	Items []EditionsDetails `json:"items"`
+}
 
 // Edition represents an edition within a dataset
 type Edition struct {

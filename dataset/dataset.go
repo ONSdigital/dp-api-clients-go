@@ -413,6 +413,36 @@ func (c *Client) GetEdition(ctx context.Context, userAuthToken, serviceAuthToken
 }
 
 // GetEditions returns all editions for a dataset
+func (c *Client) GetFullEditionsDetails(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m []EditionsDetails, err error) {
+	uri := fmt.Sprintf("%s/datasets/%s/editions", c.hcCli.URL, datasetID)
+
+	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
+
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewDatasetAPIResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	var body EditionItems
+	if err = json.Unmarshal(b, &body); err != nil {
+		return nil, err
+	}
+	m = body.Items
+	return
+}
+
+// GetEditions returns all editions for a dataset
 func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m []Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions", c.hcCli.URL, datasetID)
 
