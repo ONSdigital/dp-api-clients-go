@@ -109,7 +109,12 @@ func TestUpload(t *testing.T) {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			extractFields(r)
 
-			w.WriteHeader(http.StatusCreated)
+			if actualResumableChunkNumber == actualResumableTotalChunks {
+				w.WriteHeader(http.StatusCreated)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
 		}))
 		defer s.Close()
 		c := upload.NewAPIClient(s.URL)
@@ -120,7 +125,7 @@ func TestUpload(t *testing.T) {
 
 			Convey("When I upload the single-chunk file with metadata containing a collection ID", func() {
 				numberOfAPICalls = 0
-				err := c.Upload(context.Background(), f, CreateMetadata(int64(len(fileContent)), &collectionID))
+				err := c.Upload(context.Background(), f, createMetadata(int64(len(fileContent)), &collectionID))
 
 				Convey("Then the file is successfully uploaded", func() {
 					So(err, ShouldBeNil)
@@ -148,7 +153,7 @@ func TestUpload(t *testing.T) {
 
 			Convey("When I upload the single-chunk file with metadata not containing a collection ID", func() {
 				numberOfAPICalls = 0
-				err := c.Upload(context.Background(), f, CreateMetadata(int64(len(fileContent)), nil))
+				err := c.Upload(context.Background(), f, createMetadata(int64(len(fileContent)), nil))
 
 				Convey("Then the file is successfully uploaded", func() {
 					So(err, ShouldBeNil)
@@ -182,7 +187,7 @@ func TestUpload(t *testing.T) {
 
 			Convey("When I upload the multi-chunk file with metadata containing a collection ID", func() {
 				numberOfAPICalls = 0
-				err := c.Upload(context.Background(), f, CreateMetadata(expectedContentLength, &collectionID))
+				err := c.Upload(context.Background(), f, createMetadata(expectedContentLength, &collectionID))
 
 				Convey("Then the file is successfully uploaded in 5 Megabyte chunk", func() {
 					So(err, ShouldBeNil)
@@ -232,7 +237,7 @@ func TestUpload(t *testing.T) {
 		Convey("When I upload the file", func() {
 			expectedContentLength, _ := generateTestContent()
 
-			err := c.Upload(context.Background(), errReader, CreateMetadata(expectedContentLength, &collectionID))
+			err := c.Upload(context.Background(), errReader, createMetadata(expectedContentLength, &collectionID))
 
 			Convey("Then an error is returned", func() {
 				So(err, ShouldBeError)
@@ -249,7 +254,7 @@ func TestUpload(t *testing.T) {
 		c := upload.NewAPIClient("BAD DP-UPLOAD-SERVICE URL")
 
 		Convey("When I upload the file", func() {
-			err := c.Upload(context.Background(), f, CreateMetadata(expectedContentLength, &collectionID))
+			err := c.Upload(context.Background(), f, createMetadata(expectedContentLength, &collectionID))
 
 			Convey("Then an error is returned", func() {
 				So(err, ShouldBeError)
@@ -258,10 +263,152 @@ func TestUpload(t *testing.T) {
 	})
 }
 
+func TestErrorCases(t *testing.T) {
+	Convey("Given I have a file greater than 50GB", t, func() {
+		c := upload.NewAPIClient("")
+		metadata := createMetadata(upload.MaxFileSize+1, nil)
+		_, fileContent := generateTestContent()
+		f := io.NopCloser(strings.NewReader(fileContent))
+
+		Convey("when I upload the file", func() {
+			err := c.Upload(context.Background(), f, metadata)
+			Convey("Then a file size too large error is returned", func() {
+				So(err, ShouldBeError, upload.ErrFileTooLarge)
+			})
+		})
+	})
+
+	responseTests := []struct {
+		testDescription  string
+		errorCode        string
+		errorDescription string
+		statusCode       int
+	}{
+		{
+			testDescription:  "Given that dp-upload returns a 500 error",
+			errorCode:        "InternalError",
+			errorDescription: "the database broke",
+			statusCode:       http.StatusInternalServerError,
+		},
+		{
+			testDescription:  "Given that dp-upload returns a 400 error",
+			errorCode:        "BadRequest",
+			errorDescription: "error getting file from form",
+			statusCode:       http.StatusBadRequest,
+		},
+		{
+			testDescription:  "Given that dp-upload returns a 401 error",
+			errorCode:        "Unauthorized",
+			errorDescription: "unauthorized attempt to access upload service",
+			statusCode:       http.StatusUnauthorized,
+		},
+		{
+			testDescription:  "Given that dp-upload returns a 403 error",
+			errorCode:        "Forbidden",
+			errorDescription: "forbidden attempt to access upload service",
+			statusCode:       http.StatusForbidden,
+		},
+		{
+			testDescription:  "Given that dp-upload returns a 404 error",
+			errorCode:        "NotFound",
+			errorDescription: "still have not find what you were looking for",
+			statusCode:       http.StatusNotFound,
+		},
+	}
+
+	for _, responseTest := range responseTests {
+		Convey(responseTest.testDescription, t, func() {
+			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				errorBody := fmt.Sprintf(`{"errors": [{"errorCode": "%s", "description": "%s"}]}`, responseTest.errorCode, responseTest.errorDescription)
+				w.WriteHeader(responseTest.statusCode)
+				w.Write([]byte(errorBody))
+			}))
+
+			c := upload.NewAPIClient(s.URL)
+
+			Convey("When an upload is attempted", func() {
+				metadata := createMetadata(1, nil)
+				_, fileContent := generateTestContent()
+				f := io.NopCloser(strings.NewReader(fileContent))
+				err := c.Upload(context.Background(), f, metadata)
+
+				Convey("Then an error is returned", func() {
+					expectedError := fmt.Sprintf("%s: %s", responseTest.errorCode, responseTest.errorDescription)
+					So(err, ShouldBeError)
+					So(err.Error(), ShouldEqual, expectedError)
+				})
+			})
+		})
+	}
+
+	Convey("Given dp-upload returns multiple errors", t, func() {
+		errorCode := "ValidationError"
+		firstErrorDescription := "path required"
+		secondErrorDescription := "type required"
+
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			firstError := fmt.Sprintf(`{"errorCode": "%s", "description": "%s"}`, errorCode, firstErrorDescription)
+			secondError := fmt.Sprintf(`{"errorCode": "%s", "description": "%s"}`, errorCode, secondErrorDescription)
+
+			errorBody := fmt.Sprintf(`{"errors": [%s, %s]}`, firstError, secondError)
+
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(errorBody))
+		}))
+
+		c := upload.NewAPIClient(s.URL)
+
+		Convey("When an upload is attempted", func() {
+			metadata := createMetadata(1, nil)
+			_, fileContent := generateTestContent()
+			f := io.NopCloser(strings.NewReader(fileContent))
+			err := c.Upload(context.Background(), f, metadata)
+
+			Convey("Then an error is returned", func() {
+				firstExpectedError := fmt.Sprintf("%s: %s", errorCode, firstErrorDescription)
+				secondExpectedError := fmt.Sprintf("%s: %s", errorCode, secondErrorDescription)
+
+				expectedError := fmt.Sprintf("%s\n%s", firstExpectedError, secondExpectedError)
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldEqual, expectedError)
+			})
+		})
+	})
+
+	Convey("Given dp-upload returns an unknown error", t, func() {
+		errorCode := "Teapot"
+		errorDescription := "unknown error"
+		errorMessage := fmt.Sprintf(`{"errorCode": "%s", "description": "%s"}`, errorCode, errorDescription)
+		errorBody := fmt.Sprintf(`{"errors": [%s]}`, errorMessage) /**/
+
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			w.WriteHeader(http.StatusTeapot)
+			w.Write([]byte(errorBody))
+		}))
+
+		c := upload.NewAPIClient(s.URL)
+
+		Convey("When an upload is attempted", func() {
+			metadata := createMetadata(1, nil)
+			_, fileContent := generateTestContent()
+			f := io.NopCloser(strings.NewReader(fileContent))
+			err := c.Upload(context.Background(), f, metadata)
+
+			Convey("Then an error is returned", func() {
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldContainSubstring, errorBody)
+			})
+		})
+	})
+}
+
 func extractFields(r *http.Request) {
 	numberOfAPICalls++
-	maxMemory := int64(7 * 1024 * 1024)
-	r.ParseMultipartForm(maxMemory)
+
+	actualMethod = r.Method
+
+	r.ParseMultipartForm(int64(7 * 1024 * 1024))
 
 	actualHasCollectionID = r.Form.Has("collectionId")
 
@@ -276,12 +423,9 @@ func extractFields(r *http.Request) {
 	actualLicenceURL = r.Form.Get("licenceURL")
 	actualResumableChunkNumber = r.Form.Get("resumableChunkNumber")
 	actualResumableTotalChunks = r.Form.Get("resumableTotalChunks")
-	actualMethod = r.Method
 
 	contentReader, _, _ := r.FormFile("file")
-
 	contentBytes, _ := io.ReadAll(contentReader)
-
 	actualContent = actualContent + string(contentBytes)
 }
 
@@ -297,7 +441,7 @@ func generateTestContent() (int64, string) {
 	return size, string(output)
 }
 
-func CreateMetadata(expectedContentLength int64, collectionID *string) upload.Metadata {
+func createMetadata(expectedContentLength int64, collectionID *string) upload.Metadata {
 	return upload.Metadata{
 		CollectionID:  collectionID,
 		FileName:      filename,

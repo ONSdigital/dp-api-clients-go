@@ -3,21 +3,31 @@ package upload
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/v2/log"
 	"io"
+	"io/ioutil"
 	"math"
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 const (
-	service   = "upload-api"
-	chunkSize = 5 * 1024 * 1024
+	service     = "upload-api"
+	chunkSize   = 5 * 1024 * 1024
+	maxChunks   = 10000
+	MaxFileSize = chunkSize * maxChunks
+)
+
+var (
+	ErrFileTooLarge = errors.New(fmt.Sprintf("file too large, max file size: %d MB", MaxFileSize>>20))
 )
 
 type Metadata struct {
@@ -55,6 +65,59 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
 
+func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata Metadata) error {
+	if err := c.validateMetadata(metadata); err != nil {
+		return err
+	}
+
+	totalChunks := c.calculateTotalChunks(metadata)
+
+	for i := 1; i <= totalChunks; i++ {
+		chunkContext := ChunkContext{i, totalChunks}
+		reqBody, contentType, err := c.generateRequestBody(ctx, chunkContext, fileContent, metadata)
+		if err != nil {
+			return err
+		}
+
+		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload", c.hcCli.URL), reqBody)
+		req.Header.Set("Content-Type", contentType)
+
+		resp, err := dphttp.DefaultClient.Do(ctx, req)
+		if err != nil {
+			log.Error(ctx, "failed request", err, log.Data{"request": req})
+			return err
+		}
+		statusCode := resp.StatusCode
+
+		if unsuccessfulRequest(statusCode) {
+			switch statusCode {
+			case http.StatusInternalServerError,
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound:
+				je := jsonErrors{}
+				json.NewDecoder(resp.Body).Decode(&je)
+				var msgs []string
+				for _, e := range je.Errors {
+					msgs = append(msgs, fmt.Sprintf("%s: %s", e.Code, e.Description))
+				}
+
+				return errors.New(strings.Join(msgs, "\n"))
+			default:
+				body, _ := ioutil.ReadAll(resp.Body)
+				return errors.New(string(body))
+			}
+		}
+	}
+
+	return nil
+}
+
+func unsuccessfulRequest(statusCode int) bool {
+	return statusCode != http.StatusOK && statusCode != http.StatusCreated
+}
+
 func (c *Client) writeMetadataFormFields(formWriter *multipart.Writer, metadata Metadata, chunk ChunkContext) {
 	if metadata.CollectionID != nil {
 		formWriter.WriteField("collectionId", *metadata.CollectionID)
@@ -71,59 +134,57 @@ func (c *Client) writeMetadataFormFields(formWriter *multipart.Writer, metadata 
 	formWriter.WriteField("resumableTotalChunks", fmt.Sprintf("%d", chunk.Total))
 }
 
-func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata Metadata) error {
-	totalChunks := int(math.Ceil(float64(metadata.FileSizeBytes) / chunkSize))
-
-	for i := 1; i <= totalChunks; i++ {
-		reqBuff := &bytes.Buffer{}
-		chunkContext := ChunkContext{
-			Current: i,
-			Total:   totalChunks,
-		}
-		formWriter := multipart.NewWriter(reqBuff)
-
-		readBuff := make([]byte, chunkSize)
-		bytesRead, err := fileContent.Read(readBuff)
-
-		if err != nil {
-			log.Error(ctx, "file content read error", err)
-			formWriter.Close()
-			return err
-		}
-
-		var outBuff []byte
-
-		if bytesRead == chunkSize {
-			outBuff = readBuff
-		} else if bytesRead < chunkSize {
-			outBuff = readBuff[:bytesRead]
-		}
-
-		br := bytes.NewReader(outBuff)
-
-		c.writeMetadataFormFields(formWriter, metadata, chunkContext)
-		_, err = c.writeFileFormField(formWriter, metadata, br, len(outBuff))
-
-		if err != nil {
-			log.Error(ctx, "error writing form file content to request buffer", err)
-			formWriter.Close()
-			return err
-		}
-
-		formWriter.Close()
-
-		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload", c.hcCli.URL), reqBuff)
-
-		req.Header.Set("Content-Type", formWriter.FormDataContentType())
-
-		_, err = dphttp.DefaultClient.Do(ctx, req)
-		if err != nil {
-			log.Error(ctx, "failed request", err, log.Data{"request": req})
-			return err
-		}
+func (c *Client) validateMetadata(metadata Metadata) error {
+	if metadata.FileSizeBytes > MaxFileSize {
+		return ErrFileTooLarge
 	}
 
 	return nil
+}
+
+func (c *Client) chunkReader(ctx context.Context, fileContent io.ReadCloser) (io.Reader, int, error) {
+	readBuff := make([]byte, chunkSize)
+	bytesRead, err := fileContent.Read(readBuff)
+
+	if err != nil {
+		log.Error(ctx, "file content read error", err)
+		return nil, 0, err
+	}
+
+	var outBuff []byte
+
+	if bytesRead == chunkSize {
+		outBuff = readBuff
+	} else if bytesRead < chunkSize {
+		outBuff = readBuff[:bytesRead]
+	}
+
+	return bytes.NewReader(outBuff), len(outBuff), nil
+}
+
+func (c *Client) generateRequestBody(ctx context.Context, chunkContext ChunkContext, fileContent io.ReadCloser, metadata Metadata) (*bytes.Buffer, string, error) {
+	reqBuff := &bytes.Buffer{}
+	formWriter := multipart.NewWriter(reqBuff)
+	defer formWriter.Close()
+
+	contentChunk, contentChunkLength, err := c.chunkReader(ctx, fileContent)
+	if err != nil {
+		return nil, "", err
+	}
+
+	c.writeMetadataFormFields(formWriter, metadata, chunkContext)
+	_, err = c.writeFileFormField(formWriter, metadata, contentChunk, contentChunkLength)
+	if err != nil {
+		log.Error(ctx, "error writing form file content to request buffer", err)
+
+		return nil, "", err
+	}
+
+	return reqBuff, formWriter.FormDataContentType(), nil
+}
+
+func (c *Client) calculateTotalChunks(metadata Metadata) int {
+	return int(math.Ceil(float64(metadata.FileSizeBytes) / chunkSize))
 }
 
 func (c *Client) writeFileFormField(formWriter *multipart.Writer, metadata Metadata, fileContent io.Reader, fileSizeBytes int) (int, error) {
