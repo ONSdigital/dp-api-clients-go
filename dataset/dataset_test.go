@@ -13,7 +13,6 @@ import (
 
 	"github.com/pkg/errors"
 	. "github.com/smartystreets/goconvey/convey"
-
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
@@ -308,7 +307,6 @@ func TestClient_PutVersion(t *testing.T) {
 			})
 		})
 	})
-
 }
 
 func TestClient_GetDatasets(t *testing.T) {
