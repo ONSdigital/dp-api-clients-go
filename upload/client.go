@@ -11,6 +11,7 @@ import (
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/v2/log"
 	"io"
+	"io/ioutil"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -88,25 +89,33 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 		}
 		statusCode := resp.StatusCode
 
-		switch statusCode {
-		case http.StatusInternalServerError,
-			http.StatusBadRequest,
-			http.StatusUnauthorized,
-			http.StatusForbidden,
-			http.StatusNotFound:
-			je := jsonErrors{}
-			json.NewDecoder(resp.Body).Decode(&je)
-			var msgs []string
-			for _, e := range je.Errors {
-				msgs = append(msgs, fmt.Sprintf("%s: %s", e.Code, e.Description))
+		if unsuccessfulRequest(statusCode) {
+			switch statusCode {
+			case http.StatusInternalServerError,
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound:
+				je := jsonErrors{}
+				json.NewDecoder(resp.Body).Decode(&je)
+				var msgs []string
+				for _, e := range je.Errors {
+					msgs = append(msgs, fmt.Sprintf("%s: %s", e.Code, e.Description))
+				}
+
+				return errors.New(strings.Join(msgs, "\n"))
+			default:
+				body, _ := ioutil.ReadAll(resp.Body)
+				return errors.New(string(body))
 			}
-
-			return errors.New(strings.Join(msgs, "\n"))
-
 		}
 	}
 
 	return nil
+}
+
+func unsuccessfulRequest(statusCode int) bool {
+	return statusCode != http.StatusOK && statusCode != http.StatusCreated
 }
 
 func (c *Client) writeMetadataFormFields(formWriter *multipart.Writer, metadata Metadata, chunk ChunkContext) {

@@ -369,6 +369,33 @@ func TestErrorCases(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given dp-upload returns an unknown error", t, func() {
+		errorCode := "Teapot"
+		errorDescription := "unknown error"
+		errorMessage := fmt.Sprintf(`{"errorCode": "%s", "description": "%s"}`, errorCode, errorDescription)
+		errorBody := fmt.Sprintf(`{"errors": [%s]}`, errorMessage) /**/
+
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			w.WriteHeader(http.StatusTeapot)
+			w.Write([]byte(errorBody))
+		}))
+
+		c := upload.NewAPIClient(s.URL)
+
+		Convey("When an upload is attempted", func() {
+			metadata := createMetadata(1, nil)
+			_, fileContent := generateTestContent()
+			f := io.NopCloser(strings.NewReader(fileContent))
+			err := c.Upload(context.Background(), f, metadata)
+
+			Convey("Then an error is returned", func() {
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldContainSubstring, errorBody)
+			})
+		})
+	})
 }
 
 func extractFields(r *http.Request) {
