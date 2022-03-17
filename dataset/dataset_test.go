@@ -761,6 +761,48 @@ func TestClient_GetFullEditionsDetails(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("given a 404 status is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, nil, nil})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetFullEditionsDetails is called", func() {
+			_, err := datasetClient.GetFullEditionsDetails(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
+					actualCode: http.StatusNotFound,
+					uri:        "http://localhost:8080/datasets/123/editions",
+					body:       "null",
+				})
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
+				checkRequestBase(httpClient, http.MethodGet, "/datasets/123/editions", "")
+			})
+		})
+	})
+
+	Convey("given a 500 status is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusInternalServerError, nil, nil})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetFullEditionsDetails is called", func() {
+			_, err := datasetClient.GetFullEditionsDetails(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldResemble, &ErrInvalidDatasetAPIResponse{
+					actualCode: http.StatusInternalServerError,
+					uri:        "http://localhost:8080/datasets/123/editions",
+					body:       "",
+				})
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with expected parameters", func() {
+				checkRequestBase(httpClient, http.MethodGet, "/datasets/123/editions", "")
+			})
+		})
+	})
 }
 
 func TestClient_GetInstance(t *testing.T) {
