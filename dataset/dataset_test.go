@@ -699,6 +699,70 @@ func TestClient_GetDatasetCurrentAndNext(t *testing.T) {
 
 }
 
+func TestClient_GetFullEditionsDetails(t *testing.T) {
+	t.Parallel()
+	Convey("given a 200 status with valid empty body is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, EditionsDetails{}, nil})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetFullEditionsDetails is called", func() {
+			editions, err := datasetClient.GetFullEditionsDetails(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("a positive response is returned with empty editions", func() {
+				So(err, ShouldBeNil)
+				So(editions, ShouldResemble, []EditionsDetails(nil))
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkRequestBase(httpClient, http.MethodGet, "/datasets/123/editions", "")
+			})
+		})
+	})
+
+	Convey("given a 200 status with empty body is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, []byte{}, nil})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetFullEditionsDetails is called", func() {
+			_, err := datasetClient.GetFullEditionsDetails(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkRequestBase(httpClient, http.MethodGet, "/datasets/123/editions", "")
+			})
+		})
+	})
+
+	Convey("given a 200 status with valid body is returned", t, func() {
+		expectedID := "123"
+		expectedItems := EditionItems{
+			Items: []EditionsDetails{
+				{
+					ID: expectedID,
+				},
+			},
+		}
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, expectedItems, nil})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetFullEditionsDetails is called", func() {
+			editions, err := datasetClient.GetFullEditionsDetails(ctx, userAuthToken, serviceAuthToken, collectionID, "123")
+
+			Convey("a positive response is returned with empty editions", func() {
+				So(err, ShouldBeNil)
+				So(editions[0].ID, ShouldResemble, expectedID)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time", func() {
+				checkRequestBase(httpClient, http.MethodGet, "/datasets/123/editions", "")
+			})
+		})
+	})
+}
+
 func TestClient_GetInstance(t *testing.T) {
 
 	Convey("given a 200 status with valid empty body is returned", t, func() {

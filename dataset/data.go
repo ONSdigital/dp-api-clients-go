@@ -211,7 +211,7 @@ type Download struct {
 }
 type EditionsDetails struct {
 	ID      string  `json:"id"`
-	Next    Edition `json:"next,omitempty"`
+	Next    Edition `json:"next"`
 	Current Edition `json:"current"`
 	Edition
 }
