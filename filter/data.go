@@ -58,6 +58,13 @@ type createFlexBlueprintResponse struct {
 	FilterID string `json:"filter_id"`
 }
 
+// createFlexDimensionRequest represents the fields required to add a dimension to a flex filter
+type createFlexDimensionRequest struct {
+	Name       string   `json:"name"`
+	IsAreaType bool     `json:"is_area_type"`
+	Options    []string `json:"options"`
+}
+
 // Dataset represents the dataset fields required to create a filter blueprint
 type Dataset struct {
 	DatasetID string `json:"id"`
