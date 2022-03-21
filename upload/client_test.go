@@ -36,6 +36,7 @@ var (
 	actualResumableTotalChunks string
 
 	actualMethod     string
+	actualURL        string
 	numberOfAPICalls int
 
 	collectionID = "123456"
@@ -130,6 +131,7 @@ func TestUpload(t *testing.T) {
 				Convey("Then the file is successfully uploaded", func() {
 					So(err, ShouldBeNil)
 					So(actualMethod, ShouldEqual, http.MethodPost)
+					So(actualURL, ShouldEqual, "/upload-new")
 					So(actualContent, ShouldEqual, fileContent)
 				})
 
@@ -158,6 +160,7 @@ func TestUpload(t *testing.T) {
 				Convey("Then the file is successfully uploaded", func() {
 					So(err, ShouldBeNil)
 					So(actualMethod, ShouldEqual, http.MethodPost)
+					So(actualURL, ShouldEqual, "/upload-new")
 					So(actualContent, ShouldEqual, fileContent)
 				})
 
@@ -423,6 +426,9 @@ func extractFields(r *http.Request) {
 	actualLicenceURL = r.Form.Get("licenceURL")
 	actualResumableChunkNumber = r.Form.Get("resumableChunkNumber")
 	actualResumableTotalChunks = r.Form.Get("resumableTotalChunks")
+
+	actualMethod = r.Method
+	actualURL = r.URL.Path
 
 	contentReader, _, _ := r.FormFile("file")
 	contentBytes, _ := io.ReadAll(contentReader)

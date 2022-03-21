@@ -79,7 +79,7 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 			return err
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload", c.hcCli.URL), reqBody)
+		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload-new", c.hcCli.URL), reqBody)
 		req.Header.Set("Content-Type", contentType)
 
 		resp, err := dphttp.DefaultClient.Do(ctx, req)
