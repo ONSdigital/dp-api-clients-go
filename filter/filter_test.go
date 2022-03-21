@@ -1806,6 +1806,19 @@ func TestClient_GetJobState(t *testing.T) {
 		So(eTag, ShouldResemble, testETag)
 	})
 
+	Convey("When a Job contains flexible fields", t, func() {
+		const populationType = "Example"
+		flexibleJobBody := fmt.Sprintf(`{ "population_type": "%s" }`, populationType)
+
+		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 200, Body: flexibleJobBody})
+		jobResponse, _, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
+		So(err, ShouldBeNil)
+
+		Convey("then the population type should be returned", func() {
+			So(jobResponse.PopulationType, ShouldEqual, populationType)
+		})
+	})
+
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
 		_, _, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
