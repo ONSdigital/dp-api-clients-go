@@ -67,18 +67,19 @@ type Dataset struct {
 
 // Model represents a model returned from the filter api
 type Model struct {
-	FilterID    string              `json:"filter_id"`
-	InstanceID  string              `json:"instance_id"`
-	Links       Links               `json:"links"`
-	DatasetID   string              `json:"dataset_id"`
-	Dataset     Dataset             `json:"dataset,omitempty"`
-	Edition     string              `json:"edition"`
-	Version     string              `json:"version"`
-	State       string              `json:"state"`
-	Dimensions  []ModelDimension    `json:"dimensions,omitempty"`
-	Downloads   map[string]Download `json:"downloads,omitempty"`
-	Events      []Event             `json:"events,omitempty"`
-	IsPublished bool                `json:"published"`
+	FilterID       string              `json:"filter_id"`
+	InstanceID     string              `json:"instance_id"`
+	Links          Links               `json:"links"`
+	DatasetID      string              `json:"dataset_id"`
+	Dataset        Dataset             `json:"dataset,omitempty"`
+	Edition        string              `json:"edition"`
+	Version        string              `json:"version"`
+	State          string              `json:"state"`
+	Dimensions     []ModelDimension    `json:"dimensions,omitempty"`
+	Downloads      map[string]Download `json:"downloads,omitempty"`
+	Events         []Event             `json:"events,omitempty"`
+	IsPublished    bool                `json:"published"`
+	PopulationType string              `json:"population_type,omitempty"`
 }
 
 // Links represents a links object on the filter api response
