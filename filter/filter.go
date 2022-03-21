@@ -606,6 +606,71 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	return m, eTag, nil
 }
 
+// UpdateFlexBlueprint will update a blueprint with a given filter model, providing the required IfMatch value to be sure the update is done in the expected object
+func (c *Client) UpdateFlexBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID string, m Model, doSubmit bool, populationType string, ifMatch string) (Model, string, error) {
+	m.PopulationType = populationType
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return m, "", err
+	}
+
+	uri := fmt.Sprintf("%s/filters/%s", c.hcCli.URL, m.FilterID)
+
+	if doSubmit {
+		uri += "?submitted=true"
+	}
+
+	clientlog.Do(ctx, "updating filter job", service, uri, log.Data{
+		"method": "PUT",
+		"body":   string(b),
+	})
+
+	req, err := http.NewRequest("PUT", uri, bytes.NewBuffer(b))
+	if err != nil {
+		return m, "", err
+	}
+
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return m, "", fmt.Errorf("failed to set auth token: %w", err)
+	}
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return m, "", fmt.Errorf("failed to set service auth token: %w", err)
+	}
+	if err = headers.SetDownloadServiceToken(req, downloadServiceToken); err != nil {
+		return m, "", fmt.Errorf("failed to set download service token: %w", err)
+	}
+	if err = headers.SetIfMatch(req, ifMatch); err != nil {
+		return m, "", fmt.Errorf("failed to set if match: %w", err)
+	}
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return m, "", err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return m, "", ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+	}
+
+	eTag, err := headers.GetResponseETag(resp)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return m, "", err
+	}
+
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return m, "", err
+	}
+
+	if err = json.Unmarshal(b, &m); err != nil {
+		return m, "", err
+	}
+
+	return m, eTag, nil
+}
+
 // AddDimensionValue adds a particular value to a filter job for a given filterID
 // and dimension name
 func (c *Client) AddDimensionValue(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name, value, ifMatch string) (eTag string, err error) {
