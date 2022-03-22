@@ -1,4 +1,4 @@
-package upload
+package files
 
 type jsonError struct {
 	Code        string `json:"errorCode"`
