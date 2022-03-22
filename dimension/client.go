@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
@@ -40,6 +41,12 @@ func NewWithHealthClient(hcCli *health.Client) (*Client, error) {
 		return nil, fmt.Errorf("error parsing URL: %w", err)
 	}
 
+	// The Parse method on `url.URL` uses a trailing slash to determine
+	// how relative URLs are joined.
+	if !strings.HasSuffix(baseURL.Path, "/") {
+		baseURL.Path = baseURL.Path + "/"
+	}
+
 	return &Client{hcCli: client, baseURL: baseURL}, nil
 }
 
@@ -55,8 +62,17 @@ func (c *Client) GetAreaTypes(ctx context.Context, userAuthToken, serviceAuthTok
 		"dataset_id": datasetID,
 	}
 
-	query := url.Values{"dataset": []string{datasetID}}.Encode()
-	reqURL := c.baseURL.ResolveReference(&url.URL{Path: "/area-types", RawQuery: query}).String()
+	areaTypesURL, err := c.baseURL.Parse("area-types")
+	if err != nil {
+		return GetAreaTypesResponse{}, dperrors.New(
+			fmt.Errorf("failed to parse area-types URL: %w", err),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	areaTypesURL.RawQuery = url.Values{"dataset": []string{datasetID}}.Encode()
+	reqURL := areaTypesURL.String()
 
 	clientlog.Do(ctx, "getting area types", service, reqURL, logData)
 

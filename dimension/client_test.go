@@ -39,14 +39,15 @@ func TestNewClient(t *testing.T) {
 func TestGetAreaTypes(t *testing.T) {
 	Convey("Given a valid request", t, func() {
 		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
-		client := newHealthClient(stubClient)
+		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))
+		So(err, ShouldBeNil)
 
 		_, _ = client.GetAreaTypes(context.Background(), "", "", "test")
 
 		Convey("it should call the area types endpoint, serializing the dataset query", func() {
 			calls := stubClient.DoCalls()
 			So(calls, ShouldNotBeEmpty)
-			So(calls[0].Req.URL.String(), ShouldEqual, "/area-types?dataset=test")
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/area-types?dataset=test")
 		})
 	})
 
