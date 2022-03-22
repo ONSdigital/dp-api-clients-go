@@ -17,6 +17,7 @@ import (
 var (
 	ErrFileNotFound            = errors.New("file not found on dp-files-api")
 	ErrFileAlreadyInCollection = errors.New("file collection ID already set")
+	ErrNoFilesInCollection     = errors.New("no file in the collection")
 )
 
 const (
@@ -74,6 +75,18 @@ func (c *Client) SetCollectionID(ctx context.Context, filepath, collectionID str
 		b, _ := ioutil.ReadAll(resp.Body)
 
 		return errors.New(fmt.Sprintf("Exepect Error: %d - %s", resp.StatusCode, string(b)))
+	}
+
+	return nil
+}
+
+func (c *Client) PublishCollection(ctx context.Context, collectionID string) error {
+	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("%s/collection/%s", c.hcCli.URL, collectionID), nil)
+
+	resp, _ := dphttp.DefaultClient.Do(ctx, req)
+
+	if resp.StatusCode == http.StatusNotFound {
+		return ErrNoFilesInCollection
 	}
 
 	return nil

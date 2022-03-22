@@ -14,6 +14,14 @@ import (
 	"time"
 )
 
+const (
+	filepath     = "testing/test.txt"
+	collectionID = "123456789"
+)
+
+var actualMethod, actualURL, actualContentType string
+var actualContent map[string]string
+
 func TestHealthCheck(t *testing.T) {
 	timePriorHealthCheck := time.Now()
 
@@ -67,11 +75,6 @@ func TestHealthCheck(t *testing.T) {
 }
 
 func TestSetCollectionID(t *testing.T) {
-	const filepath = "testing/test.txt"
-	const collectionID = "123456789"
-
-	var actualMethod, actualURL, actualContentType string
-	var actualContent map[string]string
 
 	Convey("Given a file is uploaded", t, func() {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -177,6 +180,49 @@ func TestSetCollectionID(t *testing.T) {
 
 			Convey("Then a file not found error should be returned", func() {
 				So(err, ShouldBeError)
+			})
+		})
+	})
+}
+
+func TestPublishCollection(t *testing.T) {
+	Convey("There are file in the collection to be published", t, func() {
+
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			actualMethod = r.Method
+			actualURL = r.URL.Path
+
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer s.Close()
+		c := files.NewAPIClient(s.URL)
+
+		Convey("When we publish the collection", func() {
+
+			err := c.PublishCollection(context.Background(), collectionID)
+
+			Convey("The collection is published", func() {
+				So(err, ShouldBeNil)
+				So(actualMethod, ShouldEqual, http.MethodPatch)
+				So(actualURL, ShouldEqual, fmt.Sprintf("/collection/%s", collectionID))
+			})
+		})
+	})
+
+	Convey("There are no files in the collection", t, func() {
+
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		defer s.Close()
+		c := files.NewAPIClient(s.URL)
+
+		Convey("When we publish the collection", func() {
+
+			err := c.PublishCollection(context.Background(), collectionID)
+
+			Convey("The a no files in collection error is returned", func() {
+				So(err, ShouldEqual, files.ErrNoFilesInCollection)
 			})
 		})
 	})
