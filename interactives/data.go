@@ -1,23 +1,12 @@
 package interactives
 
-import "time"
-
 const (
 	UpdateFormFieldKey = "update"
 )
 
-type InteractiveMetadata struct { // TODO : Geography
-	Title           string    `json:"title"`
-	PrimaryTopic    string    `json:"primary_topic"`
-	Topics          []string  `json:"topics"`
-	Surveys         []string  `json:"surveys"`
-	ReleaseDate     time.Time `json:"release_date"`
-	Uri             string    `json:"uri"`
-	Edition         string    `json:"edition,omitempty"`
-	Keywords        []string  `json:"keywords,omitempty"`
-	MetaDescription string    `json:"meta_description,omitempty"`
-	Source          string    `json:"source,omitempty"`
-	Summary         string    `json:"summary,omitempty"`
+type InteractiveMetadata struct {
+	Label      string `json:"label"`
+	InternalID string `json:"internal_id"`
 }
 
 type Interactive struct {
