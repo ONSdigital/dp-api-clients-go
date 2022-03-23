@@ -135,7 +135,7 @@ func TestSetCollectionID(t *testing.T) {
 	})
 
 	Convey("Given files-api has server errors", t, func() {
-		errorCode := "CritialError"
+		errorCode := "CriticalError"
 		errorDescription := "it is broken"
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			errorBody := fmt.Sprintf(`{"errors": [{"errorCode": "%s", "description": "%s"}]}`, errorCode, errorDescription)
@@ -210,7 +210,6 @@ func TestPublishCollection(t *testing.T) {
 	})
 
 	Convey("There are no files in the collection", t, func() {
-
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 		}))
@@ -223,6 +222,76 @@ func TestPublishCollection(t *testing.T) {
 
 			Convey("The a no files in collection error is returned", func() {
 				So(err, ShouldEqual, files.ErrNoFilesInCollection)
+			})
+		})
+	})
+
+	Convey("The files are not in an UPLOADED state", t, func() {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusConflict)
+		}))
+		defer s.Close()
+		c := files.NewAPIClient(s.URL)
+
+		Convey("When we publish the collection", func() {
+
+			err := c.PublishCollection(context.Background(), collectionID)
+
+			Convey("an invalid state error should be returned", func() {
+				So(err, ShouldEqual, files.ErrInvalidState)
+			})
+		})
+	})
+
+	Convey("There is a server error", t, func() {
+		errorCode := "CriticalError"
+		errorDescription := "it is broken"
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			errorBody := fmt.Sprintf(`{"errors": [{"errorCode": "%s", "description": "%s"}]}`, errorCode, errorDescription)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(errorBody))
+		}))
+		defer s.Close()
+		c := files.NewAPIClient(s.URL)
+
+		Convey("When we publish the collection", func() {
+
+			err := c.PublishCollection(context.Background(), collectionID)
+
+			Convey("Then an error container the JSON Error content should be returned", func() {
+				So(err.Error(), ShouldContainSubstring, fmt.Sprintf("%s: %s", errorCode, errorDescription))
+			})
+		})
+	})
+
+	Convey("There is an expected response", t, func() {
+		respContent := "Testing Testing 123"
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusTeapot)
+			w.Write([]byte(respContent))
+		}))
+		defer s.Close()
+		c := files.NewAPIClient(s.URL)
+
+		Convey("When we publish the collection", func() {
+
+			err := c.PublishCollection(context.Background(), collectionID)
+
+			Convey("Then an errot with the response content should be returned", func() {
+				So(err.Error(), ShouldContainSubstring, respContent)
+			})
+		})
+	})
+
+	Convey("There is an error connecting to files-api", t, func() {
+		c := files.NewAPIClient("broken")
+
+		Convey("When we publish the collection", func() {
+
+			err := c.PublishCollection(context.Background(), collectionID)
+
+			Convey("An error should be returned", func() {
+				So(err, ShouldBeError)
 			})
 		})
 	})

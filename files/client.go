@@ -9,6 +9,7 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
+	"github.com/ONSdigital/log.go/v2/log"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -18,6 +19,7 @@ var (
 	ErrFileNotFound            = errors.New("file not found on dp-files-api")
 	ErrFileAlreadyInCollection = errors.New("file collection ID already set")
 	ErrNoFilesInCollection     = errors.New("no file in the collection")
+	ErrInvalidState            = errors.New("files in an invalid state to publish")
 )
 
 const (
@@ -83,10 +85,29 @@ func (c *Client) SetCollectionID(ctx context.Context, filepath, collectionID str
 func (c *Client) PublishCollection(ctx context.Context, collectionID string) error {
 	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("%s/collection/%s", c.hcCli.URL, collectionID), nil)
 
-	resp, _ := dphttp.DefaultClient.Do(ctx, req)
+	resp, err := dphttp.DefaultClient.Do(ctx, req)
+	if err != nil {
+		log.Error(ctx, "failed request", err, log.Data{"request": req})
+		return err
+	}
 
-	if resp.StatusCode == http.StatusNotFound {
-		return ErrNoFilesInCollection
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			return ErrNoFilesInCollection
+		} else if resp.StatusCode == http.StatusConflict {
+			return ErrInvalidState
+		} else if resp.StatusCode == http.StatusInternalServerError {
+			je := jsonErrors{}
+			json.NewDecoder(resp.Body).Decode(&je)
+			var msgs []string
+			for _, e := range je.Errors {
+				msgs = append(msgs, fmt.Sprintf("%s: %s", e.Code, e.Description))
+			}
+			return errors.New(strings.Join(msgs, "\n"))
+		} else {
+			body, _ := ioutil.ReadAll(resp.Body)
+			return errors.New(string(body))
+		}
 	}
 
 	return nil
