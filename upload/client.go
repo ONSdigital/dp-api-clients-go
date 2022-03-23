@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
@@ -16,7 +17,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 const (
@@ -96,14 +96,10 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 				http.StatusUnauthorized,
 				http.StatusForbidden,
 				http.StatusNotFound:
-				je := jsonErrors{}
+				je := dperrors.JsonErrors{}
 				json.NewDecoder(resp.Body).Decode(&je)
-				var msgs []string
-				for _, e := range je.Errors {
-					msgs = append(msgs, fmt.Sprintf("%s: %s", e.Code, e.Description))
-				}
 
-				return errors.New(strings.Join(msgs, "\n"))
+				return je.ToNativeError()
 			default:
 				body, _ := ioutil.ReadAll(resp.Body)
 				return errors.New(string(body))
