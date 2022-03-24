@@ -70,7 +70,7 @@ func TestGetAreaTypes(t *testing.T) {
 
 	Convey("Given a valid area types response payload", t, func() {
 		areaTypes := GetAreaTypesResponse{
-			AreaTypes: []AreaType{{ID: "test", Label: "Test"}},
+			AreaTypes: []AreaType{{ID: "test", Label: "Test", TotalCount: 5}},
 		}
 
 		resp, err := json.Marshal(areaTypes)
