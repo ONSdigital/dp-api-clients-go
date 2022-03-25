@@ -129,33 +129,6 @@ func (c *Client) GetRelations(ctx context.Context, userAuthToken, serviceAuthTok
 	return
 }
 
-// GetAncestors gets ancestors data from areas api
-func (c *Client) GetAncestors(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, areaID, acceptLang string) (ancestors Ancestors, err error) {
-	uri := fmt.Sprintf("%s/v1/areas/%s", c.hcCli.URL, areaID)
-	clientlog.Do(ctx, "retrieving ancestors", service, uri)
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "", acceptLang)
-	if err != nil {
-		return
-	}
-	defer closeResponseBody(ctx, resp)
-
-	if resp.StatusCode != http.StatusOK {
-		err = NewAreaAPIResponse(resp, uri)
-		return
-	}
-
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(b, &ancestors.Ancestors)
-	if err != nil {
-		return
-	}
-	return
-}
-
 // NewAreaAPIResponse creates an error response, optionally adding body to e when status is 404
 func NewAreaAPIResponse(resp *http.Response, uri string) (e *ErrInvalidAreaAPIResponse) {
 	e = &ErrInvalidAreaAPIResponse{
