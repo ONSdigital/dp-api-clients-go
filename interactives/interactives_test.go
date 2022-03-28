@@ -60,7 +60,7 @@ func TestClient_GetInteractives(t *testing.T) {
 
 		Convey("when GetInteractives is called with valid values for limit and offset", func() {
 			q := QueryParams{Offset: offset, Limit: limit}
-			actualInteractives, err := interactivesClient.GetInteractives(ctx, userAuthToken, serviceAuthToken, &q)
+			actualInteractives, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
 
 			Convey("a positive response is returned, with the expected interactives", func() {
 				So(err, ShouldBeNil)
@@ -75,7 +75,7 @@ func TestClient_GetInteractives(t *testing.T) {
 
 		Convey("when GetInteractives is called with negative offset", func() {
 			q := QueryParams{Offset: -1, Limit: limit}
-			options, err := interactivesClient.GetInteractives(ctx, userAuthToken, serviceAuthToken, &q)
+			options, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
 
 			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
 				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
@@ -86,7 +86,7 @@ func TestClient_GetInteractives(t *testing.T) {
 
 		Convey("when GetInteractives is called with negative limit", func() {
 			q := QueryParams{Offset: offset, Limit: -1}
-			options, err := interactivesClient.GetInteractives(ctx, userAuthToken, serviceAuthToken, &q)
+			options, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
 
 			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
 				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
@@ -101,7 +101,7 @@ func TestClient_GetInteractives(t *testing.T) {
 		interactivesClient := newInteractivesClient(httpClient)
 
 		Convey("when GetInteractives is called", func() {
-			options, err := interactivesClient.GetInteractives(ctx, userAuthToken, serviceAuthToken, nil)
+			options, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, nil)
 
 			Convey("the expected error response is returned, with an empty options struct", func() {
 				So(err, ShouldResemble, &ErrInvalidInteractivesAPIResponse{
@@ -187,6 +187,83 @@ func TestClient_PutInteractive(t *testing.T) {
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
 				checkResponse(httpClient, v)
+			})
+		})
+	})
+}
+
+func TestClient_GetInterface(t *testing.T) {
+
+	Convey("given a 200 status with valid empty body is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{
+			http.StatusOK,
+			Interactive{},
+			nil,
+		})
+		datasetClient := newInteractivesClient(httpClient)
+
+		Convey("when GetInterface is called", func() {
+			instance, err := datasetClient.GetInteractive(ctx, userAuthToken, serviceAuthToken, "123")
+
+			Convey("a positive response is returned with empty interface and the expected ETag", func() {
+				So(err, ShouldBeNil)
+				So(instance, ShouldResemble, Interactive{})
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected method, path and headers", func() {
+				checkRequestBase(httpClient, http.MethodGet, "/interactives/123")
+			})
+		})
+	})
+
+	Convey("given a 200 status with empty body is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{
+			http.StatusOK,
+			[]byte{},
+			nil,
+		})
+		datasetClient := newInteractivesClient(httpClient)
+
+		Convey("when GetInstance is called", func() {
+			_, err := datasetClient.GetInteractive(ctx, userAuthToken, serviceAuthToken, "123")
+
+			Convey("a positive response is returned", func() {
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected method, path and headers", func() {
+				checkRequestBase(httpClient, http.MethodGet, "/interactives/123")
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		httpClient := &dphttp.ClienterMock{
+			DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusNotFound,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte("you aint seen me right"))),
+				}, nil
+			},
+			SetPathsWithNoRetriesFunc: func(paths []string) {
+				return
+			},
+			GetPathsWithNoRetriesFunc: func() []string {
+				return []string{"/healthcheck"}
+			},
+		}
+
+		ixClient := newInteractivesClient(httpClient)
+
+		Convey("when GetInstance is called", func() {
+			_, err := ixClient.GetInteractive(ctx, userAuthToken, serviceAuthToken, "123")
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from interactives api: http://localhost:8080/interactives/123, body: you aint seen me right").Error())
+			})
+
+			Convey("and dphttpclient.Do is called 1 time with the expected method, path and headers", func() {
+				checkRequestBase(httpClient, http.MethodGet, "/interactives/123")
 			})
 		})
 	})

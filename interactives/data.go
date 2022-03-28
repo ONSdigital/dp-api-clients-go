@@ -5,8 +5,12 @@ const (
 )
 
 type InteractiveMetadata struct {
-	Label      string `json:"label"`
-	InternalID string `json:"internal_id"`
+	Title             string `json:"title"`
+	Label             string `json:"label"`
+	InternalID        string `json:"internal_id"`
+	CollectionID      string `json:"collection_id,omitempty"`
+	HumanReadableSlug string `json:"slug,omitempty"`
+	ResourceID        string `json:"resource_id,omitempty"`
 }
 
 type Interactive struct {

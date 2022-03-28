@@ -107,8 +107,36 @@ func NewInteractivesAPIResponse(resp *http.Response, uri string) (e *ErrInvalidI
 	return
 }
 
-// GetInteractives returns the list of interactives
-func (c *Client) GetInteractives(ctx context.Context, userAuthToken, serviceAuthToken string, q *QueryParams) (m List, err error) {
+// GetInteractive returns an interactive (given the id)
+func (c *Client) GetInteractive(ctx context.Context, userAuthToken, serviceAuthToken string, interactivesID string) (m Interactive, err error) {
+	uri := fmt.Sprintf("%s/interactives/%s", c.hcCli.URL, interactivesID)
+
+	clientlog.Do(ctx, fmt.Sprintf("retrieving interactive (%s)", interactivesID), service, uri)
+
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
+	if err != nil {
+		return
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewInteractivesAPIResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	if err = json.Unmarshal(b, &m); err != nil {
+		return
+	}
+
+	return
+}
+
+// ListInteractives returns the list of interactives
+func (c *Client) ListInteractives(ctx context.Context, userAuthToken, serviceAuthToken string, q *QueryParams) (m List, err error) {
 	uri := fmt.Sprintf("%s/interactives", c.hcCli.URL)
 	if q != nil {
 		if err := q.Validate(); err != nil {
@@ -119,7 +147,7 @@ func (c *Client) GetInteractives(ctx context.Context, userAuthToken, serviceAuth
 
 	clientlog.Do(ctx, "retrieving interactives", service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri, nil)
+	resp, err := c.doListWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri, nil)
 	if err != nil {
 		return
 	}
@@ -164,7 +192,18 @@ func (c *Client) PutInteractive(ctx context.Context, userAuthToken, serviceAuthT
 	return nil
 }
 
-func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, uri string, values url.Values) (*http.Response, error) {
+func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, uri string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, uri, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	dprequest.AddFlorenceHeader(req, userAuthToken)
+	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
+	return c.hcCli.Client.Do(ctx, req)
+}
+
+func (c *Client) doListWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, uri string, values url.Values) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, err
