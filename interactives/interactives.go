@@ -5,16 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"mime/multipart"
+	"net/http"
+	"net/url"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/pkg/errors"
-	"io/ioutil"
-	"mime/multipart"
-	"net/http"
-	"net/url"
 )
 
 const (
@@ -28,8 +29,9 @@ type Client struct {
 
 // QueryParams represents the possible query parameters that a caller can provide
 type QueryParams struct {
-	Offset int
-	Limit  int
+	Offset     int
+	Limit      int
+	FilterJson string
 }
 
 func (q *QueryParams) Validate() error {
@@ -142,7 +144,13 @@ func (c *Client) ListInteractives(ctx context.Context, userAuthToken, serviceAut
 		if err := q.Validate(); err != nil {
 			return List{}, err
 		}
-		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
+		uri = fmt.Sprintf("%s?offset=%d", uri, q.Offset)
+		if q.Limit > 0 {
+			uri = fmt.Sprintf("%s&limit=%d", uri, q.Limit)
+		}
+		if q.FilterJson != "" {
+			uri = fmt.Sprintf("%s&filter=%s", uri, url.QueryEscape(q.FilterJson))
+		}
 	}
 
 	clientlog.Do(ctx, "retrieving interactives", service, uri)

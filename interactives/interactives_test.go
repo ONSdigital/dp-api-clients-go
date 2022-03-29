@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -58,8 +59,8 @@ func TestClient_GetInteractives(t *testing.T) {
 		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, expectedInteractives, nil})
 		interactivesClient := newInteractivesClient(httpClient)
 
-		Convey("when GetInteractives is called with valid values for limit and offset", func() {
-			q := QueryParams{Offset: offset, Limit: limit}
+		Convey("when GetInteractives is called with valid values for limit, offset and filter", func() {
+			q := QueryParams{Offset: offset, Limit: limit, FilterJson: "{\"resource_id\": \"resid123\"}"}
 			actualInteractives, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
 
 			Convey("a positive response is returned, with the expected interactives", func() {
@@ -68,7 +69,7 @@ func TestClient_GetInteractives(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
-				expectedURI := fmt.Sprintf("/interactives?offset=%d&limit=%d", offset, limit)
+				expectedURI := fmt.Sprintf("/interactives?offset=%d&limit=%d&filter=%s", offset, limit, url.QueryEscape(q.FilterJson))
 				checkRequestBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})
