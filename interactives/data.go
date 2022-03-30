@@ -5,9 +5,9 @@ const (
 )
 
 type InteractiveMetadata struct {
-	Title             string `json:"title"`
-	Label             string `json:"label"`
-	InternalID        string `json:"internal_id"`
+	Title             string `json:"title,omitempty"`
+	Label             string `json:"label,omitempty"`
+	InternalID        string `json:"internal_id,omitempty"`
 	CollectionID      string `json:"collection_id,omitempty"`
 	HumanReadableSlug string `json:"slug,omitempty"`
 	ResourceID        string `json:"resource_id,omitempty"`

@@ -29,9 +29,9 @@ type Client struct {
 
 // QueryParams represents the possible query parameters that a caller can provide
 type QueryParams struct {
-	Offset     int
-	Limit      int
-	FilterJson string
+	Offset int
+	Limit  int
+	Filter *InteractiveMetadata
 }
 
 func (q *QueryParams) Validate() error {
@@ -148,8 +148,12 @@ func (c *Client) ListInteractives(ctx context.Context, userAuthToken, serviceAut
 		if q.Limit > 0 {
 			uri = fmt.Sprintf("%s&limit=%d", uri, q.Limit)
 		}
-		if q.FilterJson != "" {
-			uri = fmt.Sprintf("%s&filter=%s", uri, url.QueryEscape(q.FilterJson))
+		if q.Filter != nil {
+			marshalled, jsonerr := json.Marshal(q.Filter)
+			if jsonerr != nil {
+				return List{}, jsonerr
+			}
+			uri = fmt.Sprintf("%s&filter=%s", uri, url.QueryEscape(string(marshalled)))
 		}
 	}
 
