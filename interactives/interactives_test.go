@@ -70,7 +70,7 @@ func TestClient_GetInteractives(t *testing.T) {
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
 				marshal, _ := json.Marshal(q.Filter)
-				expectedURI := fmt.Sprintf("/interactives?offset=%d&limit=%d&filter=%s", offset, limit, url.QueryEscape(string(marshal)))
+				expectedURI := fmt.Sprintf("/interactives?filter=%s&limit=%d&offset=%d", url.QueryEscape(string(marshal)), q.Limit, q.Offset)
 				checkRequestBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})

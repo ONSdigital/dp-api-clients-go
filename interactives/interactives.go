@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
@@ -140,26 +141,28 @@ func (c *Client) GetInteractive(ctx context.Context, userAuthToken, serviceAuthT
 // ListInteractives returns the list of interactives
 func (c *Client) ListInteractives(ctx context.Context, userAuthToken, serviceAuthToken string, q *QueryParams) (m List, err error) {
 	uri := fmt.Sprintf("%s/interactives", c.hcCli.URL)
+	var qVals url.Values
 	if q != nil {
 		if err := q.Validate(); err != nil {
 			return List{}, err
 		}
-		uri = fmt.Sprintf("%s?offset=%d", uri, q.Offset)
+		qVals = url.Values{}
+		qVals["offset"] = []string{strconv.Itoa(q.Offset)}
 		if q.Limit > 0 {
-			uri = fmt.Sprintf("%s&limit=%d", uri, q.Limit)
+			qVals["limit"] = []string{strconv.Itoa(q.Limit)}
 		}
 		if q.Filter != nil {
 			marshalled, jsonerr := json.Marshal(q.Filter)
 			if jsonerr != nil {
 				return List{}, jsonerr
 			}
-			uri = fmt.Sprintf("%s&filter=%s", uri, url.QueryEscape(string(marshalled)))
+			qVals["filter"] = []string{string(marshalled)}
 		}
 	}
 
-	clientlog.Do(ctx, "retrieving interactives", service, uri)
+	clientlog.Do(ctx, "retrieving interactives", service, uri, log.Data{"query_params": qVals})
 
-	resp, err := c.doListWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri, nil)
+	resp, err := c.doListWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri, qVals)
 	if err != nil {
 		return
 	}
