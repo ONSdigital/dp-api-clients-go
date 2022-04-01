@@ -853,6 +853,67 @@ func (c *Client) PatchDimensionValues(ctx context.Context, userAuthToken, servic
 	return latestETag, nil
 }
 
+func (c *Client) UpdateDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, name, ifMatch string, dimension Dimension) (dim Dimension, eTag string, err error) {
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, id, name)
+	clientlog.Do(ctx, "updating filter dimension", service, uri, log.Data{
+		"method":    http.MethodPut,
+		"dimension": name,
+	})
+
+	reqBody, err := json.Marshal(dimension)
+	if err != nil {
+		return dimension, "", err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, uri, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return dimension, "", err
+	}
+
+	if err = headers.SetCollectionID(req, collectionID); err != nil {
+		return dimension, "", fmt.Errorf("failed to set collection id: %w", err)
+	}
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return dimension, "", fmt.Errorf("failed to set auth token: %w", err)
+	}
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return dimension, "", fmt.Errorf("failed to set service auth token: %w", err)
+	}
+	if err = headers.SetIfMatch(req, ifMatch); err != nil {
+		return dimension, "", fmt.Errorf("failed to set if match: %w", err)
+	}
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return dimension, "", err
+	}
+
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return dimension, "", err
+	}
+
+	eTag, err = headers.GetResponseETag(resp)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return dimension, "", err
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return dimension, "", err
+	}
+
+	var updatedDimension Dimension
+
+	if err = json.Unmarshal(respBody, &updatedDimension); err != nil {
+		return updatedDimension, "", err
+	}
+
+	return updatedDimension, eTag, nil
+}
+
 // RemoveDimensionValue removes a particular value to a filter job for a given filterID and name
 func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name, value, ifMatch string) (eTag string, err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.hcCli.URL, filterID, name, value)
