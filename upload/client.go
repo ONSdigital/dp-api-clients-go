@@ -142,7 +142,7 @@ func (c *Client) chunkReader(ctx context.Context, fileContent io.ReadCloser) (io
 	readBuff := make([]byte, chunkSize)
 	bytesRead, err := fileContent.Read(readBuff)
 
-	if err != nil {
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 		log.Error(ctx, "file content read error", err)
 		return nil, 0, err
 	}
@@ -155,6 +155,7 @@ func (c *Client) chunkReader(ctx context.Context, fileContent io.ReadCloser) (io
 		outBuff = readBuff[:bytesRead]
 	}
 
+	//behaviour
 	return bytes.NewReader(outBuff), len(outBuff), nil
 }
 
