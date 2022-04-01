@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
@@ -19,7 +20,10 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-const service = "filter-api"
+const (
+	service    = "filter-api"
+	postMethod = "POST"
+)
 
 // ErrInvalidFilterAPIResponse is returned when the filter api does not respond
 // with a valid status
@@ -604,6 +608,67 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	}
 
 	return m, eTag, nil
+}
+
+// SubmitFilter function to submit the request to submit a filter for a cantabular dataset.
+// Should POST to /filters/{filterid}/submit in dp-cantabular-filter-flex-api microservice.
+func (c *Client) SubmitFilter(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, ifMatch string, sfr SubmitFilterRequest) (*SubmitFilterResponse, string, error) {
+	b, err := json.Marshal(sfr)
+	if err != nil {
+		return nil, "", err
+	}
+
+	uri := fmt.Sprintf("%s/filters/%s/submit", c.hcCli.URL, sfr.FilterID)
+
+	clientlog.Do(ctx, "updating filter job", service, uri, log.Data{
+		"method": postMethod,
+		"body":   string(b),
+	})
+
+	req, err := http.NewRequest(postMethod, uri, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, "", err
+	}
+
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return nil, "", fmt.Errorf("failed to set auth token: %w", err)
+	}
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return nil, "", fmt.Errorf("failed to set service auth token: %w", err)
+	}
+	if err = headers.SetDownloadServiceToken(req, downloadServiceToken); err != nil {
+		return nil, "", fmt.Errorf("failed to set download service token: %w", err)
+	}
+	if err = headers.SetIfMatch(req, ifMatch); err != nil {
+		return nil, "", fmt.Errorf("failed to set if match: %w", err)
+	}
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", filter.ErrInvalidFilterAPIResponse{ExpectedCode: http.StatusOK, ActualCode: resp.StatusCode, URI: uri}
+	}
+
+	eTag, err := headers.GetResponseETag(resp)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return nil, "", err
+	}
+
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var r *SubmitFilterResponse
+	if err = json.Unmarshal(b, &r); err != nil {
+		return nil, "", err
+	}
+
+	return r, eTag, nil
 }
 
 // UpdateFlexBlueprint will update a blueprint with a given filter model, providing the required IfMatch value to be sure the update is done in the expected object

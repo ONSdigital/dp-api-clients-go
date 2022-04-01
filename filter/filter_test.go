@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ONSdigital/dp-api-clients-go/filter"
 	"github.com/pkg/errors"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -1033,6 +1034,138 @@ func TestClient_CreateBlueprint(t *testing.T) {
 
 			Convey("and dphttpclient.do is called 1 time with the expectedRequest parameters", func() {
 				checkRequest(httpClient, bp)
+			})
+		})
+	})
+}
+
+func Test_SubmitFilter(t *testing.T) {
+	testDownloadServiceToken := "Download"
+	testServiceAuthTokenHeader := "X-Florence-Token"
+	testAuthTokenHeader := "Authorization"
+	ifMatch := "ea1e031b-3064-427d-8fed-4b35123213"
+	newETag := "eb31e352f140b8a965d008f5505153bc6c4f5b48"
+
+	ctx := context.Background()
+
+	var req = SubmitFilterRequest{
+		FilterID: "ea1e031b-3064-427d-8fed-4b35c99bf1a3",
+		Dimensions: []filter.DimensionOptions{{
+			Items: []filter.DimensionOption{{
+				DimensionOptionsURL: "http://some.url/city",
+				Option:              "City",
+			}},
+			Count:      3,
+			Offset:     0,
+			Limit:      0,
+			TotalCount: 3,
+		}},
+		PopulationType: "population-type",
+	}
+
+	var successfulResponse = SubmitFilterResponse{
+		InstanceID:       "instance-id",
+		DimensionListUrl: "http://some.url/filter/filder-id/dimensions",
+		FilterID:         "filter-id",
+		Events:           nil,
+		Dataset: Dataset{
+			DatasetID: "dataset-id",
+			Edition:   "2022",
+			Version:   1,
+		},
+		Links: Links{
+			Version: Link{
+				HRef: "http://some.url",
+				ID:   "version-id",
+			},
+		},
+		PopulationType: "population-type",
+		Dimensions:     nil,
+	}
+
+	var newExpectedResponse = func(body interface{}, sc int, eTag string) *http.Response {
+		b, _ := json.Marshal(body)
+
+		expectedResponse := &http.Response{
+			StatusCode: sc,
+			Body:       ioutil.NopCloser(bytes.NewReader(b)),
+			Header:     http.Header{},
+		}
+		expectedResponse.Header.Set("ETag", eTag)
+		return expectedResponse
+	}
+
+	Convey("Given a valid Submit Filter Request ", t, func() {
+		Convey("when 'SubmitFilter' is called with the expected ifMatch value", func() {
+			httpClient := newMockHTTPClient(newExpectedResponse(successfulResponse, http.StatusOK, newETag), nil)
+			filterClient := newFilterClient(httpClient)
+			res, ETag, err := filterClient.SubmitFilter(ctx, testAuthTokenHeader, testServiceAuthTokenHeader, testDownloadServiceToken, ifMatch, req)
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular filter-flex-api", func() {
+				So(httpClient.DoCalls(), ShouldHaveLength, 1)
+				So(httpClient.DoCalls()[0].Req.URL.String(), ShouldEqual, fmt.Sprintf("%s/filters/%s/submit", filterClient.hcCli.URL, req.FilterID))
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*res, ShouldResemble, successfulResponse)
+			})
+
+			Convey("And the expected ETag is empty", func() {
+				So(ETag, ShouldEqual, newETag)
+			})
+		})
+
+		Convey("when 'SubmitFilter' is called with an outdated ifMatch value", func() {
+			var mockRespETagConflict = `{"message": "conflict: invalid ETag provided or filter has been updated"}`
+
+			httpClient := newMockHTTPClient(newExpectedResponse(mockRespETagConflict, http.StatusConflict, ""), nil)
+			filterClient := newFilterClient(httpClient)
+			res, ETag, err := filterClient.SubmitFilter(ctx, testAuthTokenHeader, testServiceAuthTokenHeader, testDownloadServiceToken, ifMatch, req)
+
+			Convey("Then an error should be returned", func() {
+				So(err.(filter.ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
+				So(err.(filter.ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusConflict)
+			})
+
+			Convey("And the expected query is posted to cantabular filter-flex-api", func() {
+				So(httpClient.DoCalls(), ShouldHaveLength, 1)
+				So(httpClient.DoCalls()[0].Req.URL.String(), ShouldEqual, fmt.Sprintf("%s/filters/%s/submit", filterClient.hcCli.URL, req.FilterID))
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(res, ShouldBeNil)
+			})
+
+			Convey("And the expected ETag is empty", func() {
+				So(ETag, ShouldEqual, "")
+			})
+		})
+
+		Convey("when 'SubmitFilter' is called and the POST method returns an error", func() {
+			mockError := errors.New("Something went wrong")
+			httpClient := newMockHTTPClient(nil, mockError)
+			filterClient := newFilterClient(httpClient)
+			res, ETag, err := filterClient.SubmitFilter(ctx, testAuthTokenHeader, testServiceAuthTokenHeader, testDownloadServiceToken, ifMatch, req)
+
+			Convey("Then an error should be returned", func() {
+				So(err.Error(), ShouldEqual, mockError.Error())
+			})
+
+			Convey("And the expected query is posted to cantabular filter-flex-api", func() {
+				So(httpClient.DoCalls(), ShouldHaveLength, 1)
+				So(httpClient.DoCalls()[0].Req.URL.String(), ShouldEqual, fmt.Sprintf("%s/filters/%s/submit", filterClient.hcCli.URL, req.FilterID))
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(res, ShouldBeNil)
+			})
+
+			Convey("And the expected ETag is empty", func() {
+				So(ETag, ShouldEqual, "")
 			})
 		})
 	})
