@@ -14,9 +14,10 @@ type InteractiveMetadata struct {
 }
 
 type Interactive struct {
-	ID       string               `json:"id,omitempty"`
-	Metadata *InteractiveMetadata `json:"metadata,omitempty"`
-	Archive  *InteractiveArchive  `json:"archive,omitempty"`
+	ID        string               `json:"id,omitempty"`
+	Published *bool                `json:"published,omitempty"`
+	Metadata  *InteractiveMetadata `json:"metadata,omitempty"`
+	Archive   *InteractiveArchive  `json:"archive,omitempty"`
 }
 
 type InteractiveArchive struct {
