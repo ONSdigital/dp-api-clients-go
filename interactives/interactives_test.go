@@ -70,7 +70,7 @@ func TestClient_GetInteractives(t *testing.T) {
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
 				marshal, _ := json.Marshal(q.Filter)
-				expectedURI := fmt.Sprintf("/interactives?filter=%s&limit=%d&offset=%d", url.QueryEscape(string(marshal)), q.Limit, q.Offset)
+				expectedURI := fmt.Sprintf("/v1/interactives?filter=%s&limit=%d&offset=%d", url.QueryEscape(string(marshal)), q.Limit, q.Offset)
 				checkRequestBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})
@@ -108,14 +108,14 @@ func TestClient_GetInteractives(t *testing.T) {
 			Convey("the expected error response is returned, with an empty options struct", func() {
 				So(err, ShouldResemble, &ErrInvalidInteractivesAPIResponse{
 					actualCode: 404,
-					uri:        "http://localhost:8080/interactives",
+					uri:        "http://localhost:8080/v1/interactives",
 					body:       "{\"items\":null,\"count\":0,\"offset\":0,\"limit\":0,\"total_count\":0}",
 				})
 				So(options, ShouldResemble, List{})
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
-				expectedURI := "/interactives"
+				expectedURI := "/v1/interactives"
 				checkRequestBase(httpClient, http.MethodGet, expectedURI)
 			})
 		})
@@ -125,7 +125,7 @@ func TestClient_GetInteractives(t *testing.T) {
 func TestClient_PutInteractive(t *testing.T) {
 	checkResponse := func(httpClient *dphttp.ClienterMock, expectedInteractive InteractiveUpdate) {
 
-		checkRequestBase(httpClient, http.MethodPut, "/interactives/123")
+		checkRequestBase(httpClient, http.MethodPut, "/v1/interactives/123")
 
 		firstReq := httpClient.DoCalls()[0].Req
 		err := firstReq.ParseMultipartForm(50)
@@ -184,7 +184,7 @@ func TestClient_PutInteractive(t *testing.T) {
 			err := interactivesClient.PutInteractive(ctx, userAuthToken, serviceAuthToken, "123", v)
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 500 from interactives api: http://localhost:8080/interactives/123, body: ").Error())
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 500 from interactives api: http://localhost:8080/v1/interactives/123, body: ").Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
@@ -213,7 +213,7 @@ func TestClient_GetInterface(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected method, path and headers", func() {
-				checkRequestBase(httpClient, http.MethodGet, "/interactives/123")
+				checkRequestBase(httpClient, http.MethodGet, "/v1/interactives/123")
 			})
 		})
 	})
@@ -234,7 +234,7 @@ func TestClient_GetInterface(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected method, path and headers", func() {
-				checkRequestBase(httpClient, http.MethodGet, "/interactives/123")
+				checkRequestBase(httpClient, http.MethodGet, "/v1/interactives/123")
 			})
 		})
 	})
@@ -261,11 +261,11 @@ func TestClient_GetInterface(t *testing.T) {
 			_, err := ixClient.GetInteractive(ctx, userAuthToken, serviceAuthToken, "123")
 
 			Convey("then the expected error is returned", func() {
-				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from interactives api: http://localhost:8080/interactives/123, body: you aint seen me right").Error())
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 404 from interactives api: http://localhost:8080/v1/interactives/123, body: you aint seen me right").Error())
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected method, path and headers", func() {
-				checkRequestBase(httpClient, http.MethodGet, "/interactives/123")
+				checkRequestBase(httpClient, http.MethodGet, "/v1/interactives/123")
 			})
 		})
 	})
@@ -273,7 +273,7 @@ func TestClient_GetInterface(t *testing.T) {
 
 func newInteractivesClient(httpClient *dphttp.ClienterMock) *Client {
 	healthClient := health.NewClientWithClienter("", testHost, httpClient)
-	interactivesClient := NewWithHealthClient(healthClient)
+	interactivesClient := NewWithHealthClient(healthClient, "v1")
 	return interactivesClient
 }
 

@@ -20,12 +20,14 @@ import (
 )
 
 const (
-	service = "interactives-api"
+	service  = "interactives-api"
+	rootPath = "interactives"
 )
 
 // Client is a interactives api client which can be used to make requests to the server
 type Client struct {
-	hcCli *healthcheck.Client
+	hcCli   *healthcheck.Client
+	version string
 }
 
 // QueryParams represents the possible query parameters that a caller can provide
@@ -43,30 +45,30 @@ func (q *QueryParams) Validate() error {
 }
 
 // NewAPIClient creates a new instance of Client with a given interactive api url and the relevant tokens
-func NewAPIClient(interactivesAPIURL string) *Client {
+func NewAPIClient(interactivesAPIURL, version string) *Client {
 	return &Client{
-		healthcheck.NewClient(service, interactivesAPIURL),
+		healthcheck.NewClient(service, interactivesAPIURL), version,
 	}
 }
 
 // NewWithHealthClient creates a new instance of Client,
 // reusing the URL and Clienter from the provided health check client.
-func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
+func NewWithHealthClient(hcCli *healthcheck.Client, version string) *Client {
 	return &Client{
-		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
+		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client), version,
 	}
 }
 
 // NewAPIClientWithMaxRetries creates a new instance of Client with a given interactive api url and the relevant tokens,
 // setting a number of max retires for the HTTP client
-func NewAPIClientWithMaxRetries(interactivesAPIURL string, maxRetries int) *Client {
+func NewAPIClientWithMaxRetries(interactivesAPIURL, version string, maxRetries int) *Client {
 	hcClient := healthcheck.NewClient(service, interactivesAPIURL)
 	if maxRetries > 0 {
 		hcClient.Client.SetMaxRetries(maxRetries)
 	}
 
 	return &Client{
-		hcClient,
+		hcClient, version,
 	}
 }
 
@@ -112,7 +114,7 @@ func NewInteractivesAPIResponse(resp *http.Response, uri string) (e *ErrInvalidI
 
 // GetInteractive returns an interactive (given the id)
 func (c *Client) GetInteractive(ctx context.Context, userAuthToken, serviceAuthToken string, interactivesID string) (m Interactive, err error) {
-	uri := fmt.Sprintf("%s/interactives/%s", c.hcCli.URL, interactivesID)
+	uri := fmt.Sprintf("%s/%s/%s/%s", c.hcCli.URL, c.version, rootPath, interactivesID)
 
 	clientlog.Do(ctx, fmt.Sprintf("retrieving interactive (%s)", interactivesID), service, uri)
 
@@ -140,7 +142,7 @@ func (c *Client) GetInteractive(ctx context.Context, userAuthToken, serviceAuthT
 
 // ListInteractives returns the list of interactives
 func (c *Client) ListInteractives(ctx context.Context, userAuthToken, serviceAuthToken string, q *QueryParams) (m List, err error) {
-	uri := fmt.Sprintf("%s/interactives", c.hcCli.URL)
+	uri := fmt.Sprintf("%s/%s/%s", c.hcCli.URL, c.version, rootPath)
 	var qVals url.Values
 	if q != nil {
 		if err := q.Validate(); err != nil {
@@ -186,7 +188,7 @@ func (c *Client) ListInteractives(ctx context.Context, userAuthToken, serviceAut
 
 // PutInteractive update the dataset
 func (c *Client) PutInteractive(ctx context.Context, userAuthToken, serviceAuthToken, interactiveID string, update InteractiveUpdate) error {
-	uri := fmt.Sprintf("%s/interactives/%s", c.hcCli.URL, interactiveID)
+	uri := fmt.Sprintf("%s/%s/%s/%s", c.hcCli.URL, c.version, rootPath, interactiveID)
 
 	clientlog.Do(ctx, "updating interactive", service, uri)
 
