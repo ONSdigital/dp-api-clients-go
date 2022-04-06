@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/ONSdigital/dp-api-clients-go/filter"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/pkg/errors"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -1127,8 +1128,7 @@ func Test_SubmitFilter(t *testing.T) {
 			res, ETag, err := filterClient.SubmitFilter(ctx, testAuthTokenHeader, testServiceAuthTokenHeader, testDownloadServiceToken, ifMatch, req)
 
 			Convey("Then an error should be returned", func() {
-				So(err.(filter.ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusOK)
-				So(err.(filter.ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusConflict)
+				So(err.(*dperrors.Error).Code(), ShouldEqual, http.StatusConflict)
 			})
 
 			Convey("And the expected query is posted to cantabular filter-flex-api", func() {
@@ -1152,7 +1152,7 @@ func Test_SubmitFilter(t *testing.T) {
 			res, ETag, err := filterClient.SubmitFilter(ctx, testAuthTokenHeader, testServiceAuthTokenHeader, testDownloadServiceToken, ifMatch, req)
 
 			Convey("Then an error should be returned", func() {
-				So(err.Error(), ShouldEqual, mockError.Error())
+				So(err.Error(), ShouldEqual, "failed to create submit request: Something went wrong")
 			})
 
 			Convey("And the expected query is posted to cantabular filter-flex-api", func() {
