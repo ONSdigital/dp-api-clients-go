@@ -1916,6 +1916,115 @@ func TestClient_PatchDimensionValues(t *testing.T) {
 	})
 }
 
+func TestClient_UpdateDimensions(t *testing.T) {
+	testID := "123"
+	testName := "old-filter"
+	dimension := Dimension{
+		Name:       "new-filter",
+		URI:        "test.com/test",
+		IsAreaType: new(bool),
+	}
+
+	checkRequest := func(httpClient *dphttp.ClienterMock, expectedDimension Dimension, expectedIfMatch string) {
+		So(len(httpClient.DoCalls()), ShouldEqual, 1)
+
+		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+		var actualDimension Dimension
+
+		err := json.Unmarshal(actualBody, &actualDimension)
+		So(err, ShouldBeNil)
+		So(actualDimension, ShouldResemble, expectedDimension)
+
+		actualIfMatch := httpClient.DoCalls()[0].Req.Header.Get("If-Match")
+		So(actualIfMatch, ShouldResemble, expectedIfMatch)
+	}
+
+	Convey("Given a valid dimension update is given", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "name":"new-filter", "dimension_url": "test.com/test", "is_area_type": false }`))),
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		filterClient := newFilterClient(httpClient)
+		bp, _, err := filterClient.UpdateDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, testID, testName, testETag, dimension)
+
+		Convey("then the dimension should be returned with the updated name", func() {
+			So(err, ShouldBeNil)
+			So(bp, ShouldResemble, dimension)
+		})
+	})
+
+	Convey("Given a valid blueprint update is given", t, func() {
+		newETag := "eb31e352f140b8a965d008f5505153bc6c4f5b48"
+		r := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "name":"new-filter", "dimension_url": "test.com/test", "is_area_type": false }`))),
+			Header:     http.Header{},
+		}
+		r.Header.Set("ETag", newETag)
+		httpClient := newMockHTTPClient(r, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when UpdateFlexBlueprint is called with the expected ifMatch value", func() {
+			bp, eTag, err := filterClient.UpdateDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, testID, testName, testETag, dimension)
+
+			Convey("then the new eTag is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETag)
+			})
+
+			Convey("and dphttp client is called one time with the expected parameters", func() {
+				checkRequest(httpClient, bp, testETag)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("foo")
+
+		httpClient := newMockHTTPClient(nil, mockErr)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when updateDimensions is called", func() {
+			bp, _, err := filterClient.UpdateDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, testID, testName, testETag, dimension)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+
+			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
+				checkRequest(httpClient, bp, testETag)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		url := "http://localhost:8080"
+		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusOK, 500, fmt.Sprintf("%s/filters/%s/dimensions/%s", url, testID, testName)}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when updateDimensions is called", func() {
+			bp, _, err := filterClient.UpdateDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, testID, testName, testETag, dimension)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
+			})
+
+			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
+				checkRequest(httpClient, bp, testETag)
+			})
+		})
+	})
+}
+
 func TestClient_GetJobState(t *testing.T) {
 	filterID := "foo"
 	mockJobStateBody := `{
