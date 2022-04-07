@@ -144,8 +144,7 @@ func (c *Client) validateMetadata(metadata Metadata) error {
 
 func (c *Client) chunkReader(ctx context.Context, fileContent io.ReadCloser) (io.Reader, int, error) {
 	readBuff := make([]byte, chunkSize)
-	bytesRead, err := fileContent.Read(readBuff)
-
+	bytesRead, err := io.ReadFull(fileContent, readBuff)
 	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 		log.Error(ctx, "file content read error", err)
 		return nil, 0, err

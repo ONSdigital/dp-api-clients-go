@@ -116,20 +116,6 @@ func TestHealthCheck(t *testing.T) {
 
 func TestUploadZipFile(t *testing.T) {
 	Convey("Given the upload service is running", t, func() {
-		actualContent = ""
-		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			extractFields(r)
-
-			if actualResumableChunkNumber == actualResumableTotalChunks {
-				w.WriteHeader(http.StatusCreated)
-				return
-			}
-
-			w.WriteHeader(http.StatusOK)
-		}))
-		defer s.Close()
-		c := upload.NewAPIClient(s.URL, authTokenValue)
-
 		Convey("And the files are read from within a zip", func() {
 			raw, err := zipFile.ReadFile("test/single-interactive.zip")
 			So(err, ShouldBeNil)
@@ -142,15 +128,35 @@ func TestUploadZipFile(t *testing.T) {
 			Convey("When we split and close each file within", func() {
 				for _, z := range zipReader.File {
 					if z.Mode().IsRegular() {
+						actualContent = ""
+						s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							extractFields(r)
+
+							if actualResumableChunkNumber == actualResumableTotalChunks {
+								w.WriteHeader(http.StatusCreated)
+								return
+							}
+
+							w.WriteHeader(http.StatusOK)
+						}))
+						c := upload.NewAPIClient(s.URL, authTokenValue)
+
 						count++
 						size := int64(z.UncompressedSize64)
-						rc, e := z.Open()
+						rc, _ := z.Open()
+						fileContent, e := io.ReadAll(rc)
+						So(e, ShouldBeNil)
+
+						_ = rc.Close()
+						rc, e = z.Open()
 						So(e, ShouldBeNil)
 
 						err = c.Upload(context.Background(), rc, createMetadata(size, &collectionID))
 						Convey("Then the file is successfully uploaded"+z.Name, func() {
 							So(err, ShouldBeNil)
+							So(actualContent, ShouldEqual, string(fileContent))
 						})
+						s.Close()
 					}
 				}
 
