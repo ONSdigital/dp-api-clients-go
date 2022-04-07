@@ -189,13 +189,46 @@ query($dataset: String!, $text: String!) {
   }
 `
 
+// QueryAreaTypeAreas is the graphQL query to search for areas and area types which match a specific string.
+// This can be used to retrieve a list of all the areas for a given area type, or to search for specific
+// area within all area types.
+const QueryAreaTypeAreas = `
+query ($dataset: String!, $text: String!, $category: String!) {
+  dataset(name: $dataset) {
+    ruleBase {
+      isSourceOf {
+        search(text: $text) {
+          edges {
+            node {
+              label
+              name
+              categories {
+                search(text: $category) {
+                  edges {
+                    node {
+                      code
+                      label
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`
+
 // QueryData holds all the possible required variables to encode any of the graphql queries defined in this file.
 type QueryData struct {
+	PaginationParams
 	Dataset   string
 	Text      string
 	Variables []string
 	Filters   []Filter
-	PaginationParams
+	Category  string
 }
 
 // Filter holds the fields for the Cantabular GraphQL 'Filter' object used for specifying categories
@@ -220,6 +253,7 @@ func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 		"text":      data.Text,
 		"limit":     data.Limit,
 		"offset":    data.Offset,
+		"category":  data.Category,
 	}
 	if len(data.Filters) > 0 {
 		vars["filters"] = data.Filters

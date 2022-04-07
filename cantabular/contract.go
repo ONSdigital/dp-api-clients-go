@@ -100,6 +100,14 @@ type GetDimensionOptionsRequest struct {
 	Filters        []Filter
 }
 
+// GetAreaTypeAreasRequest holds the request variables required for the
+// POST [cantabular-ext]/graphql QueryAreaTypeAreas query.
+type GetAreaTypeAreasRequest struct {
+	Dataset  string
+	Variable string
+	Category string
+}
+
 // GetDimensionOptionsResponse holds the response body for
 // POST [cantabular-ext]/graphql
 // with a query to obtain static dataset variables and categories, without values.
