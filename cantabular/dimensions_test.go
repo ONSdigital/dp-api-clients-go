@@ -585,6 +585,92 @@ func TestGetAreasUnhappy(t *testing.T) {
 	})
 }
 
+func TestGetAreaTypeAreasHappy(t *testing.T) {
+	Convey("Given a valid response from the /graphql endpoint", t, func() {
+		const dataset = "Example"
+		const variable = "city"
+		const category = "london"
+
+		testCtx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetAreaTypeAreas, http.StatusOK)
+
+		Convey("When GetAreaTypesAreas is called", func() {
+			req := cantabular.GetAreaTypeAreasRequest{
+				Dataset:  dataset,
+				Variable: variable,
+				Category: category,
+			}
+
+			resp, err := cantabularClient.GetAreaTypeAreas(testCtx, req)
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryAreaTypeAreas,
+					cantabular.QueryData{
+						Dataset:  dataset,
+						Text:     variable,
+						Category: category,
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedAreaTypeAreas)
+			})
+		})
+	})
+}
+
+func TestGetAreaTypeAreasUnhappy(t *testing.T) {
+	stubReq := cantabular.GetAreaTypeAreasRequest{
+		Dataset:  "Example",
+		Variable: "city",
+		Category: "london",
+	}
+
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When GetAreaTypeAreas is called", func() {
+
+			resp, err := cantabularClient.GetAreaTypeAreas(testCtx, stubReq)
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When GetAreaTypeAreas is called", func() {
+			resp, err := cantabularClient.GetAreaTypeAreas(testCtx, stubReq)
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
 // newMockedClient creates a new cantabular client with a mocked response for post requests,
 // according to the provided response string and status code.
 func newMockedClient(response string, statusCode int) (*dphttp.ClienterMock, *cantabular.Client) {
@@ -1157,6 +1243,72 @@ var expectedDimensionOptions = cantabular.GetDimensionOptionsResponse{
 						{Code: "8", Label: "Process, Plant and Machine Operatives"},
 						{Code: "9", Label: "Elementary Occupations"},
 						{Code: "-9", Label: "N/A"},
+					},
+				},
+			},
+		},
+	},
+}
+
+var mockRespBodyGetAreaTypeAreas = `
+{
+  "data": {
+    "dataset": {
+      "ruleBase": {
+        "isSourceOf": {
+          "search": {
+            "edges": [
+              {
+                "node": {
+                  "label": "City",
+                  "name": "city",
+                  "categories": {
+                    "search": {
+                      "edges": [
+                        {
+                          "node": {
+                            "code": "0",
+                            "label": "London"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
+`
+
+var expectedAreaTypeAreas = cantabular.GetAreasResponse{
+	Dataset: gql.DatasetRuleBase{
+		RuleBase: gql.RuleBase{
+			IsSourceOf: gql.Variables{
+				Search: gql.Search{
+					Edges: []gql.Edge{
+						{
+							Node: gql.Node{
+								Name:  "city",
+								Label: "City",
+								Categories: gql.Categories{
+									Search: gql.Search{
+										Edges: []gql.Edge{
+											{
+												Node: gql.Node{
+													Code:  "0",
+													Label: "London",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},

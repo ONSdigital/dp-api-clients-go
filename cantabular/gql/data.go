@@ -40,6 +40,7 @@ type Node struct {
 type Categories struct {
 	TotalCount int    `json:"totalCount"`
 	Edges      []Edge `json:"edges"`
+	Search     Search `json:"search,omitempty"`
 }
 
 type Variable struct {
