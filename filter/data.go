@@ -1,6 +1,10 @@
 package filter
 
-import "time"
+import (
+	"time"
+
+	"github.com/ONSdigital/dp-api-clients-go/filter"
+)
 
 const (
 	EventFilterOutputQueryStart  = "FilterOutputQueryStart"
@@ -132,4 +136,21 @@ type Preview struct {
 	NumberOfRows    int        `json:"number_of_rows"`
 	NumberOfColumns int        `json:"number_of_columns"`
 	Rows            [][]string `json:"rows"`
+}
+
+type SubmitFilterRequest struct {
+	FilterID       string                    `json:"filter_id"`
+	Dimensions     []filter.DimensionOptions `json:"dimension_options,omitempty"`
+	PopulationType string                    `json:"population_type"`
+}
+
+type SubmitFilterResponse struct {
+	InstanceID       string      `json:"instance_id"`
+	DimensionListUrl string      `json:"dimension_list_url"`
+	FilterID         string      `json:"filter_id"`
+	Events           []Event     `json:"events"`
+	Dataset          Dataset     `json:"dataset"`
+	Links            Links       `json:"links"`
+	PopulationType   string      `json:"population_type"`
+	Dimensions       []Dimension `json:"dimensions"`
 }

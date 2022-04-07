@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,11 +11,13 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/v2/log"
+	"github.com/pkg/errors"
 )
 
 const service = "filter-api"
@@ -604,6 +605,71 @@ func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	}
 
 	return m, eTag, nil
+}
+
+// SubmitFilter function to submit the request to submit a filter for a cantabular dataset.
+// Should POST to /filters/{filterid}/submit in dp-cantabular-filter-flex-api microservice.
+func (c *Client) SubmitFilter(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, ifMatch string, sfr SubmitFilterRequest) (*SubmitFilterResponse, string, error) {
+	b, err := json.Marshal(sfr)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "could not marshal submit filter request")
+	}
+
+	uri := fmt.Sprintf("%s/filters/%s/submit", c.hcCli.URL, sfr.FilterID)
+
+	clientlog.Do(ctx, "updating filter job", service, uri, log.Data{
+		"method": http.MethodPost,
+		"body":   string(b),
+	})
+
+	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, "", errors.Wrap(err, "could not create a new POST request")
+	}
+
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return nil, "", errors.Wrap(err, "failed to set auth token")
+	}
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return nil, "", errors.Wrap(err, "failed to set service auth token")
+	}
+	if err = headers.SetDownloadServiceToken(req, downloadServiceToken); err != nil {
+		return nil, "", errors.Wrap(err, "failed to set download service token")
+	}
+	if err = headers.SetIfMatch(req, ifMatch); err != nil {
+		return nil, "", errors.Wrap(err, "failed to set if match")
+	}
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to create submit request")
+	}
+	defer closeResponseBody(ctx, resp)
+
+	eTag, err := headers.GetResponseETag(resp)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return nil, "", errors.Wrap(err, "no ETag header found")
+	}
+
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to read the response body")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", dperrors.New(
+			errors.Errorf("error(s) returned by %s", uri),
+			resp.StatusCode,
+			log.Data{"response_body": string(b)},
+		)
+	}
+
+	var r *SubmitFilterResponse
+	if err = json.Unmarshal(b, &r); err != nil {
+		return nil, "", errors.Wrap(err, "failed to unmarshal the response")
+	}
+
+	return r, eTag, nil
 }
 
 // UpdateFlexBlueprint will update a blueprint with a given filter model, providing the required IfMatch value to be sure the update is done in the expected object
