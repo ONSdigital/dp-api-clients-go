@@ -16,6 +16,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/log.go/v2/log"
+	"github.com/pkg/errors"
 )
 
 const service = "cantabular-dimension-api"
@@ -55,6 +56,55 @@ func (c *Client) Checker(ctx context.Context, check *healthcheck.CheckState) err
 	return c.hcCli.Checker(ctx, check)
 }
 
+func (c *Client) createDimensionGetRequest(ctx context.Context, userAuthToken, serviceAuthToken, urlPath string, logData log.Data, urlValues url.Values) (*http.Request, error) {
+	areasURL, err := c.baseURL.Parse(urlPath)
+	if err != nil {
+		return &http.Request{}, dperrors.New(
+			errors.Wrap(err, "failed to parse areas URL"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	areasURL.RawQuery = urlValues.Encode()
+	reqURL := areasURL.String()
+
+	req, err := newRequest(ctx, http.MethodGet, reqURL, nil, userAuthToken, serviceAuthToken)
+	if err != nil {
+		return &http.Request{}, dperrors.New(
+			errors.Wrap(err, "failed to create request"),
+			http.StatusBadRequest,
+			logData,
+		)
+	}
+	return req, nil
+}
+
+func checkDimensionGetResponse(logData log.Data, resp http.Response) error {
+	if resp.StatusCode == http.StatusNotFound {
+		var errorResp ErrorResp
+		if err := json.NewDecoder(resp.Body).Decode(&errorResp); err == nil {
+			return dperrors.New(
+				fmt.Errorf("error response from Dimensions API (%d): %w", resp.StatusCode, errorResp),
+				http.StatusInternalServerError,
+				logData,
+			)
+		}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		// Best effort — an empty body is fine for the error message
+		body, _ := io.ReadAll(resp.Body)
+		return dperrors.New(
+			fmt.Errorf("error response from Dimensions API (%d): %s", resp.StatusCode, body),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	return nil
+}
+
 // GetAreaTypes retrieves the Cantabular area-types associated with a dataset
 func (c *Client) GetAreaTypes(ctx context.Context, userAuthToken, serviceAuthToken, datasetID string) (GetAreaTypesResponse, error) {
 	logData := log.Data{
@@ -62,28 +112,19 @@ func (c *Client) GetAreaTypes(ctx context.Context, userAuthToken, serviceAuthTok
 		"dataset_id": datasetID,
 	}
 
-	areaTypesURL, err := c.baseURL.Parse("area-types")
+	urlPath := "area-types"
+	urlValues := url.Values{"dataset": []string{datasetID}}
+
+	req, err := c.createDimensionGetRequest(ctx, userAuthToken, serviceAuthToken, urlPath, logData, urlValues)
 	if err != nil {
 		return GetAreaTypesResponse{}, dperrors.New(
-			fmt.Errorf("failed to parse area-types URL: %w", err),
-			http.StatusInternalServerError,
-			logData,
-		)
-	}
-
-	areaTypesURL.RawQuery = url.Values{"dataset": []string{datasetID}}.Encode()
-	reqURL := areaTypesURL.String()
-
-	clientlog.Do(ctx, "getting area types", service, reqURL, logData)
-
-	req, err := newRequest(ctx, http.MethodGet, reqURL, nil, userAuthToken, serviceAuthToken)
-	if err != nil {
-		return GetAreaTypesResponse{}, dperrors.New(
-			fmt.Errorf("failed to create request: %w", err),
+			err,
 			http.StatusBadRequest,
 			logData,
 		)
 	}
+
+	clientlog.Do(ctx, "getting area types", service, req.URL.String(), logData)
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
@@ -100,25 +141,8 @@ func (c *Client) GetAreaTypes(ctx context.Context, userAuthToken, serviceAuthTok
 		}
 	}()
 
-	if resp.StatusCode == http.StatusNotFound {
-		var errorResp ErrorResp
-		if err := json.NewDecoder(resp.Body).Decode(&errorResp); err == nil {
-			return GetAreaTypesResponse{}, dperrors.New(
-				fmt.Errorf("error response from Dimensions API (%d): %w", resp.StatusCode, errorResp),
-				http.StatusInternalServerError,
-				logData,
-			)
-		}
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		// Best effort — an empty body is fine for the error message
-		body, _ := io.ReadAll(resp.Body)
-		return GetAreaTypesResponse{}, dperrors.New(
-			fmt.Errorf("error response from Dimensions API (%d): %s", resp.StatusCode, body),
-			http.StatusInternalServerError,
-			logData,
-		)
+	if err := checkDimensionGetResponse(logData, *resp); err != nil {
+		return GetAreaTypesResponse{}, err
 	}
 
 	var areaTypes GetAreaTypesResponse
@@ -131,6 +155,62 @@ func (c *Client) GetAreaTypes(ctx context.Context, userAuthToken, serviceAuthTok
 	}
 
 	return areaTypes, nil
+}
+
+func (c *Client) GetAreas(ctx context.Context, userAuthToken, serviceAuthToken, datasetID, areaTypeID, text string) (GetAreasResponse, error) {
+	logData := log.Data{
+		"method":       http.MethodGet,
+		"dataset_id":   datasetID,
+		"area_type_id": areaTypeID,
+		"text":         text,
+	}
+
+	urlPath := "areas"
+	urlValues := url.Values{"dataset": []string{datasetID}, "area-type": []string{areaTypeID}}
+	if text != "" {
+		urlValues.Add("text", text)
+	}
+
+	req, err := c.createDimensionGetRequest(ctx, userAuthToken, serviceAuthToken, urlPath, logData, urlValues)
+	if err != nil {
+		return GetAreasResponse{}, dperrors.New(
+			err,
+			http.StatusBadRequest,
+			logData,
+		)
+	}
+
+	clientlog.Do(ctx, "getting areas", service, req.URL.String(), logData)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return GetAreasResponse{}, dperrors.New(
+			fmt.Errorf("failed to get response from Dimensions API: %w", err),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}()
+
+	if err := checkDimensionGetResponse(logData, *resp); err != nil {
+		return GetAreasResponse{}, err
+	}
+
+	var areas GetAreasResponse
+	if err := json.NewDecoder(resp.Body).Decode(&areas); err != nil {
+		return GetAreasResponse{}, dperrors.New(
+			fmt.Errorf("unable to deserialize areas response: %w", err),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	return areas, nil
 }
 
 // newRequest creates a new http.Request with auth headers
