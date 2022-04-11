@@ -11,6 +11,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/upload"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	"github.com/ONSdigital/dp-net/v2/request"
 	. "github.com/smartystreets/goconvey/convey"
 	"io"
 	"math/rand"
@@ -38,8 +39,10 @@ var (
 	actualResumableChunkNumber string
 	actualResumableTotalChunks string
 
-	actualMethod     string
-	actualURL        string
+	actualMethod         string
+	actualURL            string
+	actualAuthTokenValue string
+
 	numberOfAPICalls int
 
 	collectionID = "123456"
@@ -49,13 +52,14 @@ var (
 )
 
 const (
-	filename      = "file.txt"
-	path          = "data/file.txt"
-	isPublishable = false
-	title         = "Information about shoe size"
-	fileType      = "text/plain"
-	license       = "MIT"
-	licenseURL    = "https://opensource.org/licenses/MIT"
+	filename       = "file.txt"
+	path           = "data/file.txt"
+	isPublishable  = false
+	title          = "Information about shoe size"
+	fileType       = "text/plain"
+	license        = "MIT"
+	licenseURL     = "https://opensource.org/licenses/MIT"
+	authTokenValue = "an-auth-token-value"
 )
 
 func TestHealthCheck(t *testing.T) {
@@ -65,7 +69,7 @@ func TestHealthCheck(t *testing.T) {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }))
 		defer s.Close()
 
-		c := upload.NewAPIClient(s.URL)
+		c := upload.NewAPIClient(s.URL, authTokenValue)
 
 		Convey("When we check that state of the service", func() {
 			state := health.CreateCheckState("testing")
@@ -89,7 +93,7 @@ func TestHealthCheck(t *testing.T) {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusInternalServerError) }))
 		defer s.Close()
 
-		c := upload.NewAPIClient(s.URL)
+		c := upload.NewAPIClient(s.URL, authTokenValue)
 
 		Convey("When we check the state of the service", func() {
 			state := health.CreateCheckState("testing")
@@ -124,7 +128,7 @@ func TestUploadZipFile(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		}))
 		defer s.Close()
-		c := upload.NewAPIClient(s.URL)
+		c := upload.NewAPIClient(s.URL, authTokenValue)
 
 		Convey("And the files are read from within a zip", func() {
 			raw, err := zipFile.ReadFile("test/single-interactive.zip")
@@ -172,7 +176,7 @@ func TestUpload(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		}))
 		defer s.Close()
-		c := upload.NewAPIClient(s.URL)
+		c := upload.NewAPIClient(s.URL, authTokenValue)
 
 		Convey("And the file is a single chunk", func() {
 			fileContent := "testing"
@@ -186,6 +190,7 @@ func TestUpload(t *testing.T) {
 					So(err, ShouldBeNil)
 					So(actualMethod, ShouldEqual, http.MethodPost)
 					So(actualURL, ShouldEqual, "/upload-new")
+					So(actualAuthTokenValue, ShouldEqual, "Bearer "+authTokenValue)
 					So(actualContent, ShouldEqual, fileContent)
 				})
 
@@ -215,6 +220,7 @@ func TestUpload(t *testing.T) {
 					So(err, ShouldBeNil)
 					So(actualMethod, ShouldEqual, http.MethodPost)
 					So(actualURL, ShouldEqual, "/upload-new")
+					So(actualAuthTokenValue, ShouldEqual, "Bearer "+authTokenValue)
 					So(actualContent, ShouldEqual, fileContent)
 				})
 
@@ -281,6 +287,11 @@ func TestUpload(t *testing.T) {
 					So(actualLicence, ShouldEqual, license)
 					So(actualLicenceURL, ShouldEqual, licenseURL)
 				})
+
+				Convey("And the request have auth headers set properly", func() {
+					So(actualAuthTokenValue, ShouldEqual, "Bearer "+authTokenValue)
+				})
+
 			})
 		})
 	})
@@ -289,7 +300,7 @@ func TestUpload(t *testing.T) {
 		expectedError := "testing"
 		errReader := io.NopCloser(iotest.ErrReader(errors.New(expectedError)))
 
-		c := upload.NewAPIClient("http://testing.com")
+		c := upload.NewAPIClient("http://testing.com", authTokenValue)
 
 		Convey("When I upload the file", func() {
 			expectedContentLength, _ := generateTestContent()
@@ -308,7 +319,7 @@ func TestUpload(t *testing.T) {
 
 		f := io.NopCloser(strings.NewReader(fileContent))
 
-		c := upload.NewAPIClient("BAD DP-UPLOAD-SERVICE URL")
+		c := upload.NewAPIClient("BAD DP-UPLOAD-SERVICE URL", authTokenValue)
 
 		Convey("When I upload the file", func() {
 			err := c.Upload(context.Background(), f, createMetadata(expectedContentLength, &collectionID))
@@ -322,7 +333,7 @@ func TestUpload(t *testing.T) {
 
 func TestErrorCases(t *testing.T) {
 	Convey("Given I have a file greater than 50GB", t, func() {
-		c := upload.NewAPIClient("")
+		c := upload.NewAPIClient("", authTokenValue)
 		metadata := createMetadata(upload.MaxFileSize+1, nil)
 		_, fileContent := generateTestContent()
 		f := io.NopCloser(strings.NewReader(fileContent))
@@ -381,7 +392,7 @@ func TestErrorCases(t *testing.T) {
 				w.Write([]byte(errorBody))
 			}))
 
-			c := upload.NewAPIClient(s.URL)
+			c := upload.NewAPIClient(s.URL, authTokenValue)
 
 			Convey("When an upload is attempted", func() {
 				metadata := createMetadata(1, nil)
@@ -413,7 +424,7 @@ func TestErrorCases(t *testing.T) {
 			w.Write([]byte(errorBody))
 		}))
 
-		c := upload.NewAPIClient(s.URL)
+		c := upload.NewAPIClient(s.URL, authTokenValue)
 
 		Convey("When an upload is attempted", func() {
 			metadata := createMetadata(1, nil)
@@ -444,7 +455,7 @@ func TestErrorCases(t *testing.T) {
 			w.Write([]byte(errorBody))
 		}))
 
-		c := upload.NewAPIClient(s.URL)
+		c := upload.NewAPIClient(s.URL, authTokenValue)
 
 		Convey("When an upload is attempted", func() {
 			metadata := createMetadata(1, nil)
@@ -483,6 +494,7 @@ func extractFields(r *http.Request) {
 
 	actualMethod = r.Method
 	actualURL = r.URL.Path
+	actualAuthTokenValue = r.Header.Get(request.AuthHeaderKey)
 
 	contentReader, _, _ := r.FormFile("file")
 	contentBytes, _ := io.ReadAll(contentReader)

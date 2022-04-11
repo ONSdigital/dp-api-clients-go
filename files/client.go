@@ -10,6 +10,7 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/v2/log"
 	"io/ioutil"
 	"net/http"
@@ -20,6 +21,7 @@ var (
 	ErrFileAlreadyInCollection = errors.New("file collection ID already set")
 	ErrNoFilesInCollection     = errors.New("no file in the collection")
 	ErrInvalidState            = errors.New("files in an invalid state to publish")
+	ErrNotAuthorized           = errors.New("you are not authorized for this action")
 )
 
 const (
@@ -33,13 +35,15 @@ type collectionIDSet struct {
 // Client is an files API client which can be used to make requests to the server.
 // It extends the generic healthcheck Client structure.
 type Client struct {
-	hcCli *healthcheck.Client
+	hcCli     *healthcheck.Client
+	authToken string
 }
 
 // NewAPIClient creates a new instance of files Client with a given image API URL
-func NewAPIClient(filesAPIURL string) *Client {
+func NewAPIClient(filesAPIURL, authToken string) *Client {
 	return &Client{
 		healthcheck.NewClient(service, filesAPIURL),
+		authToken,
 	}
 }
 
@@ -54,7 +58,7 @@ func (c *Client) SetCollectionID(ctx context.Context, filepath, collectionID str
 
 	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("%s/files/%s", c.hcCli.URL, filepath), buf)
 	req.Header.Set("Content-Type", "application/json")
-
+	dprequest.AddServiceTokenHeader(req, c.authToken)
 	resp, err := dphttp.DefaultClient.Do(ctx, req)
 	if err != nil {
 		return err
@@ -64,6 +68,8 @@ func (c *Client) SetCollectionID(ctx context.Context, filepath, collectionID str
 		return ErrFileNotFound
 	} else if resp.StatusCode == http.StatusBadRequest {
 		return ErrFileAlreadyInCollection
+	} else if resp.StatusCode == http.StatusForbidden {
+		return ErrNotAuthorized
 	} else if resp.StatusCode == http.StatusInternalServerError {
 		je := dperrors.JsonErrors{}
 		json.NewDecoder(resp.Body).Decode(&je)
@@ -80,6 +86,7 @@ func (c *Client) SetCollectionID(ctx context.Context, filepath, collectionID str
 
 func (c *Client) PublishCollection(ctx context.Context, collectionID string) error {
 	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("%s/collection/%s", c.hcCli.URL, collectionID), nil)
+	dprequest.AddServiceTokenHeader(req, c.authToken)
 
 	resp, err := dphttp.DefaultClient.Do(ctx, req)
 	if err != nil {
@@ -92,6 +99,8 @@ func (c *Client) PublishCollection(ctx context.Context, collectionID string) err
 			return ErrNoFilesInCollection
 		} else if resp.StatusCode == http.StatusConflict {
 			return ErrInvalidState
+		} else if resp.StatusCode == http.StatusForbidden {
+			return ErrNotAuthorized
 		} else if resp.StatusCode == http.StatusInternalServerError {
 			je := dperrors.JsonErrors{}
 			json.NewDecoder(resp.Body).Decode(&je)
