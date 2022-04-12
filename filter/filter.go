@@ -136,7 +136,12 @@ func (c *Client) GetFilter(ctx context.Context, input GetFilterInput) (*GetFilte
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil{
-		return nil, errors.Wrap(err, "failed to decode response body")
+		return nil, errors.Wrap(err, "failed to read response body")
+	}
+
+	logData := log.Data{
+		"uri":           uri,
+		"response_body": string(b),
 	}
 
 	resp := GetFilterResponse{
@@ -144,16 +149,18 @@ func (c *Client) GetFilter(ctx context.Context, input GetFilterInput) (*GetFilte
 	}
 
 	if err := json.Unmarshal(b, &resp); err != nil{
-		return nil, errors.Wrap(err, "failed to unmarshal response")
+		return nil, dperrors.New(
+			errors.Wrap(err, "failed to unmarshal response"),
+			res.StatusCode,
+			logData,
+		)
 	}
 
 	if res.StatusCode != http.StatusOK {
 		return nil, dperrors.New(
 			errors.Errorf("error(s) returned by %s", uri),
 			res.StatusCode,
-			log.Data{
-				"response_body": string(b),
-			},
+			logData,
 		)
 	}
 
