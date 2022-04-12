@@ -214,7 +214,7 @@ func TestPublishCollection(t *testing.T) {
 			actualMethod = r.Method
 			actualURL = r.URL.Path
 			actualAuthHeaderValue = r.Header.Get(dprequest.AuthHeaderKey)
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusCreated)
 		}))
 		defer s.Close()
 		c := files.NewAPIClient(s.URL, authHeaderValue)
@@ -315,8 +315,8 @@ func TestPublishCollection(t *testing.T) {
 
 			err := c.PublishCollection(context.Background(), collectionID)
 
-			Convey("Then an errot with the response content should be returned", func() {
-				So(err.Error(), ShouldContainSubstring, respContent)
+			Convey("Then an error with the response content should be returned", func() {
+				So(err.Error(), ShouldContainSubstring, fmt.Sprintf("unexpected error: %s", respContent))
 			})
 		})
 	})
