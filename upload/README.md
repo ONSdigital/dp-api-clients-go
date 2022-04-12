@@ -3,8 +3,14 @@
 ## Usage
 ### Setup
 
+Local:
 ```go
 c := upload.NewAPIClient("http://localhost:25100")
+```
+
+Remote: 
+```go
+c := upload.NewAPIClient("http://localhost:11850")
 ```
 
 ### Uploading a file

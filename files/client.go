@@ -94,7 +94,7 @@ func (c *Client) PublishCollection(ctx context.Context, collectionID string) err
 		return err
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusCreated {
 		if resp.StatusCode == http.StatusNotFound {
 			return ErrNoFilesInCollection
 		} else if resp.StatusCode == http.StatusConflict {
@@ -108,7 +108,7 @@ func (c *Client) PublishCollection(ctx context.Context, collectionID string) err
 			return je.ToNativeError()
 		} else {
 			body, _ := ioutil.ReadAll(resp.Body)
-			return errors.New(string(body))
+			return errors.New("unexpected error: " + string(body))
 		}
 	}
 
