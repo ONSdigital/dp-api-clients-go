@@ -424,15 +424,10 @@ func (c *Client) GetDimensionOptionsBatchProcess(ctx context.Context, userAuthTo
 }
 
 // CreateFlexibleBlueprint creates a flexible filter blueprint and returns the associated filterID and eTag
-func (c *Client) CreateFlexibleBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, names []string, population_type string) (filterID, eTag string, err error) {
+func (c *Client) CreateFlexibleBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, dimensions []ModelDimension, population_type string) (filterID, eTag string, err error) {
 	ver, err := strconv.Atoi(version)
 	if err != nil {
 		return "", "", err
-	}
-
-	dimensions := make([]ModelDimension, len(names))
-	for i, name := range names {
-		dimensions[i] = ModelDimension{Name: name}
 	}
 
 	cb := createFlexBlueprintRequest{
