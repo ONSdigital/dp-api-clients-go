@@ -860,15 +860,12 @@ func TestClient_CreateFlexBlueprint(t *testing.T) {
 	datasetID := "foo"
 	edition := "quux"
 	version := "1"
-	names := []string{"quuz", "corge"}
+	dimensions := []ModelDimension{}
 	population_type := "Teaching-Dataset"
 
 	expectedRequest := createFlexBlueprintRequest{
-		Dataset: Dataset{DatasetID: "foo", Edition: "quux", Version: 1},
-		Dimensions: []ModelDimension{
-			{Name: "quuz"},
-			{Name: "corge"},
-		},
+		Dataset:        Dataset{DatasetID: "foo", Edition: "quux", Version: 1},
+		Dimensions:     []ModelDimension{},
 		PopulationType: "Teaching-Dataset",
 	}
 
@@ -895,7 +892,7 @@ func TestClient_CreateFlexBlueprint(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when createBlueprint is called", func() {
-			bp, eTag, err := filterClient.CreateFlexibleBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names, population_type)
+			bp, eTag, err := filterClient.CreateFlexibleBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, dimensions, population_type)
 
 			Convey("then the expectedRequest eTag is returned, with no error", func() {
 				So(err, ShouldBeNil)
@@ -919,7 +916,7 @@ func TestClient_CreateFlexBlueprint(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when createBlueprint is called", func() {
-			_, _, err := filterClient.CreateFlexibleBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names, population_type)
+			_, _, err := filterClient.CreateFlexibleBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, dimensions, population_type)
 
 			Convey("then the expectedRequest error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -938,7 +935,7 @@ func TestClient_CreateFlexBlueprint(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when createBlueprint is called", func() {
-			_, _, err := filterClient.CreateFlexibleBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names, population_type)
+			_, _, err := filterClient.CreateFlexibleBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, dimensions, population_type)
 
 			Convey("then the expectedRequest error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -2234,7 +2231,7 @@ func TestClientGetFilter(t *testing.T) {
 			ServiceAuthToken: testServiceToken,
 			CollectionID:     testCollectionID,
 		},
-		FilterID:         filterID,
+		FilterID: filterID,
 	}
 
 	Convey("When a filter is returned", t, func() {
@@ -2267,7 +2264,7 @@ func TestClientGetFilter(t *testing.T) {
 				},
 				Version: Link{
 					HRef: "https://api.develop.onsdigital.co.uk/v1/datasets/cpih01/editions/time-series/versions/2",
-					ID: "2",
+					ID:   "2",
 				},
 			},
 			Published:      true,
@@ -2287,7 +2284,7 @@ func TestClientGetFilter(t *testing.T) {
 			},
 			MockedHTTPResponse{
 				StatusCode: http.StatusBadRequest,
-				Body: "",
+				Body:       "",
 			},
 		)
 		_, err := api.GetFilter(ctx, testInput)
