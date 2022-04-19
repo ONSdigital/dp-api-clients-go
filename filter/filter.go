@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -110,6 +111,62 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 	}
 }
 
+// GetFilter makes an authorised request to GET /filters
+func (c *Client) GetFilter(ctx context.Context, input GetFilterInput) (*GetFilterResponse, error){
+	uri := fmt.Sprintf("%s/filters/%s", c.hcCli.URL, input.FilterID)
+	clientlog.Do(ctx, "retrieving filter", service, uri)
+
+	res, err := c.doGetWithAuthHeaders(
+		ctx,
+		input.UserAuthToken,
+		input.ServiceAuthToken,
+		input.CollectionID,
+		uri,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to do request")
+	}
+
+	defer closeResponseBody(ctx, res)
+
+	eTag, err := headers.GetResponseETag(res)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return nil, errors.Wrap(err, "failed to get ETag header")
+	}
+
+	b, err := io.ReadAll(res.Body)
+	if err != nil{
+		return nil, errors.Wrap(err, "failed to read response body")
+	}
+
+	logData := log.Data{
+		"uri":           uri,
+		"response_body": string(b),
+	}
+
+	resp := GetFilterResponse{
+		ETag: eTag,
+	}
+
+	if err := json.Unmarshal(b, &resp); err != nil{
+		return nil, dperrors.New(
+			errors.Wrap(err, "failed to unmarshal response"),
+			res.StatusCode,
+			logData,
+		)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, dperrors.New(
+			errors.Errorf("error(s) returned by %s", uri),
+			res.StatusCode,
+			logData,
+		)
+	}
+
+	return &resp, nil
+}
+
 // GetOutput returns a filter output job for a given filter output id, unmarshalled as a Model struct
 func (c *Client) GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID string) (m Model, err error) {
 	b, err := c.GetOutputBytes(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID)
@@ -142,7 +199,6 @@ func (c *Client) GetOutputBytes(ctx context.Context, userAuthToken, serviceAuthT
 
 // UpdateFilterOutput performs a PUT operation to update the filter with the provided filterOutput model
 func (c *Client) UpdateFilterOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, filterJobID string, model *Model) error {
-
 	b, err := json.Marshal(model)
 	if err != nil {
 		return err
@@ -395,7 +451,6 @@ func (c *Client) GetDimensionOptionsInBatches(ctx context.Context, userAuthToken
 // If checkETag is true, then the ETag will be validated for each batch call. If it changes from one batch to another, an ErrBatchETagMismatch error will be returned.
 // Unless your processBatch function performs some call to modify the same filter, it is recommended to set checkETag to true, and you may retry this call if it fails with ErrBatchETagMismatch
 func (c *Client) GetDimensionOptionsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, processBatch DimensionOptionsBatchProcessor, batchSize, maxWorkers int, checkETag bool) (eTag string, err error) {
-
 	isFirstGet := true
 	eTag = ""
 
@@ -489,8 +544,8 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 }
 
 func (c *Client) postBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, reqBody []byte) ([]byte, string, error) {
-
 	uri := c.hcCli.URL + "/filters"
+
 	clientlog.Do(ctx, "attempting to create filter blueprint", service, uri, log.Data{
 		"method":    "POST",
 		"datasetID": datasetID,

@@ -7,6 +7,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"net/http/httptest"
@@ -15,11 +16,12 @@ import (
 )
 
 const (
-	filepath     = "testing/test.txt"
-	collectionID = "123456789"
+	filepath        = "testing/test.txt"
+	collectionID    = "123456789"
+	authHeaderValue = "a-service-client-auth-token"
 )
 
-var actualMethod, actualURL, actualContentType string
+var actualMethod, actualURL, actualContentType, actualAuthHeaderValue string
 var actualContent map[string]string
 
 func TestHealthCheck(t *testing.T) {
@@ -29,7 +31,7 @@ func TestHealthCheck(t *testing.T) {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }))
 		defer s.Close()
 
-		c := files.NewAPIClient(s.URL)
+		c := files.NewAPIClient(s.URL, "does-not-matter")
 
 		Convey("When we check that state of the service", func() {
 			state := health.CreateCheckState("testing")
@@ -53,7 +55,7 @@ func TestHealthCheck(t *testing.T) {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusInternalServerError) }))
 		defer s.Close()
 
-		c := files.NewAPIClient(s.URL)
+		c := files.NewAPIClient(s.URL, "does-not-matter")
 
 		Convey("When we check the state of the service", func() {
 			state := health.CreateCheckState("testing")
@@ -81,12 +83,13 @@ func TestSetCollectionID(t *testing.T) {
 			actualMethod = r.Method
 			actualURL = r.URL.Path
 			actualContentType = r.Header.Get("Content-Type")
+			actualAuthHeaderValue = r.Header.Get(dprequest.AuthHeaderKey)
 			json.NewDecoder(r.Body).Decode(&actualContent)
 
 			w.WriteHeader(http.StatusOK)
 		}))
 		defer s.Close()
-		c := files.NewAPIClient(s.URL)
+		c := files.NewAPIClient(s.URL, authHeaderValue)
 
 		Convey("When I set the collection ID", func() {
 			err := c.SetCollectionID(context.Background(), filepath, collectionID)
@@ -95,8 +98,10 @@ func TestSetCollectionID(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(actualMethod, ShouldEqual, http.MethodPatch)
 				So(actualContentType, ShouldEqual, "application/json")
+				So(actualAuthHeaderValue, ShouldEqual, fmt.Sprintf("Bearer %s", authHeaderValue))
 				So(actualURL, ShouldEqual, fmt.Sprintf("/files/%s", filepath))
 				So(actualContent["collection_id"], ShouldEqual, collectionID)
+
 			})
 		})
 	})
@@ -106,7 +111,7 @@ func TestSetCollectionID(t *testing.T) {
 			w.WriteHeader(http.StatusNotFound)
 		}))
 		defer s.Close()
-		c := files.NewAPIClient(s.URL)
+		c := files.NewAPIClient(s.URL, authHeaderValue)
 
 		Convey("When I set the collection ID", func() {
 			err := c.SetCollectionID(context.Background(), filepath, collectionID)
@@ -118,12 +123,29 @@ func TestSetCollectionID(t *testing.T) {
 		})
 	})
 
+	Convey("Given the service auth token is not valid", t, func() {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusForbidden)
+		}))
+		defer s.Close()
+		c := files.NewAPIClient(s.URL, "not-valid-token")
+
+		Convey("When I set the collection ID", func() {
+			err := c.SetCollectionID(context.Background(), filepath, collectionID)
+
+			Convey("Then a not authorised error should be returned", func() {
+				So(err, ShouldEqual, files.ErrNotAuthorized)
+
+			})
+		})
+	})
+
 	Convey("Given the file already has a collection ID", t, func() {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 		}))
 		defer s.Close()
-		c := files.NewAPIClient(s.URL)
+		c := files.NewAPIClient(s.URL, authHeaderValue)
 
 		Convey("When I set the collection ID", func() {
 			err := c.SetCollectionID(context.Background(), filepath, collectionID)
@@ -143,7 +165,7 @@ func TestSetCollectionID(t *testing.T) {
 			w.Write([]byte(errorBody))
 		}))
 		defer s.Close()
-		c := files.NewAPIClient(s.URL)
+		c := files.NewAPIClient(s.URL, authHeaderValue)
 
 		Convey("When I set the collection ID", func() {
 			err := c.SetCollectionID(context.Background(), filepath, collectionID)
@@ -161,7 +183,7 @@ func TestSetCollectionID(t *testing.T) {
 			w.Write([]byte(respContent))
 		}))
 		defer s.Close()
-		c := files.NewAPIClient(s.URL)
+		c := files.NewAPIClient(s.URL, authHeaderValue)
 
 		Convey("When I set the collection ID", func() {
 			err := c.SetCollectionID(context.Background(), filepath, collectionID)
@@ -173,7 +195,7 @@ func TestSetCollectionID(t *testing.T) {
 	})
 
 	Convey("given the files api", t, func() {
-		c := files.NewAPIClient("broken")
+		c := files.NewAPIClient("broken", authHeaderValue)
 
 		Convey("When I set the collection ID", func() {
 			err := c.SetCollectionID(context.Background(), filepath, collectionID)
@@ -191,11 +213,11 @@ func TestPublishCollection(t *testing.T) {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			actualMethod = r.Method
 			actualURL = r.URL.Path
-
-			w.WriteHeader(http.StatusOK)
+			actualAuthHeaderValue = r.Header.Get(dprequest.AuthHeaderKey)
+			w.WriteHeader(http.StatusCreated)
 		}))
 		defer s.Close()
-		c := files.NewAPIClient(s.URL)
+		c := files.NewAPIClient(s.URL, authHeaderValue)
 
 		Convey("When we publish the collection", func() {
 
@@ -205,16 +227,33 @@ func TestPublishCollection(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(actualMethod, ShouldEqual, http.MethodPatch)
 				So(actualURL, ShouldEqual, fmt.Sprintf("/collection/%s", collectionID))
+				So(actualAuthHeaderValue, ShouldEqual, fmt.Sprintf("Bearer %s", authHeaderValue))
 			})
 		})
 	})
 
+	Convey("The files are not in an UPLOADED state", t, func() {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusConflict)
+		}))
+		defer s.Close()
+		c := files.NewAPIClient(s.URL, authHeaderValue)
+
+		Convey("When we publish the collection", func() {
+
+			err := c.PublishCollection(context.Background(), collectionID)
+
+			Convey("The invalid state error is returned", func() {
+				So(err, ShouldEqual, files.ErrInvalidState)
+			})
+		})
+	})
 	Convey("There are no files in the collection", t, func() {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 		}))
 		defer s.Close()
-		c := files.NewAPIClient(s.URL)
+		c := files.NewAPIClient(s.URL, authHeaderValue)
 
 		Convey("When we publish the collection", func() {
 
@@ -225,20 +264,19 @@ func TestPublishCollection(t *testing.T) {
 			})
 		})
 	})
-
-	Convey("The files are not in an UPLOADED state", t, func() {
+	Convey("The auth token is not valid", t, func() {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusConflict)
+			w.WriteHeader(http.StatusForbidden)
 		}))
 		defer s.Close()
-		c := files.NewAPIClient(s.URL)
+		c := files.NewAPIClient(s.URL, "not-valid-auth")
 
 		Convey("When we publish the collection", func() {
 
 			err := c.PublishCollection(context.Background(), collectionID)
 
-			Convey("an invalid state error should be returned", func() {
-				So(err, ShouldEqual, files.ErrInvalidState)
+			Convey("an not authorized error should be returned", func() {
+				So(err, ShouldEqual, files.ErrNotAuthorized)
 			})
 		})
 	})
@@ -252,7 +290,7 @@ func TestPublishCollection(t *testing.T) {
 			w.Write([]byte(errorBody))
 		}))
 		defer s.Close()
-		c := files.NewAPIClient(s.URL)
+		c := files.NewAPIClient(s.URL, authHeaderValue)
 
 		Convey("When we publish the collection", func() {
 
@@ -271,20 +309,20 @@ func TestPublishCollection(t *testing.T) {
 			w.Write([]byte(respContent))
 		}))
 		defer s.Close()
-		c := files.NewAPIClient(s.URL)
+		c := files.NewAPIClient(s.URL, authHeaderValue)
 
 		Convey("When we publish the collection", func() {
 
 			err := c.PublishCollection(context.Background(), collectionID)
 
-			Convey("Then an errot with the response content should be returned", func() {
-				So(err.Error(), ShouldContainSubstring, respContent)
+			Convey("Then an error with the response content should be returned", func() {
+				So(err.Error(), ShouldContainSubstring, fmt.Sprintf("unexpected error: %s", respContent))
 			})
 		})
 	})
 
 	Convey("There is an error connecting to files-api", t, func() {
-		c := files.NewAPIClient("broken")
+		c := files.NewAPIClient("broken", authHeaderValue)
 
 		Convey("When we publish the collection", func() {
 

@@ -2199,6 +2199,127 @@ func TestClient_GetJobState(t *testing.T) {
 	})
 }
 
+func TestClientGetFilter(t *testing.T) {
+	filterID := "b24676fd-e147-4a37-865e-c582be8654bc"
+	testBody := `
+	{
+		"dataset": {
+			"edition": "time-series",
+			"id": "cpih01",
+			"version": 2
+		},
+		"filter_id": "b24676fd-e147-4a37-865e-c582be8654bc",
+		"id": "b24676fd-e147-4a37-865e-c582be8654bc",
+		"instance_id": "c0cb806d-5306-407e-8c29-cb995da730f6",
+		"links": {
+			"dimensions": {
+				"href": "https://api.develop.onsdigital.co.uk/v1/filters/b24676fd-e147-4a37-865e-c582be8654bc/dimensions"
+			},
+			"self": {
+				"href": "https://api.develop.onsdigital.co.uk/v1/filters/b24676fd-e147-4a37-865e-c582be8654bc"
+			},
+			"version": {
+				"href": "https://api.develop.onsdigital.co.uk/v1/datasets/cpih01/editions/time-series/versions/2",
+				"id": "2"
+			}
+		},
+		"published": true,
+		"state": "submitted",
+		"population_type": "Usual-Residents"
+	}`
+
+	testInput := GetFilterInput{
+		AuthHeaders: AuthHeaders{
+			UserAuthToken:    testUserAuthToken,
+			ServiceAuthToken: testServiceToken,
+			CollectionID:     testCollectionID,
+		},
+		FilterID:         filterID,
+	}
+
+	Convey("When a filter is returned", t, func() {
+		api := getMockfilterAPI(
+			http.Request{
+				Method: "GET",
+			},
+			MockedHTTPResponse{
+				StatusCode: http.StatusOK,
+				Body:       testBody,
+				ETag:       testETag,
+			},
+		)
+
+		expected := GetFilterResponse{
+			Dataset: Dataset{
+				DatasetID: "cpih01",
+				Edition:   "time-series",
+				Version:   2,
+			},
+			FilterID:   "b24676fd-e147-4a37-865e-c582be8654bc",
+			ID:         "b24676fd-e147-4a37-865e-c582be8654bc",
+			InstanceID: "c0cb806d-5306-407e-8c29-cb995da730f6",
+			Links: FilterLinks{
+				Dimensions: Link{
+					HRef: "https://api.develop.onsdigital.co.uk/v1/filters/b24676fd-e147-4a37-865e-c582be8654bc/dimensions",
+				},
+				Self: Link{
+					HRef: "https://api.develop.onsdigital.co.uk/v1/filters/b24676fd-e147-4a37-865e-c582be8654bc",
+				},
+				Version: Link{
+					HRef: "https://api.develop.onsdigital.co.uk/v1/datasets/cpih01/editions/time-series/versions/2",
+					ID: "2",
+				},
+			},
+			Published:      true,
+			State:          "submitted",
+			PopulationType: "Usual-Residents",
+			ETag:           testETag,
+		}
+		resp, err := api.GetFilter(ctx, testInput)
+		So(err, ShouldBeNil)
+		So(resp, ShouldResemble, &expected)
+	})
+
+	Convey("When bad request is returned", t, func() {
+		api := getMockfilterAPI(
+			http.Request{
+				Method: "GET",
+			},
+			MockedHTTPResponse{
+				StatusCode: http.StatusBadRequest,
+				Body: "",
+			},
+		)
+		_, err := api.GetFilter(ctx, testInput)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned in all attempts", t, func() {
+		api := getMockfilterAPI(
+			http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: http.StatusInternalServerError, Body: "qux"},
+			MockedHTTPResponse{StatusCode: http.StatusInternalServerError, Body: "qux"},
+			MockedHTTPResponse{StatusCode: http.StatusInternalServerError, Body: "qux"},
+		)
+		api.hcCli.Client.SetMaxRetries(2)
+		resp, err := api.GetFilter(ctx, testInput)
+		So(err, ShouldNotBeNil)
+		So(resp, ShouldBeNil)
+	})
+
+	Convey("When server error is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		api := getMockfilterAPI(
+			http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: http.StatusInternalServerError, Body: "qux"},
+			MockedHTTPResponse{StatusCode: http.StatusOK, Body: testBody, ETag: testETag},
+		)
+		api.hcCli.Client.SetMaxRetries(2)
+		resp, err := api.GetFilter(ctx, testInput)
+		So(err, ShouldBeNil)
+		So(resp.ETag, ShouldResemble, testETag)
+	})
+}
+
 func TestClient_SetDimensionValues(t *testing.T) {
 	filterID := "baz"
 	name := "quz"

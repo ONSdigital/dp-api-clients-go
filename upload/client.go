@@ -10,6 +10,7 @@ import (
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
+	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/v2/log"
 	"io"
 	"io/ioutil"
@@ -45,7 +46,8 @@ type Metadata struct {
 // Client is an upload API client which can be used to make requests to the server.
 // It extends the generic healthcheck Client structure.
 type Client struct {
-	hcCli *healthcheck.Client
+	hcCli     *healthcheck.Client
+	authToken string
 }
 
 type ChunkContext struct {
@@ -54,9 +56,10 @@ type ChunkContext struct {
 }
 
 // NewAPIClient creates a new instance of Upload Client with a given image API URL
-func NewAPIClient(uploadAPIURL string) *Client {
+func NewAPIClient(uploadAPIURL, authToken string) *Client {
 	return &Client{
 		healthcheck.NewClient(service, uploadAPIURL),
+		authToken,
 	}
 }
 
@@ -81,6 +84,7 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 
 		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/upload-new", c.hcCli.URL), reqBody)
 		req.Header.Set("Content-Type", contentType)
+		dprequest.AddServiceTokenHeader(req, c.authToken)
 
 		resp, err := dphttp.DefaultClient.Do(ctx, req)
 		if err != nil {
@@ -140,8 +144,7 @@ func (c *Client) validateMetadata(metadata Metadata) error {
 
 func (c *Client) chunkReader(ctx context.Context, fileContent io.ReadCloser) (io.Reader, int, error) {
 	readBuff := make([]byte, chunkSize)
-	bytesRead, err := fileContent.Read(readBuff)
-
+	bytesRead, err := io.ReadFull(fileContent, readBuff)
 	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 		log.Error(ctx, "file content read error", err)
 		return nil, 0, err

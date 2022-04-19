@@ -3,8 +3,14 @@
 ## Usage
 ### Setup
 
+Local:
 ```go
 c := files.NewAPIClient("http://localhost:26900")
+```
+
+Remote:
+```go
+c := files.NewAPIClient("http://localhost:12700")
 ```
 
 ### Set collection ID
