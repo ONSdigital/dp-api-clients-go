@@ -152,42 +152,10 @@ query($dataset: String!, $text: String!) {
 	}
 }`
 
-// QueryDimensionsByName is the graphQL query to obtain dimensions by name (subset of variables, without categories)
-const QueryAreasByArea = `
-query($dataset: String!, $text: String!) {
-	dataset(name: $dataset) {
-		ruleBase 
-		{
-		  isSourceOf {
-			categorySearch(text: $text){
-		   		edges {
-			  		node { 
-						code
-						label
-						variable {
-				  			mapFrom{
-								edges{
-					  				node{
-										name
-										label
-										 }
-									}
-				 				 }
-							 name 
-						}
-					  } 
-	  				}
-				}
-	  		}
-	  	}
-	  }
-  }
-`
-
-// QueryAreaTypeAreas is the graphQL query to search for areas and area types which match a specific string.
+// QueryAreas is the graphQL query to search for areas and area types which match a specific string.
 // This can be used to retrieve a list of all the areas for a given area type, or to search for specific
 // area within all area types.
-const QueryAreaTypeAreas = `
+const QueryAreas = `
 query ($dataset: String!, $text: String!, $category: String!) {
   dataset(name: $dataset) {
     ruleBase {

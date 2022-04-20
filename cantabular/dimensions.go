@@ -150,9 +150,9 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req GetDimensionOption
 	return &resp.Data, nil
 }
 
-// GetAreaTypeAreas performs a graphQL query to retrieve the areas (categories) for a given area type. If the category
+// GetAreas performs a graphQL query to retrieve the areas (categories) for a given area type. If the category
 // is left empty, then all categories are returned. Results can also be filtered by area by passing a variable name.
-func (c *Client) GetAreaTypeAreas(ctx context.Context, req GetAreaTypeAreasRequest) (*GetAreasResponse, error) {
+func (c *Client) GetAreas(ctx context.Context, req GetAreasRequest) (*GetAreasResponse, error) {
 	resp := &struct {
 		Data   GetAreasResponse `json:"data"`
 		Errors []gql.Error      `json:"errors,omitempty"`
@@ -164,28 +164,7 @@ func (c *Client) GetAreaTypeAreas(ctx context.Context, req GetAreaTypeAreasReque
 		Category: req.Category,
 	}
 
-	if err := c.queryUnmarshal(ctx, QueryAreaTypeAreas, data, resp); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal query")
-	}
-
-	if resp != nil && len(resp.Errors) != 0 {
-		return nil, dperrors.New(
-			errors.New("error(s) returned by graphQL query"),
-			resp.Errors[0].StatusCode(),
-			log.Data{"errors": resp.Errors},
-		)
-	}
-
-	return &resp.Data, nil
-}
-
-func (c *Client) GetAreas(ctx context.Context, req QueryData) (*GetAreasResponse, error) {
-	resp := &struct {
-		Data   GetAreasResponse `json:"data"`
-		Errors []gql.Error      `json:"errors,omitempty"`
-	}{}
-
-	if err := c.queryUnmarshal(ctx, QueryAreasByArea, req, resp); err != nil {
+	if err := c.queryUnmarshal(ctx, QueryAreas, data, resp); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal query")
 	}
 
