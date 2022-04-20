@@ -141,7 +141,7 @@ type VersionDimension struct {
 	URL             string `json:"href,omitempty"`
 	Variable        string `json:"variable,omitempty"`
 	NumberOfOptions int    `json:"number_of_options,omitempty"`
-	IsAreaType      bool   `json:"is_area_type,omitempty"`
+	IsAreaType      *bool  `json:"is_area_type,omitempty"`
 }
 
 // InstanceImportTasks represents all of the tasks required to complete an import job.
