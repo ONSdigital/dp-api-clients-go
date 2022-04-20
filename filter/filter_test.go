@@ -857,15 +857,43 @@ func TestClient_GetDimensionOptionsInBatches(t *testing.T) {
 }
 
 func TestClient_CreateFlexBlueprint(t *testing.T) {
+	trueValue := true
 	datasetID := "foo"
 	edition := "quux"
 	version := "1"
-	dimensions := []ModelDimension{}
+	dimensions := []ModelDimension{
+		{
+			Name:       "name",
+			URI:        "uri.uri/uri",
+			IsAreaType: &trueValue,
+			Options: []string{
+				"option1",
+				"option2",
+			},
+			Values: []string{
+				"value1",
+				"value2",
+			},
+		},
+	}
 	population_type := "Teaching-Dataset"
 
 	expectedRequest := createFlexBlueprintRequest{
-		Dataset:        Dataset{DatasetID: "foo", Edition: "quux", Version: 1},
-		Dimensions:     []ModelDimension{},
+		Dataset: Dataset{DatasetID: "foo", Edition: "quux", Version: 1},
+		Dimensions: []ModelDimension{
+			{
+				Name:       "name",
+				URI:        "uri.uri/uri",
+				IsAreaType: &trueValue,
+				Options: []string{
+					"option1",
+					"option2",
+				},
+				Values: []string{
+					"value1",
+					"value2",
+				},
+			}},
 		PopulationType: "Teaching-Dataset",
 	}
 
