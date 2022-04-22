@@ -85,7 +85,13 @@ func TestGetGeographyDimensionsHappy(t *testing.T) {
 		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetGeographyDimensions, http.StatusOK)
 
 		Convey("When GetGeographyDimensions is called", func() {
-			resp, err := cantabularClient.GetGeographyDimensions(testCtx, "Teaching-Dataset")
+			resp, err := cantabularClient.GetGeographyDimensions(testCtx, cantabular.GetGeographyDimensionsRequest{
+				Dataset: "Teaching-Dataset",
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  10,
+					Offset: 0,
+				},
+			})
 
 			Convey("Then no error should be returned", func() {
 				So(err, ShouldBeNil)
@@ -99,6 +105,10 @@ func TestGetGeographyDimensionsHappy(t *testing.T) {
 					cantabular.QueryGeographyDimensions,
 					cantabular.QueryData{
 						Dataset: "Teaching-Dataset",
+						PaginationParams: cantabular.PaginationParams{
+							Limit:  10,
+							Offset: 0,
+						},
 					},
 				)
 			})
@@ -116,7 +126,13 @@ func TestGetGeographyDimensionsUnhappy(t *testing.T) {
 		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
 
 		Convey("When GetGeographyDimensions is called", func() {
-			resp, err := cantabularClient.GetGeographyDimensions(testCtx, "InexistentDataset")
+			resp, err := cantabularClient.GetGeographyDimensions(testCtx, cantabular.GetGeographyDimensionsRequest{
+				Dataset: "InexistentDataset",
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  10,
+					Offset: 0,
+				},
+			})
 
 			Convey("Then the expected error is returned", func() {
 				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
@@ -133,7 +149,13 @@ func TestGetGeographyDimensionsUnhappy(t *testing.T) {
 		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
 
 		Convey("When GetGeographyDimensions is called", func() {
-			resp, err := cantabularClient.GetGeographyDimensions(testCtx, "Teaching-Dataset")
+			resp, err := cantabularClient.GetGeographyDimensions(testCtx, cantabular.GetGeographyDimensionsRequest{
+				Dataset: "Teaching-Dataset",
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  10,
+					Offset: 0,
+				},
+			})
 
 			Convey("Then the expected error is returned", func() {
 				So(err, ShouldResemble, expectedInternalServeError)
@@ -771,6 +793,7 @@ var mockRespBodyGetGeographyDimensions = `
 		"dataset": {
 			"ruleBase": {
 				"isSourceOf": {
+					"totalCount": 2,
 					"edges": [
 						{
 							"node": {
@@ -817,6 +840,7 @@ var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
 	Dataset: gql.DatasetRuleBase{
 		RuleBase: gql.RuleBase{
 			IsSourceOf: gql.Variables{
+				TotalCount: 2,
 				Edges: []gql.Edge{
 					{
 						Node: gql.Node{
@@ -853,6 +877,14 @@ var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
 				},
 			},
 			Name: "Region",
+		},
+	},
+	PaginationResponse: cantabular.PaginationResponse{
+		Count:      2,
+		TotalCount: 2,
+		PaginationParams: cantabular.PaginationParams{
+			Limit:  10,
+			Offset: 0,
 		},
 	},
 }

@@ -12,6 +12,10 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
+const (
+	defaultLimit = 20
+)
+
 // QueryStaticDataset is the graphQL query to obtain static dataset counts (variables with categories and counts)
 const QueryStaticDataset = `
 query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
@@ -99,11 +103,12 @@ query($dataset: String!, $variables: [String!]!) {
 
 // QueryGeographyDimensions is the graphQL query to obtain geography dimensions (subset of variables, without categories)
 const QueryGeographyDimensions = `
-query($dataset: String!) {
+query($dataset: String!, $limit: Int!, $offset: Int) {
 	dataset(name: $dataset) {
 		ruleBase {
 			name
-			isSourceOf {
+			isSourceOf (skip: $offset, first: $limit) {
+				totalCount
 				edges {
 					node {
 						name
@@ -190,6 +195,7 @@ type QueryData struct {
 	Text      string
 	Variables []string
 	Filters   []Filter
+	PaginationParams
 }
 
 // Filter holds the fields for the Cantabular GraphQL 'Filter' object used for specifying categories
@@ -204,14 +210,21 @@ type Filter struct {
 func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
+
+	if data.Limit == 0 {
+		data.Limit = defaultLimit
+	}
 	vars := map[string]interface{}{
 		"dataset":   data.Dataset,
 		"variables": data.Variables,
 		"text":      data.Text,
+		"limit":     data.Limit,
+		"offset":    data.Offset,
 	}
 	if len(data.Filters) > 0 {
 		vars["filters"] = data.Filters
 	}
+
 	if err := enc.Encode(map[string]interface{}{
 		"query":     query,
 		"variables": vars,

@@ -17,6 +17,7 @@ type Variables struct {
 	Edges          []Edge `json:"edges"`
 	Search         Search `json:"search,omitempty"`
 	CategorySearch Search `json:"categorySearch,omitempty"`
+	TotalCount     int    `json:"totalCount"`
 }
 
 type Search struct {

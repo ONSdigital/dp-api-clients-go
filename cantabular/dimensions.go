@@ -39,21 +39,28 @@ func (c *Client) GetDimensions(ctx context.Context, dataset string) (*GetDimensi
 
 // GetGeographyDimensions performs a graphQL query to obtain the geography dimensions for the provided cantabular dataset.
 // The whole response is loaded to memory.
-func (c *Client) GetGeographyDimensions(ctx context.Context, dataset string) (*GetGeographyDimensionsResponse, error) {
-	resp := &struct {
+func (c *Client) GetGeographyDimensions(ctx context.Context, req GetGeographyDimensionsRequest) (*GetGeographyDimensionsResponse, error) {
+	resp := struct {
 		Data   GetGeographyDimensionsResponse `json:"data"`
 		Errors []gql.Error                    `json:"errors,omitempty"`
 	}{}
 
 	data := QueryData{
-		Dataset: dataset,
+		Dataset:          req.Dataset,
+		PaginationParams: req.PaginationParams,
 	}
 
-	if err := c.queryUnmarshal(ctx, QueryGeographyDimensions, data, resp); err != nil {
+	if err := c.queryUnmarshal(ctx, QueryGeographyDimensions, data, &resp); err != nil {
 		return nil, err
 	}
 
-	if resp != nil && len(resp.Errors) != 0 {
+	resp.Data.PaginationResponse = PaginationResponse{
+		Count:            len(resp.Data.Dataset.RuleBase.IsSourceOf.Edges),
+		TotalCount:       resp.Data.Dataset.RuleBase.IsSourceOf.TotalCount,
+		PaginationParams: req.PaginationParams,
+	}
+
+	if len(resp.Errors) != 0 {
 		return nil, dperrors.New(
 			errors.New("error(s) returned by graphQL query"),
 			resp.Errors[0].StatusCode(),

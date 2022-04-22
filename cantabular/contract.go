@@ -7,6 +7,17 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+type PaginationParams struct {
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+}
+
+type PaginationResponse struct {
+	PaginationParams
+	Count      int `json:"count"`
+	TotalCount int `json:"total_count"`
+}
+
 // GetCodebookRequest holds the query parameters for
 // GET [cantabular-srv]/codebook/{dataset}?cats=xxx&v=xxx
 type GetCodebookRequest struct {
@@ -62,10 +73,19 @@ type GetDimensionsResponse struct {
 	Dataset gql.DatasetVariables `json:"dataset"`
 }
 
+// GetGeographyDimensionsRequest holds the request parameters for
+// POST [cantabular-ext]/graphql
+// with a query to obtain geography variables
+type GetGeographyDimensionsRequest struct {
+	PaginationParams
+	Dataset string `json:"dataset"`
+}
+
 // GetGeographyDimensionsResponse holds the response body for
 // POST [cantabular-ext]/graphql
 // with a query to obtain geography variables
 type GetGeographyDimensionsResponse struct {
+	PaginationResponse
 	Dataset gql.DatasetRuleBase `json:"dataset"`
 }
 
