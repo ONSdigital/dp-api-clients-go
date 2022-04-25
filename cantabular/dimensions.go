@@ -150,13 +150,21 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req GetDimensionOption
 	return &resp.Data, nil
 }
 
-func (c *Client) GetAreas(ctx context.Context, req QueryData) (*GetAreasResponse, error) {
+// GetAreas performs a graphQL query to retrieve the areas (categories) for a given area type. If the category
+// is left empty, then all categories are returned. Results can also be filtered by area by passing a variable name.
+func (c *Client) GetAreas(ctx context.Context, req GetAreasRequest) (*GetAreasResponse, error) {
 	resp := &struct {
 		Data   GetAreasResponse `json:"data"`
 		Errors []gql.Error      `json:"errors,omitempty"`
 	}{}
 
-	if err := c.queryUnmarshal(ctx, QueryAreasByArea, req, resp); err != nil {
+	data := QueryData{
+		Dataset:  req.Dataset,
+		Text:     req.Variable,
+		Category: req.Category,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryAreas, data, resp); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal query")
 	}
 
