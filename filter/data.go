@@ -25,6 +25,8 @@ type Dimensions struct {
 // Dimension represents a dimension response from the filter api
 type Dimension struct {
 	Name       string   `json:"name"`
+	ID         string   `json:"id,omitempty"`
+	Label      string   `json:"label,omitempty"`
 	URI        string   `json:"dimension_url"`
 	IsAreaType *bool    `json:"is_area_type,omitempty"`
 	Options    []string `json:"options,omitempty"`
