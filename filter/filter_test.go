@@ -353,6 +353,8 @@ func TestClient_GetDimension(t *testing.T) {
 	name := "corge"
 	dimensionBody := `{
 		"dimension_url": "www.ons.gov.uk",
+		"id": "quuz_id",
+		"label": "Dimension",
 		"name": "quuz",
 		"is_area_type": false,
 		"options": ["corge"]}`
@@ -381,6 +383,8 @@ func TestClient_GetDimension(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(dim, ShouldResemble, Dimension{
 			Name:       "quuz",
+			ID:         "quuz_id",
+			Label:      "Dimension",
 			URI:        "www.ons.gov.uk",
 			Options:    []string{"corge"},
 			IsAreaType: boolToPtr(false),
@@ -394,6 +398,8 @@ func TestClient_GetDimension(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(dim, ShouldResemble, Dimension{
 			Name:       "quuz",
+			ID:         "quuz_id",
+			Label:      "Dimension",
 			URI:        "www.ons.gov.uk",
 			Options:    []string{"corge"},
 			IsAreaType: boolToPtr(false),
