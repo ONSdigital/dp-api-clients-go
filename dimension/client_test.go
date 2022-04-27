@@ -170,7 +170,14 @@ func TestGetAreas(t *testing.T) {
 		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))
 		So(err, ShouldBeNil)
 
-		_, _ = client.GetAreas(context.Background(), "", "", "testDataSet", "testAreaType", "testText")
+		input := GetAreasInput{
+			UserAuthToken:    "",
+			ServiceAuthToken: "",
+			DatasetID:        "testDataSet",
+			AreaTypeID:       "testAreaType",
+			Text:             "testText",
+		}
+		_, _ = client.GetAreas(context.Background(), input)
 
 		Convey("it should call the areas endpoint, serializing the dataset, area type and text query params", func() {
 			calls := stubClient.DoCalls()
@@ -184,7 +191,15 @@ func TestGetAreas(t *testing.T) {
 		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))
 		So(err, ShouldBeNil)
 
-		_, _ = client.GetAreas(context.Background(), "", "", "testDataSet", "testAreaType", "")
+		input := GetAreasInput{
+			UserAuthToken:    "",
+			ServiceAuthToken: "",
+			DatasetID:        "testDataSet",
+			AreaTypeID:       "testAreaType",
+			Text:             "",
+		}
+
+		_, _ = client.GetAreas(context.Background(), input)
 
 		Convey("it should call the areas endpoint, omitting the text query param", func() {
 			calls := stubClient.DoCalls()
@@ -200,7 +215,15 @@ func TestGetAreas(t *testing.T) {
 		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
 		client := newHealthClient(stubClient)
 
-		_, _ = client.GetAreas(context.Background(), userAuthToken, serviceAuthToken, "testDataSet", "testAreaType", "")
+		input := GetAreasInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+			DatasetID:        "testDataSet",
+			AreaTypeID:       "testAreaType",
+			Text:             "",
+		}
+
+		_, _ = client.GetAreas(context.Background(), input)
 
 		Convey("it should set the auth headers on the request", func() {
 			calls := stubClient.DoCalls()
@@ -222,10 +245,16 @@ func TestGetAreas(t *testing.T) {
 			StatusCode: http.StatusOK,
 			Body:       ioutil.NopCloser(bytes.NewReader(resp)),
 		}, nil)
-
 		client := newHealthClient(stubClient)
 
-		types, err := client.GetAreas(context.Background(), "", "", "testDataSet", "testAreaType", "")
+		input := GetAreasInput{
+			UserAuthToken:    "",
+			ServiceAuthToken: "",
+			DatasetID:        "testDataSet",
+			AreaTypeID:       "testAreaType",
+			Text:             "",
+		}
+		types, err := client.GetAreas(context.Background(), input)
 
 		Convey("it should return a list of areas", func() {
 			So(err, ShouldBeNil)
@@ -238,7 +267,14 @@ func TestGetAreas(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		_, err := client.GetAreas(context.Background(), "", "", "testDataSet", "testAreaType", "")
+		input := GetAreasInput{
+			UserAuthToken:    "",
+			ServiceAuthToken: "",
+			DatasetID:        "testDataSet",
+			AreaTypeID:       "testAreaType",
+			Text:             "",
+		}
+		_, err := client.GetAreas(context.Background(), input)
 
 		Convey("it should return an internal error", func() {
 			So(err, shouldBeDPError, http.StatusInternalServerError)
@@ -253,7 +289,14 @@ func TestGetAreas(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		_, err := client.GetAreas(context.Background(), "", "", "testDataSet", "testAreaType", "")
+		input := GetAreasInput{
+			UserAuthToken:    "",
+			ServiceAuthToken: "",
+			DatasetID:        "testDataSet",
+			AreaTypeID:       "testAreaType",
+			Text:             "",
+		}
+		_, err := client.GetAreas(context.Background(), input)
 
 		Convey("the error chain should contain the original Errors type", func() {
 			So(err, shouldBeDPError, http.StatusInternalServerError)
@@ -273,7 +316,14 @@ func TestGetAreas(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		_, err := client.GetAreas(context.Background(), "", "", "testDataSet", "testAreaType", "")
+		input := GetAreasInput{
+			UserAuthToken:    "",
+			ServiceAuthToken: "",
+			DatasetID:        "testDataSet",
+			AreaTypeID:       "testAreaType",
+			Text:             "",
+		}
+		_, err := client.GetAreas(context.Background(), input)
 
 		Convey("it should return an internal error", func() {
 			So(err, shouldBeDPError, http.StatusInternalServerError)
@@ -288,7 +338,14 @@ func TestGetAreas(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		_, err := client.GetAreas(context.Background(), "", "", "testDataSet", "testAreaType", "")
+		input := GetAreasInput{
+			UserAuthToken:    "",
+			ServiceAuthToken: "",
+			DatasetID:        "testDataSet",
+			AreaTypeID:       "testAreaType",
+			Text:             "",
+		}
+		_, err := client.GetAreas(context.Background(), input)
 
 		Convey("it should return an internal error", func() {
 			So(err, shouldBeDPError, http.StatusInternalServerError)
@@ -298,7 +355,14 @@ func TestGetAreas(t *testing.T) {
 	Convey("Given the request cannot be created", t, func() {
 		client := newHealthClient(newStubClient(nil, nil))
 
-		_, err := client.GetAreas(nil, "", "", "testDataSet", "testAreaType", "")
+		input := GetAreasInput{
+			UserAuthToken:    "",
+			ServiceAuthToken: "",
+			DatasetID:        "testDataSet",
+			AreaTypeID:       "testAreaType",
+			Text:             "",
+		}
+		_, err := client.GetAreas(nil, input)
 
 		Convey("it should return a client error", func() {
 			So(err, shouldBeDPError, http.StatusBadRequest)

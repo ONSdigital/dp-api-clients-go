@@ -27,6 +27,14 @@ type Client struct {
 	baseURL *url.URL
 }
 
+type GetAreasInput struct {
+	UserAuthToken    string
+	ServiceAuthToken string
+	DatasetID        string
+	AreaTypeID       string
+	Text             string
+}
+
 // NewClient creates a new instance of Client with a given Dimensions API URL
 func NewClient(dimensionsAPIURL string) (*Client, error) {
 	client := health.NewClient(service, dimensionsAPIURL)
@@ -39,7 +47,7 @@ func NewWithHealthClient(hcCli *health.Client) (*Client, error) {
 	client := health.NewClientWithClienter(service, hcCli.URL, hcCli.Client)
 	baseURL, err := url.Parse(client.URL)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing URL: %w", err)
+		return nil, errors.Wrap(err, "error parsing URL")
 	}
 
 	// The Parse method on `url.URL` uses a trailing slash to determine
@@ -56,13 +64,13 @@ func (c *Client) Checker(ctx context.Context, check *healthcheck.CheckState) err
 	return c.hcCli.Checker(ctx, check)
 }
 
-func (c *Client) createDimensionGetRequest(ctx context.Context, userAuthToken, serviceAuthToken, urlPath string, logData log.Data, urlValues url.Values) (*http.Request, error) {
+func (c *Client) createGetRequest(ctx context.Context, userAuthToken, serviceAuthToken, urlPath string, urlValues url.Values) (*http.Request, error) {
 	areasURL, err := c.baseURL.Parse(urlPath)
 	if err != nil {
 		return &http.Request{}, dperrors.New(
 			errors.Wrap(err, "failed to parse areas URL"),
 			http.StatusInternalServerError,
-			logData,
+			log.Data{},
 		)
 	}
 
@@ -74,20 +82,20 @@ func (c *Client) createDimensionGetRequest(ctx context.Context, userAuthToken, s
 		return &http.Request{}, dperrors.New(
 			errors.Wrap(err, "failed to create request"),
 			http.StatusBadRequest,
-			logData,
+			log.Data{},
 		)
 	}
 	return req, nil
 }
 
-func checkDimensionGetResponse(logData log.Data, resp http.Response) error {
+func checkGetResponse(resp *http.Response) error {
 	if resp.StatusCode == http.StatusNotFound {
 		var errorResp ErrorResp
 		if err := json.NewDecoder(resp.Body).Decode(&errorResp); err == nil {
 			return dperrors.New(
 				fmt.Errorf("error response from Dimensions API (%d): %w", resp.StatusCode, errorResp),
 				http.StatusInternalServerError,
-				logData,
+				log.Data{},
 			)
 		}
 	}
@@ -96,9 +104,9 @@ func checkDimensionGetResponse(logData log.Data, resp http.Response) error {
 		// Best effort — an empty body is fine for the error message
 		body, _ := io.ReadAll(resp.Body)
 		return dperrors.New(
-			fmt.Errorf("error response from Dimensions API (%d): %s", resp.StatusCode, body),
+			errors.Errorf("error response from Dimensions API (%d): %s", resp.StatusCode, body),
 			http.StatusInternalServerError,
-			logData,
+			log.Data{},
 		)
 	}
 
@@ -115,11 +123,11 @@ func (c *Client) GetAreaTypes(ctx context.Context, userAuthToken, serviceAuthTok
 	urlPath := "area-types"
 	urlValues := url.Values{"dataset": []string{datasetID}}
 
-	req, err := c.createDimensionGetRequest(ctx, userAuthToken, serviceAuthToken, urlPath, logData, urlValues)
+	req, err := c.createGetRequest(ctx, userAuthToken, serviceAuthToken, urlPath, urlValues)
 	if err != nil {
 		return GetAreaTypesResponse{}, dperrors.New(
 			err,
-			http.StatusBadRequest,
+			dperrors.StatusCode(err),
 			logData,
 		)
 	}
@@ -129,7 +137,7 @@ func (c *Client) GetAreaTypes(ctx context.Context, userAuthToken, serviceAuthTok
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return GetAreaTypesResponse{}, dperrors.New(
-			fmt.Errorf("failed to get response from Dimensions API: %w", err),
+			errors.Wrap(err, "failed to get response from Dimensions API"),
 			http.StatusInternalServerError,
 			logData,
 		)
@@ -141,14 +149,14 @@ func (c *Client) GetAreaTypes(ctx context.Context, userAuthToken, serviceAuthTok
 		}
 	}()
 
-	if err := checkDimensionGetResponse(logData, *resp); err != nil {
+	if err := checkGetResponse(resp); err != nil {
 		return GetAreaTypesResponse{}, err
 	}
 
 	var areaTypes GetAreaTypesResponse
 	if err := json.NewDecoder(resp.Body).Decode(&areaTypes); err != nil {
 		return GetAreaTypesResponse{}, dperrors.New(
-			fmt.Errorf("unable to deserialize area types response: %w", err),
+			errors.Wrap(err, "unable to deserialize area types response"),
 			http.StatusInternalServerError,
 			logData,
 		)
@@ -157,25 +165,25 @@ func (c *Client) GetAreaTypes(ctx context.Context, userAuthToken, serviceAuthTok
 	return areaTypes, nil
 }
 
-func (c *Client) GetAreas(ctx context.Context, userAuthToken, serviceAuthToken, datasetID, areaTypeID, text string) (GetAreasResponse, error) {
+func (c *Client) GetAreas(ctx context.Context, input GetAreasInput) (GetAreasResponse, error) {
 	logData := log.Data{
 		"method":       http.MethodGet,
-		"dataset_id":   datasetID,
-		"area_type_id": areaTypeID,
-		"text":         text,
+		"dataset_id":   input.DatasetID,
+		"area_type_id": input.AreaTypeID,
+		"text":         input.Text,
 	}
 
 	urlPath := "areas"
-	urlValues := url.Values{"dataset": []string{datasetID}, "area-type": []string{areaTypeID}}
-	if text != "" {
-		urlValues.Add("text", text)
+	urlValues := url.Values{"dataset": []string{input.DatasetID}, "area-type": []string{input.AreaTypeID}}
+	if input.Text != "" {
+		urlValues.Add("text", input.Text)
 	}
 
-	req, err := c.createDimensionGetRequest(ctx, userAuthToken, serviceAuthToken, urlPath, logData, urlValues)
+	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {
 		return GetAreasResponse{}, dperrors.New(
 			err,
-			http.StatusBadRequest,
+			dperrors.StatusCode(err),
 			logData,
 		)
 	}
@@ -185,7 +193,7 @@ func (c *Client) GetAreas(ctx context.Context, userAuthToken, serviceAuthToken, 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return GetAreasResponse{}, dperrors.New(
-			fmt.Errorf("failed to get response from Dimensions API: %w", err),
+			errors.Wrap(err, "failed to get response from Dimensions API"),
 			http.StatusInternalServerError,
 			logData,
 		)
@@ -197,14 +205,14 @@ func (c *Client) GetAreas(ctx context.Context, userAuthToken, serviceAuthToken, 
 		}
 	}()
 
-	if err := checkDimensionGetResponse(logData, *resp); err != nil {
+	if err := checkGetResponse(resp); err != nil {
 		return GetAreasResponse{}, err
 	}
 
 	var areas GetAreasResponse
 	if err := json.NewDecoder(resp.Body).Decode(&areas); err != nil {
 		return GetAreasResponse{}, dperrors.New(
-			fmt.Errorf("unable to deserialize areas response: %w", err),
+			errors.Wrap(err, "unable to deserialize areas response"),
 			http.StatusInternalServerError,
 			logData,
 		)
@@ -217,15 +225,15 @@ func (c *Client) GetAreas(ctx context.Context, userAuthToken, serviceAuthToken, 
 func newRequest(ctx context.Context, method string, url string, body io.Reader, userAuthToken, serviceAuthToken string) (*http.Request, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, errors.Wrap(err, "failed to create request")
 	}
 
 	if err := headers.SetAuthToken(req, userAuthToken); err != nil {
-		return nil, fmt.Errorf("failed to set auth token header: %w", err)
+		return nil, errors.Wrap(err, "failed to set auth token header")
 	}
 
 	if err := headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return nil, fmt.Errorf("failed to set service token header: %w", err)
+		return nil, errors.Wrap(err, "failed to set service token header")
 	}
 
 	return req, nil
