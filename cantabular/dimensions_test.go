@@ -960,6 +960,7 @@ var expectedSearchDimensionsResponse = cantabular.GetDimensionsResponse{
 							Label: "Country",
 							MapFrom: []gql.Variables{
 								{
+									TotalCount: 1,
 									Edges: []gql.Edge{
 										{
 											Node: gql.Node{
