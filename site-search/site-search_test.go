@@ -323,8 +323,6 @@ func TestClient_GetReleases(t *testing.T) {
 					ReleaseDate: time.Now().AddDate(0, 0, -10).UTC().Format(time.RFC3339),
 					Published:   true,
 					Finalised:   true,
-					Contact:     &Contact{Name: "test publisher", Email: "testpublisher@ons.gov.uk"},
-					NextRelease: "To be announced",
 				},
 			},
 			{
