@@ -34,7 +34,7 @@ type Client struct {
 type QueryParams struct {
 	Offset int
 	Limit  int
-	Filter *InteractiveMetadata
+	Filter *InteractiveFilter
 }
 
 func (q *QueryParams) Validate() error {

@@ -4,6 +4,11 @@ const (
 	UpdateFormFieldKey = "update"
 )
 
+type InteractiveFilter struct {
+	AssociateCollection bool                 `json:"associate_collection,omitempty"`
+	Metadata            *InteractiveMetadata `json:"metadata,omitempty"`
+}
+
 type InteractiveMetadata struct {
 	Title             string `json:"title,omitempty"`
 	Label             string `json:"label,omitempty"`
