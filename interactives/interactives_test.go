@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -61,11 +62,11 @@ func TestClient_GetInteractives(t *testing.T) {
 
 		Convey("when GetInteractives is called with valid values for limit, offset and filter", func() {
 			q := QueryParams{Offset: offset, Limit: limit, Filter: &InteractiveFilter{Metadata: &InteractiveMetadata{ResourceID: "resid123"}}}
-			actualInteractives, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
+			i, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
 
 			Convey("a positive response is returned, with the expected interactives", func() {
 				So(err, ShouldBeNil)
-				So(actualInteractives, ShouldResemble, expectedInteractives)
+				So(i, ShouldResemble, expectedInteractives)
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
@@ -77,22 +78,22 @@ func TestClient_GetInteractives(t *testing.T) {
 
 		Convey("when GetInteractives is called with negative offset", func() {
 			q := QueryParams{Offset: -1, Limit: limit}
-			options, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
+			i, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
 
 			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
 				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
-				So(options, ShouldResemble, List{})
+				So(i, ShouldResemble, List{})
 				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 			})
 		})
 
 		Convey("when GetInteractives is called with negative limit", func() {
 			q := QueryParams{Offset: offset, Limit: -1}
-			options, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
+			i, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
 
 			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
 				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
-				So(options, ShouldResemble, List{})
+				So(i, ShouldResemble, List{})
 				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 			})
 		})
@@ -103,7 +104,7 @@ func TestClient_GetInteractives(t *testing.T) {
 		interactivesClient := newInteractivesClient(httpClient)
 
 		Convey("when GetInteractives is called", func() {
-			options, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, nil)
+			i, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, nil)
 
 			Convey("the expected error response is returned, with an empty options struct", func() {
 				So(err, ShouldResemble, &ErrInvalidInteractivesAPIResponse{
@@ -111,7 +112,7 @@ func TestClient_GetInteractives(t *testing.T) {
 					uri:        "http://localhost:8080/v1/interactives",
 					body:       "{\"items\":null,\"count\":0,\"offset\":0,\"limit\":0,\"total_count\":0}",
 				})
-				So(options, ShouldResemble, List{})
+				So(i, ShouldResemble, List{})
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
@@ -123,7 +124,7 @@ func TestClient_GetInteractives(t *testing.T) {
 }
 
 func TestClient_PutInteractive(t *testing.T) {
-	checkResponse := func(httpClient *dphttp.ClienterMock, expectedInteractive InteractiveUpdate) {
+	checkResponse := func(httpClient *dphttp.ClienterMock, expectedInteractive Interactive) {
 
 		checkRequestBase(httpClient, http.MethodPut, "/v1/interactives/123")
 
@@ -131,11 +132,11 @@ func TestClient_PutInteractive(t *testing.T) {
 		err := firstReq.ParseMultipartForm(50)
 		updateModelJson := firstReq.FormValue(UpdateFormFieldKey)
 
-		var actualInteractive InteractiveUpdate
-		err = json.Unmarshal([]byte(updateModelJson), &actualInteractive)
+		var i Interactive
+		err = json.Unmarshal([]byte(updateModelJson), &i)
 
 		So(err, ShouldBeNil)
-		So(actualInteractive, ShouldResemble, expectedInteractive)
+		So(i, ShouldResemble, expectedInteractive)
 	}
 
 	Convey("Given a valid interactive", t, func() {
@@ -143,15 +144,15 @@ func TestClient_PutInteractive(t *testing.T) {
 		interactiveClient := newInteractivesClient(httpClient)
 
 		Convey("when put interactive is called", func() {
-			inter := InteractiveUpdate{ImportSuccessful: &successful}
-			err := interactiveClient.PutInteractive(ctx, userAuthToken, serviceAuthToken, "123", inter)
+			i := Interactive{}
+			err := interactiveClient.PutInteractive(ctx, userAuthToken, serviceAuthToken, "123", i)
 
 			Convey("then no error is returned", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("and dphttp client is called one time with the expected parameters", func() {
-				checkResponse(httpClient, inter)
+				checkResponse(httpClient, i)
 			})
 		})
 	})
@@ -162,15 +163,15 @@ func TestClient_PutInteractive(t *testing.T) {
 		interactivesClient := newInteractivesClient(httpClient)
 
 		Convey("when put interactive is called", func() {
-			v := InteractiveUpdate{ImportSuccessful: &failed}
-			err := interactivesClient.PutInteractive(ctx, userAuthToken, serviceAuthToken, "123", v)
+			i := Interactive{}
+			err := interactivesClient.PutInteractive(ctx, userAuthToken, serviceAuthToken, "123", i)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Wrap(mockErr, "http client returned error while attempting to make request").Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
-				checkResponse(httpClient, v)
+				checkResponse(httpClient, i)
 			})
 		})
 	})
@@ -180,15 +181,98 @@ func TestClient_PutInteractive(t *testing.T) {
 		interactivesClient := newInteractivesClient(httpClient)
 
 		Convey("when put interactive is called", func() {
-			v := InteractiveUpdate{ImportSuccessful: &failed}
-			err := interactivesClient.PutInteractive(ctx, userAuthToken, serviceAuthToken, "123", v)
+			i := Interactive{}
+			err := interactivesClient.PutInteractive(ctx, userAuthToken, serviceAuthToken, "123", i)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 500 from interactives api: http://localhost:8080/v1/interactives/123, body: ").Error())
 			})
 
 			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
-				checkResponse(httpClient, v)
+				checkResponse(httpClient, i)
+			})
+		})
+	})
+}
+
+func TestClient_PatchInteractive(t *testing.T) {
+	checkResponse := func(httpClient *dphttp.ClienterMock, expected PatchRequest) {
+		checkRequestBase(httpClient, http.MethodPatch, "/v1/interactives/123")
+
+		firstReq := httpClient.DoCalls()[0].Req
+		body, err := io.ReadAll(firstReq.Body)
+		So(err, ShouldBeNil)
+
+		var actual PatchRequest
+		err = json.Unmarshal(body, &actual)
+		So(err, ShouldBeNil)
+		So(actual, ShouldResemble, expected)
+	}
+
+	Convey("Given a valid interactive", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{
+			http.StatusOK,
+			Interactive{},
+			nil,
+		})
+		c := newInteractivesClient(httpClient)
+
+		Convey("when valid patch request is called", func() {
+			r := PatchRequest{
+				Action:      PatchImportArchive,
+				Interactive: Interactive{},
+			}
+			_, err := c.PatchInteractive(ctx, userAuthToken, serviceAuthToken, "123", r)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and dphttp client is called one time with the expected parameters", func() {
+				checkResponse(httpClient, r)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("spectacular error")
+		httpClient := createHTTPClientMockErr(mockErr)
+		c := newInteractivesClient(httpClient)
+
+		Convey("when valid patch request is called", func() {
+			r := PatchRequest{
+				Action:      PatchImportArchive,
+				Interactive: Interactive{},
+			}
+			_, err := c.PatchInteractive(ctx, userAuthToken, serviceAuthToken, "123", r)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, errors.Wrap(mockErr, "http client returned error while attempting to make request").Error())
+			})
+
+			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
+				checkResponse(httpClient, r)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusInternalServerError, "", nil})
+		c := newInteractivesClient(httpClient)
+
+		Convey("when valid patch request is called", func() {
+			r := PatchRequest{
+				Action:      PatchImportArchive,
+				Interactive: Interactive{},
+			}
+			_, err := c.PatchInteractive(ctx, userAuthToken, serviceAuthToken, "123", r)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, errors.Errorf("invalid response: 500 from interactives api: http://localhost:8080/v1/interactives/123, body: ").Error())
+			})
+
+			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
+				checkResponse(httpClient, r)
 			})
 		})
 	})
@@ -205,11 +289,11 @@ func TestClient_GetInterface(t *testing.T) {
 		datasetClient := newInteractivesClient(httpClient)
 
 		Convey("when GetInterface is called", func() {
-			instance, err := datasetClient.GetInteractive(ctx, userAuthToken, serviceAuthToken, "123")
+			i, err := datasetClient.GetInteractive(ctx, userAuthToken, serviceAuthToken, "123")
 
 			Convey("a positive response is returned with empty interface and the expected ETag", func() {
 				So(err, ShouldBeNil)
-				So(instance, ShouldResemble, Interactive{})
+				So(i, ShouldResemble, Interactive{})
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected method, path and headers", func() {

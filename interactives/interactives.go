@@ -118,7 +118,7 @@ func (c *Client) GetInteractive(ctx context.Context, userAuthToken, serviceAuthT
 
 	clientlog.Do(ctx, fmt.Sprintf("retrieving interactive (%s)", interactivesID), service, uri)
 
-	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri, nil)
 	if err != nil {
 		return
 	}
@@ -164,7 +164,7 @@ func (c *Client) ListInteractives(ctx context.Context, userAuthToken, serviceAut
 
 	clientlog.Do(ctx, "retrieving interactives", service, uri, log.Data{"query_params": qVals})
 
-	resp, err := c.doListWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri, qVals)
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri, qVals)
 	if err != nil {
 		return
 	}
@@ -186,13 +186,13 @@ func (c *Client) ListInteractives(ctx context.Context, userAuthToken, serviceAut
 	return
 }
 
-// PutInteractive update the dataset
-func (c *Client) PutInteractive(ctx context.Context, userAuthToken, serviceAuthToken, interactiveID string, update InteractiveUpdate) error {
+// PutInteractive update the interactive
+func (c *Client) PutInteractive(ctx context.Context, userAuthToken, serviceAuthToken, interactiveID string, interactive Interactive) error {
 	uri := fmt.Sprintf("%s/%s/%s/%s", c.hcCli.URL, c.version, rootPath, interactiveID)
 
 	clientlog.Do(ctx, "updating interactive", service, uri)
 
-	payload, err := json.Marshal(update)
+	payload, err := json.Marshal(interactive)
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to marshall interactive")
 	}
@@ -209,18 +209,40 @@ func (c *Client) PutInteractive(ctx context.Context, userAuthToken, serviceAuthT
 	return nil
 }
 
-func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, uri string) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, uri, nil)
-	if err != nil {
-		return nil, err
+// PatchInteractive patches the interactive
+func (c *Client) PatchInteractive(ctx context.Context, userAuthToken, serviceAuthToken, interactiveID string, req PatchRequest) (i Interactive, err error) {
+	uri := fmt.Sprintf("%s/%s/%s/%s", c.hcCli.URL, c.version, rootPath, interactiveID)
+
+	clientlog.Do(ctx, "patching interactive", service, uri)
+
+	buf := &bytes.Buffer{}
+	if err := json.NewEncoder(buf).Encode(req); err != nil {
+		return i, errors.Wrap(err, "error while attempting to marshall interactive")
 	}
 
-	dprequest.AddFlorenceHeader(req, userAuthToken)
-	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
-	return c.hcCli.Client.Do(ctx, req)
+	resp, err := c.doPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, uri, buf)
+	if err != nil {
+		return i, errors.Wrap(err, "http client returned error while attempting to make request")
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewInteractivesAPIResponse(resp, uri)
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	if err = json.Unmarshal(b, &i); err != nil {
+		return
+	}
+
+	return
 }
 
-func (c *Client) doListWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, uri string, values url.Values) (*http.Response, error) {
+func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, uri string, values url.Values) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, err
@@ -230,6 +252,17 @@ func (c *Client) doListWithAuthHeaders(ctx context.Context, userAuthToken, servi
 		req.URL.RawQuery = values.Encode()
 	}
 
+	dprequest.AddFlorenceHeader(req, userAuthToken)
+	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
+	return c.hcCli.Client.Do(ctx, req)
+}
+
+func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, uri string, buf *bytes.Buffer) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPatch, uri, buf)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
 	dprequest.AddFlorenceHeader(req, userAuthToken)
 	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
 	return c.hcCli.Client.Do(ctx, req)

@@ -1,8 +1,16 @@
 package interactives
 
 const (
-	UpdateFormFieldKey = "update"
+	UpdateFormFieldKey = "interactive"
+	PatchImportArchive = "ImportArchive"
 )
+
+type PatchRequest struct {
+	Action      string      `json:"action,omitempty"`
+	Successful  bool        `json:"successful,omitempty"`
+	Message     string      `json:"message,omitempty"`
+	Interactive Interactive `json:"interactive,omitempty"`
+}
 
 type InteractiveFilter struct {
 	AssociateCollection bool                 `json:"associate_collection,omitempty"`
@@ -35,12 +43,6 @@ type InteractiveFile struct {
 	Name     string `json:"name,omitempty"`
 	Mimetype string `json:"mimetype,omitempty"`
 	Size     int64  `json:"size_in_bytes,omitempty"`
-}
-
-type InteractiveUpdate struct {
-	ImportSuccessful *bool       `json:"import_successful,omitempty"`
-	ImportMessage    string      `json:"import_message,omitempty"`
-	Interactive      Interactive `json:"interactive,omitempty"`
 }
 
 type List struct {
