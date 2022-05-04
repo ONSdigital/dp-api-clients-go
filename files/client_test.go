@@ -344,6 +344,7 @@ func TestGetFile(t *testing.T) {
 			}
 
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusOK)
 				json.NewEncoder(w).Encode(metadata)
 			}))
 
@@ -372,51 +373,67 @@ func TestGetFile(t *testing.T) {
 		})
 	})
 
-	Convey("GetFile called and file does not exist", t, func() {
-		Convey("when valid JSON error, it returns parsed error", func() {
-			expectedStatus := "404"
-			expectedError := "File not registered"
-			jsonError := dperrors.JsonErrors{
-				Errors: []dperrors.JsonError{
-					{Code: "404", Description: expectedError},
-				},
-			}
+	Convey("GetFile called and Files API returns an error", t, func() {
+		Convey("404 file does not exist", func() {
+			Convey("when valid JSON error, it returns parsed error", func() {
+				expectedCode := "FileNotRegistered"
+				expectedDescription := "file not registered"
+				server := newMockFilesAPIServerWithError(http.StatusNotFound, expectedCode, expectedDescription)
 
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				w.WriteHeader(http.StatusNotFound)
-				json.NewEncoder(w).Encode(jsonError)
-			}))
+				client := files.NewAPIClient(server.URL, "")
+				_, err := client.GetFile(context.Background(), "path/to/file.csv")
 
-			client := files.NewAPIClient(server.URL, "")
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedCode, expectedDescription))
+			})
 
-			filePath := "path/to/file.csv"
-			_, err := client.GetFile(context.Background(), filePath)
+			Convey("when invalid JSON error, it returns marshalling error", func() {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					w.WriteHeader(http.StatusNotFound)
+					fmt.Fprint(w, "<invalid JSON>")
+				}))
 
-			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedStatus, expectedError))
+				client := files.NewAPIClient(server.URL, "")
+
+				filePath := "path/to/file.csv"
+				_, err := client.GetFile(context.Background(), filePath)
+
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldContainSubstring, "invalid character")
+			})
 		})
 
-		Convey("when invalid JSON error, it returns marshalling error", func() {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				w.WriteHeader(http.StatusNotFound)
-				fmt.Fprint(w, "<invalid JSON>")
-			}))
+		Convey("when 500 internal server error, it returns error", func() {
+			expectedCode := "InternalError"
+			expectedDescription := "internal server error"
+			server := newMockFilesAPIServerWithError(http.StatusInternalServerError, expectedCode, expectedDescription)
 
 			client := files.NewAPIClient(server.URL, "")
-
-			filePath := "path/to/file.csv"
-			_, err := client.GetFile(context.Background(), filePath)
+			_, err := client.GetFile(context.Background(), "path/to/file.csv")
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldContainSubstring, "invalid character")
+			So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedCode, expectedDescription))
 		})
 	})
 
 	Convey("GetFile API client call returns an error", t, func() {
-		Convey("it returns an error", func() {
+		Convey("when http client errors, it returns an error", func() {
 			client := files.NewAPIClient("broken", "")
 			_, err := client.GetFile(context.Background(), "path/to/file.txt")
 			So(err, ShouldBeError)
 		})
 	})
+}
+
+func newMockFilesAPIServerWithError(expectedStatus int, expectedCode, expectedError string) *httptest.Server {
+	jsonError := dperrors.JsonErrors{
+		Errors: []dperrors.JsonError{
+			{Code: expectedCode, Description: expectedError},
+		},
+	}
+
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(expectedStatus)
+		json.NewEncoder(w).Encode(jsonError)
+	}))
 }

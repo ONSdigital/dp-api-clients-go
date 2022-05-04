@@ -128,22 +128,27 @@ func (c *Client) GetFile(ctx context.Context, path string) (FileMetaData, error)
 
 func (c *Client) parseGetFileResponse(resp *http.Response) (FileMetaData, error) {
 	metadata := FileMetaData{}
-	jd := json.NewDecoder(resp.Body)
-
 	var err error
 
-	switch resp.StatusCode {
-	case http.StatusOK:
-		if err = jd.Decode(&metadata); err != nil {
-			return metadata, err
-		}
-	case http.StatusNotFound:
-		je := dperrors.JsonErrors{}
-		if err = jd.Decode(&je); err != nil {
-			return metadata, err
-		}
-		err = je.ToNativeError()
+	if resp.StatusCode == http.StatusOK {
+		err = json.NewDecoder(resp.Body).Decode(&metadata)
+	} else {
+		err = c.handleErrors(resp)
 	}
 
 	return metadata, err
+}
+
+func (c *Client) handleErrors(resp *http.Response) error {
+	switch resp.StatusCode {
+	case http.StatusNotFound,
+		http.StatusInternalServerError:
+		je := dperrors.JsonErrors{}
+		if err := json.NewDecoder(resp.Body).Decode(&je); err != nil {
+			return err
+		}
+		return je.ToNativeError()
+	}
+
+	return nil
 }
