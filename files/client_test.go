@@ -337,8 +337,8 @@ func TestPublishCollection(t *testing.T) {
 }
 
 func TestGetFile(t *testing.T) {
-	Convey("GetFile called and file exists", t, func() {
-		Convey("it returns file metadata", func() {
+	Convey("GetFile called and Files API responds with 200", t, func() {
+		Convey("when valid file metadata, it returns parsed metadata", func() {
 			metadata := files.FileMetaData{
 				SizeInBytes: uint64(100),
 			}
@@ -355,10 +355,25 @@ func TestGetFile(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(result, ShouldResemble, metadata)
 		})
+
+		Convey("when invalid JSON it returns error", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprint(w, "<invalid JSON>")
+			}))
+
+			client := files.NewAPIClient(server.URL, "")
+
+			filePath := "path/to/file.csv"
+			_, err := client.GetFile(context.Background(), filePath)
+
+			So(err, ShouldBeError)
+			So(err.Error(), ShouldContainSubstring, "invalid character")
+		})
 	})
 
 	Convey("GetFile called and file does not exist", t, func() {
-		Convey("it returns an error", func() {
+		Convey("when valid JSON error, it returns parsed error", func() {
 			expectedStatus := "404"
 			expectedError := "File not registered"
 			jsonError := dperrors.JsonErrors{
@@ -379,6 +394,29 @@ func TestGetFile(t *testing.T) {
 
 			So(err, ShouldBeError)
 			So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedStatus, expectedError))
+		})
+
+		Convey("when invalid JSON error, it returns marshalling error", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+				fmt.Fprint(w, "<invalid JSON>")
+			}))
+
+			client := files.NewAPIClient(server.URL, "")
+
+			filePath := "path/to/file.csv"
+			_, err := client.GetFile(context.Background(), filePath)
+
+			So(err, ShouldBeError)
+			So(err.Error(), ShouldContainSubstring, "invalid character")
+		})
+	})
+
+	Convey("GetFile API client call returns an error", t, func() {
+		Convey("it returns an error", func() {
+			client := files.NewAPIClient("broken", "")
+			_, err := client.GetFile(context.Background(), "path/to/file.txt")
+			So(err, ShouldBeError)
 		})
 	})
 }
