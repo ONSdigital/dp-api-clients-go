@@ -133,13 +133,13 @@ func (c *Client) parseGetFileResponse(resp *http.Response) (FileMetaData, error)
 	if resp.StatusCode == http.StatusOK {
 		err = json.NewDecoder(resp.Body).Decode(&metadata)
 	} else {
-		err = c.handleErrors(resp)
+		err = c.parseResponseErrors(resp)
 	}
 
 	return metadata, err
 }
 
-func (c *Client) handleErrors(resp *http.Response) error {
+func (c *Client) parseResponseErrors(resp *http.Response) error {
 	switch resp.StatusCode {
 	case http.StatusNotFound,
 		http.StatusInternalServerError:
@@ -148,6 +148,8 @@ func (c *Client) handleErrors(resp *http.Response) error {
 			return err
 		}
 		return je.ToNativeError()
+	case http.StatusForbidden:
+		return ErrNotAuthorized
 	}
 
 	return nil
