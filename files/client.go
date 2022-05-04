@@ -114,3 +114,26 @@ func (c *Client) PublishCollection(ctx context.Context, collectionID string) err
 
 	return nil
 }
+
+func (c *Client) GetFile(ctx context.Context, path string) (FileMetaData, error) {
+	metadata := FileMetaData{}
+
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/files/%s", c.hcCli.URL, path), nil)
+	dprequest.AddServiceTokenHeader(req, c.authToken)
+
+	resp, _ := dphttp.DefaultClient.Do(ctx, req)
+
+	jd := json.NewDecoder(resp.Body)
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		jd.Decode(&metadata)
+	case http.StatusNotFound:
+		je := dperrors.JsonErrors{}
+		jd.Decode(&je)
+		err := je.ToNativeError()
+		return metadata, err
+	}
+
+	return metadata, nil
+}

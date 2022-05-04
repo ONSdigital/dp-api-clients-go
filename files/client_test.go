@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
@@ -331,6 +332,53 @@ func TestPublishCollection(t *testing.T) {
 			Convey("An error should be returned", func() {
 				So(err, ShouldBeError)
 			})
+		})
+	})
+}
+
+func TestGetFile(t *testing.T) {
+	Convey("GetFile called and file exists", t, func() {
+		Convey("it returns file metadata", func() {
+			metadata := files.FileMetaData{
+				SizeInBytes: uint64(100),
+			}
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				json.NewEncoder(w).Encode(metadata)
+			}))
+
+			client := files.NewAPIClient(server.URL, "")
+
+			filePath := "path/to/file.csv"
+			result, err := client.GetFile(context.Background(), filePath)
+
+			So(err, ShouldBeNil)
+			So(result, ShouldResemble, metadata)
+		})
+	})
+
+	Convey("GetFile called and file does not exist", t, func() {
+		Convey("it returns an error", func() {
+			expectedStatus := "404"
+			expectedError := "File not registered"
+			jsonError := dperrors.JsonErrors{
+				Errors: []dperrors.JsonError{
+					{Code: "404", Description: expectedError},
+				},
+			}
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+				json.NewEncoder(w).Encode(jsonError)
+			}))
+
+			client := files.NewAPIClient(server.URL, "")
+
+			filePath := "path/to/file.csv"
+			_, err := client.GetFile(context.Background(), filePath)
+
+			So(err, ShouldBeError)
+			So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedStatus, expectedError))
 		})
 	})
 }
