@@ -132,24 +132,15 @@ type ReleaseDateChange struct {
 }
 
 type ReleaseDescription struct {
-	Title              string   `json:"title"`
-	Summary            string   `json:"summary"`
-	ReleaseDate        string   `json:"release_date"`
-	Published          bool     `json:"published"`
-	Cancelled          bool     `json:"cancelled"`
-	Finalised          bool     `json:"finalised"`
-	Postponed          bool     `json:"postponed"`
-	Census             bool     `json:"census"`
-	NationalStatistic  bool     `json:"national_statistic"`
-	Keywords           []string `json:"keywords,omitempty"`
-	NextRelease        string   `json:"next_release,omitempty"`
-	ProvisionalDate    string   `json:"provisional_date,omitempty"`
-	CancellationNotice []string `json:"cancellation_notice,omitempty"`
-	Edition            string   `json:"edition,omitempty"`
-	DatasetID          string   `json:"dataset_id,omitempty"`
-	LatestRelease      *bool    `json:"latest_release,omitempty"`
-	MetaDescription    string   `json:"meta_description,omitempty"`
-	Language           string   `json:"language,omitempty"`
-	Source             string   `json:"source,omitempty"`
-	Contact            *Contact `json:"contact,omitempty"`
+	Title           string   `json:"title"`
+	Summary         string   `json:"summary"`
+	ReleaseDate     string   `json:"release_date"`
+	Published       bool     `json:"published"`
+	Cancelled       bool     `json:"cancelled"`
+	Finalised       bool     `json:"finalised"`
+	Postponed       bool     `json:"postponed"`
+	Census          bool     `json:"census"`
+	Keywords        []string `json:"keywords,omitempty"`
+	ProvisionalDate string   `json:"provisional_date,omitempty"`
+	Language        string   `json:"language,omitempty"`
 }
