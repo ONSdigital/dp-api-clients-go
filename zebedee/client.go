@@ -226,19 +226,24 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, collectionID, 
 
 func (c *Client) appendDatasetFileSizes(ctx context.Context, userAccessToken, collectionID, lang, uri string, d Dataset) (Dataset, error) {
 	for i, download := range d.Downloads {
-		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+download.File)
-		if err != nil {
-			return d, err
+		if download.Version == "" && download.URI == "" {
+			fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+download.File)
+			if err != nil {
+				return d, err
+			}
+
+			d.Downloads[i].Size = strconv.Itoa(fs.Size)
 		}
-		d.Downloads[i].Size = strconv.Itoa(fs.Size)
 	}
 
 	for i, supplementaryFile := range d.SupplementaryFiles {
-		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+supplementaryFile.File)
-		if err != nil {
-			return d, err
+		if supplementaryFile.Version == "" && supplementaryFile.URI == "" {
+			fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+supplementaryFile.File)
+			if err != nil {
+				return d, err
+			}
+			d.SupplementaryFiles[i].Size = strconv.Itoa(fs.Size)
 		}
-		d.SupplementaryFiles[i].Size = strconv.Itoa(fs.Size)
 	}
 
 	return d, nil
