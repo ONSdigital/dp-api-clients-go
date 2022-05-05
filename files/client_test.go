@@ -338,7 +338,7 @@ func TestPublishCollection(t *testing.T) {
 
 func TestGetFile(t *testing.T) {
 	Convey("GetFile called and Files API responds with 200", t, func() {
-		Convey("if valid file metadata, it returns parsed metadata", func() {
+		Convey("valid file metadata", func() {
 			metadata := files.FileMetaData{
 				SizeInBytes: uint64(100),
 			}
@@ -357,7 +357,7 @@ func TestGetFile(t *testing.T) {
 			So(result, ShouldResemble, metadata)
 		})
 
-		Convey("if invalid JSON, it returns error", func() {
+		Convey("invalid JSON", func() {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				fmt.Fprint(w, "<invalid JSON>")
@@ -373,9 +373,9 @@ func TestGetFile(t *testing.T) {
 		})
 	})
 
-	Convey("GetFile called and Files API returns an error", t, func() {
-		Convey("404 file does not exist", func() {
-			Convey("if valid JSON error, it returns parsed error", func() {
+	Convey("GetFile call errors", t, func() {
+		Convey("known errors that return JSON responses", func() {
+			Convey("404 file does not exist", func() {
 				expectedCode := "FileNotRegistered"
 				expectedDescription := "file not registered"
 				server := newMockFilesAPIServerWithError(http.StatusNotFound, expectedCode, expectedDescription)
@@ -387,7 +387,19 @@ func TestGetFile(t *testing.T) {
 				So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedCode, expectedDescription))
 			})
 
-			Convey("if invalid JSON error, it returns marshalling error", func() {
+			Convey("500 internal server error", func() {
+				expectedCode := "InternalError"
+				expectedDescription := "internal server error"
+				server := newMockFilesAPIServerWithError(http.StatusInternalServerError, expectedCode, expectedDescription)
+
+				client := files.NewAPIClient(server.URL, "")
+				_, err := client.GetFile(context.Background(), "path/to/file.csv")
+
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedCode, expectedDescription))
+			})
+
+			Convey("invalid JSON error", func() {
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					w.WriteHeader(http.StatusNotFound)
 					fmt.Fprint(w, "<invalid JSON>")
@@ -403,21 +415,21 @@ func TestGetFile(t *testing.T) {
 			})
 		})
 
-		Convey("if 500 internal server error, it returns error", func() {
-			expectedCode := "InternalError"
-			expectedDescription := "internal server error"
-			server := newMockFilesAPIServerWithError(http.StatusInternalServerError, expectedCode, expectedDescription)
+		Convey("unknown error", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusTeapot)
+			}))
 
 			client := files.NewAPIClient(server.URL, "")
-			_, err := client.GetFile(context.Background(), "path/to/file.csv")
+
+			filePath := "path/to/file.csv"
+			_, err := client.GetFile(context.Background(), filePath)
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedCode, expectedDescription))
+			So(err.Error(), ShouldEqual, "Unexpected error code from Files API: 418")
 		})
-	})
 
-	Convey("GetFile API client call returns an error", t, func() {
-		Convey("if HTTP client errors, it returns an error", func() {
+		Convey("HTTP client error", func() {
 			client := files.NewAPIClient("broken", "")
 			_, err := client.GetFile(context.Background(), "path/to/file.txt")
 			So(err, ShouldBeError)
@@ -425,7 +437,7 @@ func TestGetFile(t *testing.T) {
 	})
 
 	Convey("GetFile authorises requests to Files API", t, func() {
-		Convey("it adds a service token to the header", func() {
+		Convey("adds a service token to the header", func() {
 			expectedToken := "auth-token"
 			expectedBearerToken := fmt.Sprintf("Bearer %s", expectedToken)
 
@@ -440,7 +452,7 @@ func TestGetFile(t *testing.T) {
 			So(token, ShouldEqual, expectedBearerToken)
 		})
 
-		Convey("it returns an error if unauthorised", func() {
+		Convey("returns an error if unauthorised", func() {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				w.WriteHeader(http.StatusForbidden)
 			}))

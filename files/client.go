@@ -155,6 +155,8 @@ func (c *Client) parseResponseErrors(resp *http.Response) error {
 		return je.ToNativeError()
 	case http.StatusForbidden:
 		return ErrNotAuthorized
+	default:
+		return errors.New(fmt.Sprintf("Unexpected error code from Files API: %d", resp.StatusCode))
 	}
 
 	return nil
