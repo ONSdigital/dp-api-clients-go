@@ -12,8 +12,10 @@ type Dataset struct {
 
 // Download represents download within a dataset
 type Download struct {
-	File string `json:"file"`
-	Size string
+	File    string `json:"file,omitempty"`
+	URI     string `json:"uri,omitempty"`
+	Version string `json:"version,omitempty"`
+	Size    string
 }
 
 // FileSize represents a file size from zebedee

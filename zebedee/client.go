@@ -216,41 +216,30 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, collectionID, 
 	}
 
 	var d Dataset
+
 	if err = json.Unmarshal(b, &d); err != nil {
 		return d, err
 	}
 
-	downloads := make([]Download, 0)
+	return c.appendDatasetFileSizes(ctx, userAccessToken, collectionID, lang, uri, d)
+}
 
-	for _, v := range d.Downloads {
-		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+v.File)
+func (c *Client) appendDatasetFileSizes(ctx context.Context, userAccessToken, collectionID, lang, uri string, d Dataset) (Dataset, error) {
+	for i, download := range d.Downloads {
+		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+download.File)
 		if err != nil {
 			return d, err
 		}
-
-		downloads = append(downloads, Download{
-			File: v.File,
-			Size: strconv.Itoa(fs.Size),
-		})
+		d.Downloads[i].Size = strconv.Itoa(fs.Size)
 	}
 
-	d.Downloads = downloads
-
-	supplementaryFiles := make([]SupplementaryFile, 0)
-	for _, v := range d.SupplementaryFiles {
-		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+v.File)
+	for i, supplementaryFile := range d.SupplementaryFiles {
+		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+supplementaryFile.File)
 		if err != nil {
 			return d, err
 		}
-
-		supplementaryFiles = append(supplementaryFiles, SupplementaryFile{
-			File:  v.File,
-			Title: v.Title,
-			Size:  strconv.Itoa(fs.Size),
-		})
+		d.SupplementaryFiles[i].Size = strconv.Itoa(fs.Size)
 	}
-
-	d.SupplementaryFiles = supplementaryFiles
 
 	return d, nil
 }

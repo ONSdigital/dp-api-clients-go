@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strconv"
 	"testing"
@@ -1083,6 +1084,89 @@ func TestClient_PublishedIndexEndpoint(t *testing.T) {
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, path)
 			})
+		})
+	})
+}
+
+func MockZebedeeDatasetHandler(mockDownload Download, mockSupplementaryFile SupplementaryFile, expectedFileSize int) http.HandlerFunc {
+	mockDataset := Dataset{
+		Downloads:          []Download{mockDownload},
+		SupplementaryFiles: []SupplementaryFile{mockSupplementaryFile},
+	}
+
+	mockFileSize := FileSize{Size: expectedFileSize}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		je := json.NewEncoder(w)
+
+		switch r.URL.Path {
+		case "/data":
+			je.Encode(mockDataset)
+		case "/filesize":
+			je.Encode(mockFileSize)
+		}
+	}
+}
+
+func newStubDownload() Download {
+	return Download{File: "file"}
+}
+
+func newStubSupplementaryFile() SupplementaryFile {
+	return SupplementaryFile{
+		Title: "title",
+		File:  "file",
+	}
+}
+
+func TestFilesAPIEndpoint(t *testing.T) {
+	Convey("Zebedee client requests v1 file", t, func() {
+		Convey("result contains valid downloads", func() {
+			expectedDownloadFile := "filename.csv"
+			expectedSize := 100
+			mockDownload := Download{File: expectedDownloadFile}
+
+			mockDatasetServer := httptest.NewServer(MockZebedeeDatasetHandler(mockDownload, newStubSupplementaryFile(), expectedSize))
+			defer mockDatasetServer.Close()
+
+			client := New(mockDatasetServer.URL)
+			result, err := client.GetDataset(context.Background(), "", "", "", "")
+			So(err, ShouldBeNil)
+			So(len(result.Downloads), ShouldEqual, 1)
+
+			firstDownloadResult := result.Downloads[0]
+			actualFileSize, _ := strconv.Atoi(firstDownloadResult.Size)
+			actualFilename := firstDownloadResult.File
+
+			So(actualFilename, ShouldEqual, expectedDownloadFile)
+			So(actualFileSize, ShouldEqual, expectedSize)
+		})
+
+		Convey("result contains valid supplementary files", func() {
+			expectedSupplementaryTitle := "title"
+			expectedSupplementaryFile := "file.csv"
+			expectedSize := 100
+
+			mockSupplementaryFile := SupplementaryFile{
+				Title: expectedSupplementaryTitle,
+				File:  expectedSupplementaryFile,
+			}
+
+			mockDatasetServer := httptest.NewServer(MockZebedeeDatasetHandler(newStubDownload(), mockSupplementaryFile, expectedSize))
+			defer mockDatasetServer.Close()
+
+			client := New(mockDatasetServer.URL)
+			result, err := client.GetDataset(context.Background(), "", "", "", "")
+
+			So(err, ShouldBeNil)
+			So(len(result.SupplementaryFiles), ShouldEqual, 1)
+
+			firstSupplementaryFileResult := result.SupplementaryFiles[0]
+			actualSupplementaryFileSize, _ := strconv.Atoi(firstSupplementaryFileResult.Size)
+			actualSupplementaryFilename := firstSupplementaryFileResult.File
+
+			So(actualSupplementaryFilename, ShouldEqual, expectedSupplementaryFile)
+			So(actualSupplementaryFileSize, ShouldEqual, expectedSize)
 		})
 	})
 }
