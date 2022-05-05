@@ -219,7 +219,7 @@ func TestClient_PatchInteractive(t *testing.T) {
 
 		Convey("when valid patch request is called", func() {
 			r := PatchRequest{
-				Action:      PatchImportArchive,
+				Attribute:   PatchArchive,
 				Interactive: Interactive{},
 			}
 			_, err := c.PatchInteractive(ctx, userAuthToken, serviceAuthToken, "123", r)
@@ -241,7 +241,7 @@ func TestClient_PatchInteractive(t *testing.T) {
 
 		Convey("when valid patch request is called", func() {
 			r := PatchRequest{
-				Action:      PatchImportArchive,
+				Attribute:   PatchArchive,
 				Interactive: Interactive{},
 			}
 			_, err := c.PatchInteractive(ctx, userAuthToken, serviceAuthToken, "123", r)
@@ -262,7 +262,7 @@ func TestClient_PatchInteractive(t *testing.T) {
 
 		Convey("when valid patch request is called", func() {
 			r := PatchRequest{
-				Action:      PatchImportArchive,
+				Attribute:   PatchArchive,
 				Interactive: Interactive{},
 			}
 			_, err := c.PatchInteractive(ctx, userAuthToken, serviceAuthToken, "123", r)

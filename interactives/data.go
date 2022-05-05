@@ -2,13 +2,11 @@ package interactives
 
 const (
 	UpdateFormFieldKey = "interactive"
-	PatchImportArchive = "ImportArchive"
+	PatchArchive       = "Archive"
 )
 
 type PatchRequest struct {
-	Action      string      `json:"action,omitempty"`
-	Successful  bool        `json:"successful,omitempty"`
-	Message     string      `json:"message,omitempty"`
+	Attribute   string      `json:"attribute,omitempty"`
 	Interactive Interactive `json:"interactive,omitempty"`
 }
 
@@ -34,9 +32,11 @@ type Interactive struct {
 }
 
 type InteractiveArchive struct {
-	Name  string             `json:"name,omitempty"`
-	Size  int64              `json:"size_in_bytes,omitempty"`
-	Files []*InteractiveFile `json:"files,omitempty"`
+	Name             string             `json:"name,omitempty"`
+	Size             int64              `json:"size_in_bytes,omitempty"`
+	Files            []*InteractiveFile `json:"files,omitempty"`
+	ImportMessage    string             `json:"import_message,omitempty"`
+	ImportSuccessful bool               `json:"import_successful,omitempty"`
 }
 
 type InteractiveFile struct {
