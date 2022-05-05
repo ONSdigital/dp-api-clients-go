@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
@@ -333,4 +334,145 @@ func TestPublishCollection(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestGetFile(t *testing.T) {
+	Convey("GetFile called and Files API responds with 200", t, func() {
+		Convey("valid file metadata", func() {
+			metadata := files.FileMetaData{
+				SizeInBytes: uint64(100),
+			}
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(metadata)
+			}))
+
+			client := files.NewAPIClient(server.URL, "")
+
+			filePath := "path/to/file.csv"
+			result, err := client.GetFile(context.Background(), filePath)
+
+			So(err, ShouldBeNil)
+			So(result, ShouldResemble, metadata)
+		})
+
+		Convey("invalid JSON", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprint(w, "<invalid JSON>")
+			}))
+
+			client := files.NewAPIClient(server.URL, "")
+
+			filePath := "path/to/file.csv"
+			_, err := client.GetFile(context.Background(), filePath)
+
+			So(err, ShouldBeError)
+			So(err.Error(), ShouldContainSubstring, "invalid character")
+		})
+	})
+
+	Convey("GetFile call errors", t, func() {
+		Convey("known errors that return JSON responses", func() {
+			Convey("404 file does not exist", func() {
+				expectedCode := "FileNotRegistered"
+				expectedDescription := "file not registered"
+				server := newMockFilesAPIServerWithError(http.StatusNotFound, expectedCode, expectedDescription)
+
+				client := files.NewAPIClient(server.URL, "")
+				_, err := client.GetFile(context.Background(), "path/to/file.csv")
+
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedCode, expectedDescription))
+			})
+
+			Convey("500 internal server error", func() {
+				expectedCode := "InternalError"
+				expectedDescription := "internal server error"
+				server := newMockFilesAPIServerWithError(http.StatusInternalServerError, expectedCode, expectedDescription)
+
+				client := files.NewAPIClient(server.URL, "")
+				_, err := client.GetFile(context.Background(), "path/to/file.csv")
+
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedCode, expectedDescription))
+			})
+
+			Convey("invalid JSON error", func() {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					w.WriteHeader(http.StatusNotFound)
+					fmt.Fprint(w, "<invalid JSON>")
+				}))
+
+				client := files.NewAPIClient(server.URL, "")
+
+				filePath := "path/to/file.csv"
+				_, err := client.GetFile(context.Background(), filePath)
+
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldContainSubstring, "invalid character")
+			})
+		})
+
+		Convey("unknown error", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusTeapot)
+			}))
+
+			client := files.NewAPIClient(server.URL, "")
+
+			filePath := "path/to/file.csv"
+			_, err := client.GetFile(context.Background(), filePath)
+
+			So(err, ShouldBeError)
+			So(err.Error(), ShouldEqual, "Unexpected error code from Files API: 418")
+		})
+
+		Convey("HTTP client error", func() {
+			client := files.NewAPIClient("broken", "")
+			_, err := client.GetFile(context.Background(), "path/to/file.txt")
+			So(err, ShouldBeError)
+		})
+	})
+
+	Convey("GetFile authorises requests to Files API", t, func() {
+		Convey("adds a service token to the header", func() {
+			expectedToken := "auth-token"
+			expectedBearerToken := fmt.Sprintf("Bearer %s", expectedToken)
+
+			var token string
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				token = req.Header.Get("Authorization")
+			}))
+
+			client := files.NewAPIClient(server.URL, expectedToken)
+			client.GetFile(context.Background(), "path/to/file.csv")
+			So(token, ShouldEqual, expectedBearerToken)
+		})
+
+		Convey("returns an error if unauthorised", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusForbidden)
+			}))
+
+			client := files.NewAPIClient(server.URL, "not-valid-token")
+			_, err := client.GetFile(context.Background(), "path/to/file.csv")
+			So(err, ShouldEqual, files.ErrNotAuthorized)
+		})
+	})
+}
+
+func newMockFilesAPIServerWithError(expectedStatus int, expectedCode, expectedError string) *httptest.Server {
+	jsonError := dperrors.JsonErrors{
+		Errors: []dperrors.JsonError{
+			{Code: expectedCode, Description: expectedError},
+		},
+	}
+
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(expectedStatus)
+		json.NewEncoder(w).Encode(jsonError)
+	}))
 }

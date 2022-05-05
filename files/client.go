@@ -114,3 +114,50 @@ func (c *Client) PublishCollection(ctx context.Context, collectionID string) err
 
 	return nil
 }
+
+func (c *Client) GetFile(ctx context.Context, path string) (FileMetaData, error) {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/files/%s", c.hcCli.URL, path), nil)
+	if err != nil {
+		return FileMetaData{}, err
+	}
+
+	dprequest.AddServiceTokenHeader(req, c.authToken)
+
+	resp, err := dphttp.DefaultClient.Do(ctx, req)
+	if err != nil {
+		return FileMetaData{}, err
+	}
+
+	return c.parseGetFileResponse(resp)
+}
+
+func (c *Client) parseGetFileResponse(resp *http.Response) (FileMetaData, error) {
+	metadata := FileMetaData{}
+	var err error
+
+	if resp.StatusCode == http.StatusOK {
+		err = json.NewDecoder(resp.Body).Decode(&metadata)
+	} else {
+		err = c.parseResponseErrors(resp)
+	}
+
+	return metadata, err
+}
+
+func (c *Client) parseResponseErrors(resp *http.Response) error {
+	switch resp.StatusCode {
+	case http.StatusNotFound,
+		http.StatusInternalServerError:
+		je := dperrors.JsonErrors{}
+		if err := json.NewDecoder(resp.Body).Decode(&je); err != nil {
+			return err
+		}
+		return je.ToNativeError()
+	case http.StatusForbidden:
+		return ErrNotAuthorized
+	default:
+		return errors.New(fmt.Sprintf("Unexpected error code from Files API: %d", resp.StatusCode))
+	}
+
+	return nil
+}

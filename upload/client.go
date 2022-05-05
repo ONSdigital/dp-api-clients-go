@@ -99,6 +99,7 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 				http.StatusBadRequest,
 				http.StatusUnauthorized,
 				http.StatusForbidden,
+				//TODO: move statusForbidden to a separate case as this status doesn't return a body
 				http.StatusNotFound:
 				je := dperrors.JsonErrors{}
 				json.NewDecoder(resp.Body).Decode(&je)
