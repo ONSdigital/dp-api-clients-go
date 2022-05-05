@@ -425,6 +425,21 @@ func TestGetFile(t *testing.T) {
 	})
 
 	Convey("GetFile authorises requests to Files API", t, func() {
+		Convey("it adds a service token to the header", func() {
+			expectedToken := "auth-token"
+			expectedBearerToken := fmt.Sprintf("Bearer %s", expectedToken)
+
+			var token string
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				token = req.Header.Get("Authorization")
+			}))
+
+			client := files.NewAPIClient(server.URL, expectedToken)
+			client.GetFile(context.Background(), "path/to/file.csv")
+			So(token, ShouldEqual, expectedBearerToken)
+		})
+
 		Convey("it returns an error if unauthorised", func() {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				w.WriteHeader(http.StatusForbidden)

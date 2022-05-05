@@ -116,8 +116,13 @@ func (c *Client) PublishCollection(ctx context.Context, collectionID string) err
 }
 
 func (c *Client) GetFile(ctx context.Context, path string) (FileMetaData, error) {
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/files/%s", c.hcCli.URL, path), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/files/%s", c.hcCli.URL, path), nil)
+	if err != nil {
+		return FileMetaData{}, err
+	}
+
 	dprequest.AddServiceTokenHeader(req, c.authToken)
+
 	resp, err := dphttp.DefaultClient.Do(ctx, req)
 	if err != nil {
 		return FileMetaData{}, err
