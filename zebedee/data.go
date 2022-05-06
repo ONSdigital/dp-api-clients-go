@@ -39,7 +39,7 @@ type PageDescription struct {
 // SupplementaryFile represents a SupplementaryFile within a dataset
 type SupplementaryFile struct {
 	Title   string `json:"title"`
-	File    string `json:"file"`
+	File    string `json:"file,omitempty"`
 	URI     string `json:"uri,omitempty"`
 	Version string `json:"version,omitempty"`
 	Size    string
