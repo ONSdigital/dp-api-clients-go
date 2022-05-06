@@ -215,44 +215,46 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, collectionID, 
 		return Dataset{}, err
 	}
 
-	var d Dataset
-	if err = json.Unmarshal(b, &d); err != nil {
-		return d, err
+	var dataset Dataset
+
+	if err = json.Unmarshal(b, &dataset); err != nil {
+		return dataset, err
 	}
 
-	downloads := make([]Download, 0)
+	return c.appendDatasetFileSizes(ctx, userAccessToken, collectionID, lang, uri, dataset)
+}
 
-	for _, v := range d.Downloads {
-		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+v.File)
-		if err != nil {
-			return d, err
+func (c *Client) appendDatasetFileSizes(ctx context.Context, userAccessToken, collectionID, lang, uri string, dataset Dataset) (Dataset, error) {
+	for i, download := range dataset.Downloads {
+		if c.downloadStoredInZebedee(download) {
+			fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+download.File)
+			if err != nil {
+				return dataset, err
+			}
+
+			dataset.Downloads[i].Size = strconv.Itoa(fs.Size)
 		}
-
-		downloads = append(downloads, Download{
-			File: v.File,
-			Size: strconv.Itoa(fs.Size),
-		})
 	}
 
-	d.Downloads = downloads
-
-	supplementaryFiles := make([]SupplementaryFile, 0)
-	for _, v := range d.SupplementaryFiles {
-		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+v.File)
-		if err != nil {
-			return d, err
+	for i, supplementaryFile := range dataset.SupplementaryFiles {
+		if c.supplementaryFileStoredInZebedee(supplementaryFile) {
+			fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+supplementaryFile.File)
+			if err != nil {
+				return dataset, err
+			}
+			dataset.SupplementaryFiles[i].Size = strconv.Itoa(fs.Size)
 		}
-
-		supplementaryFiles = append(supplementaryFiles, SupplementaryFile{
-			File:  v.File,
-			Title: v.Title,
-			Size:  strconv.Itoa(fs.Size),
-		})
 	}
 
-	d.SupplementaryFiles = supplementaryFiles
+	return dataset, nil
+}
 
-	return d, nil
+func (c *Client) downloadStoredInZebedee(download Download) bool {
+	return download.URI == ""
+}
+
+func (c *Client) supplementaryFileStoredInZebedee(supplementaryFile SupplementaryFile) bool {
+	return supplementaryFile.URI == ""
 }
 
 func (c *Client) GetHomepageContent(ctx context.Context, userAccessToken, collectionID, lang, path string) (HomepageContent, error) {
