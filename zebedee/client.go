@@ -215,38 +215,46 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, collectionID, 
 		return Dataset{}, err
 	}
 
-	var d Dataset
+	var dataset Dataset
 
-	if err = json.Unmarshal(b, &d); err != nil {
-		return d, err
+	if err = json.Unmarshal(b, &dataset); err != nil {
+		return dataset, err
 	}
 
-	return c.appendDatasetFileSizes(ctx, userAccessToken, collectionID, lang, uri, d)
+	return c.appendDatasetFileSizes(ctx, userAccessToken, collectionID, lang, uri, dataset)
 }
 
-func (c *Client) appendDatasetFileSizes(ctx context.Context, userAccessToken, collectionID, lang, uri string, d Dataset) (Dataset, error) {
-	for i, download := range d.Downloads {
-		if download.Version == "" && download.URI == "" {
+func (c *Client) appendDatasetFileSizes(ctx context.Context, userAccessToken, collectionID, lang, uri string, dataset Dataset) (Dataset, error) {
+	for i, download := range dataset.Downloads {
+		if c.downloadStoredInZebedee(download) {
 			fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+download.File)
 			if err != nil {
-				return d, err
+				return dataset, err
 			}
 
-			d.Downloads[i].Size = strconv.Itoa(fs.Size)
+			dataset.Downloads[i].Size = strconv.Itoa(fs.Size)
 		}
 	}
 
-	for i, supplementaryFile := range d.SupplementaryFiles {
-		if supplementaryFile.Version == "" && supplementaryFile.URI == "" {
+	for i, supplementaryFile := range dataset.SupplementaryFiles {
+		if c.supplementaryFileStoredInZebedee(supplementaryFile) {
 			fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+supplementaryFile.File)
 			if err != nil {
-				return d, err
+				return dataset, err
 			}
-			d.SupplementaryFiles[i].Size = strconv.Itoa(fs.Size)
+			dataset.SupplementaryFiles[i].Size = strconv.Itoa(fs.Size)
 		}
 	}
 
-	return d, nil
+	return dataset, nil
+}
+
+func (c *Client) downloadStoredInZebedee(download Download) bool {
+	return download.URI == ""
+}
+
+func (c *Client) supplementaryFileStoredInZebedee(supplementaryFile SupplementaryFile) bool {
+	return supplementaryFile.URI == ""
 }
 
 func (c *Client) GetHomepageContent(ctx context.Context, userAccessToken, collectionID, lang, path string) (HomepageContent, error) {
