@@ -2,6 +2,7 @@ package errors
 
 import (
 	"errors"
+	"fmt"
 )
 
 // Error is a common error for HTTP APIs to return associated status code
@@ -22,6 +23,10 @@ func New(err error, statusCode int, logData map[string]interface{}) *Error {
 		statusCode: statusCode,
 		logData:    logData,
 	}
+}
+
+func NewErrorFromUnhandledStatusCode(service string, statusCode int) error {
+	return errors.New(fmt.Sprintf("Unexpected error code from %s: %d", service, statusCode))
 }
 
 // Error implements the standard Go error

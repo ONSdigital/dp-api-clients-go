@@ -13,7 +13,6 @@ import (
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/ONSdigital/log.go/v2/log"
 	"io"
-	"io/ioutil"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -28,7 +27,8 @@ const (
 )
 
 var (
-	ErrFileTooLarge = errors.New(fmt.Sprintf("file too large, max file size: %d MB", MaxFileSize>>20))
+	ErrFileTooLarge  = errors.New(fmt.Sprintf("file too large, max file size: %d MB", MaxFileSize>>20))
+	ErrNotAuthorized = errors.New("you are not authorized for this action")
 )
 
 type Metadata struct {
@@ -98,16 +98,15 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 			case http.StatusInternalServerError,
 				http.StatusBadRequest,
 				http.StatusUnauthorized,
-				http.StatusForbidden,
-				//TODO: move statusForbidden to a separate case as this status doesn't return a body
 				http.StatusNotFound:
 				je := dperrors.JsonErrors{}
 				json.NewDecoder(resp.Body).Decode(&je)
 
 				return je.ToNativeError()
+			case http.StatusForbidden:
+				return ErrNotAuthorized
 			default:
-				body, _ := ioutil.ReadAll(resp.Body)
-				return errors.New(string(body))
+				return dperrors.NewErrorFromUnhandledStatusCode(service, resp.StatusCode)
 			}
 		}
 	}

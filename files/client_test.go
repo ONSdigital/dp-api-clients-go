@@ -426,7 +426,7 @@ func TestGetFile(t *testing.T) {
 			_, err := client.GetFile(context.Background(), filePath)
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, "Unexpected error code from Files API: 418")
+			So(err.Error(), ShouldEqual, "Unexpected error code from files-api: 418")
 		})
 
 		Convey("HTTP client error", func() {

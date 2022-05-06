@@ -156,7 +156,7 @@ func (c *Client) parseResponseErrors(resp *http.Response) error {
 	case http.StatusForbidden:
 		return ErrNotAuthorized
 	default:
-		return errors.New(fmt.Sprintf("Unexpected error code from Files API: %d", resp.StatusCode))
+		return dperrors.NewErrorFromUnhandledStatusCode(service, resp.StatusCode)
 	}
 
 	return nil

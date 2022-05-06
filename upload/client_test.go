@@ -377,12 +377,6 @@ func TestErrorCases(t *testing.T) {
 			statusCode:       http.StatusUnauthorized,
 		},
 		{
-			testDescription:  "Given that dp-upload returns a 403 error",
-			errorCode:        "Forbidden",
-			errorDescription: "forbidden attempt to access upload service",
-			statusCode:       http.StatusForbidden,
-		},
-		{
 			testDescription:  "Given that dp-upload returns a 404 error",
 			errorCode:        "NotFound",
 			errorDescription: "still have not find what you were looking for",
@@ -414,6 +408,26 @@ func TestErrorCases(t *testing.T) {
 			})
 		})
 	}
+
+	Convey("Given dp-upload returns a 403 error", t, func() {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusForbidden)
+		}))
+
+		c := upload.NewAPIClient(s.URL, authTokenValue)
+
+		Convey("When an upload is attempted", func() {
+			metadata := createMetadata(1, nil)
+			_, fileContent := generateTestContent()
+			f := io.NopCloser(strings.NewReader(fileContent))
+			err := c.Upload(context.Background(), f, metadata)
+
+			Convey("Then an error is returned", func() {
+				So(err, ShouldBeError)
+				So(err, ShouldEqual, upload.ErrNotAuthorized)
+			})
+		})
+	})
 
 	Convey("Given dp-upload returns multiple errors", t, func() {
 		errorCode := "ValidationError"
@@ -450,15 +464,8 @@ func TestErrorCases(t *testing.T) {
 	})
 
 	Convey("Given dp-upload returns an unknown error", t, func() {
-		errorCode := "Teapot"
-		errorDescription := "unknown error"
-		errorMessage := fmt.Sprintf(`{"errorCode": "%s", "description": "%s"}`, errorCode, errorDescription)
-		errorBody := fmt.Sprintf(`{"errors": [%s]}`, errorMessage) /**/
-
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 			w.WriteHeader(http.StatusTeapot)
-			w.Write([]byte(errorBody))
 		}))
 
 		c := upload.NewAPIClient(s.URL, authTokenValue)
@@ -471,7 +478,7 @@ func TestErrorCases(t *testing.T) {
 
 			Convey("Then an error is returned", func() {
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldContainSubstring, errorBody)
+				So(err.Error(), ShouldContainSubstring, "Unexpected error code from upload-api: 418")
 			})
 		})
 	})
