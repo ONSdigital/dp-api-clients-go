@@ -8,6 +8,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
@@ -348,10 +349,11 @@ func TestGetFile(t *testing.T) {
 				json.NewEncoder(w).Encode(metadata)
 			}))
 
-			client := files.NewAPIClient(server.URL, "")
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
 
 			filePath := "path/to/file.csv"
-			result, err := client.GetFile(context.Background(), filePath)
+			result, err := client.GetFile(context.Background(), filePath, "")
 
 			So(err, ShouldBeNil)
 			So(result, ShouldResemble, metadata)
@@ -363,10 +365,11 @@ func TestGetFile(t *testing.T) {
 				fmt.Fprint(w, "<invalid JSON>")
 			}))
 
-			client := files.NewAPIClient(server.URL, "")
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
 
 			filePath := "path/to/file.csv"
-			_, err := client.GetFile(context.Background(), filePath)
+			_, err := client.GetFile(context.Background(), filePath, "auth-token")
 
 			So(err, ShouldBeError)
 			So(err.Error(), ShouldContainSubstring, "invalid character")
@@ -380,8 +383,9 @@ func TestGetFile(t *testing.T) {
 				expectedDescription := "file not registered"
 				server := newMockFilesAPIServerWithError(http.StatusNotFound, expectedCode, expectedDescription)
 
-				client := files.NewAPIClient(server.URL, "")
-				_, err := client.GetFile(context.Background(), "path/to/file.csv")
+				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+				client := files.NewWithHealthClient(&hCli)
+				_, err := client.GetFile(context.Background(), "path/to/file.csv", "auth-token")
 
 				So(err, ShouldBeError)
 				So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedCode, expectedDescription))
@@ -392,8 +396,9 @@ func TestGetFile(t *testing.T) {
 				expectedDescription := "internal server error"
 				server := newMockFilesAPIServerWithError(http.StatusInternalServerError, expectedCode, expectedDescription)
 
-				client := files.NewAPIClient(server.URL, "")
-				_, err := client.GetFile(context.Background(), "path/to/file.csv")
+				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+				client := files.NewWithHealthClient(&hCli)
+				_, err := client.GetFile(context.Background(), "path/to/file.csv", "auth-token")
 
 				So(err, ShouldBeError)
 				So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedCode, expectedDescription))
@@ -405,10 +410,11 @@ func TestGetFile(t *testing.T) {
 					fmt.Fprint(w, "<invalid JSON>")
 				}))
 
-				client := files.NewAPIClient(server.URL, "")
+				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+				client := files.NewWithHealthClient(&hCli)
 
 				filePath := "path/to/file.csv"
-				_, err := client.GetFile(context.Background(), filePath)
+				_, err := client.GetFile(context.Background(), filePath, "auth-token")
 
 				So(err, ShouldBeError)
 				So(err.Error(), ShouldContainSubstring, "invalid character")
@@ -420,18 +426,20 @@ func TestGetFile(t *testing.T) {
 				w.WriteHeader(http.StatusTeapot)
 			}))
 
-			client := files.NewAPIClient(server.URL, "")
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
 
 			filePath := "path/to/file.csv"
-			_, err := client.GetFile(context.Background(), filePath)
+			_, err := client.GetFile(context.Background(), filePath, "auth-token")
 
 			So(err, ShouldBeError)
 			So(err.Error(), ShouldEqual, "Unexpected error code from files-api: 418")
 		})
 
 		Convey("HTTP client error", func() {
-			client := files.NewAPIClient("broken", "")
-			_, err := client.GetFile(context.Background(), "path/to/file.txt")
+			hCli := health.Client{URL: "broken", Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+			_, err := client.GetFile(context.Background(), "path/to/file.txt", "auth-token")
 			So(err, ShouldBeError)
 		})
 	})
@@ -447,8 +455,10 @@ func TestGetFile(t *testing.T) {
 				token = req.Header.Get("Authorization")
 			}))
 
-			client := files.NewAPIClient(server.URL, expectedToken)
-			client.GetFile(context.Background(), "path/to/file.csv")
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+
+			client.GetFile(context.Background(), "path/to/file.csv", expectedToken)
 			So(token, ShouldEqual, expectedBearerToken)
 		})
 
@@ -457,8 +467,10 @@ func TestGetFile(t *testing.T) {
 				w.WriteHeader(http.StatusForbidden)
 			}))
 
-			client := files.NewAPIClient(server.URL, "not-valid-token")
-			_, err := client.GetFile(context.Background(), "path/to/file.csv")
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+
+			_, err := client.GetFile(context.Background(), "path/to/file.csv", "invalid-token")
 			So(err, ShouldEqual, files.ErrNotAuthorized)
 		})
 	})

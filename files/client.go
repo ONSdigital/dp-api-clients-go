@@ -47,6 +47,13 @@ func NewAPIClient(filesAPIURL, authToken string) *Client {
 	}
 }
 
+// NewWithHealthClient creates a new instances of files Client using healthcheck client
+func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
+	return &Client{
+		hcCli: healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client),
+	}
+}
+
 // Checker calls image api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
@@ -115,13 +122,13 @@ func (c *Client) PublishCollection(ctx context.Context, collectionID string) err
 	return nil
 }
 
-func (c *Client) GetFile(ctx context.Context, path string) (FileMetaData, error) {
+func (c *Client) GetFile(ctx context.Context, path string, authToken string) (FileMetaData, error) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/files/%s", c.hcCli.URL, path), nil)
 	if err != nil {
 		return FileMetaData{}, err
 	}
 
-	dprequest.AddServiceTokenHeader(req, c.authToken)
+	dprequest.AddServiceTokenHeader(req, authToken)
 
 	resp, err := dphttp.DefaultClient.Do(ctx, req)
 	if err != nil {
