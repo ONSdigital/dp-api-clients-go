@@ -1214,6 +1214,39 @@ func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceA
 	return
 }
 
+func (c *Client) GetVersionMetadataSelection(ctx context.Context, req GetVersionMetadataSelectionInput) (*Metadata, error) {
+	m, err := c.GetVersionMetadata(
+		ctx,
+		req.UserAuthToken,
+		req.ServiceAuthToken,
+		req.CollectionID,
+		req.DatasetID,
+		req.Edition,
+		req.Version,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get metadata")
+	}
+
+	if len(req.Dimensions) == 0 {
+		return &m, nil
+	}
+
+	validDimensions := make(map[string]struct{})
+
+	for _, d := range req.Dimensions {
+		validDimensions[d] = struct{}{}
+	}
+
+	for i, md := range m.Dimensions {
+		if _, ok := validDimensions[md.Name]; !ok {
+			m.Dimensions = append(m.Dimensions[:i], m.Dimensions[i+1:]...)
+		}
+	}
+
+	return &m, nil
+}
+
 // GetVersionDimensions will return a list of dimensions for a given version of a dataset
 func (c *Client) GetVersionDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m VersionDimensions, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions", c.hcCli.URL, id, edition, version)

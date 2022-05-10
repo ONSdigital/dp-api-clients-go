@@ -311,6 +311,77 @@ func TestClient_PutVersion(t *testing.T) {
 
 }
 
+func TestClient_GetVersionMetadataSelection(t *testing.T) {
+	ctx := context.Background()
+
+	Convey("Given dataset api is responding with the following metadata", t, func() {
+		mockResp := &Metadata{
+			Version: Version{
+				Dimensions: []VersionDimension{
+					{
+						Name:  "geography",
+						ID:    "city",
+						Label: "City",
+					},
+					{
+						Name:  "siblings",
+						ID:    "number_of_siblings_3",
+						Label: "Number Of Siblings (3 Mappings)",
+					},
+				},
+			},
+		}
+
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, mockResp, nil})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when GetVersionMetadataSelection is called with no chosen dimensions", func() {
+			input := GetVersionMetadataSelectionInput{
+				ServiceAuthToken: serviceAuthToken,
+				DatasetID:        "cantabular-flexible-example",
+				Edition:          "2021",
+				Version:          "1",
+			}
+
+			got, err := datasetClient.GetVersionMetadataSelection(ctx, input)
+			So(err, ShouldBeNil)
+
+			Convey("the Metadata document should be returned with all dimensions", func() {
+				So(got, ShouldResemble, mockResp)
+			})
+
+		})
+
+		Convey("when GetVersionMetadataSelection is called with one chosen dimension", func() {
+			input := GetVersionMetadataSelectionInput{
+				ServiceAuthToken: serviceAuthToken,
+				DatasetID:        "cantabular-flexible-example",
+				Edition:          "2021",
+				Version:          "1",
+				Dimensions:       []string{"siblings"},
+			}
+
+			got, err := datasetClient.GetVersionMetadataSelection(ctx, input)
+			So(err, ShouldBeNil)
+
+			Convey("the Metadata document should be returned with only the chosen dimension", func() {
+				expected := &Metadata{
+					Version: Version{
+						Dimensions: []VersionDimension{
+							{
+								Name:  "siblings",
+								ID:    "number_of_siblings_3",
+								Label: "Number Of Siblings (3 Mappings)",
+							},
+						},
+					},
+				}
+				So(got, ShouldResemble, expected)
+			})
+		})
+	})
+}
+
 func TestClient_GetDatasets(t *testing.T) {
 
 	offset := 1
