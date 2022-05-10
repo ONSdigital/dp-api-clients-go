@@ -9,7 +9,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
@@ -28,20 +27,6 @@ const (
 type Client struct {
 	hcCli   *healthcheck.Client
 	version string
-}
-
-// QueryParams represents the possible query parameters that a caller can provide
-type QueryParams struct {
-	Offset int
-	Limit  int
-	Filter *InteractiveFilter
-}
-
-func (q *QueryParams) Validate() error {
-	if q.Offset < 0 || q.Limit < 0 {
-		return errors.New("negative offsets or limits are not allowed")
-	}
-	return nil
 }
 
 // NewAPIClient creates a new instance of Client with a given interactive api url and the relevant tokens
@@ -141,25 +126,16 @@ func (c *Client) GetInteractive(ctx context.Context, userAuthToken, serviceAuthT
 }
 
 // ListInteractives returns the list of interactives
-func (c *Client) ListInteractives(ctx context.Context, userAuthToken, serviceAuthToken string, q *QueryParams) (m List, err error) {
+func (c *Client) ListInteractives(ctx context.Context, userAuthToken, serviceAuthToken string, filter *InteractiveFilter) (m []Interactive, err error) {
 	uri := fmt.Sprintf("%s/%s/%s", c.hcCli.URL, c.version, rootPath)
 	var qVals url.Values
-	if q != nil {
-		if err := q.Validate(); err != nil {
-			return List{}, err
-		}
+	if filter != nil {
 		qVals = url.Values{}
-		qVals["offset"] = []string{strconv.Itoa(q.Offset)}
-		if q.Limit > 0 {
-			qVals["limit"] = []string{strconv.Itoa(q.Limit)}
+		marshalled, jsonerr := json.Marshal(filter)
+		if jsonerr != nil {
+			return []Interactive{}, jsonerr
 		}
-		if q.Filter != nil {
-			marshalled, jsonerr := json.Marshal(q.Filter)
-			if jsonerr != nil {
-				return List{}, jsonerr
-			}
-			qVals["filter"] = []string{string(marshalled)}
-		}
+		qVals["filter"] = []string{string(marshalled)}
 	}
 
 	clientlog.Do(ctx, "retrieving interactives", service, uri, log.Data{"query_params": qVals})

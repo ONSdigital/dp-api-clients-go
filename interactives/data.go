@@ -44,11 +44,3 @@ type InteractiveFile struct {
 	Mimetype string `json:"mimetype,omitempty"`
 	Size     int64  `json:"size_in_bytes,omitempty"`
 }
-
-type List struct {
-	Items      []Interactive `json:"items"`
-	Count      int           `json:"count"`
-	Offset     int           `json:"offset"`
-	Limit      int           `json:"limit"`
-	TotalCount int           `json:"total_count"`
-}

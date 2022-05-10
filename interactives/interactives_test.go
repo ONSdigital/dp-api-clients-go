@@ -27,7 +27,6 @@ const (
 
 var (
 	ctx                = context.Background()
-	successful, failed = true, false
 	checkRequestBase   = func(httpClient *dphttp.ClienterMock, expectedMethod string, expectedUri string) {
 		So(len(httpClient.DoCalls()), ShouldEqual, 1)
 		So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldResemble, expectedUri)
@@ -43,26 +42,18 @@ type MockedHTTPResponse struct {
 }
 
 func TestClient_GetInteractives(t *testing.T) {
-	offset := 1
-	limit := 10
 
 	Convey("given a 200 status is returned", t, func() {
-		expectedInteractives := List{
-			Items: []Interactive{
-				{ID: "InteractivesID1"},
-				{ID: "InteractivesID2"},
-			},
-			Count:      2,
-			Offset:     offset,
-			Limit:      limit,
-			TotalCount: 3,
+		expectedInteractives := []Interactive{
+			{ID: "InteractivesID1"},
+			{ID: "InteractivesID2"},
 		}
 		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, expectedInteractives, nil})
 		interactivesClient := newInteractivesClient(httpClient)
 
 		Convey("when GetInteractives is called with valid values for limit, offset and filter", func() {
-			q := QueryParams{Offset: offset, Limit: limit, Filter: &InteractiveFilter{Metadata: &InteractiveMetadata{ResourceID: "resid123"}}}
-			i, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
+			q := &InteractiveFilter{Metadata: &InteractiveMetadata{ResourceID: "resid123"}}
+			i, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, q)
 
 			Convey("a positive response is returned, with the expected interactives", func() {
 				So(err, ShouldBeNil)
@@ -70,37 +61,15 @@ func TestClient_GetInteractives(t *testing.T) {
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
-				marshal, _ := json.Marshal(q.Filter)
-				expectedURI := fmt.Sprintf("/v1/interactives?filter=%s&limit=%d&offset=%d", url.QueryEscape(string(marshal)), q.Limit, q.Offset)
+				marshal, _ := json.Marshal(q)
+				expectedURI := fmt.Sprintf("/v1/interactives?filter=%s", url.QueryEscape(string(marshal)))
 				checkRequestBase(httpClient, http.MethodGet, expectedURI)
-			})
-		})
-
-		Convey("when GetInteractives is called with negative offset", func() {
-			q := QueryParams{Offset: -1, Limit: limit}
-			i, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
-
-			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
-				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
-				So(i, ShouldResemble, List{})
-				So(len(httpClient.DoCalls()), ShouldEqual, 0)
-			})
-		})
-
-		Convey("when GetInteractives is called with negative limit", func() {
-			q := QueryParams{Offset: offset, Limit: -1}
-			i, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, &q)
-
-			Convey("the expected error is returned and http dphttpclient.Do is not called", func() {
-				So(err.Error(), ShouldResemble, "negative offsets or limits are not allowed")
-				So(i, ShouldResemble, List{})
-				So(len(httpClient.DoCalls()), ShouldEqual, 0)
 			})
 		})
 	})
 
 	Convey("given a 404 status is returned", t, func() {
-		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, List{}, nil})
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, []Interactive{}, nil})
 		interactivesClient := newInteractivesClient(httpClient)
 
 		Convey("when GetInteractives is called", func() {
@@ -110,9 +79,9 @@ func TestClient_GetInteractives(t *testing.T) {
 				So(err, ShouldResemble, &ErrInvalidInteractivesAPIResponse{
 					actualCode: 404,
 					uri:        "http://localhost:8080/v1/interactives",
-					body:       "{\"items\":null,\"count\":0,\"offset\":0,\"limit\":0,\"total_count\":0}",
+					body:       "[]",
 				})
-				So(i, ShouldResemble, List{})
+				So(i, ShouldBeNil)
 			})
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
