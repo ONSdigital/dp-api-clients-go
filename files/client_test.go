@@ -378,7 +378,7 @@ func TestGetFile(t *testing.T) {
 			So(result, ShouldResemble, metadata)
 		})
 
-		Convey("valid file metadata through v2 endpoint returns a 404 status", func() {
+		Convey("valid file metadata through v2 endpoint returns an error", func() {
 			metadata := files.FileMetaData{
 				SizeInBytes: uint64(100),
 			}
@@ -392,7 +392,7 @@ func TestGetFile(t *testing.T) {
 			filePath := "path/to/file.csv"
 			_, err := client.GetFile(context.Background(), filePath, "")
 
-			So(err.Error(), ShouldEqual, "Unexpected error code from files-api: 404")
+			So(err, ShouldBeError)
 		})
 
 		Convey("invalid JSON", func() {
