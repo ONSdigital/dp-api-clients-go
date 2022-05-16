@@ -37,6 +37,7 @@ type collectionIDSet struct {
 type Client struct {
 	hcCli     *healthcheck.Client
 	authToken string
+	Version   string
 }
 
 // NewAPIClient creates a new instance of files Client with a given image API URL
@@ -44,6 +45,7 @@ func NewAPIClient(filesAPIURL, authToken string) *Client {
 	return &Client{
 		healthcheck.NewClient(service, filesAPIURL),
 		authToken,
+		"",
 	}
 }
 
@@ -122,8 +124,17 @@ func (c *Client) PublishCollection(ctx context.Context, collectionID string) err
 	return nil
 }
 
+func (c *Client) filesRootPath() string {
+	if c.Version != "" {
+		return fmt.Sprintf("%s/files", c.Version)
+	} else {
+		return "files"
+	}
+}
+
 func (c *Client) GetFile(ctx context.Context, path string, authToken string) (FileMetaData, error) {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/files/%s", c.hcCli.URL, path), nil)
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/%s/%s", c.hcCli.URL, c.filesRootPath(), path), nil)
 	if err != nil {
 		return FileMetaData{}, err
 	}

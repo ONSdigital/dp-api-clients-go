@@ -13,6 +13,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -359,6 +360,41 @@ func TestGetFile(t *testing.T) {
 			So(result, ShouldResemble, metadata)
 		})
 
+		Convey("valid file metadata through v1 endpoint (dp-api-router)", func() {
+			metadata := files.FileMetaData{
+				SizeInBytes: uint64(100),
+			}
+
+			server := mockServerWithVersionedEndpoint(metadata, "/v1")
+
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+			client.Version = "v1"
+
+			filePath := "path/to/file.csv"
+			result, err := client.GetFile(context.Background(), filePath, "")
+
+			So(err, ShouldBeNil)
+			So(result, ShouldResemble, metadata)
+		})
+
+		Convey("valid file metadata through v2 endpoint returns a 404 status", func() {
+			metadata := files.FileMetaData{
+				SizeInBytes: uint64(100),
+			}
+
+			server := mockServerWithVersionedEndpoint(metadata, "/v1")
+
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+			client.Version = "v2"
+
+			filePath := "path/to/file.csv"
+			_, err := client.GetFile(context.Background(), filePath, "")
+
+			So(err.Error(), ShouldEqual, "Unexpected error code from files-api: 404")
+		})
+
 		Convey("invalid JSON", func() {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				w.WriteHeader(http.StatusOK)
@@ -474,6 +510,18 @@ func TestGetFile(t *testing.T) {
 			So(err, ShouldEqual, files.ErrNotAuthorized)
 		})
 	})
+}
+
+func mockServerWithVersionedEndpoint(metadata files.FileMetaData, version string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		reqURL, _ := url.Parse(req.RequestURI)
+		if reqURL.Path[0:3] == version {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(metadata)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
 }
 
 func newMockFilesAPIServerWithError(expectedStatus int, expectedCode, expectedError string) *httptest.Server {
