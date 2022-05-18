@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -112,7 +112,7 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 }
 
 // GetFilter makes an authorised request to GET /filters
-func (c *Client) GetFilter(ctx context.Context, input GetFilterInput) (*GetFilterResponse, error){
+func (c *Client) GetFilter(ctx context.Context, input GetFilterInput) (*GetFilterResponse, error) {
 	uri := fmt.Sprintf("%s/filters/%s", c.hcCli.URL, input.FilterID)
 	clientlog.Do(ctx, "retrieving filter", service, uri)
 
@@ -135,7 +135,7 @@ func (c *Client) GetFilter(ctx context.Context, input GetFilterInput) (*GetFilte
 	}
 
 	b, err := io.ReadAll(res.Body)
-	if err != nil{
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to read response body")
 	}
 
@@ -148,7 +148,7 @@ func (c *Client) GetFilter(ctx context.Context, input GetFilterInput) (*GetFilte
 		ETag: eTag,
 	}
 
-	if err := json.Unmarshal(b, &resp); err != nil{
+	if err := json.Unmarshal(b, &resp); err != nil {
 		return nil, dperrors.New(
 			errors.Wrap(err, "failed to unmarshal response"),
 			res.StatusCode,
@@ -706,7 +706,7 @@ func (c *Client) SubmitFilter(ctx context.Context, userAuthToken, serviceAuthTok
 		return nil, "", errors.Wrap(err, "failed to read the response body")
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusAccepted {
 		return nil, "", dperrors.New(
 			errors.Errorf("error(s) returned by %s", uri),
 			resp.StatusCode,

@@ -1096,23 +1096,28 @@ func Test_SubmitFilter(t *testing.T) {
 	}
 
 	var successfulResponse = SubmitFilterResponse{
-		InstanceID:       "instance-id",
-		DimensionListUrl: "http://some.url/filter/filder-id/dimensions",
-		FilterID:         "filter-id",
-		Events:           nil,
+		InstanceID:     "instance-id",
+		FilterOutputID: "filter-output-id",
 		Dataset: Dataset{
 			DatasetID: "dataset-id",
 			Edition:   "2022",
 			Version:   1,
 		},
-		Links: Links{
+		Links: FilterLinks{
 			Version: Link{
 				HRef: "http://some.url",
 				ID:   "version-id",
 			},
+			Self: Link{
+				ID:   "http://some.url",
+				HRef: "self-id",
+			},
+			Dimensions: Link{
+				ID:   "http://some.url",
+				HRef: "dimensions",
+			},
 		},
 		PopulationType: "population-type",
-		Dimensions:     nil,
 	}
 
 	var newExpectedResponse = func(body interface{}, sc int, eTag string) *http.Response {
@@ -1129,7 +1134,7 @@ func Test_SubmitFilter(t *testing.T) {
 
 	Convey("Given a valid Submit Filter Request ", t, func() {
 		Convey("when 'SubmitFilter' is called with the expected ifMatch value", func() {
-			httpClient := newMockHTTPClient(newExpectedResponse(successfulResponse, http.StatusOK, newETag), nil)
+			httpClient := newMockHTTPClient(newExpectedResponse(successfulResponse, http.StatusAccepted, newETag), nil)
 			filterClient := newFilterClient(httpClient)
 			res, ETag, err := filterClient.SubmitFilter(ctx, testAuthTokenHeader, testServiceAuthTokenHeader, testDownloadServiceToken, ifMatch, req)
 

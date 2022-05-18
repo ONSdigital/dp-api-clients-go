@@ -149,12 +149,9 @@ type SubmitFilterRequest struct {
 }
 
 type SubmitFilterResponse struct {
-	InstanceID       string      `json:"instance_id"`
-	DimensionListUrl string      `json:"dimension_list_url"`
-	FilterID         string      `json:"filter_id"`
-	Events           []Event     `json:"events"`
-	Dataset          Dataset     `json:"dataset"`
-	Links            Links       `json:"links"`
-	PopulationType   string      `json:"population_type"`
-	Dimensions       []Dimension `json:"dimensions"`
+	InstanceID     string      `json:"instance_id"`
+	FilterOutputID string      `json:"filter_output_id"`
+	Dataset        Dataset     `json:"dataset"`
+	Links          FilterLinks `json:"links"`
+	PopulationType string      `json:"population_type"`
 }
