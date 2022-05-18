@@ -157,4 +157,5 @@ type SubmitFilterResponse struct {
 	Links            Links       `json:"links"`
 	PopulationType   string      `json:"population_type"`
 	Dimensions       []Dimension `json:"dimensions"`
+	FilterOutputID   string      `json:"filter_output_id"`
 }
