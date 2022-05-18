@@ -1096,23 +1096,28 @@ func Test_SubmitFilter(t *testing.T) {
 	}
 
 	var successfulResponse = SubmitFilterResponse{
-		InstanceID:       "instance-id",
-		DimensionListUrl: "http://some.url/filter/filder-id/dimensions",
-		FilterID:         "filter-id",
-		Events:           nil,
+		InstanceID:     "instance-id",
+		FilterOutputID: "filter-output-id",
 		Dataset: Dataset{
 			DatasetID: "dataset-id",
 			Edition:   "2022",
 			Version:   1,
 		},
-		Links: Links{
+		Links: FilterLinks{
 			Version: Link{
 				HRef: "http://some.url",
 				ID:   "version-id",
 			},
+			Self: Link{
+				ID:   "http://some.url",
+				HRef: "self-id",
+			},
+			Dimensions: Link{
+				ID:   "http://some.url",
+				HRef: "dimensions",
+			},
 		},
 		PopulationType: "population-type",
-		Dimensions:     nil,
 	}
 
 	var newExpectedResponse = func(body interface{}, sc int, eTag string) *http.Response {
