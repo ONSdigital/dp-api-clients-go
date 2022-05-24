@@ -19,7 +19,7 @@ import (
 const service = "download-service"
 
 type Response struct {
-	Content io.ReadCloser `json:"content"`
+	Content io.ReadCloser
 }
 
 // Client is an download service client which can be used to make requests to the server.
