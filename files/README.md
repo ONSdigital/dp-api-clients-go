@@ -15,7 +15,10 @@ import "github.com/ONSdigital/dp-api-clients-go/v2/health"
 
 hcClient := health.NewClient("api-router", "http://localhost:26900")
 c := files.NewWithHealthClient(hcClient)
+c.Version = "v1"
 ```
+
+Here you will notice that the version has been set for the `files` client. This is important as it will prepend this to `GetFile` requests. I.e. `/{.Version}/files/*`.
 
 Remote:
 ```go
