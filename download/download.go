@@ -46,16 +46,6 @@ func NewWithHealthClient(hcCli *healthcheck.Client, serviceAuthToken string) *Cl
 	}
 }
 
-// URL returns the URL used by this client
-func (c *Client) URL() string {
-	return c.hcCli.URL
-}
-
-// HealthClient returns the underlying Healthcheck Client for this download service client
-func (c *Client) HealthClient() *healthcheck.Client {
-	return c.hcCli
-}
-
 // Checker calls download service health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
