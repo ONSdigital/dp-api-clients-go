@@ -97,7 +97,7 @@ type MetadataDatasetQuery struct {
 								StatisticalUnit     graphql.String `graphql:"Statistical_Unit"`
 								StatisticalUnitDesc graphql.String `graphql:"Statistical_Unit_Description"`
 							} `graphql:"Statistical_Unit"`
-						} `graphql:"ONS_Variable"`
+						} `graphql:"ONS_Variable" json:"ons_variable"`
 					}
 				}
 			}
