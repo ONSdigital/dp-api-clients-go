@@ -63,7 +63,7 @@ type MetadataTableQuery struct {
 				Version   graphql.String `graphql:"Version"`
 			}
 		} `graphql:"tables(names: $vars)"`
-	}
+	} `graphql:"service(lang: $lang)"`
 }
 
 type MetadataDatasetQuery struct {
@@ -102,16 +102,18 @@ type MetadataDatasetQuery struct {
 				}
 			}
 		} `graphql:"variables(names: $vars)"`
-	} `graphql:"dataset(name: $ds)"`
+	} `graphql:"dataset(name: $ds, lang: $lang)"`
 }
 
+// params for GraphQL reqs
 type MetadataTableQueryRequest struct {
-	//	Dataset   string   `json:"dataset"`
+	Lang      string   `json:"lang"`
 	Variables []string `json:"variables"`
 }
 
 type MetadataDatasetQueryRequest struct {
 	Dataset   string   `json:"dataset"`
+	Lang      string   `json:"lang"`
 	Variables []string `json:"variables"`
 }
 
@@ -125,8 +127,6 @@ func (c *Client) MetadataTableQuery(ctx context.Context, req MetadataTableQueryR
 		)
 	}
 
-	// XXX
-	// does req do anything
 	logData := log.Data{
 		"url":     fmt.Sprintf("%s/graphql", c.extApiHost),
 		"request": req,
@@ -137,10 +137,9 @@ func (c *Client) MetadataTableQuery(ctx context.Context, req MetadataTableQueryR
 		datasetIDs = append(datasetIDs, graphql.String(v))
 	}
 
-	//datasetIDs = append(datasetIDs, graphql.String("LC1117EW"))
-
 	vars := map[string]interface{}{
 		"vars": datasetIDs,
+		"lang": graphql.String(req.Lang),
 	}
 
 	var fq MetadataTableQuery
@@ -179,6 +178,7 @@ func (c *Client) MetadataDatasetQuery(ctx context.Context, req MetadataDatasetQu
 	vars := map[string]interface{}{
 		"ds":   graphql.String(req.Dataset),
 		"vars": dims,
+		"lang": graphql.String(req.Lang),
 	}
 
 	var fq MetadataDatasetQuery
