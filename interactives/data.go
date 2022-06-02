@@ -43,4 +43,5 @@ type InteractiveFile struct {
 	Name     string `json:"name,omitempty"`
 	Mimetype string `json:"mimetype,omitempty"`
 	Size     int64  `json:"size_in_bytes,omitempty"`
+	URI      string `json:"uri,omitempty"`
 }

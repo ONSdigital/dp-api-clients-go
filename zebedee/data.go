@@ -216,6 +216,7 @@ type Collection struct {
 	Reviewed        []CollectionItem `json:"reviewed"`
 	Datasets        []CollectionItem `json:"datasets"`
 	DatasetVersions []CollectionItem `json:"datasetVersions"`
+	Interactives    []CollectionItem `json:"interactives"`
 	ApprovalStatus  string           `json:"approvalStatus"`
 	Type            string           `json:"type"`
 }
