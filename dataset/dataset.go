@@ -103,9 +103,10 @@ type Client struct {
 
 // QueryParams represents the possible query parameters that a caller can provide
 type QueryParams struct {
-	Offset int
-	Limit  int
-	IDs    []string
+	Offset    int
+	Limit     int
+	IsBasedOn string
+	IDs       []string
 }
 
 // Validate validates tht no negative values are provided for limit or offset, and that the length of IDs is lower than the maximum
@@ -274,6 +275,10 @@ func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToke
 			return List{}, err
 		}
 		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
+
+		if q.IsBasedOn != "" {
+			uri += fmt.Sprintf(`?is_based_on="%s"`, q.IsBasedOn)
+		}
 	}
 
 	clientlog.Do(ctx, "retrieving datasets", service, uri)
