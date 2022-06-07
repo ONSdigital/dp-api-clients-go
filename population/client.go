@@ -1,5 +1,4 @@
-// Package dimension provides an HTTP client for the Cantabular Dimension API
-package dimension
+package population
 
 import (
 	"context"
@@ -20,9 +19,9 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-const service = "cantabular-dimension-api"
+const service = "population-types-api"
 
-// Client is a Cantabular Dimension API client
+// Client is a Cantabular Population Types API client
 type Client struct {
 	hcCli   *health.Client
 	baseURL *url.URL
@@ -36,9 +35,9 @@ type GetAreasInput struct {
 	Text             string
 }
 
-// NewClient creates a new instance of Client with a given Dimensions API URL
-func NewClient(dimensionsAPIURL string) (*Client, error) {
-	client := health.NewClient(service, dimensionsAPIURL)
+// NewClient creates a new instance of Client with a given Population Type API URL
+func NewClient(apiURL string) (*Client, error) {
+	client := health.NewClient(service, apiURL)
 	return NewWithHealthClient(client)
 }
 
@@ -90,31 +89,21 @@ func (c *Client) createGetRequest(ctx context.Context, userAuthToken, serviceAut
 }
 
 func checkGetResponse(resp *http.Response) error {
-	if resp.StatusCode == http.StatusNotFound {
+	if resp.StatusCode != http.StatusOK {
 		var errorResp ErrorResp
 		if err := json.NewDecoder(resp.Body).Decode(&errorResp); err == nil {
 			return dperrors.New(
-				fmt.Errorf("error response from Dimensions API (%d): %w", resp.StatusCode, errorResp),
+				fmt.Errorf("error response from Population Type API (%d): %w", resp.StatusCode, errorResp),
 				http.StatusInternalServerError,
 				log.Data{},
 			)
 		}
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		// Best effort — an empty body is fine for the error message
-		body, _ := io.ReadAll(resp.Body)
-		return dperrors.New(
-			errors.Errorf("error response from Dimensions API (%d): %s", resp.StatusCode, body),
-			http.StatusInternalServerError,
-			log.Data{},
-		)
-	}
-
 	return nil
 }
 
-func (c *Client) GetAreas(ctx context.Context, input GetAreasInput) (GetAreasResponse, error) {
+func (c *Client) GetPopulationTypes(ctx context.Context, input GetAreasInput) (GetAreasResponse, error) {
 	logData := log.Data{
 		"method":       http.MethodGet,
 		"dataset_id":   input.DatasetID,
@@ -122,11 +111,8 @@ func (c *Client) GetAreas(ctx context.Context, input GetAreasInput) (GetAreasRes
 		"text":         input.Text,
 	}
 
-	urlPath := "areas"
-	urlValues := url.Values{"dataset": []string{input.DatasetID}, "area-type": []string{input.AreaTypeID}}
-	if input.Text != "" {
-		urlValues.Add("text", input.Text)
-	}
+	urlPath := "population-types"
+	urlValues := url.Values{}
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {
@@ -168,6 +154,58 @@ func (c *Client) GetAreas(ctx context.Context, input GetAreasInput) (GetAreasRes
 	}
 
 	return areas, nil
+}
+
+// GetPopulationAreaTypes retrieves the Cantabular area-types associated with a dataset
+func (c *Client) GetPopulationAreaTypes(ctx context.Context, userAuthToken, serviceAuthToken, datasetID string) (GetAreaTypesResponse, error) {
+	logData := log.Data{
+		"method":     http.MethodGet,
+		"dataset_id": datasetID,
+	}
+
+	urlPath := fmt.Sprintf("population-types/%s/area-types", datasetID)
+	urlValues := url.Values{}
+
+	req, err := c.createGetRequest(ctx, userAuthToken, serviceAuthToken, urlPath, urlValues)
+	if err != nil {
+		return GetAreaTypesResponse{}, dperrors.New(
+			err,
+			dperrors.StatusCode(err),
+			logData,
+		)
+	}
+
+	clientlog.Do(ctx, "getting area types", service, req.URL.String(), logData)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return GetAreaTypesResponse{}, dperrors.New(
+			errors.Wrap(err, "failed to get response from Population Type API"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}()
+
+	if err := checkGetResponse(resp); err != nil {
+		return GetAreaTypesResponse{}, err
+	}
+
+	var areaTypes GetAreaTypesResponse
+	if err := json.NewDecoder(resp.Body).Decode(&areaTypes); err != nil {
+		return GetAreaTypesResponse{}, dperrors.New(
+			errors.Wrap(err, "unable to deserialize area types response"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	return areaTypes, nil
 }
 
 // newRequest creates a new http.Request with auth headers

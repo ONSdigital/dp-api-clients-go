@@ -1,4 +1,4 @@
-package dimension
+package population
 
 // AreaType is an area-type model with ID and Label
 type AreaType struct {
