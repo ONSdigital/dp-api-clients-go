@@ -30,7 +30,7 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 		vars += "&v=" + v
 	}
 
-	url := fmt.Sprintf("%s/v9/codebook/%s?cats=%v%s", c.host, req.DatasetName, req.Categories, vars)
+	url := fmt.Sprintf("%s/v10/codebook/%s?cats=%v%s", c.host, req.DatasetName, req.Categories, vars)
 
 	res, err := c.httpGet(ctx, url)
 	if err != nil {

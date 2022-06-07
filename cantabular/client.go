@@ -113,9 +113,9 @@ func (c *Client) httpPost(ctx context.Context, path string, contentType string, 
 	return resp, nil
 }
 
-// Checker contacts the /v9/datasets endpoint and updates the healthcheck state accordingly.
+// Checker contacts the /v10/datasets endpoint and updates the healthcheck state accordingly.
 func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) error {
-	reqURL := fmt.Sprintf("%s/v9/datasets", c.host)
+	reqURL := fmt.Sprintf("%s/v10/datasets", c.host)
 	return c.checkHealth(ctx, state, Service, reqURL)
 }
 
