@@ -416,6 +416,17 @@ func TestClient_GetDatasets(t *testing.T) {
 			})
 		})
 
+		Convey("when GetDatasets is called with valid values for is_based_on", func() {
+			isBasedOn := "test"
+			q := QueryParams{IsBasedOn: isBasedOn, Offset: offset, Limit: limit, IDs: []string{}}
+			datasetClient.GetDatasets(ctx, userAuthToken, serviceAuthToken, collectionID, &q)
+
+			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
+				expectedURI := fmt.Sprintf(`/datasets?offset=%d&limit=%d?is_based_on="%s"`, offset, limit, isBasedOn)
+				checkRequestBase(httpClient, http.MethodGet, expectedURI, "")
+			})
+		})
+
 		Convey("when GetDatasets is called with negative offset", func() {
 			q := QueryParams{Offset: -1, Limit: limit, IDs: []string{}}
 			options, err := datasetClient.GetDatasets(ctx, userAuthToken, serviceAuthToken, collectionID, &q)
