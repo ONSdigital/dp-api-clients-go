@@ -277,7 +277,7 @@ func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToke
 		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
 
 		if q.IsBasedOn != "" {
-			uri += fmt.Sprintf(`?is_based_on="%s"`, q.IsBasedOn)
+			uri += fmt.Sprintf(`&is_based_on="%s"`, q.IsBasedOn)
 		}
 	}
 
