@@ -422,7 +422,7 @@ func TestClient_GetDatasets(t *testing.T) {
 			datasetClient.GetDatasets(ctx, userAuthToken, serviceAuthToken, collectionID, &q)
 
 			Convey("and dphttpclient.Do is called 1 time with the expected URI", func() {
-				expectedURI := fmt.Sprintf(`/datasets?offset=%d&limit=%d&is_based_on="%s"`, offset, limit, isBasedOn)
+				expectedURI := fmt.Sprintf("/datasets?offset=%d&limit=%d&is_based_on=%s", offset, limit, isBasedOn)
 				checkRequestBase(httpClient, http.MethodGet, expectedURI, "")
 			})
 		})
