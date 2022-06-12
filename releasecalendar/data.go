@@ -33,6 +33,8 @@ type ReleaseDescription struct {
 	Contact            Contact  `json:"contact"`
 	Finalised          bool     `json:"finalised"`
 	NationalStatistic  bool     `json:"national_statistic"`
+	WelshStatistic     bool     `json:"welsh_statistic"`
+	Survey             string   `json:"survey"`
 	NextRelease        string   `json:"next_release"`
 	ProvisionalDate    string   `json:"provisional_date"`
 	Published          bool     `json:"published"`
@@ -46,4 +48,8 @@ type Contact struct {
 	Email     string `json:"email"`
 	Name      string `json:"name"`
 	Telephone string `json:"telephone"`
+}
+
+func (r Release) Census() bool {
+	return r.Description.Survey == "census"
 }
