@@ -66,8 +66,12 @@ func (c *Client) GetLegacyRelease(ctx context.Context, userAccessToken, collecti
 		)
 	}
 
-	headers.SetCollectionID(req, collectionID)
-	headers.SetAuthToken(req, userAccessToken)
+	if err = headers.SetCollectionID(req, collectionID); err != nil {
+		return nil, err
+	}
+	if err = headers.SetAuthToken(req, userAccessToken); err != nil {
+		return nil, err
+	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
