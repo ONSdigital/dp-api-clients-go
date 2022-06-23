@@ -2,8 +2,6 @@ package filter
 
 import (
 	"time"
-
-	"github.com/ONSdigital/dp-api-clients-go/filter"
 )
 
 const (
@@ -143,9 +141,9 @@ type Preview struct {
 }
 
 type SubmitFilterRequest struct {
-	FilterID       string                    `json:"filter_id"`
-	Dimensions     []filter.DimensionOptions `json:"dimension_options,omitempty"`
-	PopulationType string                    `json:"population_type"`
+	FilterID       string             `json:"filter_id"`
+	Dimensions     []DimensionOptions `json:"dimension_options,omitempty"`
+	PopulationType string             `json:"population_type"`
 }
 
 type SubmitFilterResponse struct {

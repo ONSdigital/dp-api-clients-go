@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ONSdigital/dp-api-clients-go/filter"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/pkg/errors"
 
@@ -1082,8 +1081,8 @@ func Test_SubmitFilter(t *testing.T) {
 
 	var req = SubmitFilterRequest{
 		FilterID: "ea1e031b-3064-427d-8fed-4b35c99bf1a3",
-		Dimensions: []filter.DimensionOptions{{
-			Items: []filter.DimensionOption{{
+		Dimensions: []DimensionOptions{{
+			Items: []DimensionOption{{
 				DimensionOptionsURL: "http://some.url/city",
 				Option:              "City",
 			}},
