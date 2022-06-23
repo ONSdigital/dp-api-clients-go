@@ -3,7 +3,6 @@ module github.com/ONSdigital/dp-api-clients-go/v2
 go 1.18
 
 require (
-	github.com/ONSdigital/dp-api-clients-go v1.43.0
 	github.com/ONSdigital/dp-healthcheck v1.2.3
 	github.com/ONSdigital/dp-mocking v0.0.0-20190905163309-fee2702ad1b9
 	github.com/ONSdigital/dp-net v1.2.0
@@ -17,6 +16,7 @@ require (
 )
 
 require (
+	github.com/ONSdigital/dp-api-clients-go v1.43.0 // indirect
 	github.com/ONSdigital/log.go v1.1.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20220104163920-15ed2e8cf2bd // indirect
