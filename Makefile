@@ -6,7 +6,7 @@ test:
 .PHONY: test
 
 audit:
-	go list -json -m all | nancy sleuth
+	set -o pipefail; go list -json -m all | nancy sleuth
 .PHONY: audit
 
 build:
