@@ -1,4 +1,4 @@
-package cantabular_test
+package cantabular
 
 import (
 	"bytes"
@@ -9,9 +9,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
-	dphttp "github.com/ONSdigital/dp-net/http"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -28,8 +27,8 @@ func TestGetCodebookUnhappy(t *testing.T) {
 			},
 		}
 
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
+		cantabularClient := NewClient(
+			Config{
 				Host:       "cantabular.host",
 				ExtApiHost: "cantabular.ext.host",
 			},
@@ -38,7 +37,7 @@ func TestGetCodebookUnhappy(t *testing.T) {
 		)
 
 		Convey("When the GetCodebook method is called", func() {
-			req := cantabular.GetCodebookRequest{}
+			req := GetCodebookRequest{}
 			cb, err := cantabularClient.GetCodebook(testCtx, req)
 
 			Convey("Then returned error messaage should be extracted correctly", func() {
@@ -57,8 +56,8 @@ func TestGetCodebookUnhappy(t *testing.T) {
 			},
 		}
 
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
+		cantabularClient := NewClient(
+			Config{
 				Host:       "cantabular.host",
 				ExtApiHost: "cantabular.ext.host",
 			},
@@ -67,7 +66,7 @@ func TestGetCodebookUnhappy(t *testing.T) {
 		)
 
 		Convey("When the GetCodebook method is called", func() {
-			req := cantabular.GetCodebookRequest{}
+			req := GetCodebookRequest{}
 			cb, err := cantabularClient.GetCodebook(testCtx, req)
 
 			Convey("Then the status code 500 should be recoverable from the error", func() {
@@ -92,8 +91,8 @@ func TestGetCodebookUnhappy(t *testing.T) {
 			},
 		}
 
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
+		cantabularClient := NewClient(
+			Config{
 				Host:       "",
 				ExtApiHost: "cantabular.ext.host",
 			},
@@ -102,7 +101,7 @@ func TestGetCodebookUnhappy(t *testing.T) {
 		)
 
 		Convey("When the GetCodebook method is called", func() {
-			req := cantabular.GetCodebookRequest{}
+			req := GetCodebookRequest{}
 			cb, err := cantabularClient.GetCodebook(testCtx, req)
 
 			Convey("Then the status code 503 should be recoverable from the error", func() {
@@ -130,8 +129,8 @@ func TestGetCodebookHappy(t *testing.T) {
 			},
 		}
 
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
+		cantabularClient := NewClient(
+			Config{
 				Host:       "cantabular.host",
 				ExtApiHost: "cantabular.ext.host",
 			},
@@ -140,7 +139,7 @@ func TestGetCodebookHappy(t *testing.T) {
 		)
 
 		Convey("When the GetCodebook method is called", func() {
-			req := cantabular.GetCodebookRequest{}
+			req := GetCodebookRequest{}
 			cb, err := cantabularClient.GetCodebook(testCtx, req)
 			So(err, ShouldBeNil)
 

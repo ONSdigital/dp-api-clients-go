@@ -1,4 +1,4 @@
-package cantabular_test
+package cantabular
 
 import (
 	"context"
@@ -6,9 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
-	dphttp "github.com/ONSdigital/dp-net/http"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -29,8 +28,8 @@ func TestGetDimensionsHappy(t *testing.T) {
 				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
 				validateQuery(
 					mockHttpClient.PostCalls()[0].Body,
-					cantabular.QueryDimensions,
-					cantabular.QueryData{
+					QueryDimensions,
+					QueryData{
 						Dataset: "Teaching-Dataset",
 					},
 				)
@@ -85,9 +84,9 @@ func TestGetGeographyDimensionsHappy(t *testing.T) {
 		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetGeographyDimensions, http.StatusOK)
 
 		Convey("When GetGeographyDimensions is called", func() {
-			resp, err := cantabularClient.GetGeographyDimensions(testCtx, cantabular.GetGeographyDimensionsRequest{
+			resp, err := cantabularClient.GetGeographyDimensions(testCtx, GetGeographyDimensionsRequest{
 				Dataset: "Teaching-Dataset",
-				PaginationParams: cantabular.PaginationParams{
+				PaginationParams: PaginationParams{
 					Limit:  10,
 					Offset: 0,
 				},
@@ -102,10 +101,10 @@ func TestGetGeographyDimensionsHappy(t *testing.T) {
 				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
 				validateQuery(
 					mockHttpClient.PostCalls()[0].Body,
-					cantabular.QueryGeographyDimensions,
-					cantabular.QueryData{
+					QueryGeographyDimensions,
+					QueryData{
 						Dataset: "Teaching-Dataset",
-						PaginationParams: cantabular.PaginationParams{
+						PaginationParams: PaginationParams{
 							Limit:  10,
 							Offset: 0,
 						},
@@ -126,9 +125,9 @@ func TestGetGeographyDimensionsUnhappy(t *testing.T) {
 		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
 
 		Convey("When GetGeographyDimensions is called", func() {
-			resp, err := cantabularClient.GetGeographyDimensions(testCtx, cantabular.GetGeographyDimensionsRequest{
+			resp, err := cantabularClient.GetGeographyDimensions(testCtx, GetGeographyDimensionsRequest{
 				Dataset: "InexistentDataset",
-				PaginationParams: cantabular.PaginationParams{
+				PaginationParams: PaginationParams{
 					Limit:  10,
 					Offset: 0,
 				},
@@ -149,9 +148,9 @@ func TestGetGeographyDimensionsUnhappy(t *testing.T) {
 		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
 
 		Convey("When GetGeographyDimensions is called", func() {
-			resp, err := cantabularClient.GetGeographyDimensions(testCtx, cantabular.GetGeographyDimensionsRequest{
+			resp, err := cantabularClient.GetGeographyDimensions(testCtx, GetGeographyDimensionsRequest{
 				Dataset: "Teaching-Dataset",
-				PaginationParams: cantabular.PaginationParams{
+				PaginationParams: PaginationParams{
 					Limit:  10,
 					Offset: 0,
 				},
@@ -174,7 +173,7 @@ func TestGetDimensionsByNameHappy(t *testing.T) {
 		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetDimensionsByName, http.StatusOK)
 
 		Convey("When GetDimensionsByName is called", func() {
-			resp, err := cantabularClient.GetDimensionsByName(testCtx, cantabular.GetDimensionsByNameRequest{
+			resp, err := cantabularClient.GetDimensionsByName(testCtx, GetDimensionsByNameRequest{
 				Dataset:        "Teaching-Dataset",
 				DimensionNames: []string{"Age", "Region"},
 			})
@@ -188,8 +187,8 @@ func TestGetDimensionsByNameHappy(t *testing.T) {
 				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
 				validateQuery(
 					mockHttpClient.PostCalls()[0].Body,
-					cantabular.QueryDimensionsByName,
-					cantabular.QueryData{
+					QueryDimensionsByName,
+					QueryData{
 						Dataset:   "Teaching-Dataset",
 						Variables: []string{"Age", "Region"},
 					},
@@ -210,7 +209,7 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
 
 		Convey("When the GetDimensionsByName method is called", func() {
-			req := cantabular.GetDimensionsByNameRequest{
+			req := GetDimensionsByNameRequest{
 				Dataset:        "InexistentDataset",
 				DimensionNames: []string{"Country", "Age", "Occupation"},
 			}
@@ -231,7 +230,7 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 		_, cantabularClient := newMockedClient(mockRespBodyNoVariable, http.StatusOK)
 
 		Convey("When the GetDimensionOptions method is called", func() {
-			req := cantabular.GetDimensionsByNameRequest{
+			req := GetDimensionsByNameRequest{
 				Dataset:        "Teaching-Dataset",
 				DimensionNames: []string{"Country", "Age", "inexistentVariable"},
 			}
@@ -252,7 +251,7 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
 
 		Convey("When GetDimensionsByName is called", func() {
-			req := cantabular.GetDimensionsByNameRequest{
+			req := GetDimensionsByNameRequest{
 				Dataset:        "Teaching-Dataset",
 				DimensionNames: []string{"Age", "Region"},
 			}
@@ -275,7 +274,7 @@ func TestSearchDimensionsHappy(t *testing.T) {
 		mockHttpClient, cantabularClient := newMockedClient(mockRespBodySearchDimensions, http.StatusOK)
 
 		Convey("When SearchDimensions is called", func() {
-			resp, err := cantabularClient.SearchDimensions(testCtx, cantabular.SearchDimensionsRequest{
+			resp, err := cantabularClient.SearchDimensions(testCtx, SearchDimensionsRequest{
 				Dataset: "Teaching-Dataset",
 				Text:    "country",
 			})
@@ -289,8 +288,8 @@ func TestSearchDimensionsHappy(t *testing.T) {
 				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
 				validateQuery(
 					mockHttpClient.PostCalls()[0].Body,
-					cantabular.QueryDimensionsSearch,
-					cantabular.QueryData{
+					QueryDimensionsSearch,
+					QueryData{
 						Dataset: "Teaching-Dataset",
 						Text:    "country",
 					},
@@ -311,7 +310,7 @@ func TestSearchDimensionsUnhappy(t *testing.T) {
 		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
 
 		Convey("When the SearchDimensions method is called", func() {
-			req := cantabular.SearchDimensionsRequest{
+			req := SearchDimensionsRequest{
 				Dataset: "InexistentDataset",
 				Text:    "country",
 			}
@@ -332,7 +331,7 @@ func TestSearchDimensionsUnhappy(t *testing.T) {
 		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
 
 		Convey("When SearchDimensions is called", func() {
-			req := cantabular.SearchDimensionsRequest{
+			req := SearchDimensionsRequest{
 				Dataset: "Teaching-Dataset",
 				Text:    "country",
 			}
@@ -355,10 +354,10 @@ func TestGetDimensionOptionsHappy(t *testing.T) {
 		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetDimensionOptions, http.StatusOK)
 
 		Convey("When GetDimensionOptions is called", func() {
-			req := cantabular.GetDimensionOptionsRequest{
+			req := GetDimensionOptionsRequest{
 				Dataset:        "Teaching-Dataset",
 				DimensionNames: []string{"Country", "Age", "Occupation"},
-				Filters:        []cantabular.Filter{{Variable: "Country", Codes: []string{"E", "W"}}},
+				Filters:        []Filter{{Variable: "Country", Codes: []string{"E", "W"}}},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
@@ -371,11 +370,11 @@ func TestGetDimensionOptionsHappy(t *testing.T) {
 				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
 				validateQuery(
 					mockHttpClient.PostCalls()[0].Body,
-					cantabular.QueryDimensionOptions,
-					cantabular.QueryData{
+					QueryDimensionOptions,
+					QueryData{
 						Dataset:   "Teaching-Dataset",
 						Variables: []string{"Country", "Age", "Occupation"},
-						Filters:   []cantabular.Filter{{Variable: "Country", Codes: []string{"E", "W"}}},
+						Filters:   []Filter{{Variable: "Country", Codes: []string{"E", "W"}}},
 					},
 				)
 			})
@@ -386,7 +385,7 @@ func TestGetDimensionOptionsHappy(t *testing.T) {
 		})
 
 		Convey("When GetDimensionOptions is called without filters", func() {
-			req := cantabular.GetDimensionOptionsRequest{
+			req := GetDimensionOptionsRequest{
 				Dataset:        "Teaching-Dataset",
 				DimensionNames: []string{"Country", "Age", "Occupation"},
 			}
@@ -401,8 +400,8 @@ func TestGetDimensionOptionsHappy(t *testing.T) {
 				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
 				validateQuery(
 					mockHttpClient.PostCalls()[0].Body,
-					cantabular.QueryDimensionOptions,
-					cantabular.QueryData{
+					QueryDimensionOptions,
+					QueryData{
 						Dataset:   "Teaching-Dataset",
 						Variables: []string{"Country", "Age", "Occupation"},
 					},
@@ -423,7 +422,7 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
 
 		Convey("When the GetDimensionOptions method is called", func() {
-			req := cantabular.GetDimensionOptionsRequest{
+			req := GetDimensionOptionsRequest{
 				Dataset:        "InexistentDataset",
 				DimensionNames: []string{"Country", "Age", "Occupation"},
 			}
@@ -443,7 +442,7 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 		_, cantabularClient := newMockedClient(mockRespBodyNoVariable, http.StatusOK)
 
 		Convey("When the GetDimensionOptions method is called", func() {
-			req := cantabular.GetDimensionOptionsRequest{
+			req := GetDimensionOptionsRequest{
 				Dataset:        "Teaching-Dataset",
 				DimensionNames: []string{"Country", "Age", "inexistentVariable"},
 			}
@@ -464,7 +463,7 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
 
 		Convey("When GetDimensionOptions is called", func() {
-			req := cantabular.GetDimensionOptionsRequest{
+			req := GetDimensionOptionsRequest{
 				Dataset:        "Teaching-Dataset",
 				DimensionNames: []string{"Country", "Age", "Occupation"},
 			}
@@ -491,7 +490,7 @@ func TestGetAreas(t *testing.T) {
 		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetAreas, http.StatusOK)
 
 		Convey("When GetAreas is called", func() {
-			req := cantabular.GetAreasRequest{
+			req := GetAreasRequest{
 				Dataset:  dataset,
 				Variable: variable,
 				Category: category,
@@ -508,8 +507,8 @@ func TestGetAreas(t *testing.T) {
 				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
 				validateQuery(
 					mockHttpClient.PostCalls()[0].Body,
-					cantabular.QueryAreas,
-					cantabular.QueryData{
+					QueryAreas,
+					QueryData{
 						Dataset:  dataset,
 						Text:     variable,
 						Category: category,
@@ -525,7 +524,7 @@ func TestGetAreas(t *testing.T) {
 }
 
 func TestGetAreasUnhappy(t *testing.T) {
-	stubReq := cantabular.GetAreasRequest{
+	stubReq := GetAreasRequest{
 		Dataset:  "Example",
 		Variable: "city",
 		Category: "london",
@@ -569,7 +568,7 @@ func TestGetAreasUnhappy(t *testing.T) {
 
 // newMockedClient creates a new cantabular client with a mocked response for post requests,
 // according to the provided response string and status code.
-func newMockedClient(response string, statusCode int) (*dphttp.ClienterMock, *cantabular.Client) {
+func newMockedClient(response string, statusCode int) (*dphttp.ClienterMock, *Client) {
 	mockHttpClient := &dphttp.ClienterMock{
 		PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
 			return Response(
@@ -579,8 +578,8 @@ func newMockedClient(response string, statusCode int) (*dphttp.ClienterMock, *ca
 		},
 	}
 
-	cantabularClient := cantabular.NewClient(
-		cantabular.Config{
+	cantabularClient := NewClient(
+		Config{
 			Host:       "cantabular.host",
 			ExtApiHost: "cantabular.ext.host",
 		},
@@ -677,7 +676,7 @@ var mockRespBodyGetDimensions = `
 }`
 
 // expectedDimensions is the expected response struct generated from a successful 'get dimensions' query for testing
-var expectedDimensions = cantabular.GetDimensionsResponse{
+var expectedDimensions = GetDimensionsResponse{
 	Dataset: gql.DatasetVariables{
 		Variables: gql.Variables{
 			Edges: []gql.Edge{
@@ -796,7 +795,7 @@ var mockRespBodyGetGeographyDimensions = `
 }
 `
 
-var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
+var expectedGeographyDimensions = GetGeographyDimensionsResponse{
 	Dataset: gql.DatasetRuleBase{
 		RuleBase: gql.RuleBase{
 			IsSourceOf: gql.Variables{
@@ -839,10 +838,10 @@ var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
 			Name: "Region",
 		},
 	},
-	PaginationResponse: cantabular.PaginationResponse{
+	PaginationResponse: PaginationResponse{
 		Count:      2,
 		TotalCount: 2,
-		PaginationParams: cantabular.PaginationParams{
+		PaginationParams: PaginationParams{
 			Limit:  10,
 			Offset: 0,
 		},
@@ -882,7 +881,7 @@ var mockRespBodyGetDimensionsByName = `{
 }`
 
 // expectedDimensionsByName is the expected response struct generated from a successful 'get dimensions by name' query for testing
-var expectedDimensionsByName = cantabular.GetDimensionsResponse{
+var expectedDimensionsByName = GetDimensionsResponse{
 	Dataset: gql.DatasetVariables{
 		Variables: gql.Variables{
 			Edges: []gql.Edge{
@@ -949,7 +948,7 @@ var mockRespBodySearchDimensions = `{
 `
 
 // expectedSearchDimensionsResponse is the expected response struct generated from a successful 'search dimensions' query for testing
-var expectedSearchDimensionsResponse = cantabular.GetDimensionsResponse{
+var expectedSearchDimensionsResponse = GetDimensionsResponse{
 	Dataset: gql.DatasetVariables{
 		Variables: gql.Variables{
 			Search: gql.Search{
@@ -1104,26 +1103,26 @@ var mockRespBodyGetDimensionOptions = `
 }`
 
 // expectedDimensionOptions is the expected response struct generated from a successful 'get dimension options' query for testing
-var expectedDimensionOptions = cantabular.GetDimensionOptionsResponse{
-	Dataset: cantabular.StaticDatasetDimensionOptions{
-		Table: cantabular.DimensionsTable{
-			Dimensions: []cantabular.Dimension{
+var expectedDimensionOptions = GetDimensionOptionsResponse{
+	Dataset: StaticDatasetDimensionOptions{
+		Table: DimensionsTable{
+			Dimensions: []Dimension{
 				{
-					Variable: cantabular.VariableBase{
+					Variable: VariableBase{
 						Name:  "Country",
 						Label: "Country",
 					},
-					Categories: []cantabular.Category{
+					Categories: []Category{
 						{Code: "E", Label: "England"},
 						{Code: "W", Label: "Wales"},
 					},
 				},
 				{
-					Variable: cantabular.VariableBase{
+					Variable: VariableBase{
 						Label: "Age",
 						Name:  "Age",
 					},
-					Categories: []cantabular.Category{
+					Categories: []Category{
 						{Code: "1", Label: "0 to 15"},
 						{Code: "2", Label: "16 to 24"},
 						{Code: "3", Label: "25 to 34"},
@@ -1135,11 +1134,11 @@ var expectedDimensionOptions = cantabular.GetDimensionOptionsResponse{
 					},
 				},
 				{
-					Variable: cantabular.VariableBase{
+					Variable: VariableBase{
 						Name:  "Occupation",
 						Label: "Occupation",
 					},
-					Categories: []cantabular.Category{
+					Categories: []Category{
 						{Code: "1", Label: "Managers, Directors and Senior Officials"},
 						{Code: "2", Label: "Professional Occupations"},
 						{Code: "3", Label: "Associate Professional and Technical Occupations"},
@@ -1192,7 +1191,7 @@ var mockRespBodyGetAreas = `
 }
 `
 
-var expectedAreas = cantabular.GetAreasResponse{
+var expectedAreas = GetAreasResponse{
 	Dataset: gql.DatasetRuleBase{
 		RuleBase: gql.RuleBase{
 			IsSourceOf: gql.Variables{

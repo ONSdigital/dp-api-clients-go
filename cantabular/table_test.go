@@ -1,17 +1,16 @@
-package cantabular_test
+package cantabular
 
 import (
 	"bufio"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestParseTable(t *testing.T) {
 
 	Convey("Given a Cantabular client", t, func() {
-		var c cantabular.Client
+		var c Client
 
 		Convey("When ParseTable is triggered with a valid table", func() {
 			resp := testStaticDatasetQuery()
@@ -59,18 +58,18 @@ func validateLines(reader *bufio.Reader, expectedLines []string) {
 }
 
 // testStaticDatasetQueryResponse returns a valid cantabular StaticDatasetQuery for testing
-func testStaticDatasetQuery() *cantabular.StaticDatasetQuery {
-	return &cantabular.StaticDatasetQuery{
-		Dataset: cantabular.StaticDataset{
-			Table: cantabular.Table{
-				Dimensions: []cantabular.Dimension{
+func testStaticDatasetQuery() *StaticDatasetQuery {
+	return &StaticDatasetQuery{
+		Dataset: StaticDataset{
+			Table: Table{
+				Dimensions: []Dimension{
 					{
-						Variable: cantabular.VariableBase{
+						Variable: VariableBase{
 							Name:  "city",
 							Label: "City",
 						},
 						Count: 3,
-						Categories: []cantabular.Category{
+						Categories: []Category{
 							{
 								Code:  "0",
 								Label: "London",
@@ -86,12 +85,12 @@ func testStaticDatasetQuery() *cantabular.StaticDatasetQuery {
 						},
 					},
 					{
-						Variable: cantabular.VariableBase{
+						Variable: VariableBase{
 							Name:  "siblings_3",
 							Label: "Number of siblings (3 mappings)",
 						},
 						Count: 3,
-						Categories: []cantabular.Category{
+						Categories: []Category{
 							{
 								Code:  "0",
 								Label: "No siblings",
@@ -107,12 +106,12 @@ func testStaticDatasetQuery() *cantabular.StaticDatasetQuery {
 						},
 					},
 					{
-						Variable: cantabular.VariableBase{
+						Variable: VariableBase{
 							Name:  "sex",
 							Label: "Sex",
 						},
 						Count: 2,
-						Categories: []cantabular.Category{
+						Categories: []Category{
 							{
 								Code:  "0",
 								Label: "Male",

@@ -1,12 +1,10 @@
-package cantabular_test
+package cantabular
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/mock"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -14,15 +12,15 @@ func TestListDatasetsHappy(t *testing.T) {
 
 	Convey("Should request dataset names from cantabular", t, func() {
 
-		fakeConfig := cantabular.Config{
+		fakeConfig := Config{
 			Host:       "cantabular.host",
 			ExtApiHost: "cantabular.ext.host",
 		}
 
-		mockGQLClient := &mock.GraphQLClientMock{
+		mockGQLClient := &GraphQLClientMock{
 			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
-				list := query.(*cantabular.ListDatasetsQuery)
-				list.Datasets = []cantabular.ListDatasetsItem{
+				list := query.(*ListDatasetsQuery)
+				list.Datasets = []ListDatasetsItem{
 					{Name: "dataset 1"},
 					{Name: "dataset 2"},
 				}
@@ -30,7 +28,7 @@ func TestListDatasetsHappy(t *testing.T) {
 			},
 		}
 
-		cantabularClient := cantabular.NewClient(fakeConfig, nil, mockGQLClient)
+		cantabularClient := NewClient(fakeConfig, nil, mockGQLClient)
 		list, err := cantabularClient.ListDatasets(context.Background())
 
 		actualQueryCall := mockGQLClient.QueryCalls()[0]
@@ -43,7 +41,7 @@ func TestListDatasetsHappy(t *testing.T) {
 
 func TestListDatasetsUnhappy(t *testing.T) {
 
-	fakeConfig := cantabular.Config{
+	fakeConfig := Config{
 		Host:       "cantabular.host",
 		ExtApiHost: "cantabular.ext.host",
 	}
@@ -51,12 +49,12 @@ func TestListDatasetsUnhappy(t *testing.T) {
 	Convey("Given cantabular returns an error", t, func() {
 
 		expectedError := errors.New("nope")
-		mockGQLClient := &mock.GraphQLClientMock{
+		mockGQLClient := &GraphQLClientMock{
 			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
 				return expectedError
 			},
 		}
-		cantabularClient := cantabular.NewClient(fakeConfig, nil, mockGQLClient)
+		cantabularClient := NewClient(fakeConfig, nil, mockGQLClient)
 
 		Convey("Population types should return an error", func() {
 			actualList, actualErr := cantabularClient.ListDatasets(context.Background())

@@ -6,17 +6,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
-	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
-	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
-	dprequest "github.com/ONSdigital/dp-net/request"
-	"github.com/ONSdigital/log.go/v2/log"
 	"io"
 	"math"
 	"mime/multipart"
 	"net/http"
 	"strconv"
+
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
+	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 const (
@@ -86,7 +87,7 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 		req.Header.Set("Content-Type", contentType)
 		dprequest.AddServiceTokenHeader(req, c.authToken)
 
-		resp, err := dphttp.DefaultClient.Do(ctx, req)
+		resp, err := dphttp.NewClient().Do(ctx, req)
 		if err != nil {
 			log.Error(ctx, "failed request", err, log.Data{"request": req})
 			return err

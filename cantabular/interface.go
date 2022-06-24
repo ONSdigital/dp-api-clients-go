@@ -1,6 +1,6 @@
 package cantabular
 
-//go:generate moq -out mock/graphql_client.go . GraphQLClient
+//go:generate moq -out graphql_client_mock_test.go . GraphQLClient
 
 import (
 	"context"

@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
-	dprequest "github.com/ONSdigital/dp-net/request"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
 	"github.com/ONSdigital/log.go/v2/log"
-	"io/ioutil"
-	"net/http"
 )
 
 var (
@@ -68,7 +69,7 @@ func (c *Client) SetCollectionID(ctx context.Context, filepath, collectionID str
 	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("%s/files/%s", c.hcCli.URL, filepath), buf)
 	req.Header.Set("Content-Type", "application/json")
 	dprequest.AddServiceTokenHeader(req, c.authToken)
-	resp, err := dphttp.DefaultClient.Do(ctx, req)
+	resp, err := dphttp.NewClient().Do(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -97,7 +98,7 @@ func (c *Client) PublishCollection(ctx context.Context, collectionID string) err
 	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("%s/collection/%s", c.hcCli.URL, collectionID), nil)
 	dprequest.AddServiceTokenHeader(req, c.authToken)
 
-	resp, err := dphttp.DefaultClient.Do(ctx, req)
+	resp, err := dphttp.NewClient().Do(ctx, req)
 	if err != nil {
 		log.Error(ctx, "failed request", err, log.Data{"request": req})
 		return err
@@ -141,7 +142,7 @@ func (c *Client) GetFile(ctx context.Context, path string, authToken string) (Fi
 
 	dprequest.AddServiceTokenHeader(req, authToken)
 
-	resp, err := dphttp.DefaultClient.Do(ctx, req)
+	resp, err := dphttp.NewClient().Do(ctx, req)
 	if err != nil {
 		return FileMetaData{}, err
 	}

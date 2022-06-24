@@ -1,4 +1,4 @@
-package cantabular_test
+package cantabular
 
 import (
 	"bufio"
@@ -9,11 +9,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/mock"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
-	dphttp "github.com/ONSdigital/dp-net/http"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"github.com/ONSdigital/log.go/v2/log"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -42,8 +40,8 @@ func TestStream(t *testing.T) {
 				},
 			}
 
-			cantabularClient := cantabular.NewClient(
-				cantabular.Config{
+			cantabularClient := NewClient(
+				Config{
 					Host:       "cantabular.host",
 					ExtApiHost: "cantabular.ext.host",
 				},
@@ -52,7 +50,7 @@ func TestStream(t *testing.T) {
 			)
 
 			Convey("Then the expected CSV is successfully streamed with the expected number of rows", func() {
-				req := cantabular.StaticDatasetQueryRequest{
+				req := StaticDatasetQueryRequest{
 					Dataset:   "Example",
 					Variables: []string{"city", "siblings"},
 				}
@@ -66,7 +64,7 @@ func TestStream(t *testing.T) {
 				testCtxWithCancel, cancel := context.WithCancel(testCtx)
 				cancel()
 
-				req := cantabular.StaticDatasetQueryRequest{
+				req := StaticDatasetQueryRequest{
 					Dataset:   "Example",
 					Variables: []string{"city", "siblings"},
 				}
@@ -91,8 +89,8 @@ func TestStream(t *testing.T) {
 				},
 			}
 
-			cantabularClient := cantabular.NewClient(
-				cantabular.Config{
+			cantabularClient := NewClient(
+				Config{
 					Host:       "cantabular.host",
 					ExtApiHost: "cantabular.ext.host",
 				},
@@ -101,7 +99,7 @@ func TestStream(t *testing.T) {
 			)
 
 			Convey("Then the expected error is returned and nothing is streamed", func() {
-				req := cantabular.StaticDatasetQueryRequest{
+				req := StaticDatasetQueryRequest{
 					Dataset:   "InexistentDataset",
 					Variables: []string{"city", "siblings"},
 				}
@@ -123,8 +121,8 @@ func TestStream(t *testing.T) {
 				},
 			}
 
-			cantabularClient := cantabular.NewClient(
-				cantabular.Config{
+			cantabularClient := NewClient(
+				Config{
 					Host:       "cantabular.host",
 					ExtApiHost: "cantabular.ext.host",
 				},
@@ -133,7 +131,7 @@ func TestStream(t *testing.T) {
 			)
 
 			Convey("Then the expected error is returned and nothing is streamed", func() {
-				req := cantabular.StaticDatasetQueryRequest{
+				req := StaticDatasetQueryRequest{
 					Dataset:   "Example",
 					Variables: []string{"wrong", "siblings"},
 				}
@@ -152,8 +150,8 @@ func TestStream(t *testing.T) {
 				},
 			}
 
-			cantabularClient := cantabular.NewClient(
-				cantabular.Config{
+			cantabularClient := NewClient(
+				Config{
 					Host:       "cantabular.host",
 					ExtApiHost: "cantabular.ext.host",
 				},
@@ -162,7 +160,7 @@ func TestStream(t *testing.T) {
 			)
 
 			Convey("Then the expected error is returned and nothing is streamed", func() {
-				req := cantabular.StaticDatasetQueryRequest{
+				req := StaticDatasetQueryRequest{
 					Dataset:   "Example",
 					Variables: []string{"city", "siblings"},
 				}
@@ -182,8 +180,8 @@ func TestStream(t *testing.T) {
 				},
 			}
 
-			cantabularClient := cantabular.NewClient(
-				cantabular.Config{
+			cantabularClient := NewClient(
+				Config{
 					Host:       "cantabular.host",
 					ExtApiHost: "cantabular.ext.host",
 				},
@@ -192,7 +190,7 @@ func TestStream(t *testing.T) {
 			)
 
 			Convey("Then the expected error is returned and nothing is streamed", func() {
-				req := cantabular.StaticDatasetQueryRequest{
+				req := StaticDatasetQueryRequest{
 					Dataset:   "Example",
 					Variables: []string{"city", "siblings"},
 				}
@@ -215,14 +213,14 @@ func TestStaticDatasetQueryHappy(t *testing.T) {
 		testCtx := context.Background()
 
 		mockHttpClient := &dphttp.ClienterMock{}
-		mockGQLClient := &mock.GraphQLClientMock{
+		mockGQLClient := &GraphQLClientMock{
 			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
 				return nil
 			},
 		}
 
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
+		cantabularClient := NewClient(
+			Config{
 				Host:       "cantabular.host",
 				ExtApiHost: "cantabular.ext.host",
 			},
@@ -231,7 +229,7 @@ func TestStaticDatasetQueryHappy(t *testing.T) {
 		)
 
 		Convey("When the StaticDatasetQuery method is called", func() {
-			req := cantabular.StaticDatasetQueryRequest{}
+			req := StaticDatasetQueryRequest{}
 			_, err := cantabularClient.StaticDatasetQuery(testCtx, req)
 
 			Convey("Then no error should be returned", func() {
@@ -248,8 +246,8 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 
 		mockHttpClient := &dphttp.ClienterMock{}
 
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
+		cantabularClient := NewClient(
+			Config{
 				Host: "cantabular.host",
 			},
 			mockHttpClient,
@@ -257,7 +255,7 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 		)
 
 		Convey("When the StaticDatasetQuery method is called", func() {
-			req := cantabular.StaticDatasetQueryRequest{}
+			req := StaticDatasetQueryRequest{}
 			_, err := cantabularClient.StaticDatasetQuery(testCtx, req)
 			So(err, ShouldNotBeNil)
 
@@ -272,9 +270,9 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 		testCtx := context.Background()
 
 		mockHttpClient := &dphttp.ClienterMock{}
-		mockGQLClient := &mock.GraphQLClientMock{
+		mockGQLClient := &GraphQLClientMock{
 			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
-				if q, ok := query.(*cantabular.StaticDatasetQuery); ok {
+				if q, ok := query.(*StaticDatasetQuery); ok {
 					q.Dataset.Table.Error = "I am error response"
 					return nil
 				}
@@ -282,8 +280,8 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 			},
 		}
 
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
+		cantabularClient := NewClient(
+			Config{
 				Host:       "cantabular.host",
 				ExtApiHost: "cantabular.ext.host",
 			},
@@ -292,7 +290,7 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 		)
 
 		Convey("When the StaticDatasetQuery method is called", func() {
-			req := cantabular.StaticDatasetQueryRequest{}
+			req := StaticDatasetQueryRequest{}
 			_, err := cantabularClient.StaticDatasetQuery(testCtx, req)
 
 			Convey("An error should be returned with status code 400 Bad Request", func() {

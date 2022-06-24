@@ -13,10 +13,11 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/health"
-	dphttp "github.com/ONSdigital/dp-net/http"
-	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/pkg/errors"
+
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
 )
 
 const (
@@ -26,8 +27,8 @@ const (
 )
 
 var (
-	ctx                = context.Background()
-	checkRequestBase   = func(httpClient *dphttp.ClienterMock, expectedMethod string, expectedUri string) {
+	ctx              = context.Background()
+	checkRequestBase = func(httpClient *dphttp.ClienterMock, expectedMethod string, expectedUri string) {
 		So(len(httpClient.DoCalls()), ShouldEqual, 1)
 		So(httpClient.DoCalls()[0].Req.URL.RequestURI(), ShouldResemble, expectedUri)
 		So(httpClient.DoCalls()[0].Req.Method, ShouldEqual, expectedMethod)
