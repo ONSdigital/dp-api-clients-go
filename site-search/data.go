@@ -3,14 +3,15 @@ package search
 // Response represents the fields for the search results as returned by dp-search-api
 type Response struct {
 	Count                 int           `json:"count"`
-	ContentTypes          []ContentType `json:"content_types"`
+	ContentTypes          []FilterCount `json:"content_types"`
 	Items                 []ContentItem `json:"items"`
 	Suggestions           []string      `json:"suggestions,omitempty"`
+	Topics                []FilterCount `json:"topics"`
 	AdditionalSuggestions []string      `json:"additional_suggestions,omitempty"`
 }
 
-// ContentType represents the specific content type for the search results with its respective count
-type ContentType struct {
+// FilterCount represents the specific filter type for the search results with its respective count
+type FilterCount struct {
 	Type  string `json:"type"`
 	Count int    `json:"count"`
 }
@@ -42,6 +43,7 @@ type Description struct {
 	Source            string    `json:"source,omitempty"`
 	Summary           string    `json:"summary"`
 	Title             string    `json:"title"`
+	Topics            []string  `json:"topics"`
 	Unit              string    `json:"unit,omitempty"`
 	Highlight         Highlight `json:"highlight,omitempty"`
 }
@@ -54,6 +56,7 @@ type Highlight struct {
 	MetaDescription string    `json:"meta_description,omitempty"`
 	DatasetID       string    `json:"dataset_id,omitempty"`
 	Edition         string    `json:"edition,omitempty"`
+	Topics          []string  `json:"topics,,omitempty"`
 }
 
 // Contact represents each search result contact details
