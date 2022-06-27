@@ -143,6 +143,7 @@ func TestClient_GetSearch(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(r.Count, ShouldEqual, 0)
 				So(r.ContentTypes, ShouldBeEmpty)
+				So(r.Topics, ShouldBeEmpty)
 				So(r.Items, ShouldBeEmpty)
 			})
 
@@ -169,6 +170,7 @@ func TestClient_GetSearch(t *testing.T) {
 				So(r.Count, ShouldEqual, 5)
 				So(r.Items, ShouldNotBeEmpty)
 				So(r.ContentTypes, ShouldNotBeEmpty)
+				So(r.Topics, ShouldNotBeEmpty)
 			})
 
 			Convey("and dphttpclient.Do is called 1 time", func() {

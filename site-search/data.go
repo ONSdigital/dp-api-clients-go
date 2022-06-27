@@ -26,6 +26,7 @@ type ContentItem struct {
 
 // Description represents each search result description
 type Description struct {
+	CanonicalTopic    string    `json:"canonical_topic,omitempty"`
 	Contact           *Contact  `json:"contact,omitempty"`
 	DatasetID         string    `json:"dataset_id,omitempty"`
 	Edition           string    `json:"edition,omitempty"`
@@ -43,7 +44,7 @@ type Description struct {
 	Source            string    `json:"source,omitempty"`
 	Summary           string    `json:"summary"`
 	Title             string    `json:"title"`
-	Topics            []string  `json:"topics"`
+	Topics            []string  `json:"topics,omitempty"`
 	Unit              string    `json:"unit,omitempty"`
 	Highlight         Highlight `json:"highlight,omitempty"`
 }
@@ -56,7 +57,7 @@ type Highlight struct {
 	MetaDescription string    `json:"meta_description,omitempty"`
 	DatasetID       string    `json:"dataset_id,omitempty"`
 	Edition         string    `json:"edition,omitempty"`
-	Topics          []string  `json:"topics,,omitempty"`
+	Topics          []string  `json:"topics,omitempty"`
 }
 
 // Contact represents each search result contact details
