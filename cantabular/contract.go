@@ -39,6 +39,7 @@ type GetCodebookResponse struct {
 type StaticDatasetQueryRequest struct {
 	Dataset   string   `json:"dataset"`
 	Variables []string `json:"variables"`
+	Filters   []Filter `json:"filters"`
 }
 
 // StaticDatasetQuery holds the query for a static dataset landing page from
