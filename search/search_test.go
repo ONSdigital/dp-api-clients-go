@@ -39,7 +39,7 @@ func TestDimensionSearchUnit(t *testing.T) {
 	Convey("test New creates a valid Client instance", t, func() {
 		cli := New("http://localhost:22000")
 		So(cli.hcCli.URL, ShouldEqual, "http://localhost:22000")
-		So(cli.hcCli.Client, ShouldHaveSameTypeAs, dphttp.DefaultClient)
+		So(cli.hcCli.Client, ShouldHaveSameTypeAs, dphttp.NewClient())
 	})
 
 	Convey("test Dimension Method", t, func() {

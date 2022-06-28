@@ -208,6 +208,62 @@ func (c *Client) GetPopulationAreaTypes(ctx context.Context, userAuthToken, serv
 	return areaTypes, nil
 }
 
+func (c *Client) GetAreas(ctx context.Context, input GetAreasInput) (GetAreasResponse, error) {
+	logData := log.Data{
+		"method":       http.MethodGet,
+		"dataset_id":   input.DatasetID,
+		"area_type_id": input.AreaTypeID,
+		"text":         input.Text,
+	}
+
+	urlPath := fmt.Sprintf("population-types/%s/area-types/%s/areas", input.DatasetID, input.AreaTypeID)
+	var urlValues map[string][]string
+	if input.Text != "" {
+		urlValues = url.Values{"q": []string{input.Text}}
+	}
+
+	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
+	if err != nil {
+		return GetAreasResponse{}, dperrors.New(
+			err,
+			dperrors.StatusCode(err),
+			logData,
+		)
+	}
+
+	clientlog.Do(ctx, "getting areas", service, req.URL.String(), logData)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return GetAreasResponse{}, dperrors.New(
+			errors.Wrap(err, "failed to get response from Dimensions API"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}()
+
+	if err := checkGetResponse(resp); err != nil {
+		return GetAreasResponse{}, err
+	}
+
+	var areas GetAreasResponse
+	if err := json.NewDecoder(resp.Body).Decode(&areas); err != nil {
+		return GetAreasResponse{}, dperrors.New(
+			errors.Wrap(err, "unable to deserialize areas response"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	return areas, nil
+}
+
 // newRequest creates a new http.Request with auth headers
 func newRequest(ctx context.Context, method string, url string, body io.Reader, userAuthToken, serviceAuthToken string) (*http.Request, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
