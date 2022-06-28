@@ -20,8 +20,9 @@ import (
 
 // Cantabular service names
 const (
-	Service       = "cantabular"
-	ServiceAPIExt = "cantabularAPIExt"
+	Service         = "cantabular"
+	ServiceAPIExt   = "cantabularAPIExt"
+	SoftwareVersion = "v10"
 )
 
 // Client is the client for interacting with the Cantabular API
@@ -30,6 +31,7 @@ type Client struct {
 	gqlClient  GraphQLClient
 	host       string
 	extApiHost string
+	version    string
 }
 
 // NewClient returns a new Client
@@ -39,6 +41,7 @@ func NewClient(cfg Config, ua httpClient, g GraphQLClient) *Client {
 		gqlClient:  g,
 		host:       cfg.Host,
 		extApiHost: cfg.ExtApiHost,
+		version:    SoftwareVersion,
 	}
 
 	if len(cfg.ExtApiHost) > 0 && c.gqlClient == nil {
@@ -113,9 +116,9 @@ func (c *Client) httpPost(ctx context.Context, path string, contentType string, 
 	return resp, nil
 }
 
-// Checker contacts the /v10/datasets endpoint and updates the healthcheck state accordingly.
+// Checker contacts the /vXX/datasets endpoint and updates the healthcheck state accordingly.
 func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) error {
-	reqURL := fmt.Sprintf("%s/v10/datasets", c.host)
+	reqURL := fmt.Sprintf("%s/%s/datasets", c.host, c.version)
 	return c.checkHealth(ctx, state, Service, reqURL)
 }
 
