@@ -18,7 +18,7 @@ const (
 
 // QueryStaticDataset is the graphQL query to obtain static dataset counts (variables with categories and counts)
 const QueryStaticDataset = `
-query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
+query($dataset: String!, $variables: [DimensionsOptions!]!, $filters: [Filter!]) {
 	dataset(name: $dataset) {
 		table(variables: $variables, filters: $filters) {
 			dimensions {
@@ -194,7 +194,7 @@ type QueryData struct {
 	PaginationParams
 	Dataset   string
 	Text      string
-	Variables []string
+	Variables []DimensionsOptions
 	Filters   []Filter
 	Category  string
 }

@@ -7,10 +7,11 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/shurcooL/graphql"
+
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/stream"
 	"github.com/ONSdigital/log.go/v2/log"
-	"github.com/shurcooL/graphql"
 )
 
 // Consumer is a stream func to read from a reader
@@ -61,7 +62,7 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 
 	gvars := make([]graphql.String, 0)
 	for _, v := range req.Variables {
-		gvars = append(gvars, graphql.String(v))
+		gvars = append(gvars, graphql.String(v.ID))
 	}
 	vars["variables"] = gvars
 

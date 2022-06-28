@@ -138,7 +138,7 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req GetDimensionOption
 
 	data := QueryData{
 		Dataset:   req.Dataset,
-		Variables: req.DimensionNames,
+		Variables: req.Dimensions,
 		Filters:   req.Filters,
 	}
 

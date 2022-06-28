@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestGetDimensionsHappy(t *testing.T) {
@@ -175,8 +176,11 @@ func TestGetDimensionsByNameHappy(t *testing.T) {
 
 		Convey("When GetDimensionsByName is called", func() {
 			resp, err := cantabularClient.GetDimensionsByName(testCtx, cantabular.GetDimensionsByNameRequest{
-				Dataset:        "Teaching-Dataset",
-				DimensionNames: []string{"Age", "Region"},
+				Dataset: "Teaching-Dataset",
+				DimensionNames: []cantabular.DimensionsOptions{
+					{ID: "Age"},
+					{ID: "Region"},
+				},
 			})
 
 			Convey("Then no error should be returned", func() {
@@ -190,8 +194,11 @@ func TestGetDimensionsByNameHappy(t *testing.T) {
 					mockHttpClient.PostCalls()[0].Body,
 					cantabular.QueryDimensionsByName,
 					cantabular.QueryData{
-						Dataset:   "Teaching-Dataset",
-						Variables: []string{"Age", "Region"},
+						Dataset: "Teaching-Dataset",
+						Variables: []cantabular.DimensionsOptions{
+							{ID: "Age"},
+							{ID: "Region"},
+						},
 					},
 				)
 			})
@@ -211,8 +218,12 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 
 		Convey("When the GetDimensionsByName method is called", func() {
 			req := cantabular.GetDimensionsByNameRequest{
-				Dataset:        "InexistentDataset",
-				DimensionNames: []string{"Country", "Age", "Occupation"},
+				Dataset: "InexistentDataset",
+				DimensionNames: []cantabular.DimensionsOptions{
+					{ID: "Country"},
+					{ID: "Age"},
+					{ID: "Occupation"},
+				},
 			}
 			resp, err := cantabularClient.GetDimensionsByName(testCtx, req)
 
@@ -232,8 +243,12 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 
 		Convey("When the GetDimensionOptions method is called", func() {
 			req := cantabular.GetDimensionsByNameRequest{
-				Dataset:        "Teaching-Dataset",
-				DimensionNames: []string{"Country", "Age", "inexistentVariable"},
+				Dataset: "Teaching-Dataset",
+				DimensionNames: []cantabular.DimensionsOptions{
+					{ID: "Country"},
+					{ID: "Age"},
+					{ID: "inexistentVariable"},
+				},
 			}
 			resp, err := cantabularClient.GetDimensionsByName(testCtx, req)
 
@@ -253,8 +268,11 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 
 		Convey("When GetDimensionsByName is called", func() {
 			req := cantabular.GetDimensionsByNameRequest{
-				Dataset:        "Teaching-Dataset",
-				DimensionNames: []string{"Age", "Region"},
+				Dataset: "Teaching-Dataset",
+				DimensionNames: []cantabular.DimensionsOptions{
+					{ID: "Age"},
+					{ID: "Region"},
+				},
 			}
 			resp, err := cantabularClient.GetDimensionsByName(testCtx, req)
 
@@ -356,9 +374,13 @@ func TestGetDimensionOptionsHappy(t *testing.T) {
 
 		Convey("When GetDimensionOptions is called", func() {
 			req := cantabular.GetDimensionOptionsRequest{
-				Dataset:        "Teaching-Dataset",
-				DimensionNames: []string{"Country", "Age", "Occupation"},
-				Filters:        []cantabular.Filter{{Variable: "Country", Codes: []string{"E", "W"}}},
+				Dataset: "Teaching-Dataset",
+				Dimensions: []cantabular.DimensionsOptions{
+					{ID: "Country"},
+					{ID: "Age"},
+					{ID: "Occupation"},
+				},
+				Filters: []cantabular.Filter{{Variable: "Country", Codes: []string{"E", "W"}}},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
@@ -373,9 +395,13 @@ func TestGetDimensionOptionsHappy(t *testing.T) {
 					mockHttpClient.PostCalls()[0].Body,
 					cantabular.QueryDimensionOptions,
 					cantabular.QueryData{
-						Dataset:   "Teaching-Dataset",
-						Variables: []string{"Country", "Age", "Occupation"},
-						Filters:   []cantabular.Filter{{Variable: "Country", Codes: []string{"E", "W"}}},
+						Dataset: "Teaching-Dataset",
+						Variables: []cantabular.DimensionsOptions{
+							{ID: "Country"},
+							{ID: "Age"},
+							{ID: "Occupation"},
+						},
+						Filters: []cantabular.Filter{{Variable: "Country", Codes: []string{"E", "W"}}},
 					},
 				)
 			})
@@ -387,8 +413,12 @@ func TestGetDimensionOptionsHappy(t *testing.T) {
 
 		Convey("When GetDimensionOptions is called without filters", func() {
 			req := cantabular.GetDimensionOptionsRequest{
-				Dataset:        "Teaching-Dataset",
-				DimensionNames: []string{"Country", "Age", "Occupation"},
+				Dataset: "Teaching-Dataset",
+				Dimensions: []cantabular.DimensionsOptions{
+					{ID: "Country"},
+					{ID: "Age"},
+					{ID: "Occupation"},
+				},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
@@ -403,8 +433,12 @@ func TestGetDimensionOptionsHappy(t *testing.T) {
 					mockHttpClient.PostCalls()[0].Body,
 					cantabular.QueryDimensionOptions,
 					cantabular.QueryData{
-						Dataset:   "Teaching-Dataset",
-						Variables: []string{"Country", "Age", "Occupation"},
+						Dataset: "Teaching-Dataset",
+						Variables: []cantabular.DimensionsOptions{
+							{ID: "Country"},
+							{ID: "Age"},
+							{ID: "Occupation"},
+						},
 					},
 				)
 			})
@@ -424,8 +458,12 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 
 		Convey("When the GetDimensionOptions method is called", func() {
 			req := cantabular.GetDimensionOptionsRequest{
-				Dataset:        "InexistentDataset",
-				DimensionNames: []string{"Country", "Age", "Occupation"},
+				Dataset: "InexistentDataset",
+				Dimensions: []cantabular.DimensionsOptions{
+					{ID: "Country"},
+					{ID: "Age"},
+					{ID: "Occupation"},
+				},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
@@ -444,8 +482,12 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 
 		Convey("When the GetDimensionOptions method is called", func() {
 			req := cantabular.GetDimensionOptionsRequest{
-				Dataset:        "Teaching-Dataset",
-				DimensionNames: []string{"Country", "Age", "inexistentVariable"},
+				Dataset: "Teaching-Dataset",
+				Dimensions: []cantabular.DimensionsOptions{
+					{ID: "Country"},
+					{ID: "Age"},
+					{ID: "inexistentVariable"},
+				},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
@@ -465,8 +507,12 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 
 		Convey("When GetDimensionOptions is called", func() {
 			req := cantabular.GetDimensionOptionsRequest{
-				Dataset:        "Teaching-Dataset",
-				DimensionNames: []string{"Country", "Age", "Occupation"},
+				Dataset: "Teaching-Dataset",
+				Dimensions: []cantabular.DimensionsOptions{
+					{ID: "Country"},
+					{ID: "Age"},
+					{ID: "Occupation"},
+				},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 

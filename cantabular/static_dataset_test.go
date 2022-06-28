@@ -9,13 +9,14 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/mock"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/v2/log"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 var testCtx = context.Background()
@@ -53,8 +54,11 @@ func TestStream(t *testing.T) {
 
 			Convey("Then the expected CSV is successfully streamed with the expected number of rows", func() {
 				req := cantabular.StaticDatasetQueryRequest{
-					Dataset:   "Example",
-					Variables: []string{"city", "siblings"},
+					Dataset: "Example",
+					Variables: []cantabular.DimensionsOptions{
+						{ID: "city"},
+						{ID: "siblings"},
+					},
 				}
 				rowCount, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
 				So(err, ShouldBeNil)
@@ -67,8 +71,11 @@ func TestStream(t *testing.T) {
 				cancel()
 
 				req := cantabular.StaticDatasetQueryRequest{
-					Dataset:   "Example",
-					Variables: []string{"city", "siblings"},
+					Dataset: "Example",
+					Variables: []cantabular.DimensionsOptions{
+						{ID: "city"},
+						{ID: "siblings"},
+					},
 				}
 				_, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtxWithCancel, req, consume)
 				So(err, ShouldResemble,
@@ -102,8 +109,11 @@ func TestStream(t *testing.T) {
 
 			Convey("Then the expected error is returned and nothing is streamed", func() {
 				req := cantabular.StaticDatasetQueryRequest{
-					Dataset:   "InexistentDataset",
-					Variables: []string{"city", "siblings"},
+					Dataset: "InexistentDataset",
+					Variables: []cantabular.DimensionsOptions{
+						{ID: "city"},
+						{ID: "siblings"},
+					},
 				}
 				_, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
 				So(err, ShouldResemble, fmt.Errorf("transform error: %w",
@@ -134,8 +144,11 @@ func TestStream(t *testing.T) {
 
 			Convey("Then the expected error is returned and nothing is streamed", func() {
 				req := cantabular.StaticDatasetQueryRequest{
-					Dataset:   "Example",
-					Variables: []string{"wrong", "siblings"},
+					Dataset: "Example",
+					Variables: []cantabular.DimensionsOptions{
+						{ID: "wrong"},
+						{ID: "siblings"},
+					},
 				}
 				_, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
 				So(err, ShouldResemble, fmt.Errorf("transform error: %w",
@@ -163,8 +176,11 @@ func TestStream(t *testing.T) {
 
 			Convey("Then the expected error is returned and nothing is streamed", func() {
 				req := cantabular.StaticDatasetQueryRequest{
-					Dataset:   "Example",
-					Variables: []string{"city", "siblings"},
+					Dataset: "Example",
+					Variables: []cantabular.DimensionsOptions{
+						{ID: "city"},
+						{ID: "siblings"},
+					},
 				}
 				_, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
 				So(err.Error(), ShouldResemble, `failed to make GraphQL query: failed to make request: post "cantabular.ext.host/graphql": dial tcp 127.0.0.1:8493: connect: connection refused`)
@@ -193,8 +209,11 @@ func TestStream(t *testing.T) {
 
 			Convey("Then the expected error is returned and nothing is streamed", func() {
 				req := cantabular.StaticDatasetQueryRequest{
-					Dataset:   "Example",
-					Variables: []string{"city", "siblings"},
+					Dataset: "Example",
+					Variables: []cantabular.DimensionsOptions{
+						{ID: "city"},
+						{ID: "siblings"},
+					},
 				}
 				_, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
 				So(err, ShouldResemble, dperrors.New(

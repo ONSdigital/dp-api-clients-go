@@ -37,8 +37,14 @@ type GetCodebookResponse struct {
 // caller for making a request for a static dataset landing page from
 // POST [cantabular-ext]/graphql
 type StaticDatasetQueryRequest struct {
-	Dataset   string   `json:"dataset"`
-	Variables []string `json:"variables"`
+	Dataset   string              `json:"dataset"`
+	Variables []DimensionsOptions `json:"variables"`
+}
+
+// DimensionsOptions holds the dimension id plus the user options associated with that dimension
+type DimensionsOptions struct {
+	ID      string   `json:"id"`
+	Options []string `json:"options"`
 }
 
 // StaticDatasetQuery holds the query for a static dataset landing page from
@@ -55,7 +61,7 @@ type StaticDatasetQuery struct {
 // POST [cantabular-ext]/graphql
 type GetDimensionsByNameRequest struct {
 	Dataset        string
-	DimensionNames []string
+	DimensionNames []DimensionsOptions
 }
 
 // SearchDimensionsRequest holds the request variables required from the
@@ -95,9 +101,9 @@ type GetGeographyDimensionsResponse struct {
 //
 // POST [cantabular-ext]/graphql with the encoded query
 type GetDimensionOptionsRequest struct {
-	Dataset        string
-	DimensionNames []string
-	Filters        []Filter
+	Dataset    string
+	Dimensions []DimensionsOptions
+	Filters    []Filter
 }
 
 // GetAreasRequest holds the request variables required for the
