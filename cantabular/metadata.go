@@ -84,24 +84,20 @@ type MetadataDatasetQuery struct {
 				NationalStatisticCertified graphql.String `graphql:"Nationals_Statistic_Certified" json:"national_statistic_certified"`
 			} `graphql:"Source" json:"source"`
 		} `graphql:"meta" json:"meta"`
-		Variables struct {
-			Edges []struct {
-				Node struct {
-					Name graphql.String `json:"name"`
-					Meta struct {
-						ONSVariable struct {
-							VariableDescription graphql.String   `graphql:"Variable_Description" json:"variable_description"`
-							Keywords            []graphql.String `graphql:"Keywords" json:"keywords"`
+		Vars []struct {
+			Name graphql.String `json:"name"`
+			Meta struct {
+				ONSVariable struct {
+					VariableDescription graphql.String   `graphql:"Variable_Description" json:"variable_description"`
+					Keywords            []graphql.String `graphql:"Keywords" json:"keywords"`
 
-							StatisticalUnit struct {
-								StatisticalUnit     graphql.String `graphql:"Statistical_Unit" json:"statistical_unit"`
-								StatisticalUnitDesc graphql.String `graphql:"Statistical_Unit_Description" json:"statistical_unit_desc"`
-							} `graphql:"Statistical_Unit" json:"statistical_unit"`
-						} `graphql:"ONS_Variable" json:"ons_variable"`
-					} `json:"meta"`
-				} `json:"node"`
-			} `json:"edges"`
-		} `graphql:"variables(names: $vars)" json:"variables"`
+					StatisticalUnit struct {
+						StatisticalUnit     graphql.String `graphql:"Statistical_Unit" json:"statistical_unit"`
+						StatisticalUnitDesc graphql.String `graphql:"Statistical_Unit_Description" json:"statistical_unit_desc"`
+					} `graphql:"Statistical_Unit" json:"statistical_unit"`
+				} `graphql:"ONS_Variable" json:"ons_variable"`
+			} `json:"meta"`
+		} `graphql:"vars(names: $vars)" json:"vars"`
 	} `graphql:"dataset(name: $ds, lang: $lang)" json:"dataset"`
 }
 
@@ -121,7 +117,7 @@ type MetadataDatasetQueryRequest struct {
 func (c *Client) MetadataTableQuery(ctx context.Context, req MetadataTableQueryRequest) (*MetadataTableQuery, error) {
 	if c.gqlClient == nil {
 		return nil, dperrors.New(
-			errors.New("cantabular Extended API Client not configured"),
+			errors.New("cantabular metadata client not configured"),
 			http.StatusServiceUnavailable,
 			nil,
 		)
@@ -158,7 +154,7 @@ func (c *Client) MetadataTableQuery(ctx context.Context, req MetadataTableQueryR
 func (c *Client) MetadataDatasetQuery(ctx context.Context, req MetadataDatasetQueryRequest) (*MetadataDatasetQuery, error) {
 	if c.gqlClient == nil {
 		return nil, dperrors.New(
-			errors.New("cantabular Extended API Client not configured"),
+			errors.New("cantabular metadata client not configured"),
 			http.StatusServiceUnavailable,
 			nil,
 		)
