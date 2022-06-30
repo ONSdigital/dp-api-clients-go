@@ -189,6 +189,32 @@ query ($dataset: String!, $text: String!, $category: String!) {
 }
 `
 
+const QueryParents = `
+query ($dataset: String!, $variables: [String!]!) {
+  dataset(name: $dataset) {
+    variables(names: $variables){
+      edges{
+        node{
+          label
+          name
+          isDirectSourceOf{
+            totalCount
+            edges{
+              node{
+                label
+                name
+                categories{
+                  totalCount
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`
+
 // QueryData holds all the possible required variables to encode any of the graphql queries defined in this file.
 type QueryData struct {
 	PaginationParams

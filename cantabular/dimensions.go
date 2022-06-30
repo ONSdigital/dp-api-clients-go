@@ -185,3 +185,33 @@ func (c *Client) GetAreas(ctx context.Context, req GetAreasRequest) (*GetAreasRe
 
 	return &resp.Data, nil
 }
+
+// GetParents returns a list of variables that map to the provided variable
+func (c *Client) GetParents(ctx context.Context, req GetParentsRequest) (*GetParentsResponse, error) {
+	resp := &struct {
+		Data   GetParentsResponse `json:"data"`
+		Errors []gql.Error        `json:"errors,omitempty"`
+	}{}
+
+	data := QueryData{
+		Dataset:   req.Dataset,
+		Variables: []string{req.Variable},
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryParents, data, resp); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal query")
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			resp.Errors[0].StatusCode(),
+			log.Data{
+				"request": req,
+				"errors":  resp.Errors,
+			},
+		)
+	}
+
+	return &resp.Data, nil
+}

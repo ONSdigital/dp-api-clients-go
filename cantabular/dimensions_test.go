@@ -567,6 +567,85 @@ func TestGetAreasUnhappy(t *testing.T) {
 	})
 }
 
+func TestGetParentsHappy(t *testing.T) {
+	Convey("Given a valid response from the /graphql endpoint", t, func() {
+		const dataset = "Example"
+		const variable = "city"
+
+		ctx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetParents, http.StatusOK)
+
+		Convey("When GetParents is called", func() {
+			req := cantabular.GetParentsRequest{
+				Dataset:  dataset,
+				Variable: variable,
+			}
+
+			resp, err := cantabularClient.GetParents(ctx, req)
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryParents,
+					cantabular.QueryData{
+						Dataset:   dataset,
+						Variables: []string{variable},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedParents)
+			})
+		})
+	})
+}
+
+func TestGetParentsUnhappy(t *testing.T) {
+	ctx := context.Background()
+	req := cantabular.GetParentsRequest{
+		Dataset:  "Example",
+		Variable: "city",
+	}
+
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		_, client := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When GetParents is called", func() {
+
+			resp, err := client.GetParents(ctx, req)
+			Convey("Then the expected error is returned", func() {
+				So(client.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		_, client := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When GetAreas is called", func() {
+			resp, err := client.GetParents(ctx, req)
+
+			Convey("Then the expected error is returned", func() {
+				So(client.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
 // newMockedClient creates a new cantabular client with a mocked response for post requests,
 // according to the provided response string and status code.
 func newMockedClient(response string, statusCode int) (*dphttp.ClienterMock, *cantabular.Client) {
@@ -678,7 +757,7 @@ var mockRespBodyGetDimensions = `
 
 // expectedDimensions is the expected response struct generated from a successful 'get dimensions' query for testing
 var expectedDimensions = cantabular.GetDimensionsResponse{
-	Dataset: gql.DatasetVariables{
+	Dataset: gql.Dataset{
 		Variables: gql.Variables{
 			Edges: []gql.Edge{
 				{
@@ -797,7 +876,7 @@ var mockRespBodyGetGeographyDimensions = `
 `
 
 var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
-	Dataset: gql.DatasetRuleBase{
+	Dataset: gql.Dataset{
 		RuleBase: gql.RuleBase{
 			IsSourceOf: gql.Variables{
 				TotalCount: 2,
@@ -883,7 +962,7 @@ var mockRespBodyGetDimensionsByName = `{
 
 // expectedDimensionsByName is the expected response struct generated from a successful 'get dimensions by name' query for testing
 var expectedDimensionsByName = cantabular.GetDimensionsResponse{
-	Dataset: gql.DatasetVariables{
+	Dataset: gql.Dataset{
 		Variables: gql.Variables{
 			Edges: []gql.Edge{
 				{
@@ -950,7 +1029,7 @@ var mockRespBodySearchDimensions = `{
 
 // expectedSearchDimensionsResponse is the expected response struct generated from a successful 'search dimensions' query for testing
 var expectedSearchDimensionsResponse = cantabular.GetDimensionsResponse{
-	Dataset: gql.DatasetVariables{
+	Dataset: gql.Dataset{
 		Variables: gql.Variables{
 			Search: gql.Search{
 				Edges: []gql.Edge{
@@ -1193,7 +1272,7 @@ var mockRespBodyGetAreas = `
 `
 
 var expectedAreas = cantabular.GetAreasResponse{
-	Dataset: gql.DatasetRuleBase{
+	Dataset: gql.Dataset{
 		RuleBase: gql.RuleBase{
 			IsSourceOf: gql.Variables{
 				Search: gql.Search{
@@ -1215,6 +1294,67 @@ var expectedAreas = cantabular.GetAreasResponse{
 									},
 								},
 							},
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+const mockRespBodyGetParents = `
+{
+	"data": {
+		"dataset": {
+			"variables": {
+				"edges": [
+					{
+						"node": {
+							"isDirectSourceOf": {
+								"edges": [
+									{
+										"node": {
+											"categories": {
+												"totalCount": 2
+											},
+											"label": "Country",
+											"name": "country"
+										}
+									}
+								],
+								"totalCount": 1
+							},
+							"label": "City",
+							"name": "city"
+						}
+					}
+				]
+			}
+		}
+	}
+}`
+
+var expectedParents = cantabular.GetParentsResponse{
+	Dataset: gql.Dataset{
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:  "city",
+						Label: "City",
+						IsDirectSourceOf: gql.Variables{
+							Edges: []gql.Edge{
+								{
+									Node: gql.Node{
+										Name:  "country",
+										Label: "Country",
+										Categories: gql.Categories{
+											TotalCount: 2,
+										},
+									},
+								},
+							},
+							TotalCount: 1,
 						},
 					},
 				},
