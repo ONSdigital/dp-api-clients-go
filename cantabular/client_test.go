@@ -3,6 +3,7 @@ package cantabular
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -52,7 +53,7 @@ func TestChecker(t *testing.T) {
 
 			Convey("Then the expected endpoint is called", func() {
 				So(mockHttpClient.GetCalls(), ShouldHaveLength, 1)
-				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, "/v10/datasets")
+				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, fmt.Sprintf("/%s/datasets", SoftwareVersion))
 			})
 
 			Convey("Then the CheckState is updated to the expected OK state", func() {
@@ -104,7 +105,7 @@ func TestChecker(t *testing.T) {
 
 			Convey("Then the expected endpoint is called", func() {
 				So(mockHttpClient.GetCalls(), ShouldHaveLength, 1)
-				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, "/v10/datasets")
+				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, fmt.Sprintf("/%s/datasets", SoftwareVersion))
 			})
 
 			Convey("Then the CheckState is updated to the expected CRITICAL state", func() {
@@ -160,7 +161,7 @@ func TestChecker(t *testing.T) {
 
 			Convey("Then the expected endpoint is called", func() {
 				So(mockHttpClient.GetCalls(), ShouldHaveLength, 1)
-				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, "/v10/datasets")
+				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, fmt.Sprintf("/%s/datasets", SoftwareVersion))
 			})
 
 			Convey("Then the CheckState is updated to the expected CRITICAL state", func() {

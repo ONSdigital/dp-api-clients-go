@@ -9,11 +9,12 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"github.com/ONSdigital/log.go/v2/log"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 var testCtx = context.Background()
@@ -53,6 +54,7 @@ func TestStream(t *testing.T) {
 				req := StaticDatasetQueryRequest{
 					Dataset:   "Example",
 					Variables: []string{"city", "siblings"},
+					Filters:   []Filter{{Variable: "city", Codes: []string{"0", "1"}}},
 				}
 				rowCount, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtx, req, consume)
 				So(err, ShouldBeNil)
@@ -67,6 +69,7 @@ func TestStream(t *testing.T) {
 				req := StaticDatasetQueryRequest{
 					Dataset:   "Example",
 					Variables: []string{"city", "siblings"},
+					Filters:   []Filter{{Variable: "city", Codes: []string{"0", "1"}}},
 				}
 				_, err := cantabularClient.StaticDatasetQueryStreamCSV(testCtxWithCancel, req, consume)
 				So(err, ShouldResemble,

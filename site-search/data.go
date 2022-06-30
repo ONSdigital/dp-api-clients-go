@@ -2,29 +2,33 @@ package search
 
 // Response represents the fields for the search results as returned by dp-search-api
 type Response struct {
+	ES_710                bool          `json:"es_710"`
 	Count                 int           `json:"count"`
-	ContentTypes          []ContentType `json:"content_types"`
+	ContentTypes          []FilterCount `json:"content_types"`
 	Items                 []ContentItem `json:"items"`
 	Suggestions           []string      `json:"suggestions,omitempty"`
+	Topics                []FilterCount `json:"topics"`
 	AdditionalSuggestions []string      `json:"additional_suggestions,omitempty"`
 }
 
-// ContentType represents the specific content type for the search results with its respective count
-type ContentType struct {
+// FilterCount represents the specific filter type for the search results with its respective count
+type FilterCount struct {
 	Type  string `json:"type"`
 	Count int    `json:"count"`
 }
 
 // ContentItem represents each search result
 type ContentItem struct {
-	Description Description `json:"description"`
-	Type        string      `json:"type"`
-	URI         string      `json:"uri"`
-	Matches     *Matches    `json:"matches,omitempty"`
+	Description
+	LegacyDescription LegacyDescription `json:"description"`
+	Type              string            `json:"type"`
+	URI               string            `json:"uri"`
+	Matches           *Matches          `json:"matches,omitempty"`
 }
 
-// Description represents each search result description
-type Description struct {
+// LegacyDescription represents each search result description which is given from data in ES 2.2
+type LegacyDescription struct {
+	CanonicalTopic    string    `json:"canonical_topic,omitempty"`
 	Contact           *Contact  `json:"contact,omitempty"`
 	DatasetID         string    `json:"dataset_id,omitempty"`
 	Edition           string    `json:"edition,omitempty"`
@@ -42,8 +46,29 @@ type Description struct {
 	Source            string    `json:"source,omitempty"`
 	Summary           string    `json:"summary"`
 	Title             string    `json:"title"`
+	Topics            []string  `json:"topics,omitempty"`
 	Unit              string    `json:"unit,omitempty"`
 	Highlight         Highlight `json:"highlight,omitempty"`
+}
+
+// Description represents each search result which is given from data in ES 7.10
+type Description struct {
+	CDID            string              `json:"cdid"`
+	DatasetID       string              `json:"dataset_id"`
+	Keywords        []string            `json:"keywords"`
+	MetaDescription string              `json:"meta_description"`
+	ReleaseDate     string              `json:"release_date,omitempty"`
+	Summary         string              `json:"summary"`
+	Title           string              `json:"title"`
+	Topics          []string            `json:"topics"`
+	Highlight       *Highlight          `json:"highlight,omitempty"`
+	DateChanges     []ReleaseDateChange `json:"date_changes,omitempty"`
+	Cancelled       bool                `json:"cancelled,omitempty"`
+	Finalised       bool                `json:"finalised,omitempty"`
+	ProvisionalDate string              `json:"provisional_date,omitempty"`
+	Published       bool                `json:"published,omitempty"`
+	Language        string              `json:"language,omitempty"`
+	Survey          string              `json:"survey,omitempty"`
 }
 
 // Highlight contains specific metadata with search keyword(s) highlighted
@@ -54,6 +79,7 @@ type Highlight struct {
 	MetaDescription string    `json:"meta_description,omitempty"`
 	DatasetID       string    `json:"dataset_id,omitempty"`
 	Edition         string    `json:"edition,omitempty"`
+	Topics          []string  `json:"topics,omitempty"`
 }
 
 // Contact represents each search result contact details
