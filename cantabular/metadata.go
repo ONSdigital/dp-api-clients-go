@@ -37,13 +37,11 @@ type MetadataTableQuery struct {
 					ReleaseDate              graphql.String `graphql:"Release_Date" json:"release_date" `
 				} `graphql:"Census_Releases" json:"census_releases"`
 
-				DatasetMnemonic2011        graphql.String   `graphql:"Dataset_Mnemonic_2011" json:"dataset_mnemonic2011" `
-				DatasetPopulation          graphql.String   `graphql:"Dataset_Population" json:"dataset_population"`
-				DisseminationSource        graphql.String   `graphql:"Dissemination_Source" json:"dissemination_source"`
-				GeographicCoverage         graphql.String   `graphql:"Geographic_Coverage" json:"geographic_coverage"`
-				GeographicVariableMnemonic graphql.String   `graphql:"Geographic_Variable_Mnemonic" json:"geographic_variable_mnemonic"`
-				LastUpdated                graphql.String   `graphql:"Last_Updated" json:"last_updated"`
-				Keywords                   []graphql.String `graphql:"Keywords" json:"keywords"`
+				DatasetMnemonic2011 graphql.String   `graphql:"Dataset_Mnemonic_2011" json:"dataset_mnemonic2011" `
+				DatasetPopulation   graphql.String   `graphql:"Dataset_Population" json:"dataset_population"`
+				GeographicCoverage  graphql.String   `graphql:"Geographic_Coverage" json:"geographic_coverage"`
+				LastUpdated         graphql.String   `graphql:"Last_Updated" json:"last_updated"`
+				Keywords            []graphql.String `graphql:"Keywords" json:"keywords"`
 
 				Publications []struct {
 					PublisherName    graphql.String `graphql:"Publisher_Name" json:"publisher_name"`
@@ -51,9 +49,7 @@ type MetadataTableQuery struct {
 					PublisherWebsite graphql.String `graphql:"Publisher_Website" json:"publisher_website"`
 				} `graphql:"Publications" json:"publications"`
 
-				RelatedDatasets  []graphql.String `graphql:"Related_Datasets" json:"related_datasets"`
-				ReleaseFrequency graphql.String   `graphql:"Release_Frequency" json:"release_frequency"`
-
+				RelatedDatasets []graphql.String `graphql:"Related_Datasets" json:"related_datasets"`
 				StatisticalUnit struct {
 					StatisticalUnit            graphql.String `graphql:"Statistical_Unit" json:"statistical_unit"`
 					StatisticalUnitDescription graphql.String `graphql:"Statistical_Unit_Description" json:"statistical_unit_description"`
@@ -66,7 +62,7 @@ type MetadataTableQuery struct {
 	} `graphql:"service(lang: $lang)" json:"service"`
 }
 
-type MetadataDatasetQuery struct {
+type MetadataDatasetQuery struct { // rename DatasetMDQuery
 	Dataset struct {
 		Label       graphql.String `graphql:"label" json:"label"`
 		Description graphql.String `graphql:"description" json:"description"`
@@ -85,18 +81,61 @@ type MetadataDatasetQuery struct {
 			} `graphql:"Source" json:"source"`
 		} `graphql:"meta" json:"meta"`
 		Vars []struct {
-			Name graphql.String `json:"name"`
-			Meta struct {
+			Description graphql.String `json:"description"`
+			Label       graphql.String `json:"label"`
+			Name        graphql.String `json:"name"`
+			Meta        struct {
+				DefaultClassificationFlag graphql.String `graphql:"Default_Classification_Flag" json:"default_classification_flag"`
+				Mnemonic2011              graphql.String `graphql:"Mnemonic_2011" json:"mnemonic_2011"`
+				Version                   graphql.String `graphql:"Version" json:"version"`
+
 				ONSVariable struct {
-					VariableDescription graphql.String   `graphql:"Variable_Description" json:"variable_description"`
-					Keywords            []graphql.String `graphql:"Keywords" json:"keywords"`
+					ComparabilityComments  graphql.String   `graphql:"Comparability_Comments" json:"comparability_comments"`
+					GeographicAbbreviation graphql.String   `graphql:"Geographic_Abbreviation" json:"geographic_abbreviation"`
+					GeographicCoverage     graphql.String   `graphql:"Geographic_Coverage" json:"geographic_coverage"`
+					GeographicTheme        graphql.String   `graphql:"Geographic_Theme" json:"geographic_theme"`
+					Keywords               []graphql.String `graphql:"Keywords" json:"keywords"`
+					QualityStatementText   graphql.String   `graphql:"Quality_Statement_Text"  json:"quality_statement_text"`
+					QualitySummaryURL      graphql.String   `graphql:"Quality_Summary_URL"  json:"quality_summary_url"`
+					UkComparisonComments   graphql.String   `graphql:"Uk_Comparison_Comments"  json:"uk_comparison_comments"`
+					VariableMnemonic       graphql.String   `graphql:"Variable_Mnemonic"  json:"variable_mnemonic"`
+					VariableMnemonic2011   graphql.String   `graphql:"Variable_Mnemonic_2011" json:"variable_mnemonic_2011"`
+					VariableTitle          graphql.String   `graphql:"Variable_Title"  json:"variable_title"`
+
+					Version graphql.String `graphql:"Version"  json:"version"`
+
+					Questions struct {
+						QuestionCode             graphql.String `graphql:"Question_Code" json:"question_code"`
+						QuestionFirstAskedInYear graphql.String `graphql:"Question_First_Asked_In_Year" json:"question_first_asked_in_year"`
+						QuestionLabel            graphql.String `graphql:"Question_Label" json:"question_label"`
+						ReasonForAskingQuestion  graphql.String `graphql:"Reason_For_Asking_Question" json:"reason_for_asking_question"`
+						Version                  graphql.String `graphql:"Version" json:"version"`
+					} `graphql:"Questions" json:"questions,omitempty"`
 
 					StatisticalUnit struct {
 						StatisticalUnit     graphql.String `graphql:"Statistical_Unit" json:"statistical_unit"`
 						StatisticalUnitDesc graphql.String `graphql:"Statistical_Unit_Description" json:"statistical_unit_desc"`
 					} `graphql:"Statistical_Unit" json:"statistical_unit"`
-				} `graphql:"ONS_Variable" json:"ons_variable"`
+
+					Topic struct {
+						TopicMnemonic    graphql.String `graphql:"Topic_Mnemonic" json:"topic_mnemonic"`
+						TopicDescription graphql.String `graphql:"Topic_Description" json:"topic_description"`
+						TopicTitle       graphql.String `graphql:"Topic_Title" json:"topic_title"`
+					} `graphql:"Topic" json:"topic"`
+
+					VariableType struct {
+						VariableTypeCode        graphql.String `graphql:"Variable_Type_Code" json:"variable_type_code"`
+						VariableTypeDescription graphql.String `graphql:"Variable_Type_Description" json:"variable_type_description"`
+					} `graphql:"Variable_Type" json:"variable_type"`
+				} `graphql:"ONS_Variable" json:"ONS_Variable"`
+
+				Topics []struct {
+					TopicMnemonic    graphql.String `graphql:"Topic_Mnemonic" json:"topic_mnemonic"`
+					TopicDescription graphql.String `graphql:"Topic_Description" json:"topic_description"`
+					TopicTitle       graphql.String `graphql:"Topic_Title" json:"topic_title"`
+				} `graphql:"Topics" json:"topics"`
 			} `json:"meta"`
+			CatLabels *graphql.String `graphql:"catLabels" json:"catLabels,omitempty"`
 		} `graphql:"vars(names: $vars)" json:"vars"`
 	} `graphql:"dataset(name: $ds, lang: $lang)" json:"dataset"`
 }
