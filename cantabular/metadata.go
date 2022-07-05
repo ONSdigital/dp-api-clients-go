@@ -20,6 +20,7 @@ type MetadataTableQuery struct {
 	Service struct {
 		Tables []struct {
 			Name        graphql.String   `json:"name"`
+			DatasetName graphql.String   `json:"dataset_name"`
 			Label       graphql.String   `json:"label"`
 			Description graphql.String   `json:"description"`
 			Vars        []graphql.String `json:"vars"`
