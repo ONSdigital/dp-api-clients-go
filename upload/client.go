@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	ErrFileTooLarge  = errors.New(fmt.Sprintf("file too large, max file size: %d MB", MaxFileSize>>20))
+	ErrFileTooLarge  = fmt.Errorf("file too large, max file size: %d MB", MaxFileSize>>20)
 	ErrNotAuthorized = errors.New("you are not authorized for this action")
 )
 

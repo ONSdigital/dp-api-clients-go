@@ -71,7 +71,7 @@ type SearchDimensionsRequest struct {
 // POST [cantabular-ext]/graphql
 // with a query to obtain variables
 type GetDimensionsResponse struct {
-	Dataset gql.DatasetVariables `json:"dataset"`
+	Dataset gql.Dataset `json:"dataset"`
 }
 
 // GetGeographyDimensionsRequest holds the request parameters for
@@ -87,7 +87,7 @@ type GetGeographyDimensionsRequest struct {
 // with a query to obtain geography variables
 type GetGeographyDimensionsResponse struct {
 	PaginationResponse
-	Dataset gql.DatasetRuleBase `json:"dataset"`
+	Dataset gql.Dataset `json:"dataset"`
 }
 
 // GetDimensionOptionsRequest holds the request variables required from the
@@ -101,6 +101,13 @@ type GetDimensionOptionsRequest struct {
 	Filters        []Filter
 }
 
+// GetDimensionOptionsResponse holds the response body for
+// POST [cantabular-ext]/graphql
+// with a query to obtain static dataset variables and categories, without values.
+type GetDimensionOptionsResponse struct {
+	Dataset StaticDatasetDimensionOptions `json:"dataset"`
+}
+
 // GetAreasRequest holds the request variables required for the
 // POST [cantabular-ext]/graphql QueryAreas query.
 type GetAreasRequest struct {
@@ -109,16 +116,20 @@ type GetAreasRequest struct {
 	Category string
 }
 
-// GetDimensionOptionsResponse holds the response body for
-// POST [cantabular-ext]/graphql
-// with a query to obtain static dataset variables and categories, without values.
-type GetDimensionOptionsResponse struct {
-	Dataset StaticDatasetDimensionOptions `json:"dataset"`
-}
-
 // GetAreasResponse holds the response body for
 // POST [cantabular-ext]/graphql
 // with a query to obtain static dataset variables and categories, without values.
 type GetAreasResponse struct {
-	Dataset gql.DatasetRuleBase `json:"dataset"`
+	Dataset gql.Dataset `json:"dataset"`
+}
+
+// GetParentsRequest holds the input parameters for the GetParents query
+type GetParentsRequest struct {
+	Dataset  string
+	Variable string
+}
+
+// GetParentsResponse is the response body for the GetParents query
+type GetParentsResponse struct {
+	Dataset gql.Dataset `json:"dataset"`
 }

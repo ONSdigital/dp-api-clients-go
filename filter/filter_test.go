@@ -861,6 +861,122 @@ func TestClient_GetDimensionOptionsInBatches(t *testing.T) {
 	})
 }
 
+func TestClient_DeleteDimensionOptions(t *testing.T) {
+
+	filterID := "foo"
+	name := "corge"
+
+	Convey("Given a Filter ID and Dimension name exist", t, func() {
+		newETag := "84798def3a75c8783b09e946d2fbf85e8a1dcce5"
+
+		r := &http.Response{
+			StatusCode: http.StatusNoContent,
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			r.Header.Set("ETag", newETag)
+			return r, nil
+		}
+		filterClient := newFilterClient(httpClient)
+
+		Convey("When DeleteDimensionOptions is called", func() {
+			eTag, err := filterClient.DeleteDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+
+			Convey("Then the new eTag is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETag)
+			})
+		})
+	})
+
+	Convey("Given a Filter ID exists but the Dimension name is incorrect", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusNotFound,
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			r.Header.Set("ETag", "")
+			return r, nil
+		}
+		filterClient := newFilterClient(httpClient)
+
+		Convey("When DeleteDimensionOptions is called", func() {
+			eTag, err := filterClient.DeleteDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+
+			Convey("Then an error is returned with no ETag", func() {
+				expectedErr := errors.Wrap(&ErrInvalidFilterAPIResponse{http.StatusNoContent, http.StatusNotFound, "http://localhost:8080/filters/foo/dimensions/corge/options"}, "unexpected response")
+				So(err.Error(), ShouldResemble, expectedErr.Error())
+				So(eTag, ShouldResemble, "")
+			})
+		})
+	})
+
+	Convey("Given a Filter ID is incorrect", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusBadRequest,
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			r.Header.Set("ETag", "")
+			return r, nil
+		}
+		filterClient := newFilterClient(httpClient)
+
+		Convey("When DeleteDimensionOptions is called", func() {
+			eTag, err := filterClient.DeleteDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+
+			Convey("Then an error is returned with no ETag", func() {
+				expectedErr := errors.Wrap(&ErrInvalidFilterAPIResponse{http.StatusNoContent, http.StatusBadRequest, "http://localhost:8080/filters/foo/dimensions/corge/options"}, "unexpected response")
+				So(err.Error(), ShouldResemble, expectedErr.Error())
+				So(eTag, ShouldResemble, "")
+			})
+		})
+	})
+
+	Convey("Given the filter-api returns a resource conflict", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusConflict,
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			r.Header.Set("ETag", "")
+			return r, nil
+		}
+		filterClient := newFilterClient(httpClient)
+
+		Convey("When DeleteDimensionOptions is called", func() {
+			eTag, err := filterClient.DeleteDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+
+			Convey("Then an error is returned with no ETag", func() {
+				expectedErr := errors.Wrap(&ErrInvalidFilterAPIResponse{http.StatusNoContent, http.StatusConflict, "http://localhost:8080/filters/foo/dimensions/corge/options"}, "unexpected response")
+				So(err.Error(), ShouldResemble, expectedErr.Error())
+				So(eTag, ShouldResemble, "")
+			})
+		})
+	})
+
+	Convey("Given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("dphttpclient.do is not available")
+		expectedError := errors.Wrap(mockErr, "failed to delete dimension options")
+
+		httpClient := newMockHTTPClient(nil, mockErr)
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when DeleteDimensionOptions is called", func() {
+			_, err := filterClient.DeleteDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, expectedError.Error())
+			})
+		})
+	})
+
+}
+
 func TestClient_CreateFlexBlueprint(t *testing.T) {
 	trueValue := true
 	datasetID := "foo"

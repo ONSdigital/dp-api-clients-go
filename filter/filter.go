@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
@@ -18,7 +20,6 @@ import (
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/v2/request"
 	"github.com/ONSdigital/log.go/v2/log"
-	"github.com/pkg/errors"
 )
 
 const service = "filter-api"
@@ -476,6 +477,42 @@ func (c *Client) GetDimensionOptionsBatchProcess(ctx context.Context, userAuthTo
 	}
 
 	return eTag, batch.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
+}
+
+// DeleteDimensionOptions completely removes the options array from a given dimension
+func (c *Client) DeleteDimensionOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string) (string, error) {
+	logData := log.Data{
+		"filter_id":      filterID,
+		"dimension_name": name,
+	}
+
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options", c.hcCli.URL, filterID, name)
+	clientlog.Do(ctx, "deleting selected dimension options", service, uri)
+
+	res, err := c.doDeleteWithAuthHeadersAndWithDownloadToken(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to delete dimension options")
+	}
+
+	defer closeResponseBody(ctx, res)
+
+	if res.StatusCode != http.StatusNoContent {
+		return "", dperrors.New(
+			errors.Wrap(&ErrInvalidFilterAPIResponse{http.StatusNoContent, res.StatusCode, uri}, "unexpected response"),
+			res.StatusCode,
+			logData,
+		)
+	}
+
+	eTag, err := headers.GetResponseETag(res)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		dperrors.New(
+			errors.Wrap(err, "no ETag header found"),
+			res.StatusCode,
+			logData,
+		)
+	}
+	return eTag, err
 }
 
 // CreateFlexibleBlueprint creates a flexible filter blueprint and returns the associated filterID and eTag
@@ -1397,6 +1434,26 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	}
 	if err = headers.SetDownloadServiceToken(req, downloadServiceAuthToken); err != nil {
 		return nil, fmt.Errorf("failed to set download service token: %w", err)
+	}
+	return c.hcCli.Client.Do(ctx, req)
+
+} // doDeleteWithAuthHeadersAndWithDownloadToken executes clienter.Do setting the user and service authentication and download token as a request header.
+// Returns the http.Response and any error.
+// It is the caller's responsibility to ensure response.Body is closed on completion.
+func (c *Client) doDeleteWithAuthHeadersAndWithDownloadToken(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodDelete, uri, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = headers.SetCollectionID(req, collectionID); err != nil {
+		return nil, fmt.Errorf("failed to set collection id: %w", err)
+	}
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return nil, fmt.Errorf("failed to set auth token: %w", err)
+	}
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return nil, fmt.Errorf("failed to set service auth token: %w", err)
 	}
 	return c.hcCli.Client.Do(ctx, req)
 }

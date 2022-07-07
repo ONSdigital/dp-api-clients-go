@@ -1,10 +1,7 @@
 package gql
 
-type DatasetRuleBase struct {
-	RuleBase RuleBase `json:"ruleBase"`
-}
-
-type DatasetVariables struct {
+type Dataset struct {
+	RuleBase  RuleBase  `json:"ruleBase"`
 	Variables Variables `json:"variables"`
 }
 
@@ -29,13 +26,14 @@ type Edge struct {
 }
 
 type Node struct {
-	Name       string      `json:"name"`
-	Code       string      `json:"code"`
-	Label      string      `json:"label"`
-	Categories Categories  `json:"categories"`
-	MapFrom    []Variables `json:"mapFrom"`
-	FilterOnly string      `json:"filterOnly,omitempty"`
-	Variable   Variable    `json:"variable"`
+	Name             string      `json:"name"`
+	Code             string      `json:"code"`
+	Label            string      `json:"label"`
+	Categories       Categories  `json:"categories"`
+	MapFrom          []Variables `json:"mapFrom"`
+	FilterOnly       string      `json:"filterOnly,omitempty"`
+	Variable         Variable    `json:"variable"`
+	IsDirectSourceOf Variables   `json:"isDirectSourceOf"`
 }
 
 type Categories struct {
