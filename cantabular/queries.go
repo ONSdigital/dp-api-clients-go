@@ -312,6 +312,7 @@ func (c *Client) postQuery(ctx context.Context, graphQLQuery string, data QueryD
 	}
 
 	b, err := data.Encode(graphQLQuery)
+	logData["query"] = b.String()
 	if err != nil {
 		return nil, dperrors.New(err, http.StatusInternalServerError, logData)
 	}
