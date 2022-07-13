@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/mock"
+	mock "github.com/ONSdigital/dp-api-clients-go/v2/cantabular/mock"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

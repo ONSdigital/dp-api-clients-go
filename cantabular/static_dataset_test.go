@@ -15,7 +15,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/mock"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
-	dphttp "github.com/ONSdigital/dp-net/http"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 

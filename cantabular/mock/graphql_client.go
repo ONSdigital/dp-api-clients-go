@@ -5,21 +5,26 @@ package mock
 
 import (
 	"context"
+	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"sync"
 )
 
-// GraphQLClientMock is a mock implementation of GraphQLClient.
+// Ensure, that GraphQLClientMock does implement cantabular.GraphQLClient.
+// If this is not the case, regenerate this file with moq.
+var _ cantabular.GraphQLClient = &GraphQLClientMock{}
+
+// GraphQLClientMock is a mock implementation of cantabular.GraphQLClient.
 //
 // 	func TestSomethingThatUsesGraphQLClient(t *testing.T) {
 //
-// 		// make and configure a mocked GraphQLClient
+// 		// make and configure a mocked cantabular.GraphQLClient
 // 		mockedGraphQLClient := &GraphQLClientMock{
 // 			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
 // 				panic("mock out the Query method")
 // 			},
 // 		}
 //
-// 		// use mockedGraphQLClient in code that requires GraphQLClient
+// 		// use mockedGraphQLClient in code that requires cantabular.GraphQLClient
 // 		// and then make assertions.
 //
 // 	}
