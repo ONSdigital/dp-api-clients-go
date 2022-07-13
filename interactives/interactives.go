@@ -126,7 +126,7 @@ func (c *Client) GetInteractive(ctx context.Context, userAuthToken, serviceAuthT
 }
 
 // ListInteractives returns the list of interactives
-func (c *Client) ListInteractives(ctx context.Context, userAuthToken, serviceAuthToken string, filter *InteractiveFilter) (m []Interactive, err error) {
+func (c *Client) ListInteractives(ctx context.Context, userAuthToken, serviceAuthToken string, filter *Filter) (m []Interactive, err error) {
 	uri := fmt.Sprintf("%s/%s/%s", c.hcCli.URL, c.version, rootPath)
 	var qVals url.Values
 	if filter != nil {
