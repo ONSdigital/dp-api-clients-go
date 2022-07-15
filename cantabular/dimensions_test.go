@@ -73,7 +73,7 @@ func TestGetDimensionsUnhappy(t *testing.T) {
 			})
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedInternalServeError)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 			})
 
 			Convey("And no response is returned", func() {
@@ -166,7 +166,7 @@ func TestGetGeographyDimensionsUnhappy(t *testing.T) {
 			})
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedInternalServeError)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 			})
 			Convey("And no response is returned", func() {
 				So(resp, ShouldBeNil)
@@ -270,7 +270,7 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 			})
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedInternalServeError)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 			})
 
 			Convey("And no response is returned", func() {
@@ -354,9 +354,8 @@ func TestSearchDimensionsUnhappy(t *testing.T) {
 			})
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedInternalServeError)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 			})
-
 			Convey("And no response is returned", func() {
 				So(resp, ShouldBeNil)
 			})
@@ -490,7 +489,7 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 			})
 
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedInternalServeError)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 			})
 
 			Convey("And no response is returned", func() {
@@ -655,8 +654,8 @@ func TestGetParentsUnhappy(t *testing.T) {
 			resp, err := client.GetParents(ctx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(client.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 			})
+			So(client.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 
 			Convey("And no response is returned", func() {
 				So(resp, ShouldBeNil)
