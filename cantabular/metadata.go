@@ -38,11 +38,11 @@ type MetadataTableQuery struct {
 					ReleaseDate              graphql.String `graphql:"Release_Date" json:"release_date" `
 				} `graphql:"Census_Releases" json:"census_releases"`
 
-				DatasetMnemonic2011 graphql.String   `graphql:"Dataset_Mnemonic_2011" json:"dataset_mnemonic2011" `
-				DatasetPopulation   graphql.String   `graphql:"Dataset_Population" json:"dataset_population"`
-				GeographicCoverage  graphql.String   `graphql:"Geographic_Coverage" json:"geographic_coverage"`
-				LastUpdated         graphql.String   `graphql:"Last_Updated" json:"last_updated"`
-				Keywords            []graphql.String `graphql:"Keywords" json:"keywords"`
+				DatasetMnemonic2011 graphql.String `graphql:"Dataset_Mnemonic_2011" json:"dataset_mnemonic2011" `
+				DatasetPopulation   graphql.String `graphql:"Dataset_Population" json:"dataset_population"`
+				GeographicCoverage  graphql.String `graphql:"Geographic_Coverage" json:"geographic_coverage"`
+				LastUpdated         graphql.String `graphql:"Last_Updated" json:"last_updated"`
+				//Keywords            []graphql.String `graphql:"Keywords" json:"keywords"`
 
 				Publications []struct {
 					PublisherName    graphql.String `graphql:"Publisher_Name" json:"publisher_name"`
@@ -56,8 +56,8 @@ type MetadataTableQuery struct {
 					StatisticalUnitDescription graphql.String `graphql:"Statistical_Unit_Description" json:"statistical_unit_description"`
 				} `graphql:"Statistical_Unit" json:"statistical_unit"`
 
-				UniqueUrl graphql.String `graphql:"Unique_Url" json:"unique_url"`
-				Version   graphql.String `graphql:"Version" json:"version"`
+				//UniqueUrl graphql.String `graphql:"Unique_Url" json:"unique_url"`
+				Version graphql.String `graphql:"Version" json:"version"`
 			} `json:"meta"`
 		} `graphql:"tables(names: $vars)" json:"tables"`
 	} `graphql:"service(lang: $lang)" json:"service"`
