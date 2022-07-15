@@ -3,11 +3,11 @@ module github.com/ONSdigital/dp-api-clients-go/v2
 go 1.18
 
 require (
-	github.com/ONSdigital/dp-healthcheck v1.4.0-beta
-	github.com/ONSdigital/dp-mocking v0.9.0-beta
+	github.com/ONSdigital/dp-healthcheck v1.3.0
+	github.com/ONSdigital/dp-mocking v0.0.0-20190905163309-fee2702ad1b9
 	github.com/ONSdigital/dp-net v1.4.1
-	github.com/ONSdigital/dp-net/v2 v2.5.0-beta
-	github.com/ONSdigital/log.go/v2 v2.3.0-beta
+	github.com/ONSdigital/dp-net/v2 v2.4.0
+	github.com/ONSdigital/log.go/v2 v2.2.0
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/mux v1.8.0
 	github.com/pkg/errors v0.9.1
@@ -17,6 +17,7 @@ require (
 
 require (
 	github.com/ONSdigital/dp-api-clients-go v1.43.0 // indirect
+	github.com/ONSdigital/log.go v1.1.0 // indirect
 	github.com/aws/aws-sdk-go v1.44.43 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
