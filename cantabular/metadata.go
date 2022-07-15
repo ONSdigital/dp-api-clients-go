@@ -25,7 +25,8 @@ type MetadataTableQuery struct {
 			Description graphql.String   `json:"description"`
 			Vars        []graphql.String `json:"vars"`
 			Meta        struct {
-				Contact struct {
+				Alternate_Geographic_Variables []graphql.String `graphql:"Alternate_Geographic_Variables" json:"alternate_geographic_variables"`
+				Contact                        struct {
 					ContactName    graphql.String `graphql:"Contact_Name" json:"contact_name"`
 					ContactEmail   graphql.String `graphql:"Contact_Email" json:"contact_email"`
 					ContactPhone   graphql.String `graphql:"Contact_Phone" json:"contact_phone"`
@@ -42,6 +43,24 @@ type MetadataTableQuery struct {
 				DatasetPopulation   graphql.String `graphql:"Dataset_Population" json:"dataset_population"`
 				GeographicCoverage  graphql.String `graphql:"Geographic_Coverage" json:"geographic_coverage"`
 				LastUpdated         graphql.String `graphql:"Last_Updated" json:"last_updated"`
+				Observation_Type    struct {
+					Observation_Type_Description graphql.String `graphql:"Observation_Type_Description" json:"observation_type_description"`
+
+					Observation_Type_Label graphql.String `graphql:"Observation_Type_Label" json:"observation_type_label"`
+
+					Decimal_Places graphql.String `graphql:"Decimal_Places" json:"decimal_places"`
+
+					Prefix graphql.String `graphql:"Prefix" json:"prefix"`
+
+					Suffix graphql.String `graphql:"Suffix" json:"suffix"`
+
+					FillTrailingSpaces graphql.String `graphql:"FillTrailingSpaces" json:"fill_trailing_spaces"`
+
+					NegativeSign graphql.String `graphql:"NegativeSign" json:"negative_sign"`
+
+					Observation_Type_Code graphql.String `graphql:"Observation_Type_Code" json:"observation_type_code"`
+				} `graphql:"Observation_Type" json:"observation_type"`
+
 				//Keywords            []graphql.String `graphql:"Keywords" json:"keywords"`
 
 				Publications []struct {
@@ -51,6 +70,7 @@ type MetadataTableQuery struct {
 				} `graphql:"Publications" json:"publications"`
 
 				RelatedDatasets []graphql.String `graphql:"Related_Datasets" json:"related_datasets"`
+
 				StatisticalUnit struct {
 					StatisticalUnit            graphql.String `graphql:"Statistical_Unit" json:"statistical_unit"`
 					StatisticalUnitDescription graphql.String `graphql:"Statistical_Unit_Description" json:"statistical_unit_description"`
