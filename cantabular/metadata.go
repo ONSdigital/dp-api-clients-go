@@ -111,17 +111,17 @@ type MetadataDatasetQuery struct { // rename DatasetMDQuery
 				Version                   graphql.String `graphql:"Version" json:"version"`
 
 				ONSVariable struct {
-					ComparabilityComments  graphql.String   `graphql:"Comparability_Comments" json:"comparability_comments"`
-					GeographicAbbreviation graphql.String   `graphql:"Geographic_Abbreviation" json:"geographic_abbreviation"`
-					GeographicCoverage     graphql.String   `graphql:"Geographic_Coverage" json:"geographic_coverage"`
-					GeographicTheme        graphql.String   `graphql:"Geographic_Theme" json:"geographic_theme"`
-					Keywords               []graphql.String `graphql:"Keywords" json:"keywords"`
-					QualityStatementText   graphql.String   `graphql:"Quality_Statement_Text"  json:"quality_statement_text"`
-					QualitySummaryURL      graphql.String   `graphql:"Quality_Summary_URL"  json:"quality_summary_url"`
-					UkComparisonComments   graphql.String   `graphql:"Uk_Comparison_Comments"  json:"uk_comparison_comments"`
-					VariableMnemonic       graphql.String   `graphql:"Variable_Mnemonic"  json:"variable_mnemonic"`
-					VariableMnemonic2011   graphql.String   `graphql:"Variable_Mnemonic_2011" json:"variable_mnemonic_2011"`
-					VariableTitle          graphql.String   `graphql:"Variable_Title"  json:"variable_title"`
+					ComparabilityComments graphql.String `graphql:"Comparability_Comments" json:"comparability_comments"`
+					//					GeographicAbbreviation graphql.String   `graphql:"Geographic_Abbreviation" json:"geographic_abbreviation"`
+					GeographicCoverage graphql.String `graphql:"Geographic_Coverage" json:"geographic_coverage"`
+					GeographicTheme    graphql.String `graphql:"Geographic_Theme" json:"geographic_theme"`
+					//					Keywords             []graphql.String `graphql:"Keywords" json:"keywords"`
+					QualityStatementText graphql.String `graphql:"Quality_Statement_Text"  json:"quality_statement_text"`
+					QualitySummaryURL    graphql.String `graphql:"Quality_Summary_URL"  json:"quality_summary_url"`
+					UkComparisonComments graphql.String `graphql:"Uk_Comparison_Comments"  json:"uk_comparison_comments"`
+					VariableMnemonic     graphql.String `graphql:"Variable_Mnemonic"  json:"variable_mnemonic"`
+					VariableMnemonic2011 graphql.String `graphql:"Variable_Mnemonic_2011" json:"variable_mnemonic_2011"`
+					VariableTitle        graphql.String `graphql:"Variable_Title"  json:"variable_title"`
 
 					Version graphql.String `graphql:"Version"  json:"version"`
 
@@ -212,6 +212,10 @@ func (c *Client) MetadataTableQuery(ctx context.Context, req MetadataTableQueryR
 
 // MetadataDatasetQuery
 func (c *Client) MetadataDatasetQuery(ctx context.Context, req MetadataDatasetQueryRequest) (*MetadataDatasetQuery, error) {
+
+	//c.gqlClient = graphql.NewClient("http://localhost:2112/graphql", &http.Client{})
+	//q.Q(c)
+
 	if c.gqlClient == nil {
 		return nil, dperrors.New(
 			errors.New("cantabular metadata client not configured"),
