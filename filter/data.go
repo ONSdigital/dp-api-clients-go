@@ -22,12 +22,13 @@ type Dimensions struct {
 
 // Dimension represents a dimension response from the filter api
 type Dimension struct {
-	Name       string   `json:"name"`
-	ID         string   `json:"id,omitempty"`
-	Label      string   `json:"label,omitempty"`
-	URI        string   `json:"dimension_url"`
-	IsAreaType *bool    `json:"is_area_type,omitempty"`
-	Options    []string `json:"options,omitempty"`
+	Name           string   `json:"name"`
+	ID             string   `json:"id,omitempty"`
+	Label          string   `json:"label,omitempty"`
+	URI            string   `json:"dimension_url"`
+	IsAreaType     *bool    `json:"is_area_type,omitempty"`
+	Options        []string `json:"options,omitempty"`
+	FilterByParent string   `json:"filter_by_parent,omitempty"`
 }
 
 // DimensionOption represents a dimension option from the filter api
@@ -108,13 +109,14 @@ type Link struct {
 
 // ModelDimension represents a dimension to be filtered upon
 type ModelDimension struct {
-	Name       string   `json:"name"`
-	ID         string   `json:"id"`
-	Label      string   `json:"label"`
-	URI        string   `json:"dimension_url,omitempty"`
-	IsAreaType *bool    `json:"is_area_type,omitempty"`
-	Options    []string `json:"options"`
-	Values     []string `json:"values"`
+	Name           string   `json:"name"`
+	ID             string   `json:"id"`
+	Label          string   `json:"label"`
+	URI            string   `json:"dimension_url,omitempty"`
+	IsAreaType     *bool    `json:"is_area_type,omitempty"`
+	Options        []string `json:"options"`
+	Values         []string `json:"values"`
+	FilterByParent string   `json:"filter_by_parent,omitempty"`
 }
 
 // Download represents a download within a filter from api response
