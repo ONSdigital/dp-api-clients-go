@@ -1328,7 +1328,7 @@ const mockRespBodyGetParents = `
 				"edges": [
 					{
 						"node": {
-							"isDirectSourceOf": {
+							"isSourceOf": {
 								"edges": [
 									{
 										"node": {
@@ -1337,6 +1337,15 @@ const mockRespBodyGetParents = `
 											},
 											"label": "Country",
 											"name": "country"
+										}
+									},
+									{
+										"node": {
+											"categories": {
+												"totalCount": 3
+											},
+											"label": "City",
+											"name": "city"
 										}
 									}
 								],
@@ -1360,7 +1369,7 @@ var expectedParents = cantabular.GetParentsResponse{
 					Node: gql.Node{
 						Name:  "city",
 						Label: "City",
-						IsDirectSourceOf: gql.Variables{
+						IsSourceOf: gql.Variables{
 							Edges: []gql.Edge{
 								{
 									Node: gql.Node{

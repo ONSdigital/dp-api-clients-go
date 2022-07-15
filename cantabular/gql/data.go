@@ -34,6 +34,7 @@ type Node struct {
 	FilterOnly       string      `json:"filterOnly,omitempty"`
 	Variable         Variable    `json:"variable"`
 	IsDirectSourceOf Variables   `json:"isDirectSourceOf"`
+	IsSourceOf       Variables   `json:"isSourceOf"`
 }
 
 type Categories struct {

@@ -194,22 +194,22 @@ query ($dataset: String!, $variables: [String!]!) {
   dataset(name: $dataset) {
     variables(names: $variables){
       edges{
-	node{
-	  label
-	  name
-	  isDirectSourceOf{
-	    totalCount
-	    edges{
-	      node{
-		label
-		name
-		categories{
-		  totalCount
-		}
-	      }
-	    }
-	  }
-	}
+        node{
+          label
+          name
+          isSourceOf{
+            totalCount
+            edges{
+              node{
+                label
+                name
+                categories{
+                  totalCount
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
