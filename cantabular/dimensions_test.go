@@ -68,6 +68,10 @@ func TestGetDimensionsUnhappy(t *testing.T) {
 		Convey("When GetDimensions is called", func() {
 			resp, err := cantabularClient.GetDimensions(testCtx, "Teaching-Dataset")
 
+			Convey("Then the expected error is not nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+
 			Convey("Then the expected error is returned", func() {
 				So(err, ShouldResemble, expectedInternalServeError)
 			})
@@ -157,10 +161,13 @@ func TestGetGeographyDimensionsUnhappy(t *testing.T) {
 				},
 			})
 
+			Convey("Then the expected error shoud not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+
 			Convey("Then the expected error is returned", func() {
 				So(err, ShouldResemble, expectedInternalServeError)
 			})
-
 			Convey("And no response is returned", func() {
 				So(resp, ShouldBeNil)
 			})
@@ -258,6 +265,10 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 			}
 			resp, err := cantabularClient.GetDimensionsByName(testCtx, req)
 
+			Convey("Then the expected error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+
 			Convey("Then the expected error is returned", func() {
 				So(err, ShouldResemble, expectedInternalServeError)
 			})
@@ -337,6 +348,10 @@ func TestSearchDimensionsUnhappy(t *testing.T) {
 				Text:    "country",
 			}
 			resp, err := cantabularClient.SearchDimensions(testCtx, req)
+
+			Convey("Then the expected error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
 
 			Convey("Then the expected error is returned", func() {
 				So(err, ShouldResemble, expectedInternalServeError)
@@ -469,6 +484,10 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 				DimensionNames: []string{"Country", "Age", "Occupation"},
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
+
+			Convey("Then the expected error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
 
 			Convey("Then the expected error is returned", func() {
 				So(err, ShouldResemble, expectedInternalServeError)
@@ -1069,116 +1088,116 @@ var expectedSearchDimensionsResponse = cantabular.GetDimensionsResponse{
 var mockRespBodyGetDimensionOptions = `
 {
     "data": {
-        "dataset": {
-            "table": {
-                "dimensions": [
-                    {
-                        "categories": [
-                            {
-                                "code": "E",
-                                "label": "England"
-                            },
-                            {
-                                "code": "W",
-                                "label": "Wales"
-                            }
-                        ],
-                        "variable": {
-                            "label": "Country",
-                            "name": "Country"
-                        }
-                    },
-                    {
-                        "categories": [
-                            {
-                                "code": "1",
-                                "label": "0 to 15"
-                            },
-                            {
-                                "code": "2",
-                                "label": "16 to 24"
-                            },
-                            {
-                                "code": "3",
-                                "label": "25 to 34"
-                            },
-                            {
-                                "code": "4",
-                                "label": "35 to 44"
-                            },
-                            {
-                                "code": "5",
-                                "label": "45 to 54"
-                            },
-                            {
-                                "code": "6",
-                                "label": "55 to 64"
-                            },
-                            {
-                                "code": "7",
-                                "label": "65 to 74"
-                            },
-                            {
-                                "code": "8",
-                                "label": "75 and over"
-                            }
-                        ],
-                        "variable": {
-                            "label": "Age",
-                            "name": "Age"
-                        }
-                    },
-                    {
-                        "categories": [
-                            {
-                                "code": "1",
-                                "label": "Managers, Directors and Senior Officials"
-                            },
-                            {
-                                "code": "2",
-                                "label": "Professional Occupations"
-                            },
-                            {
-                                "code": "3",
-                                "label": "Associate Professional and Technical Occupations"
-                            },
-                            {
-                                "code": "4",
-                                "label": "Administrative and Secretarial Occupations"
-                            },
-                            {
-                                "code": "5",
-                                "label": "Skilled Trades Occupations"
-                            },
-                            {
-                                "code": "6",
-                                "label": "Caring, Leisure and Other Service Occupations"
-                            },
-                            {
-                                "code": "7",
-                                "label": "Sales and Customer Service Occupations"
-                            },
-                            {
-                                "code": "8",
-                                "label": "Process, Plant and Machine Operatives"
-                            },
-                            {
-                                "code": "9",
-                                "label": "Elementary Occupations"
-                            },
-                            {
-                                "code": "-9",
-                                "label": "N/A"
-                            }
-                        ],
-                        "variable": {
-                            "label": "Occupation",
-                            "name": "Occupation"
-                        }
-                    }
-                ]
-            }
-        }
+	"dataset": {
+	    "table": {
+		"dimensions": [
+		    {
+			"categories": [
+			    {
+				"code": "E",
+				"label": "England"
+			    },
+			    {
+				"code": "W",
+				"label": "Wales"
+			    }
+			],
+			"variable": {
+			    "label": "Country",
+			    "name": "Country"
+			}
+		    },
+		    {
+			"categories": [
+			    {
+				"code": "1",
+				"label": "0 to 15"
+			    },
+			    {
+				"code": "2",
+				"label": "16 to 24"
+			    },
+			    {
+				"code": "3",
+				"label": "25 to 34"
+			    },
+			    {
+				"code": "4",
+				"label": "35 to 44"
+			    },
+			    {
+				"code": "5",
+				"label": "45 to 54"
+			    },
+			    {
+				"code": "6",
+				"label": "55 to 64"
+			    },
+			    {
+				"code": "7",
+				"label": "65 to 74"
+			    },
+			    {
+				"code": "8",
+				"label": "75 and over"
+			    }
+			],
+			"variable": {
+			    "label": "Age",
+			    "name": "Age"
+			}
+		    },
+		    {
+			"categories": [
+			    {
+				"code": "1",
+				"label": "Managers, Directors and Senior Officials"
+			    },
+			    {
+				"code": "2",
+				"label": "Professional Occupations"
+			    },
+			    {
+				"code": "3",
+				"label": "Associate Professional and Technical Occupations"
+			    },
+			    {
+				"code": "4",
+				"label": "Administrative and Secretarial Occupations"
+			    },
+			    {
+				"code": "5",
+				"label": "Skilled Trades Occupations"
+			    },
+			    {
+				"code": "6",
+				"label": "Caring, Leisure and Other Service Occupations"
+			    },
+			    {
+				"code": "7",
+				"label": "Sales and Customer Service Occupations"
+			    },
+			    {
+				"code": "8",
+				"label": "Process, Plant and Machine Operatives"
+			    },
+			    {
+				"code": "9",
+				"label": "Elementary Occupations"
+			    },
+			    {
+				"code": "-9",
+				"label": "N/A"
+			    }
+			],
+			"variable": {
+			    "label": "Occupation",
+			    "name": "Occupation"
+			}
+		    }
+		]
+	    }
+	}
     }
 }`
 
@@ -1241,30 +1260,30 @@ var mockRespBodyGetAreas = `
   "data": {
     "dataset": {
       "ruleBase": {
-        "isSourceOf": {
-          "search": {
-            "edges": [
-              {
-                "node": {
-                  "label": "City",
-                  "name": "city",
-                  "categories": {
-                    "search": {
-                      "edges": [
-                        {
-                          "node": {
-                            "code": "0",
-                            "label": "London"
-                          }
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        }
+	"isSourceOf": {
+	  "search": {
+	    "edges": [
+	      {
+		"node": {
+		  "label": "City",
+		  "name": "city",
+		  "categories": {
+		    "search": {
+		      "edges": [
+			{
+			  "node": {
+			    "code": "0",
+			    "label": "London"
+			  }
+			}
+		      ]
+		    }
+		  }
+		}
+	      }
+	    ]
+	  }
+	}
       }
     }
   }

@@ -288,7 +288,7 @@ func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, data Q
 	if err != nil {
 		return dperrors.New(
 			fmt.Errorf("failed to read response body: %s", err),
-			res.StatusCode,
+			c.StatusCode(err),
 			logData,
 		)
 	}
