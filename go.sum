@@ -1,5 +1,5 @@
-github.com/ONSdigital/dp-healthcheck v1.4.0-beta h1:rnFF65/1gaswgOzs4zMjoR7yD4vF+8aqoOQ9SRS1DB0=
-github.com/ONSdigital/dp-healthcheck v1.4.0-beta/go.mod h1:rIy35w7Bqos8+iSMISsiYG4GsDUH7vgKgtjAQCP5cVo=
+github.com/ONSdigital/dp-healthcheck v1.4.0-beta.1 h1:U5rgko7nWxZK22fIor4v81Mu/34aR6NrccMxbTPCZY8=
+github.com/ONSdigital/dp-healthcheck v1.4.0-beta.1/go.mod h1:YwWlueMucOMrTJ7648o9H2JdIS8naNw6gI2/Mu82YTE=
 github.com/ONSdigital/dp-mocking v0.9.0-beta h1:a1tpJ39sh76JQcM9kHqJMKgEnbIJ7pTc0HSXhhymRJ4=
 github.com/ONSdigital/dp-mocking v0.9.0-beta/go.mod h1:P89YTyW9Oy6JGlI2asrUCIgXVno6XPBG8ZwfPUE+FBU=
 github.com/ONSdigital/dp-net/v2 v2.5.0-beta h1:be/sM3nEXy5ejU/bvpO/KigUXcfED9o6c+zAh/V2K74=
