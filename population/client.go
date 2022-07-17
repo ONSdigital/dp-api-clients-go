@@ -35,6 +35,13 @@ type GetAreasInput struct {
 	Text             string
 }
 
+type GetAreaTypeParentsInput struct {
+	UserAuthToken    string
+	ServiceAuthToken string
+	DatasetID        string
+	AreaTypeID       string
+}
+
 // NewClient creates a new instance of Client with a given Population Type API URL
 func NewClient(apiURL string) (*Client, error) {
 	client := health.NewClient(service, apiURL)
@@ -262,6 +269,58 @@ func (c *Client) GetAreas(ctx context.Context, input GetAreasInput) (GetAreasRes
 	}
 
 	return areas, nil
+}
+
+func (c *Client) GetAreaTypeParents(ctx context.Context, input GetAreaTypeParentsInput) (GetAreaTypeParentsResponse, error) {
+	logData := log.Data{
+		"method":       http.MethodGet,
+		"dataset_id":   input.DatasetID,
+		"area_type_id": input.AreaTypeID,
+	}
+
+	urlPath := fmt.Sprintf("population-types/%s/area-types/%s/parents", input.DatasetID, input.AreaTypeID)
+	var urlValues map[string][]string
+
+	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
+	if err != nil {
+		return GetAreaTypeParentsResponse{}, dperrors.New(
+			err,
+			dperrors.StatusCode(err),
+			logData,
+		)
+	}
+
+	clientlog.Do(ctx, "getting area-types parents", service, req.URL.String(), logData)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return GetAreaTypeParentsResponse{}, dperrors.New(
+			errors.Wrap(err, "failed to get response from Dimensions API"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}()
+
+	if err := checkGetResponse(resp); err != nil {
+		return GetAreaTypeParentsResponse{}, err
+	}
+
+	var atp GetAreaTypeParentsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&atp); err != nil {
+		return GetAreaTypeParentsResponse{}, dperrors.New(
+			errors.Wrap(err, "unable to deserialize areas response"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	return atp, nil
 }
 
 // newRequest creates a new http.Request with auth headers

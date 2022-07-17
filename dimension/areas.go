@@ -4,7 +4,7 @@ package dimension
 type Area struct {
 	ID       string `json:"id"`
 	Label    string `json:"label"`
-	AreaType string `json:"area-type"`
+	AreaType string `json:"area_type"`
 }
 
 // GetAreasResponse is the response object for GET /areas
