@@ -1,6 +1,6 @@
 package identity
 
-//go:generate moq -out mock/token_identity.go . TokenIdentity
+//go:generate moq -out mock/token_identity.go -pkg mock . TokenIdentity
 
 import (
 	"context"
