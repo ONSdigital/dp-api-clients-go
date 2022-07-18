@@ -2,8 +2,8 @@ github.com/ONSdigital/dp-healthcheck v1.4.0-beta.1 h1:U5rgko7nWxZK22fIor4v81Mu/3
 github.com/ONSdigital/dp-healthcheck v1.4.0-beta.1/go.mod h1:YwWlueMucOMrTJ7648o9H2JdIS8naNw6gI2/Mu82YTE=
 github.com/ONSdigital/dp-mocking v0.9.0-beta h1:a1tpJ39sh76JQcM9kHqJMKgEnbIJ7pTc0HSXhhymRJ4=
 github.com/ONSdigital/dp-mocking v0.9.0-beta/go.mod h1:P89YTyW9Oy6JGlI2asrUCIgXVno6XPBG8ZwfPUE+FBU=
-github.com/ONSdigital/dp-net/v2 v2.5.0-beta h1:be/sM3nEXy5ejU/bvpO/KigUXcfED9o6c+zAh/V2K74=
-github.com/ONSdigital/dp-net/v2 v2.5.0-beta/go.mod h1:QJK9K2N8qwjMS5nZEzxSVALxJ/72KHAFDyFLj/mdLtw=
+github.com/ONSdigital/dp-net/v2 v2.5.0-beta.2 h1:I3XMUHQaq9nyzRq/teqQO6bZvb9g6AcSL2/lW85nuOQ=
+github.com/ONSdigital/dp-net/v2 v2.5.0-beta.2/go.mod h1:exhi6j2y2a9XQ7DKNZ1nnLlnEDL3usAp0DGB5X3/Yqo=
 github.com/ONSdigital/log.go/v2 v2.3.0-beta h1:nRTqVbLRJ24UUfZLcbD8pRWGCJwOwtB6/SOX706ueLQ=
 github.com/ONSdigital/log.go/v2 v2.3.0-beta/go.mod h1:rfe7OO0rXInVz7gLWmuPlpHilNKcSmRHgMvT23UrH30=
 github.com/fatih/color v1.13.0 h1:8LOYc1KYPPmyKMuN8QV2DNRWNbLo6LZ0iLs8+mlH53w=
@@ -58,8 +58,8 @@ golang.org/x/sys v0.0.0-20210330210617-4fbd30eecc44/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20210510120138-977fb7262007/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210927094055-39ccf1dd6fa6/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-golang.org/x/sys v0.0.0-20220712014510-0a85c31ab51e h1:NHvCuwuS43lGnYhten69ZWqi2QOj/CiDNcKbVqwVoew=
-golang.org/x/sys v0.0.0-20220712014510-0a85c31ab51e/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 h1:0A+M6Uqn+Eje4kHMK80dtF3JCXC4ykBgQG4Fe06QRhQ=
+golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.3/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
