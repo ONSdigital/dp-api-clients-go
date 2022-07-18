@@ -165,24 +165,24 @@ query ($dataset: String!, $text: String!, $category: String!) {
   dataset(name: $dataset) {
     ruleBase {
       isSourceOf {
-        search(text: $text) {
-          edges {
-            node {
-              label
-              name
-              categories {
-                search(text: $category) {
-                  edges {
-                    node {
-                      code
-                      label
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+	search(text: $text) {
+	  edges {
+	    node {
+	      label
+	      name
+	      categories {
+		search(text: $category) {
+		  edges {
+		    node {
+		      code
+		      label
+		    }
+		  }
+		}
+	      }
+	    }
+	  }
+	}
       }
     }
   }
@@ -194,22 +194,22 @@ query ($dataset: String!, $variables: [String!]!) {
   dataset(name: $dataset) {
     variables(names: $variables){
       edges{
-        node{
-          label
-          name
-          isDirectSourceOf{
-            totalCount
-            edges{
-              node{
-                label
-                name
-                categories{
-                  totalCount
-                }
-              }
-            }
-          }
-        }
+	node{
+	  label
+	  name
+	  isDirectSourceOf{
+	    totalCount
+	    edges{
+	      node{
+		label
+		name
+		categories{
+		  totalCount
+		}
+	      }
+	    }
+	  }
+	}
       }
     }
   }
@@ -268,20 +268,29 @@ func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, data QueryData, v interface{}) error {
 	url := fmt.Sprintf("%s/graphql", c.extApiHost)
 
-	res, err := c.postQuery(ctx, graphQLQuery, data)
-	defer closeResponseBody(ctx, res)
-	if err != nil {
-		return err
+	logData := log.Data{
+		"url":        url,
+		"query":      graphQLQuery,
+		"query_data": data,
 	}
+
+	res, err := c.postQuery(ctx, graphQLQuery, data)
+	if err != nil {
+		//		return err
+		return dperrors.New(
+			fmt.Errorf("failed to post query: %s", err),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+	defer closeResponseBody(ctx, res)
 
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return dperrors.New(
 			fmt.Errorf("failed to read response body: %s", err),
-			res.StatusCode,
-			log.Data{
-				"url": url,
-			},
+			c.StatusCode(err),
+			logData,
 		)
 	}
 
@@ -289,10 +298,7 @@ func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, data Q
 		return dperrors.New(
 			fmt.Errorf("failed to unmarshal response body: %s", err),
 			http.StatusInternalServerError,
-			log.Data{
-				"url":           url,
-				"response_body": string(b),
-			},
+			logData,
 		)
 	}
 
@@ -307,8 +313,7 @@ func (c *Client) postQuery(ctx context.Context, graphQLQuery string, data QueryD
 	url := fmt.Sprintf("%s/graphql", c.extApiHost)
 
 	logData := log.Data{
-		"url":        url,
-		"query_data": data,
+		"url": url,
 	}
 
 	b, err := data.Encode(graphQLQuery)
@@ -322,7 +327,7 @@ func (c *Client) postQuery(ctx context.Context, graphQLQuery string, data QueryD
 	if err != nil {
 		return nil, dperrors.New(
 			fmt.Errorf("failed to make GraphQL query: %w", err),
-			http.StatusInternalServerError,
+			c.StatusCode(err),
 			logData,
 		)
 	}
