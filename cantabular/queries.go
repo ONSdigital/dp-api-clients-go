@@ -276,7 +276,6 @@ func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, data Q
 
 	res, err := c.postQuery(ctx, graphQLQuery, data)
 	if err != nil {
-		//		return err
 		return dperrors.New(
 			fmt.Errorf("failed to post query: %s", err),
 			http.StatusInternalServerError,
