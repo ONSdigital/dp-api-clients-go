@@ -6,7 +6,6 @@ const (
 	PatchArchive     PatchAttribute = "Archive"
 	Publish          PatchAttribute = "Publish"
 	LinkToCollection PatchAttribute = "LinkToCollection"
-	PatchArchiveFile PatchAttribute = "ArchiveFile"
 )
 
 type PatchAttribute string
@@ -14,7 +13,6 @@ type PatchAttribute string
 type PatchRequest struct {
 	Attribute    PatchAttribute `json:"attribute,omitempty"`
 	Interactive  Interactive    `json:"interactive,omitempty"`
-	ArchiveFiles []*ArchiveFile `json:"archive_files,omitempty"`
 }
 
 type Filter struct {
@@ -45,13 +43,6 @@ type Archive struct {
 	UploadRootDirectory string `json:"upload_root_directory,omitempty"`
 	ImportMessage       string `json:"import_message,omitempty"`
 	ImportSuccessful    bool   `json:"import_successful,omitempty"`
-}
-
-type ArchiveFile struct {
-	Name     string `json:"name,omitempty"`
-	Mimetype string `json:"mimetype,omitempty"`
-	Size     int64  `json:"size_in_bytes,omitempty"`
-	URI      string `json:"uri,omitempty"`
 }
 
 type HTMLFile struct {
