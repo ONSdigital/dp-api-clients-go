@@ -1488,6 +1488,13 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 		return nil, err
 	}
 
+	trace := ctx.Value("traceparent").(string)
+	if trace == "" {
+		panic("THE TRACEPARENT IS NOT THERE ")
+	}
+
+	req.Header.Set("traceparent", trace)
+
 	addCollectionIDHeader(req, collectionID)
 	dprequest.AddFlorenceHeader(req, userAuthToken)
 	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
