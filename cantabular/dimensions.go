@@ -3,12 +3,15 @@ package cantabular
 import (
 	"context"
 
-	"github.com/pkg/errors"
-
+	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/log.go/v2/log"
+	"github.com/pkg/errors"
 )
+
+// GetGeographyBatchProcessor is the type corresponding to a batch processing function for Geography dimensions
+type GetGeographyBatchProcessor func(response *GetGeographyDimensionsResponse) (abort bool, err error)
 
 // GetDimensions performs a graphQL query to obtain all the dimensions for the provided cantabular dataset.
 // The whole response is loaded to memory.
@@ -223,4 +226,68 @@ func (c *Client) GetParents(ctx context.Context, req GetParentsRequest) (*GetPar
 	resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.Edges = edges[:len(edges)-1]
 
 	return &resp.Data, nil
+}
+
+// GetGeographyDimensionsInBatches performs a graphQL query to obtain all the geography dimensions for the provided cantabular dataset.
+// The whole response is loaded to memory.
+func (c *Client) GetGeographyDimensionsInBatches(ctx context.Context, datasetID string, batchSize, maxWorkers int) (dataset *gql.Dataset, err error) {
+
+	// reference GetInstanceDimensionsInBatches
+	var processBatch GetGeographyBatchProcessor = func(b *GetGeographyDimensionsResponse) (abort bool, err error) {
+		if dataset == nil {
+			dataset = &gql.Dataset{}
+			dataset.RuleBase.Name = b.Dataset.RuleBase.Name
+			dataset.RuleBase.IsSourceOf.Search = b.Dataset.RuleBase.IsSourceOf.Search
+			dataset.RuleBase.IsSourceOf.CategorySearch = b.Dataset.RuleBase.IsSourceOf.CategorySearch
+			dataset.RuleBase.IsSourceOf.TotalCount = b.Dataset.RuleBase.IsSourceOf.TotalCount
+
+			dataset.RuleBase.IsSourceOf.Edges = make([]gql.Edge, dataset.RuleBase.IsSourceOf.TotalCount)
+		}
+
+		for i := 0; i < len(b.Dataset.RuleBase.IsSourceOf.Edges); i++ {
+			dataset.RuleBase.IsSourceOf.Edges[i+b.PaginationResponse.Offset] = b.Dataset.RuleBase.IsSourceOf.Edges[i]
+		}
+		return false, nil
+	}
+
+	// call GetGeographyBatchProcess in batches and aggregate the responses
+	err = c.GetGeographyBatchProcess(ctx, datasetID, processBatch, batchSize, maxWorkers)
+	if err != nil {
+		return nil, err
+	}
+
+	return dataset, nil
+}
+
+// GetGeographyBatchProcess gets the geography dimensions from the API in batches, calling the provided function for each batch.
+func (c *Client) GetGeographyBatchProcess(ctx context.Context, datasetID string, processBatch GetGeographyBatchProcessor, batchSize, maxWorkers int) (err error) {
+
+	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit
+	batchGetter := func(offset int) (interface{}, int, string, error) {
+		req := GetGeographyDimensionsRequest{
+			PaginationParams: PaginationParams{
+				Offset: offset,
+				Limit:  batchSize,
+			},
+			Dataset: datasetID,
+		}
+
+		b, err := c.GetGeographyDimensions(ctx, req)
+		if err != nil {
+			return nil, 0, "", err
+		}
+
+		return b, b.TotalCount, "", err
+	}
+
+	// cast and process the batch according to the provided method
+	batchProcessor := func(b interface{}, _ string) (abort bool, err error) {
+		v, ok := b.(*GetGeographyDimensionsResponse)
+		if !ok {
+			return true, errors.New("wrong type")
+		}
+		return processBatch(v)
+	}
+
+	return batch.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
 }
