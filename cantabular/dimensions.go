@@ -2,11 +2,13 @@ package cantabular
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/log.go/v2/log"
+
 	"github.com/pkg/errors"
 )
 
@@ -230,9 +232,9 @@ func (c *Client) GetParents(ctx context.Context, req GetParentsRequest) (*GetPar
 
 // GetGeographyDimensionsInBatches performs a graphQL query to obtain all the geography dimensions for the provided cantabular dataset.
 // The whole response is loaded to memory.
-func (c *Client) GetGeographyDimensionsInBatches(ctx context.Context, datasetID string, batchSize, maxWorkers int) (dataset *gql.Dataset, err error) {
-
+func (c *Client) GetGeographyDimensionsInBatches(ctx context.Context, datasetID string, batchSize, maxWorkers int) (*gql.Dataset, error) {
 	// reference GetInstanceDimensionsInBatches
+	var dataset *gql.Dataset
 	var processBatch GetGeographyBatchProcessor = func(b *GetGeographyDimensionsResponse) (abort bool, err error) {
 		if dataset == nil {
 			dataset = &gql.Dataset{}
@@ -251,17 +253,16 @@ func (c *Client) GetGeographyDimensionsInBatches(ctx context.Context, datasetID 
 	}
 
 	// call GetGeographyBatchProcess in batches and aggregate the responses
-	err = c.GetGeographyBatchProcess(ctx, datasetID, processBatch, batchSize, maxWorkers)
+	err := c.GetGeographyBatchProcess(ctx, datasetID, processBatch, batchSize, maxWorkers)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "GetGeographyBatchProcess failed")
 	}
 
 	return dataset, nil
 }
 
 // GetGeographyBatchProcess gets the geography dimensions from the API in batches, calling the provided function for each batch.
-func (c *Client) GetGeographyBatchProcess(ctx context.Context, datasetID string, processBatch GetGeographyBatchProcessor, batchSize, maxWorkers int) (err error) {
-
+func (c *Client) GetGeographyBatchProcess(ctx context.Context, datasetID string, processBatch GetGeographyBatchProcessor, batchSize, maxWorkers int) error {
 	// for each batch, obtain the dimensions starting at the provided offset, with a batch size limit
 	batchGetter := func(offset int) (interface{}, int, string, error) {
 		req := GetGeographyDimensionsRequest{
@@ -274,10 +275,10 @@ func (c *Client) GetGeographyBatchProcess(ctx context.Context, datasetID string,
 
 		b, err := c.GetGeographyDimensions(ctx, req)
 		if err != nil {
-			return nil, 0, "", err
+			return nil, 0, "", errors.Wrap(err, fmt.Sprint("GetGeographyDimensions failed for offset: ", offset))
 		}
 
-		return b, b.TotalCount, "", err
+		return b, b.TotalCount, "", nil
 	}
 
 	// cast and process the batch according to the provided method
