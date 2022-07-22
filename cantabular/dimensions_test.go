@@ -510,6 +510,10 @@ func TestGetAreas(t *testing.T) {
 
 		Convey("When GetAreas is called", func() {
 			req := cantabular.GetAreasRequest{
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  1,
+					Offset: 0,
+				},
 				Dataset:  dataset,
 				Variable: variable,
 				Category: category,
@@ -528,6 +532,10 @@ func TestGetAreas(t *testing.T) {
 					mockHttpClient.PostCalls()[0].Body,
 					cantabular.QueryAreas,
 					cantabular.QueryData{
+						PaginationParams: cantabular.PaginationParams{
+							Limit:  1,
+							Offset: 0,
+						},
 						Dataset:  dataset,
 						Text:     variable,
 						Category: category,
@@ -1250,62 +1258,56 @@ var expectedDimensionOptions = cantabular.GetDimensionOptionsResponse{
 
 var mockRespBodyGetAreas = `
 {
-  "data": {
-    "dataset": {
-      "ruleBase": {
-	"isSourceOf": {
-	  "search": {
-	    "edges": [
-	      {
-		"node": {
-		  "label": "City",
-		  "name": "city",
-		  "categories": {
-		    "search": {
-		      "edges": [
+	"data": {
+	  "dataset": {
+		"variables": {
+		  "edges": [
 			{
 			  "node": {
-			    "code": "0",
-			    "label": "London"
+				"categories": {
+				  "search": {
+					"edges": [
+					  {
+						"node": {
+						  "code": "001",
+						  "label": "City of London"
+						}
+					  }
+					]
+				  },
+				  "totalCount": 100
+				},
+				"label": "Lower Super Output Area code",
+				"name": "LSOACD"
 			  }
 			}
-		      ]
-		    }
-		  }
+		  ]
 		}
-	      }
-	    ]
 	  }
 	}
-      }
-    }
   }
-}
 `
 
 var expectedAreas = cantabular.GetAreasResponse{
 	Dataset: gql.Dataset{
-		RuleBase: gql.RuleBase{
-			IsSourceOf: gql.Variables{
-				Search: gql.Search{
-					Edges: []gql.Edge{
-						{
-							Node: gql.Node{
-								Name:  "city",
-								Label: "City",
-								Categories: gql.Categories{
-									Search: gql.Search{
-										Edges: []gql.Edge{
-											{
-												Node: gql.Node{
-													Code:  "0",
-													Label: "London",
-												},
-											},
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:  "LSOACD",
+						Label: "Lower Super Output Area code",
+						Categories: gql.Categories{
+							Search: gql.Search{
+								Edges: []gql.Edge{
+									{
+										Node: gql.Node{
+											Code:  "001",
+											Label: "City of London",
 										},
 									},
 								},
 							},
+							TotalCount: 100,
 						},
 					},
 				},

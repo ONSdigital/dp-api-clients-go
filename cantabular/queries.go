@@ -158,32 +158,28 @@ query($dataset: String!, $text: String!) {
 // This can be used to retrieve a list of all the areas for a given area type, or to search for specific
 // area within all area types.
 const QueryAreas = `
-query ($dataset: String!, $text: String!, $category: String!) {
-  dataset(name: $dataset) {
-    ruleBase {
-      isSourceOf {
-	search(text: $text) {
-	  edges {
-	    node {
-	      label
-	      name
-	      categories {
-		search(text: $category) {
-		  edges {
-		    node {
-		      code
-		      label
-		    }
+query ($dataset: String!, $text: String!, $category: String!, $limit: Int!, $offset: Int) {
+	dataset(name: $dataset) {
+	  variables(rule:true, names: [ $text ]) {
+		edges {
+		  node {
+			name
+			label
+			categories {
+			  search(text: $category, first: $limit, skip: $offset ) {
+				edges {
+				  node {
+					code 
+					label
+				  }
+				}
+			  }
+			}
 		  }
 		}
-	      }
-	    }
 	  }
 	}
-      }
-    }
   }
-}
 `
 
 const QueryParents = `
