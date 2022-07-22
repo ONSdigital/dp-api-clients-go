@@ -716,7 +716,6 @@ var mockRespBodyGetDimensions = `
 									"edges": [
 										{
 											"node": {
-												"filterOnly": "false",
 												"label": "Region",
 												"name": "Region"
 											}
@@ -796,9 +795,8 @@ var expectedDimensions = cantabular.GetDimensionsResponse{
 								Edges: []gql.Edge{
 									{
 										Node: gql.Node{
-											FilterOnly: "false",
-											Label:      "Region",
-											Name:       "Region",
+											Label: "Region",
+											Name:  "Region",
 										},
 									},
 								},
@@ -863,7 +861,6 @@ var mockRespBodyGetGeographyDimensions = `
 										"edges": [
 											{
 												"node": {
-													"filterOnly": "false",
 													"label": "Region",
 													"name": "Region"
 												}
@@ -913,13 +910,11 @@ var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
 												Label:      "Region",
 												Categories: gql.Categories{TotalCount: 0},
 												MapFrom:    []gql.Variables(nil),
-												FilterOnly: "false",
 											},
 										},
 									},
 								},
 							},
-							FilterOnly: "",
 						},
 					},
 					{
@@ -928,7 +923,6 @@ var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
 							Label:      "Region",
 							Categories: gql.Categories{TotalCount: 10},
 							MapFrom:    []gql.Variables{},
-							FilterOnly: "",
 						},
 					},
 				},

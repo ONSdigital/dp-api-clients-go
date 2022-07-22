@@ -58,7 +58,6 @@ query($dataset: String!) {
 					mapFrom {
 						edges {
 							node {
-								filterOnly
 								label
 								name
 							}
@@ -85,7 +84,6 @@ query($dataset: String!, $variables: [String!]!) {
 					mapFrom {
 						edges {
 							node {
-								filterOnly
 								label
 								name
 							}
@@ -115,7 +113,6 @@ query($dataset: String!, $limit: Int!, $offset: Int) {
 						mapFrom {
 							edges {
 								node {
-									filterOnly
 									label
 									name
 								}
