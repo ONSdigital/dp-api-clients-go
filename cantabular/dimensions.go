@@ -55,8 +55,8 @@ func (c *Client) GetGeographyDimensions(ctx context.Context, req GetGeographyDim
 	}
 
 	resp.Data.PaginationResponse = PaginationResponse{
-		Count:            len(resp.Data.Dataset.RuleBase.IsSourceOf.Edges),
-		TotalCount:       resp.Data.Dataset.RuleBase.IsSourceOf.TotalCount,
+		Count:            len(resp.Data.Dataset.Variables.Edges),
+		TotalCount:       resp.Data.Dataset.Variables.TotalCount,
 		PaginationParams: req.PaginationParams,
 	}
 

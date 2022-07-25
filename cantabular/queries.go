@@ -103,25 +103,22 @@ query($dataset: String!, $variables: [String!]!) {
 const QueryGeographyDimensions = `
 query($dataset: String!, $limit: Int!, $offset: Int) {
 	dataset(name: $dataset) {
-		ruleBase {
-			name
-			isSourceOf (skip: $offset, first: $limit) {
-				totalCount
-				edges {
-					node {
-						name
-						mapFrom {
-							edges {
-								node {
-									label
-									name
-								}
+		variables(rule: true, skip: $offset, first: $limit) {
+			totalCount
+			edges {
+				node {
+					name
+					mapFrom {
+						edges {
+							node {
+								label
+								name
 							}
 						}
-						label
-						categories{
-							totalCount
-						}
+					}
+					label
+					categories{
+						totalCount
 					}
 				}
 			}
@@ -220,6 +217,8 @@ type QueryData struct {
 	Variables []string
 	Filters   []Filter
 	Category  string
+	Rule      bool
+	Base      bool
 }
 
 // Filter holds the fields for the Cantabular GraphQL 'Filter' object used for specifying categories
@@ -245,6 +244,8 @@ func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 		"limit":     data.Limit,
 		"offset":    data.Offset,
 		"category":  data.Category,
+		"rule":      data.Rule,
+		"base":      data.Base,
 	}
 	if len(data.Filters) > 0 {
 		vars["filters"] = data.Filters

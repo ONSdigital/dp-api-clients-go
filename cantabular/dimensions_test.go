@@ -846,44 +846,41 @@ var mockRespBodyGetGeographyDimensions = `
 {
 	"data": {
 		"dataset": {
-			"ruleBase": {
-				"isSourceOf": {
-					"totalCount": 2,
-					"edges": [
-						{
-							"node": {
-								"categories": {
-									"totalCount": 2
-								},
-								"label": "Country",
-								"mapFrom": [
-									{
-										"edges": [
-											{
-												"node": {
-													"label": "Region",
-													"name": "Region"
-												}
+			"variables": {
+				"totalCount": 2,
+				"edges": [
+					{
+						"node": {
+							"categories": {
+								"totalCount": 2
+							},
+							"label": "Country",
+							"mapFrom": [
+								{
+									"edges": [
+										{
+											"node": {
+												"label": "Region",
+												"name": "Region"
 											}
-										]
-									}
-								],
-								"name": "Country"
-							}
-						},
-						{
-							"node": {
-								"categories": {
-									"totalCount": 10
-								},
-								"label": "Region",
-								"mapFrom": [],
-								"name": "Region"
-							}
+										}
+									]
+								}
+							],
+							"name": "Country"
 						}
-					]
-				},
-				"name": "Region"
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount": 10
+							},
+							"label": "Region",
+							"mapFrom": [],
+							"name": "Region"
+						}
+					}
+				]
 			}
 		}
 	}
@@ -892,42 +889,39 @@ var mockRespBodyGetGeographyDimensions = `
 
 var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
 	Dataset: gql.Dataset{
-		RuleBase: gql.RuleBase{
-			IsSourceOf: gql.Variables{
-				TotalCount: 2,
-				Edges: []gql.Edge{
-					{
-						Node: gql.Node{
-							Name:       "Country",
-							Label:      "Country",
-							Categories: gql.Categories{TotalCount: 2},
-							MapFrom: []gql.Variables{
-								{
-									Edges: []gql.Edge{
-										{
-											Node: gql.Node{
-												Name:       "Region",
-												Label:      "Region",
-												Categories: gql.Categories{TotalCount: 0},
-												MapFrom:    []gql.Variables(nil),
-											},
+		Variables: gql.Variables{
+			TotalCount: 2,
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:       "Country",
+						Label:      "Country",
+						Categories: gql.Categories{TotalCount: 2},
+						MapFrom: []gql.Variables{
+							{
+								Edges: []gql.Edge{
+									{
+										Node: gql.Node{
+											Name:       "Region",
+											Label:      "Region",
+											Categories: gql.Categories{TotalCount: 0},
+											MapFrom:    []gql.Variables(nil),
 										},
 									},
 								},
 							},
 						},
 					},
-					{
-						Node: gql.Node{
-							Name:       "Region",
-							Label:      "Region",
-							Categories: gql.Categories{TotalCount: 10},
-							MapFrom:    []gql.Variables{},
-						},
+				},
+				{
+					Node: gql.Node{
+						Name:       "Region",
+						Label:      "Region",
+						Categories: gql.Categories{TotalCount: 10},
+						MapFrom:    []gql.Variables{},
 					},
 				},
 			},
-			Name: "Region",
 		},
 	},
 	PaginationResponse: cantabular.PaginationResponse{
