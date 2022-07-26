@@ -235,18 +235,22 @@ func (c *Client) GetParents(ctx context.Context, req GetParentsRequest) (*GetPar
 func (c *Client) GetGeographyDimensionsInBatches(ctx context.Context, datasetID string, batchSize, maxWorkers int) (*gql.Dataset, error) {
 	// reference GetInstanceDimensionsInBatches
 	var dataset *gql.Dataset
-	var processBatch GetGeographyBatchProcessor = func(b *GetGeographyDimensionsResponse) (abort bool, err error) {
+	var processBatch GetGeographyBatchProcessor = func(b *GetGeographyDimensionsResponse) (bool, error) {
 		if dataset == nil {
-			dataset = &gql.Dataset{}
-			dataset.RuleBase.Name = b.Dataset.RuleBase.Name
-			dataset.RuleBase.IsSourceOf.Search = b.Dataset.RuleBase.IsSourceOf.Search
-			dataset.RuleBase.IsSourceOf.CategorySearch = b.Dataset.RuleBase.IsSourceOf.CategorySearch
-			dataset.RuleBase.IsSourceOf.TotalCount = b.Dataset.RuleBase.IsSourceOf.TotalCount
-
-			dataset.RuleBase.IsSourceOf.Edges = make([]gql.Edge, dataset.RuleBase.IsSourceOf.TotalCount)
+			dataset = &gql.Dataset{
+				RuleBase: gql.RuleBase{
+					Name: b.Dataset.RuleBase.Name,
+					IsSourceOf: gql.Variables{
+						Search:         b.Dataset.RuleBase.IsSourceOf.Search,
+						CategorySearch: b.Dataset.RuleBase.IsSourceOf.CategorySearch,
+						TotalCount:     b.Dataset.RuleBase.IsSourceOf.TotalCount,
+						Edges:          make([]gql.Edge, b.Dataset.RuleBase.IsSourceOf.TotalCount),
+					},
+				},
+			}
 		}
 
-		for i := 0; i < len(b.Dataset.RuleBase.IsSourceOf.Edges); i++ {
+		for i := range b.Dataset.RuleBase.IsSourceOf.Edges {
 			dataset.RuleBase.IsSourceOf.Edges[i+b.PaginationResponse.Offset] = b.Dataset.RuleBase.IsSourceOf.Edges[i]
 		}
 		return false, nil
@@ -282,7 +286,7 @@ func (c *Client) GetGeographyBatchProcess(ctx context.Context, datasetID string,
 	}
 
 	// cast and process the batch according to the provided method
-	batchProcessor := func(b interface{}, _ string) (abort bool, err error) {
+	batchProcessor := func(b interface{}, _ string) (bool, error) {
 		v, ok := b.(*GetGeographyDimensionsResponse)
 		if !ok {
 			return true, errors.New("wrong type")
