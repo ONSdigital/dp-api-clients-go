@@ -511,6 +511,10 @@ func TestGetAreas(t *testing.T) {
 
 		Convey("When GetAreas is called", func() {
 			req := cantabular.GetAreasRequest{
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  1,
+					Offset: 0,
+				},
 				Dataset:  dataset,
 				Variable: variable,
 				Category: category,
@@ -529,6 +533,10 @@ func TestGetAreas(t *testing.T) {
 					mockHttpClient.PostCalls()[0].Body,
 					cantabular.QueryAreas,
 					cantabular.QueryData{
+						PaginationParams: cantabular.PaginationParams{
+							Limit:  1,
+							Offset: 0,
+						},
 						Dataset:  dataset,
 						Text:     variable,
 						Category: category,
@@ -866,7 +874,6 @@ var mockRespBodyGetDimensions = `
 									"edges": [
 										{
 											"node": {
-												"filterOnly": "false",
 												"label": "Region",
 												"name": "Region"
 											}
@@ -946,9 +953,8 @@ var expectedDimensions = cantabular.GetDimensionsResponse{
 								Edges: []gql.Edge{
 									{
 										Node: gql.Node{
-											FilterOnly: "false",
-											Label:      "Region",
-											Name:       "Region",
+											Label: "Region",
+											Name:  "Region",
 										},
 									},
 								},
@@ -1059,45 +1065,41 @@ var mockRespBodyGetGeographyDimensions = `
 {
 	"data": {
 		"dataset": {
-			"ruleBase": {
-				"isSourceOf": {
-					"totalCount": 2,
-					"edges": [
-						{
-							"node": {
-								"categories": {
-									"totalCount": 2
-								},
-								"label": "Country",
-								"mapFrom": [
-									{
-										"edges": [
-											{
-												"node": {
-													"filterOnly": "false",
-													"label": "Region",
-													"name": "Region"
-												}
+			"variables": {
+				"totalCount": 2,
+				"edges": [
+					{
+						"node": {
+							"categories": {
+								"totalCount": 2
+							},
+							"label": "Country",
+							"mapFrom": [
+								{
+									"edges": [
+										{
+											"node": {
+												"label": "Region",
+												"name": "Region"
 											}
-										]
-									}
-								],
-								"name": "Country"
-							}
-						},
-						{
-							"node": {
-								"categories": {
-									"totalCount": 10
-								},
-								"label": "Region",
-								"mapFrom": [],
-								"name": "Region"
-							}
+										}
+									]
+								}
+							],
+							"name": "Country"
 						}
-					]
-				},
-				"name": "Region"
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount": 10
+							},
+							"label": "Region",
+							"mapFrom": [],
+							"name": "Region"
+						}
+					}
+				]
 			}
 		}
 	}
@@ -1136,45 +1138,39 @@ var expectedBatchGeographyDimensions = gql.Dataset{
 
 var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
 	Dataset: gql.Dataset{
-		RuleBase: gql.RuleBase{
-			IsSourceOf: gql.Variables{
-				TotalCount: 2,
-				Edges: []gql.Edge{
-					{
-						Node: gql.Node{
-							Name:       "Country",
-							Label:      "Country",
-							Categories: gql.Categories{TotalCount: 2},
-							MapFrom: []gql.Variables{
-								{
-									Edges: []gql.Edge{
-										{
-											Node: gql.Node{
-												Name:       "Region",
-												Label:      "Region",
-												Categories: gql.Categories{TotalCount: 0},
-												MapFrom:    []gql.Variables(nil),
-												FilterOnly: "false",
-											},
+		Variables: gql.Variables{
+			TotalCount: 2,
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:       "Country",
+						Label:      "Country",
+						Categories: gql.Categories{TotalCount: 2},
+						MapFrom: []gql.Variables{
+							{
+								Edges: []gql.Edge{
+									{
+										Node: gql.Node{
+											Name:       "Region",
+											Label:      "Region",
+											Categories: gql.Categories{TotalCount: 0},
+											MapFrom:    []gql.Variables(nil),
 										},
 									},
 								},
 							},
-							FilterOnly: "",
-						},
-					},
-					{
-						Node: gql.Node{
-							Name:       "Region",
-							Label:      "Region",
-							Categories: gql.Categories{TotalCount: 10},
-							MapFrom:    []gql.Variables{},
-							FilterOnly: "",
 						},
 					},
 				},
+				{
+					Node: gql.Node{
+						Name:       "Region",
+						Label:      "Region",
+						Categories: gql.Categories{TotalCount: 10},
+						MapFrom:    []gql.Variables{},
+					},
+				},
 			},
-			Name: "Region",
 		},
 	},
 	PaginationResponse: cantabular.PaginationResponse{
@@ -1497,62 +1493,56 @@ var expectedDimensionOptions = cantabular.GetDimensionOptionsResponse{
 
 var mockRespBodyGetAreas = `
 {
-  "data": {
-    "dataset": {
-      "ruleBase": {
-	"isSourceOf": {
-	  "search": {
-	    "edges": [
-	      {
-		"node": {
-		  "label": "City",
-		  "name": "city",
-		  "categories": {
-		    "search": {
-		      "edges": [
+	"data": {
+	  "dataset": {
+		"variables": {
+		  "edges": [
 			{
 			  "node": {
-			    "code": "0",
-			    "label": "London"
+				"categories": {
+				  "search": {
+					"edges": [
+					  {
+						"node": {
+						  "code": "001",
+						  "label": "City of London"
+						}
+					  }
+					]
+				  },
+				  "totalCount": 100
+				},
+				"label": "Lower Super Output Area code",
+				"name": "LSOACD"
 			  }
 			}
-		      ]
-		    }
-		  }
+		  ]
 		}
-	      }
-	    ]
 	  }
 	}
-      }
-    }
   }
-}
 `
 
 var expectedAreas = cantabular.GetAreasResponse{
 	Dataset: gql.Dataset{
-		RuleBase: gql.RuleBase{
-			IsSourceOf: gql.Variables{
-				Search: gql.Search{
-					Edges: []gql.Edge{
-						{
-							Node: gql.Node{
-								Name:  "city",
-								Label: "City",
-								Categories: gql.Categories{
-									Search: gql.Search{
-										Edges: []gql.Edge{
-											{
-												Node: gql.Node{
-													Code:  "0",
-													Label: "London",
-												},
-											},
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:  "LSOACD",
+						Label: "Lower Super Output Area code",
+						Categories: gql.Categories{
+							Search: gql.Search{
+								Edges: []gql.Edge{
+									{
+										Node: gql.Node{
+											Code:  "001",
+											Label: "City of London",
 										},
 									},
 								},
 							},
+							TotalCount: 100,
 						},
 					},
 				},

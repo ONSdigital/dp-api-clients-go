@@ -31,7 +31,6 @@ type Node struct {
 	Label            string      `json:"label"`
 	Categories       Categories  `json:"categories"`
 	MapFrom          []Variables `json:"mapFrom"`
-	FilterOnly       string      `json:"filterOnly,omitempty"`
 	Variable         Variable    `json:"variable"`
 	IsDirectSourceOf Variables   `json:"isDirectSourceOf"`
 	IsSourceOf       Variables   `json:"isSourceOf"`

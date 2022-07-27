@@ -60,8 +60,8 @@ func (c *Client) GetGeographyDimensions(ctx context.Context, req GetGeographyDim
 	}
 
 	resp.Data.PaginationResponse = PaginationResponse{
-		Count:            len(resp.Data.Dataset.RuleBase.IsSourceOf.Edges),
-		TotalCount:       resp.Data.Dataset.RuleBase.IsSourceOf.TotalCount,
+		Count:            len(resp.Data.Dataset.Variables.Edges),
+		TotalCount:       resp.Data.Dataset.Variables.TotalCount,
 		PaginationParams: req.PaginationParams,
 	}
 
@@ -171,9 +171,10 @@ func (c *Client) GetAreas(ctx context.Context, req GetAreasRequest) (*GetAreasRe
 	}{}
 
 	data := QueryData{
-		Dataset:  req.Dataset,
-		Text:     req.Variable,
-		Category: req.Category,
+		PaginationParams: req.PaginationParams,
+		Dataset:          req.Dataset,
+		Text:             req.Variable,
+		Category:         req.Category,
 	}
 
 	if err := c.queryUnmarshal(ctx, QueryAreas, data, resp); err != nil {

@@ -58,7 +58,6 @@ query($dataset: String!) {
 					mapFrom {
 						edges {
 							node {
-								filterOnly
 								label
 								name
 							}
@@ -85,7 +84,6 @@ query($dataset: String!, $variables: [String!]!) {
 					mapFrom {
 						edges {
 							node {
-								filterOnly
 								label
 								name
 							}
@@ -105,26 +103,22 @@ query($dataset: String!, $variables: [String!]!) {
 const QueryGeographyDimensions = `
 query($dataset: String!, $limit: Int!, $offset: Int) {
 	dataset(name: $dataset) {
-		ruleBase {
-			name
-			isSourceOf (skip: $offset, first: $limit) {
-				totalCount
-				edges {
-					node {
-						name
-						mapFrom {
-							edges {
-								node {
-									filterOnly
-									label
-									name
-								}
+		variables(rule: true, skip: $offset, first: $limit) {
+			totalCount
+			edges {
+				node {
+					name
+					mapFrom {
+						edges {
+							node {
+								label
+								name
 							}
 						}
-						label
-						categories{
-							totalCount
-						}
+					}
+					label
+					categories{
+						totalCount
 					}
 				}
 			}
@@ -161,32 +155,28 @@ query($dataset: String!, $text: String!) {
 // This can be used to retrieve a list of all the areas for a given area type, or to search for specific
 // area within all area types.
 const QueryAreas = `
-query ($dataset: String!, $text: String!, $category: String!) {
-  dataset(name: $dataset) {
-    ruleBase {
-      isSourceOf {
-	search(text: $text) {
-	  edges {
-	    node {
-	      label
-	      name
-	      categories {
-		search(text: $category) {
-		  edges {
-		    node {
-		      code
-		      label
-		    }
+query ($dataset: String!, $text: String!, $category: String!, $limit: Int!, $offset: Int) {
+	dataset(name: $dataset) {
+	  variables(rule:true, names: [ $text ]) {
+		edges {
+		  node {
+			name
+			label
+			categories {
+			  search(text: $category, first: $limit, skip: $offset ) {
+				edges {
+				  node {
+					code 
+					label
+				  }
+				}
+			  }
+			}
 		  }
 		}
-	      }
-	    }
 	  }
 	}
-      }
-    }
   }
-}
 `
 
 const QueryParents = `
@@ -223,6 +213,8 @@ type QueryData struct {
 	Variables []string
 	Filters   []Filter
 	Category  string
+	Rule      bool
+	Base      bool
 }
 
 // Filter holds the fields for the Cantabular GraphQL 'Filter' object used for specifying categories
@@ -248,6 +240,8 @@ func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 		"limit":     data.Limit,
 		"offset":    data.Offset,
 		"category":  data.Category,
+		"rule":      data.Rule,
+		"base":      data.Base,
 	}
 	if len(data.Filters) > 0 {
 		vars["filters"] = data.Filters
