@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"sync"
 	"testing"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
@@ -669,6 +670,7 @@ func TestGetGeographyDimensionsInBatchesHappy(t *testing.T) {
 		multiResponse := struct {
 			responses []string
 			position  int
+			mutex     sync.Mutex
 		}{
 			responses: []string{mockRespBodyBatch1GetGeographyDimensions, mockRespBodyBatch2GetGeographyDimensions},
 			position:  0,
@@ -676,6 +678,9 @@ func TestGetGeographyDimensionsInBatchesHappy(t *testing.T) {
 
 		mockHttpClient := &dphttp.ClienterMock{
 			PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+				multiResponse.mutex.Lock()
+				defer multiResponse.mutex.Unlock()
+
 				resp := Response([]byte(multiResponse.responses[multiResponse.position]), http.StatusOK)
 				multiResponse.position++
 				return resp, nil
