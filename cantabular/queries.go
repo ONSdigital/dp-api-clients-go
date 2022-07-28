@@ -41,7 +41,6 @@ query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
 				variable { name label }
 				categories { code label }
 			}
-			values
 			error
 		}
 	}
