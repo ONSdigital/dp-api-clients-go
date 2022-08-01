@@ -239,20 +239,15 @@ func (c *Client) GetGeographyDimensionsInBatches(ctx context.Context, datasetID 
 	var processBatch GetGeographyBatchProcessor = func(b *GetGeographyDimensionsResponse) (bool, error) {
 		if dataset == nil {
 			dataset = &gql.Dataset{
-				RuleBase: gql.RuleBase{
-					Name: b.Dataset.RuleBase.Name,
-					IsSourceOf: gql.Variables{
-						Search:         b.Dataset.RuleBase.IsSourceOf.Search,
-						CategorySearch: b.Dataset.RuleBase.IsSourceOf.CategorySearch,
-						TotalCount:     b.Dataset.RuleBase.IsSourceOf.TotalCount,
-						Edges:          make([]gql.Edge, b.Dataset.RuleBase.IsSourceOf.TotalCount),
-					},
+				Variables: gql.Variables{
+					TotalCount: b.Dataset.Variables.TotalCount,
+					Edges:      make([]gql.Edge, b.Dataset.Variables.TotalCount),
 				},
 			}
 		}
 
-		for i := range b.Dataset.RuleBase.IsSourceOf.Edges {
-			dataset.RuleBase.IsSourceOf.Edges[i+b.PaginationResponse.Offset] = b.Dataset.RuleBase.IsSourceOf.Edges[i]
+		for i := range b.Dataset.Variables.Edges {
+			dataset.Variables.Edges[i+b.PaginationResponse.Offset] = b.Dataset.Variables.Edges[i]
 		}
 		return false, nil
 	}

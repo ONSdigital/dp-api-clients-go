@@ -1004,10 +1004,8 @@ var mockRespBodyZeroGetGeographyDimensions = `
 {
 	"data": {
 		"dataset": {
-			"ruleBase": {
-				"isSourceOf": {
-					"totalCount": 0
-				}
+			"variables": {
+				"totalCount": 0
 			}
 		}
 	}
@@ -1019,18 +1017,15 @@ var mockRespBodyBatch1GetGeographyDimensions = `
 {
 	"data": {
 		"dataset": {
-			"ruleBase": {
-				"isSourceOf": {
-					"totalCount": 2,
-					"edges": [
-						{
-							"node": {
-								"label": "Node1"
-							}
+			"variables": {
+				"totalCount": 2,
+				"edges": [
+					{
+						"node": {
+							"label": "Node1"
 						}
-					]
-				},
-				"name": "Region"
+					}
+				]
 			}
 		}
 	}
@@ -1042,18 +1037,15 @@ var mockRespBodyBatch2GetGeographyDimensions = `
 {
 	"data": {
 		"dataset": {
-			"ruleBase": {
-				"isSourceOf": {
-					"totalCount": 2,
-					"edges": [
-						{
-							"node": {
-								"label": "Node2"
-							}
+			"variables": {
+				"totalCount": 2,
+				"edges": [
+					{
+						"node": {
+							"label": "Node2"
 						}
-					]
-				},
-				"name": "Region"
+					}
+				]
 			}
 		}
 	}
@@ -1107,32 +1099,27 @@ var mockRespBodyGetGeographyDimensions = `
 `
 
 var expectedBatchZeroGeographyDimensions = gql.Dataset{
-	RuleBase: gql.RuleBase{
-		IsSourceOf: gql.Variables{
-			TotalCount: 0,
-			Edges:      []gql.Edge{},
-		},
+	Variables: gql.Variables{
+		TotalCount: 0,
+		Edges:      []gql.Edge{},
 	},
 }
 
 var expectedBatchGeographyDimensions = gql.Dataset{
-	RuleBase: gql.RuleBase{
-		IsSourceOf: gql.Variables{
-			TotalCount: 2,
-			Edges: []gql.Edge{
-				{
-					Node: gql.Node{
-						Label: "Node1",
-					},
+	Variables: gql.Variables{
+		TotalCount: 2,
+		Edges: []gql.Edge{
+			{
+				Node: gql.Node{
+					Label: "Node1",
 				},
-				{
-					Node: gql.Node{
-						Label: "Node2",
-					},
+			},
+			{
+				Node: gql.Node{
+					Label: "Node2",
 				},
 			},
 		},
-		Name: "Region",
 	},
 }
 
