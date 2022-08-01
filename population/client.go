@@ -27,6 +27,14 @@ type Client struct {
 	baseURL *url.URL
 }
 
+type GetAreaInput struct {
+	UserAuthToken    string
+	ServiceAuthToken string
+	PopulationType   string
+	AreaType         string
+	Area             string
+}
+
 type GetAreasInput struct {
 	UserAuthToken    string
 	ServiceAuthToken string
@@ -269,6 +277,57 @@ func (c *Client) GetAreas(ctx context.Context, input GetAreasInput) (GetAreasRes
 	}
 
 	return areas, nil
+}
+
+func (c *Client) GetArea(ctx context.Context, input GetAreaInput) (GetAreaResponse, error) {
+	logData := log.Data{
+		"method":          http.MethodGet,
+		"population_type": input.PopulationType,
+		"area_type":       input.AreaType,
+		"area":            input.Area,
+	}
+	urlPath := fmt.Sprintf("population-types/%s/area-types/%s/areas/%s", input.PopulationType, input.AreaType, input.Area)
+
+	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, nil)
+	if err != nil {
+		return GetAreaResponse{}, dperrors.New(
+			err,
+			dperrors.StatusCode(err),
+			logData,
+		)
+	}
+
+	clientlog.Do(ctx, "getting areas", service, req.URL.String(), logData)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return GetAreaResponse{}, dperrors.New(
+			errors.Wrap(err, "failed to get response from Dimensions API"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}()
+
+	if err := checkGetResponse(resp); err != nil {
+		return GetAreaResponse{}, err
+	}
+
+	var area Area
+	if err := json.NewDecoder(resp.Body).Decode(&area); err != nil {
+		return GetAreaResponse{}, dperrors.New(
+			errors.Wrap(err, "unable to deserialize areas response"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	return GetAreaResponse{Area: area}, nil
 }
 
 func (c *Client) GetAreaTypeParents(ctx context.Context, input GetAreaTypeParentsInput) (GetAreaTypeParentsResponse, error) {
