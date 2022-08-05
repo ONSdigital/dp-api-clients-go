@@ -2,7 +2,6 @@ package cantabular
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
@@ -275,7 +274,7 @@ func (c *Client) GetGeographyBatchProcess(ctx context.Context, datasetID string,
 
 		b, err := c.GetGeographyDimensions(ctx, req)
 		if err != nil {
-			return nil, 0, "", errors.Wrap(err, fmt.Sprint("GetGeographyDimensions failed for offset: ", offset))
+			return nil, 0, "", errors.Wrapf(err, "GetGeographyDimensions failed for offset: %d", offset)
 		}
 
 		return b, b.TotalCount, "", nil
