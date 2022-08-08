@@ -3,7 +3,14 @@ package files_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
+	"time"
+
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/files"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
@@ -11,11 +18,6 @@ import (
 	dphttp "github.com/ONSdigital/dp-net/http"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	. "github.com/smartystreets/goconvey/convey"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"testing"
-	"time"
 )
 
 const (
@@ -180,10 +182,8 @@ func TestSetCollectionID(t *testing.T) {
 	})
 
 	Convey("Given the file already has a collection ID", t, func() {
-		respContent := "i'm a little tea pot..."
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusTeapot)
-			w.Write([]byte(respContent))
 		}))
 		defer s.Close()
 		c := files.NewAPIClient(s.URL, authHeaderValue)
@@ -192,7 +192,7 @@ func TestSetCollectionID(t *testing.T) {
 			err := c.SetCollectionID(context.Background(), filepath, collectionID)
 
 			Convey("Then a file not found error should be returned", func() {
-				So(err.Error(), ShouldContainSubstring, respContent)
+				So(err.Error(), ShouldContainSubstring, "unexpected response status code: 418")
 			})
 		})
 	})
@@ -217,7 +217,7 @@ func TestPublishCollection(t *testing.T) {
 			actualMethod = r.Method
 			actualURL = r.URL.Path
 			actualAuthHeaderValue = r.Header.Get(dprequest.AuthHeaderKey)
-			w.WriteHeader(http.StatusCreated)
+			w.WriteHeader(http.StatusOK)
 		}))
 		defer s.Close()
 		c := files.NewAPIClient(s.URL, authHeaderValue)
@@ -306,10 +306,8 @@ func TestPublishCollection(t *testing.T) {
 	})
 
 	Convey("There is an expected response", t, func() {
-		respContent := "Testing Testing 123"
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusTeapot)
-			w.Write([]byte(respContent))
 		}))
 		defer s.Close()
 		c := files.NewAPIClient(s.URL, authHeaderValue)
@@ -319,7 +317,7 @@ func TestPublishCollection(t *testing.T) {
 			err := c.PublishCollection(context.Background(), collectionID)
 
 			Convey("Then an error with the response content should be returned", func() {
-				So(err.Error(), ShouldContainSubstring, fmt.Sprintf("unexpected error: %s", respContent))
+				So(err.Error(), ShouldContainSubstring, "unexpected response status code: 418")
 			})
 		})
 	})
@@ -429,7 +427,7 @@ func TestGetFile(t *testing.T) {
 
 			Convey("500 internal server error", func() {
 				expectedCode := "InternalError"
-				expectedDescription := "internal server error"
+				expectedDescription := "no space on disk"
 				server := newMockFilesAPIServerWithError(http.StatusInternalServerError, expectedCode, expectedDescription)
 
 				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
@@ -437,7 +435,7 @@ func TestGetFile(t *testing.T) {
 				_, err := client.GetFile(context.Background(), "path/to/file.csv", "auth-token")
 
 				So(err, ShouldBeError)
-				So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s", expectedCode, expectedDescription))
+				So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s: %s", files.ErrServer, expectedCode, expectedDescription))
 			})
 
 			Convey("invalid JSON error", func() {
@@ -469,7 +467,7 @@ func TestGetFile(t *testing.T) {
 			_, err := client.GetFile(context.Background(), filePath, "auth-token")
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, "Unexpected error code from files-api: 418")
+			So(err.Error(), ShouldEqual, "unexpected response status code: 418")
 		})
 
 		Convey("HTTP client error", func() {
@@ -507,6 +505,170 @@ func TestGetFile(t *testing.T) {
 			client := files.NewWithHealthClient(&hCli)
 
 			_, err := client.GetFile(context.Background(), "path/to/file.csv", "invalid-token")
+			So(err, ShouldEqual, files.ErrNotAuthorized)
+		})
+	})
+}
+
+func TestRegisterFile(t *testing.T) {
+	Convey("RegisterFile happy path", t, func() {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(http.StatusCreated)
+		}))
+
+		hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+		client := files.NewWithHealthClient(&hCli)
+
+		err := client.RegisterFile(context.Background(), files.FileMetaData{})
+
+		So(err, ShouldBeNil)
+	})
+
+	Convey("RegisterFile call errors", t, func() {
+		Convey("internal server error", func() {
+			Convey("with valid JSON description", func() {
+				expectedCode := "InternalError"
+				expectedDescription := "no space on disk"
+				server := newMockFilesAPIServerWithError(http.StatusInternalServerError, expectedCode, expectedDescription)
+
+				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+				client := files.NewWithHealthClient(&hCli)
+				err := client.RegisterFile(context.Background(), files.FileMetaData{})
+
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s: %s", files.ErrServer, expectedCode, expectedDescription))
+			})
+
+			Convey("with invalid JSON description", func() {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					w.WriteHeader(http.StatusInternalServerError)
+					fmt.Fprint(w, "<invalid JSON>")
+				}))
+
+				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+				client := files.NewWithHealthClient(&hCli)
+
+				err := client.RegisterFile(context.Background(), files.FileMetaData{})
+
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldContainSubstring, "invalid character")
+			})
+		})
+
+		Convey("bad request", func() {
+			Convey("duplicate file", func() {
+				expectedCode := "DuplicateFileError"
+				expectedDescription := ""
+				server := newMockFilesAPIServerWithError(http.StatusBadRequest, expectedCode, expectedDescription)
+
+				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+				client := files.NewWithHealthClient(&hCli)
+				err := client.RegisterFile(context.Background(), files.FileMetaData{})
+
+				So(err, ShouldBeError)
+				So(err, ShouldBeError, files.ErrFileAlreadyRegistered)
+				So(errors.Is(err, files.ErrBadRequest), ShouldBeTrue)
+				So(err.Error(), ShouldEqual, "bad request: file already registered")
+			})
+
+			Convey("validation error", func() {
+				expectedCode := "ValidationError"
+				expectedDescription := "path not provided"
+				server := newMockFilesAPIServerWithError(http.StatusBadRequest, expectedCode, expectedDescription)
+
+				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+				client := files.NewWithHealthClient(&hCli)
+				err := client.RegisterFile(context.Background(), files.FileMetaData{})
+
+				So(err, ShouldBeError)
+				So(errors.Is(err, files.ErrBadRequest), ShouldBeTrue)
+				So(errors.Is(err, files.ErrValidationError), ShouldBeTrue)
+				So(err.Error(), ShouldEqual, "bad request: validation error: path not provided")
+			})
+
+			Convey("unknown code", func() {
+				expectedCode := "BizarreError"
+				expectedDescription := "path not provided"
+				server := newMockFilesAPIServerWithError(http.StatusBadRequest, expectedCode, expectedDescription)
+
+				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+				client := files.NewWithHealthClient(&hCli)
+				err := client.RegisterFile(context.Background(), files.FileMetaData{})
+
+				So(err, ShouldBeError)
+				So(errors.Is(err, files.ErrBadRequest), ShouldBeTrue)
+				So(errors.Is(err, files.ErrUnknown), ShouldBeTrue)
+				So(err.Error(), ShouldEqual, "bad request: unknown error: BizarreError: path not provided")
+			})
+
+			Convey("invalid JSON", func() {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					w.WriteHeader(http.StatusBadRequest)
+					fmt.Fprint(w, "<invalid JSON>")
+				}))
+
+				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+				client := files.NewWithHealthClient(&hCli)
+				err := client.RegisterFile(context.Background(), files.FileMetaData{})
+
+				So(err, ShouldBeError)
+				So(errors.Is(err, files.ErrBadRequest), ShouldBeTrue)
+				So(err.Error(), ShouldContainSubstring, "invalid character")
+			})
+		})
+
+		Convey("unknown error", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusTeapot)
+			}))
+
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+
+			err := client.RegisterFile(context.Background(), files.FileMetaData{})
+
+			So(err, ShouldBeError)
+			So(err.Error(), ShouldEqual, "unexpected response status code: 418")
+		})
+
+		Convey("HTTP client error", func() {
+			hCli := health.Client{URL: "broken", Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+			err := client.RegisterFile(context.Background(), files.FileMetaData{})
+
+			So(err, ShouldBeError)
+		})
+	})
+
+	Convey("RegisterFile authorises requests to Files API", t, func() {
+		Convey("adds a service token to the header", func() {
+			expectedToken := "auth-token"
+			expectedBearerToken := fmt.Sprintf("Bearer %s", expectedToken)
+
+			var token string
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				token = req.Header.Get("Authorization")
+				w.WriteHeader(http.StatusCreated)
+			}))
+
+			client := files.NewAPIClient(server.URL, expectedToken)
+
+			err := client.RegisterFile(context.Background(), files.FileMetaData{})
+
+			So(err, ShouldBeNil)
+			So(token, ShouldEqual, expectedBearerToken)
+		})
+
+		Convey("returns an error if unauthorised", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusForbidden)
+			}))
+
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+
+			err := client.RegisterFile(context.Background(), files.FileMetaData{})
 			So(err, ShouldEqual, files.ErrNotAuthorized)
 		})
 	})
