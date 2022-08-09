@@ -3,7 +3,6 @@ package upload
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -100,10 +99,7 @@ func (c *Client) Upload(ctx context.Context, fileContent io.ReadCloser, metadata
 				http.StatusBadRequest,
 				http.StatusUnauthorized,
 				http.StatusNotFound:
-				je := dperrors.JsonErrors{}
-				json.NewDecoder(resp.Body).Decode(&je)
-
-				return je.ToNativeError()
+				return dperrors.FromBody(resp.Body)
 			case http.StatusForbidden:
 				return ErrNotAuthorized
 			default:

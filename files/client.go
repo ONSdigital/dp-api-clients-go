@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
@@ -23,6 +22,12 @@ var (
 	ErrNoFilesInCollection     = errors.New("no file in the collection")
 	ErrInvalidState            = errors.New("files in an invalid state to publish")
 	ErrNotAuthorized           = errors.New("you are not authorized for this action")
+	ErrServer                  = errors.New("internal server error")
+	ErrUnexpectedStatus        = errors.New("unexpected response status code")
+	ErrBadRequest              = errors.New("bad request")
+	ErrFileAlreadyRegistered   = fmt.Errorf("%w: file already registered", ErrBadRequest)
+	ErrValidationError         = fmt.Errorf("%w: validation error", ErrBadRequest)
+	ErrUnknown                 = fmt.Errorf("%w: unknown error", ErrBadRequest)
 )
 
 const (
@@ -63,10 +68,12 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 }
 
 func (c *Client) SetCollectionID(ctx context.Context, filepath, collectionID string) error {
-	buf := &bytes.Buffer{}
-	json.NewEncoder(buf).Encode(collectionIDSet{collectionID})
+	payload, err := json.Marshal(collectionIDSet{collectionID})
+	if err != nil {
+		return err
+	}
 
-	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("%s/files/%s", c.hcCli.URL, filepath), buf)
+	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("%s/files/%s", c.hcCli.URL, filepath), bytes.NewReader(payload))
 	req.Header.Set("Content-Type", "application/json")
 	dprequest.AddServiceTokenHeader(req, c.authToken)
 	resp, err := dphttp.NewClient().Do(ctx, req)
@@ -74,24 +81,16 @@ func (c *Client) SetCollectionID(ctx context.Context, filepath, collectionID str
 		return err
 	}
 
-	if resp.StatusCode == http.StatusNotFound {
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
 		return ErrFileNotFound
-	} else if resp.StatusCode == http.StatusBadRequest {
+	case http.StatusBadRequest:
 		return ErrFileAlreadyInCollection
-	} else if resp.StatusCode == http.StatusForbidden {
-		return ErrNotAuthorized
-	} else if resp.StatusCode == http.StatusInternalServerError {
-		je := dperrors.JsonErrors{}
-		json.NewDecoder(resp.Body).Decode(&je)
-
-		return je.ToNativeError()
-	} else if resp.StatusCode != http.StatusOK {
-		b, _ := ioutil.ReadAll(resp.Body)
-
-		return errors.New(fmt.Sprintf("Exepect Error: %d - %s", resp.StatusCode, string(b)))
 	}
 
-	return nil
+	return c.handleOtherCodes(resp)
 }
 
 func (c *Client) PublishCollection(ctx context.Context, collectionID string) error {
@@ -104,25 +103,16 @@ func (c *Client) PublishCollection(ctx context.Context, collectionID string) err
 		return err
 	}
 
-	if resp.StatusCode != http.StatusCreated {
-		if resp.StatusCode == http.StatusNotFound {
-			return ErrNoFilesInCollection
-		} else if resp.StatusCode == http.StatusConflict {
-			return ErrInvalidState
-		} else if resp.StatusCode == http.StatusForbidden {
-			return ErrNotAuthorized
-		} else if resp.StatusCode == http.StatusInternalServerError {
-			je := dperrors.JsonErrors{}
-			json.NewDecoder(resp.Body).Decode(&je)
-
-			return je.ToNativeError()
-		} else {
-			body, _ := ioutil.ReadAll(resp.Body)
-			return errors.New("unexpected error: " + string(body))
-		}
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return ErrNoFilesInCollection
+	case http.StatusConflict:
+		return ErrInvalidState
 	}
 
-	return nil
+	return c.handleOtherCodes(resp)
 }
 
 func (c *Client) filesRootPath() string {
@@ -147,36 +137,71 @@ func (c *Client) GetFile(ctx context.Context, path string, authToken string) (Fi
 		return FileMetaData{}, err
 	}
 
-	return c.parseGetFileResponse(resp)
-}
-
-func (c *Client) parseGetFileResponse(resp *http.Response) (FileMetaData, error) {
 	metadata := FileMetaData{}
-	var err error
 
-	if resp.StatusCode == http.StatusOK {
+	switch resp.StatusCode {
+	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(&metadata)
-	} else {
-		err = c.parseResponseErrors(resp)
+		return metadata, err
+	case http.StatusNotFound:
+		return metadata, dperrors.FromBody(resp.Body)
 	}
 
-	return metadata, err
+	return metadata, c.handleOtherCodes(resp)
 }
 
-func (c *Client) parseResponseErrors(resp *http.Response) error {
+func (c *Client) RegisterFile(ctx context.Context, metadata FileMetaData) error {
+	payload, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", c.hcCli.URL, c.filesRootPath()), bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+
+	dprequest.AddServiceTokenHeader(req, c.authToken)
+
+	resp, err := dphttp.NewClient().Do(ctx, req)
+	if err != nil {
+		return err
+	}
+
 	switch resp.StatusCode {
-	case http.StatusNotFound,
-		http.StatusInternalServerError:
-		je := dperrors.JsonErrors{}
-		if err := json.NewDecoder(resp.Body).Decode(&je); err != nil {
-			return err
-		}
-		return je.ToNativeError()
+	case http.StatusCreated:
+		return nil
+	case http.StatusBadRequest:
+		return c.handleBadRequestResponse(resp)
+	}
+
+	return c.handleOtherCodes(resp)
+}
+
+func (c *Client) handleBadRequestResponse(resp *http.Response) error {
+	jsonErrors := dperrors.JsonErrors{}
+	if err := json.NewDecoder(resp.Body).Decode(&jsonErrors); err != nil {
+		return fmt.Errorf("%w: %s", ErrBadRequest, err)
+	}
+	e := jsonErrors.Errors[0]
+
+	switch e.Code {
+	case "DuplicateFileError":
+		return ErrFileAlreadyRegistered
+	case "ValidationError":
+		return fmt.Errorf("%w: %s", ErrValidationError, e.Description)
+	default:
+		return fmt.Errorf("%w: %s: %s", ErrUnknown, e.Code, e.Description)
+	}
+}
+
+func (c *Client) handleOtherCodes(resp *http.Response) error {
+	switch resp.StatusCode {
 	case http.StatusForbidden:
 		return ErrNotAuthorized
-	default:
-		return dperrors.NewErrorFromUnhandledStatusCode(service, resp.StatusCode)
+	case http.StatusInternalServerError:
+		return fmt.Errorf("%w: %s", ErrServer, dperrors.FromBody(resp.Body))
 	}
 
-	return nil
+	return fmt.Errorf("%w: %v", ErrUnexpectedStatus, resp.StatusCode)
 }
