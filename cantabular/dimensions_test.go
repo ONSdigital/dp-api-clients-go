@@ -68,8 +68,12 @@ func TestGetDimensionsUnhappy(t *testing.T) {
 		Convey("When GetDimensions is called", func() {
 			resp, err := cantabularClient.GetDimensions(testCtx, "Teaching-Dataset")
 
+			Convey("Then the expected error is not nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedInternalServeError)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 			})
 
 			Convey("And no response is returned", func() {
@@ -157,10 +161,13 @@ func TestGetGeographyDimensionsUnhappy(t *testing.T) {
 				},
 			})
 
-			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedInternalServeError)
+			Convey("Then the expected error shoud not be nil", func() {
+				So(err, ShouldNotBeNil)
 			})
 
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+			})
 			Convey("And no response is returned", func() {
 				So(resp, ShouldBeNil)
 			})
@@ -258,8 +265,12 @@ func TestGetDimensionsByNameUnhappy(t *testing.T) {
 			}
 			resp, err := cantabularClient.GetDimensionsByName(testCtx, req)
 
+			Convey("Then the expected error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedInternalServeError)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 			})
 
 			Convey("And no response is returned", func() {
@@ -338,10 +349,13 @@ func TestSearchDimensionsUnhappy(t *testing.T) {
 			}
 			resp, err := cantabularClient.SearchDimensions(testCtx, req)
 
-			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedInternalServeError)
+			Convey("Then the expected error should not be nil", func() {
+				So(err, ShouldNotBeNil)
 			})
 
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+			})
 			Convey("And no response is returned", func() {
 				So(resp, ShouldBeNil)
 			})
@@ -470,8 +484,12 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 			}
 			resp, err := cantabularClient.GetDimensionOptions(testCtx, req)
 
+			Convey("Then the expected error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+
 			Convey("Then the expected error is returned", func() {
-				So(err, ShouldResemble, expectedInternalServeError)
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 			})
 
 			Convey("And no response is returned", func() {
@@ -492,6 +510,10 @@ func TestGetAreas(t *testing.T) {
 
 		Convey("When GetAreas is called", func() {
 			req := cantabular.GetAreasRequest{
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  1,
+					Offset: 0,
+				},
 				Dataset:  dataset,
 				Variable: variable,
 				Category: category,
@@ -510,6 +532,10 @@ func TestGetAreas(t *testing.T) {
 					mockHttpClient.PostCalls()[0].Body,
 					cantabular.QueryAreas,
 					cantabular.QueryData{
+						PaginationParams: cantabular.PaginationParams{
+							Limit:  1,
+							Offset: 0,
+						},
 						Dataset:  dataset,
 						Text:     variable,
 						Category: category,
@@ -636,8 +662,8 @@ func TestGetParentsUnhappy(t *testing.T) {
 			resp, err := client.GetParents(ctx, req)
 
 			Convey("Then the expected error is returned", func() {
-				So(client.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 			})
+			So(client.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
 
 			Convey("And no response is returned", func() {
 				So(resp, ShouldBeNil)
@@ -698,7 +724,6 @@ var mockRespBodyGetDimensions = `
 									"edges": [
 										{
 											"node": {
-												"filterOnly": "false",
 												"label": "Region",
 												"name": "Region"
 											}
@@ -778,9 +803,8 @@ var expectedDimensions = cantabular.GetDimensionsResponse{
 								Edges: []gql.Edge{
 									{
 										Node: gql.Node{
-											FilterOnly: "false",
-											Label:      "Region",
-											Name:       "Region",
+											Label: "Region",
+											Name:  "Region",
 										},
 									},
 								},
@@ -830,45 +854,41 @@ var mockRespBodyGetGeographyDimensions = `
 {
 	"data": {
 		"dataset": {
-			"ruleBase": {
-				"isSourceOf": {
-					"totalCount": 2,
-					"edges": [
-						{
-							"node": {
-								"categories": {
-									"totalCount": 2
-								},
-								"label": "Country",
-								"mapFrom": [
-									{
-										"edges": [
-											{
-												"node": {
-													"filterOnly": "false",
-													"label": "Region",
-													"name": "Region"
-												}
+			"variables": {
+				"totalCount": 2,
+				"edges": [
+					{
+						"node": {
+							"categories": {
+								"totalCount": 2
+							},
+							"label": "Country",
+							"mapFrom": [
+								{
+									"edges": [
+										{
+											"node": {
+												"label": "Region",
+												"name": "Region"
 											}
-										]
-									}
-								],
-								"name": "Country"
-							}
-						},
-						{
-							"node": {
-								"categories": {
-									"totalCount": 10
-								},
-								"label": "Region",
-								"mapFrom": [],
-								"name": "Region"
-							}
+										}
+									]
+								}
+							],
+							"name": "Country"
 						}
-					]
-				},
-				"name": "Region"
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount": 10
+							},
+							"label": "Region",
+							"mapFrom": [],
+							"name": "Region"
+						}
+					}
+				]
 			}
 		}
 	}
@@ -877,45 +897,39 @@ var mockRespBodyGetGeographyDimensions = `
 
 var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
 	Dataset: gql.Dataset{
-		RuleBase: gql.RuleBase{
-			IsSourceOf: gql.Variables{
-				TotalCount: 2,
-				Edges: []gql.Edge{
-					{
-						Node: gql.Node{
-							Name:       "Country",
-							Label:      "Country",
-							Categories: gql.Categories{TotalCount: 2},
-							MapFrom: []gql.Variables{
-								{
-									Edges: []gql.Edge{
-										{
-											Node: gql.Node{
-												Name:       "Region",
-												Label:      "Region",
-												Categories: gql.Categories{TotalCount: 0},
-												MapFrom:    []gql.Variables(nil),
-												FilterOnly: "false",
-											},
+		Variables: gql.Variables{
+			TotalCount: 2,
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:       "Country",
+						Label:      "Country",
+						Categories: gql.Categories{TotalCount: 2},
+						MapFrom: []gql.Variables{
+							{
+								Edges: []gql.Edge{
+									{
+										Node: gql.Node{
+											Name:       "Region",
+											Label:      "Region",
+											Categories: gql.Categories{TotalCount: 0},
+											MapFrom:    []gql.Variables(nil),
 										},
 									},
 								},
 							},
-							FilterOnly: "",
-						},
-					},
-					{
-						Node: gql.Node{
-							Name:       "Region",
-							Label:      "Region",
-							Categories: gql.Categories{TotalCount: 10},
-							MapFrom:    []gql.Variables{},
-							FilterOnly: "",
 						},
 					},
 				},
+				{
+					Node: gql.Node{
+						Name:       "Region",
+						Label:      "Region",
+						Categories: gql.Categories{TotalCount: 10},
+						MapFrom:    []gql.Variables{},
+					},
+				},
 			},
-			Name: "Region",
 		},
 	},
 	PaginationResponse: cantabular.PaginationResponse{
@@ -1069,116 +1083,116 @@ var expectedSearchDimensionsResponse = cantabular.GetDimensionsResponse{
 var mockRespBodyGetDimensionOptions = `
 {
     "data": {
-        "dataset": {
-            "table": {
-                "dimensions": [
-                    {
-                        "categories": [
-                            {
-                                "code": "E",
-                                "label": "England"
-                            },
-                            {
-                                "code": "W",
-                                "label": "Wales"
-                            }
-                        ],
-                        "variable": {
-                            "label": "Country",
-                            "name": "Country"
-                        }
-                    },
-                    {
-                        "categories": [
-                            {
-                                "code": "1",
-                                "label": "0 to 15"
-                            },
-                            {
-                                "code": "2",
-                                "label": "16 to 24"
-                            },
-                            {
-                                "code": "3",
-                                "label": "25 to 34"
-                            },
-                            {
-                                "code": "4",
-                                "label": "35 to 44"
-                            },
-                            {
-                                "code": "5",
-                                "label": "45 to 54"
-                            },
-                            {
-                                "code": "6",
-                                "label": "55 to 64"
-                            },
-                            {
-                                "code": "7",
-                                "label": "65 to 74"
-                            },
-                            {
-                                "code": "8",
-                                "label": "75 and over"
-                            }
-                        ],
-                        "variable": {
-                            "label": "Age",
-                            "name": "Age"
-                        }
-                    },
-                    {
-                        "categories": [
-                            {
-                                "code": "1",
-                                "label": "Managers, Directors and Senior Officials"
-                            },
-                            {
-                                "code": "2",
-                                "label": "Professional Occupations"
-                            },
-                            {
-                                "code": "3",
-                                "label": "Associate Professional and Technical Occupations"
-                            },
-                            {
-                                "code": "4",
-                                "label": "Administrative and Secretarial Occupations"
-                            },
-                            {
-                                "code": "5",
-                                "label": "Skilled Trades Occupations"
-                            },
-                            {
-                                "code": "6",
-                                "label": "Caring, Leisure and Other Service Occupations"
-                            },
-                            {
-                                "code": "7",
-                                "label": "Sales and Customer Service Occupations"
-                            },
-                            {
-                                "code": "8",
-                                "label": "Process, Plant and Machine Operatives"
-                            },
-                            {
-                                "code": "9",
-                                "label": "Elementary Occupations"
-                            },
-                            {
-                                "code": "-9",
-                                "label": "N/A"
-                            }
-                        ],
-                        "variable": {
-                            "label": "Occupation",
-                            "name": "Occupation"
-                        }
-                    }
-                ]
-            }
-        }
+	"dataset": {
+	    "table": {
+		"dimensions": [
+		    {
+			"categories": [
+			    {
+				"code": "E",
+				"label": "England"
+			    },
+			    {
+				"code": "W",
+				"label": "Wales"
+			    }
+			],
+			"variable": {
+			    "label": "Country",
+			    "name": "Country"
+			}
+		    },
+		    {
+			"categories": [
+			    {
+				"code": "1",
+				"label": "0 to 15"
+			    },
+			    {
+				"code": "2",
+				"label": "16 to 24"
+			    },
+			    {
+				"code": "3",
+				"label": "25 to 34"
+			    },
+			    {
+				"code": "4",
+				"label": "35 to 44"
+			    },
+			    {
+				"code": "5",
+				"label": "45 to 54"
+			    },
+			    {
+				"code": "6",
+				"label": "55 to 64"
+			    },
+			    {
+				"code": "7",
+				"label": "65 to 74"
+			    },
+			    {
+				"code": "8",
+				"label": "75 and over"
+			    }
+			],
+			"variable": {
+			    "label": "Age",
+			    "name": "Age"
+			}
+		    },
+		    {
+			"categories": [
+			    {
+				"code": "1",
+				"label": "Managers, Directors and Senior Officials"
+			    },
+			    {
+				"code": "2",
+				"label": "Professional Occupations"
+			    },
+			    {
+				"code": "3",
+				"label": "Associate Professional and Technical Occupations"
+			    },
+			    {
+				"code": "4",
+				"label": "Administrative and Secretarial Occupations"
+			    },
+			    {
+				"code": "5",
+				"label": "Skilled Trades Occupations"
+			    },
+			    {
+				"code": "6",
+				"label": "Caring, Leisure and Other Service Occupations"
+			    },
+			    {
+				"code": "7",
+				"label": "Sales and Customer Service Occupations"
+			    },
+			    {
+				"code": "8",
+				"label": "Process, Plant and Machine Operatives"
+			    },
+			    {
+				"code": "9",
+				"label": "Elementary Occupations"
+			    },
+			    {
+				"code": "-9",
+				"label": "N/A"
+			    }
+			],
+			"variable": {
+			    "label": "Occupation",
+			    "name": "Occupation"
+			}
+		    }
+		]
+	    }
+	}
     }
 }`
 
@@ -1238,62 +1252,56 @@ var expectedDimensionOptions = cantabular.GetDimensionOptionsResponse{
 
 var mockRespBodyGetAreas = `
 {
-  "data": {
-    "dataset": {
-      "ruleBase": {
-        "isSourceOf": {
-          "search": {
-            "edges": [
-              {
-                "node": {
-                  "label": "City",
-                  "name": "city",
-                  "categories": {
-                    "search": {
-                      "edges": [
-                        {
-                          "node": {
-                            "code": "0",
-                            "label": "London"
-                          }
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        }
-      }
-    }
+	"data": {
+	  "dataset": {
+		"variables": {
+		  "edges": [
+			{
+			  "node": {
+				"categories": {
+				  "search": {
+					"edges": [
+					  {
+						"node": {
+						  "code": "001",
+						  "label": "City of London"
+						}
+					  }
+					]
+				  },
+				  "totalCount": 100
+				},
+				"label": "Lower Super Output Area code",
+				"name": "LSOACD"
+			  }
+			}
+		  ]
+		}
+	  }
+	}
   }
-}
 `
 
 var expectedAreas = cantabular.GetAreasResponse{
 	Dataset: gql.Dataset{
-		RuleBase: gql.RuleBase{
-			IsSourceOf: gql.Variables{
-				Search: gql.Search{
-					Edges: []gql.Edge{
-						{
-							Node: gql.Node{
-								Name:  "city",
-								Label: "City",
-								Categories: gql.Categories{
-									Search: gql.Search{
-										Edges: []gql.Edge{
-											{
-												Node: gql.Node{
-													Code:  "0",
-													Label: "London",
-												},
-											},
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:  "LSOACD",
+						Label: "Lower Super Output Area code",
+						Categories: gql.Categories{
+							Search: gql.Search{
+								Edges: []gql.Edge{
+									{
+										Node: gql.Node{
+											Code:  "001",
+											Label: "City of London",
 										},
 									},
 								},
 							},
+							TotalCount: 100,
 						},
 					},
 				},
@@ -1310,7 +1318,7 @@ const mockRespBodyGetParents = `
 				"edges": [
 					{
 						"node": {
-							"isDirectSourceOf": {
+							"isSourceOf": {
 								"edges": [
 									{
 										"node": {
@@ -1319,6 +1327,15 @@ const mockRespBodyGetParents = `
 											},
 											"label": "Country",
 											"name": "country"
+										}
+									},
+									{
+										"node": {
+											"categories": {
+												"totalCount": 3
+											},
+											"label": "City",
+											"name": "city"
 										}
 									}
 								],
@@ -1342,7 +1359,7 @@ var expectedParents = cantabular.GetParentsResponse{
 					Node: gql.Node{
 						Name:  "city",
 						Label: "City",
-						IsDirectSourceOf: gql.Variables{
+						IsSourceOf: gql.Variables{
 							Edges: []gql.Edge{
 								{
 									Node: gql.Node{

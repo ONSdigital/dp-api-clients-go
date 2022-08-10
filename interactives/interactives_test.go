@@ -52,7 +52,7 @@ func TestClient_GetInteractives(t *testing.T) {
 		interactivesClient := newInteractivesClient(httpClient)
 
 		Convey("when GetInteractives is called with valid values for limit, offset and filter", func() {
-			q := &InteractiveFilter{Metadata: &InteractiveMetadata{ResourceID: "resid123"}}
+			q := &Filter{Metadata: &Metadata{ResourceID: "resid123"}}
 			i, err := interactivesClient.ListInteractives(ctx, userAuthToken, serviceAuthToken, q)
 
 			Convey("a positive response is returned, with the expected interactives", func() {

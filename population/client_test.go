@@ -371,9 +371,105 @@ func TestGetAreas(t *testing.T) {
 	})
 }
 
+func TestGetArea(t *testing.T) {
+
+	const userAuthToken = "user"
+	const serviceAuthToken = "service"
+
+	Convey("Given a valid request", t, func() {
+		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
+		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))
+		So(err, ShouldBeNil)
+
+		input := GetAreaInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+			PopulationType:   "popType",
+			AreaType:         "areaType",
+			Area:             "ID",
+		}
+
+		_, _ = client.GetArea(context.Background(), input)
+		calls := stubClient.DoCalls()
+
+		Convey("it should call the specific area endpoint", func() {
+			So(calls, ShouldNotBeEmpty)
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/popType/area-types/areaType/areas/ID")
+		})
+
+		Convey("it should set the auth headers on the request", func() {
+			So(calls[0].Req, shouldHaveAuthHeaders, userAuthToken, serviceAuthToken)
+		})
+
+	})
+
+	Convey("Given the population types api returns a 404", t, func() {
+		stubClient := newStubClient(&http.Response{
+			StatusCode: http.StatusNotFound,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "errors": ["not found"] }`))),
+		}, nil)
+
+		client := newHealthClient(stubClient)
+		input := GetAreaInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+			PopulationType:   "popType",
+			AreaType:         "areaType",
+			Area:             "ID",
+		}
+
+		_, err := client.GetArea(context.Background(), input)
+
+		Convey("the error chain should contain the original Errors type", func() {
+			So(err, shouldBeDPError, http.StatusInternalServerError)
+
+			var respErr ErrorResp
+			ok := errors.As(err, &respErr)
+			So(ok, ShouldBeTrue)
+			So(respErr, ShouldResemble, ErrorResp{Errors: []string{"not found"}})
+		})
+
+	})
+
+	Convey("Given the request cannot be created", t, func() {
+		client := newHealthClient(newStubClient(nil, nil))
+
+		input := GetAreaInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+		}
+		_, err := client.GetArea(nil, input)
+
+		Convey("it should return a client error", func() {
+			So(err, shouldBeDPError, http.StatusBadRequest)
+		})
+	})
+
+	Convey("Given the response cannot be deserialized", t, func() {
+		stubClient := newStubClient(&http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "areasdjfhas" `))),
+		}, nil)
+
+		client := newHealthClient(stubClient)
+
+		input := GetAreaInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+		}
+		_, err := client.GetArea(context.Background(), input)
+
+		Convey("it should return an internal error", func() {
+			So(err, shouldBeDPError, http.StatusInternalServerError)
+		})
+	})
+
+}
+
 func TestGetPopulationTypes(t *testing.T) {
 	const userAuthToken = "user"
 	const serviceAuthToken = "service"
+
 	Convey("Given a valid request", t, func() {
 		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
 		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))

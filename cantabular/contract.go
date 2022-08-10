@@ -111,6 +111,7 @@ type GetDimensionOptionsResponse struct {
 // GetAreasRequest holds the request variables required for the
 // POST [cantabular-ext]/graphql QueryAreas query.
 type GetAreasRequest struct {
+	PaginationParams
 	Dataset  string
 	Variable string
 	Category string

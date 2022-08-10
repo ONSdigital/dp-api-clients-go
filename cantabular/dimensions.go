@@ -55,8 +55,8 @@ func (c *Client) GetGeographyDimensions(ctx context.Context, req GetGeographyDim
 	}
 
 	resp.Data.PaginationResponse = PaginationResponse{
-		Count:            len(resp.Data.Dataset.RuleBase.IsSourceOf.Edges),
-		TotalCount:       resp.Data.Dataset.RuleBase.IsSourceOf.TotalCount,
+		Count:            len(resp.Data.Dataset.Variables.Edges),
+		TotalCount:       resp.Data.Dataset.Variables.TotalCount,
 		PaginationParams: req.PaginationParams,
 	}
 
@@ -166,9 +166,10 @@ func (c *Client) GetAreas(ctx context.Context, req GetAreasRequest) (*GetAreasRe
 	}{}
 
 	data := QueryData{
-		Dataset:  req.Dataset,
-		Text:     req.Variable,
-		Category: req.Category,
+		PaginationParams: req.PaginationParams,
+		Dataset:          req.Dataset,
+		Text:             req.Variable,
+		Category:         req.Category,
 	}
 
 	if err := c.queryUnmarshal(ctx, QueryAreas, data, resp); err != nil {
@@ -212,6 +213,15 @@ func (c *Client) GetParents(ctx context.Context, req GetParentsRequest) (*GetPar
 			},
 		)
 	}
+
+	// should be impossible but to avoid panic
+	if len(resp.Data.Dataset.Variables.Edges) < 1 {
+		return nil, errors.New("invalid response from graphQL")
+	}
+
+	// last item is guaranteed to be provided variable, only return parents
+	edges := resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.Edges
+	resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.Edges = edges[:len(edges)-1]
 
 	return &resp.Data, nil
 }
