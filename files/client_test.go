@@ -674,6 +674,146 @@ func TestRegisterFile(t *testing.T) {
 	})
 }
 
+func TestPatchFile(t *testing.T) {
+	Convey("PatchFile happy path", t, func() {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+
+		hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+		client := files.NewWithHealthClient(&hCli)
+
+		err := client.PatchFile(context.Background(), "a.txt", files.FilePatch{})
+
+		So(err, ShouldBeNil)
+	})
+
+	Convey("PatchFile call errors", t, func() {
+		Convey("internal server error", func() {
+			Convey("with valid JSON description", func() {
+				expectedCode := "InternalError"
+				expectedDescription := "no space on disk"
+				server := newMockFilesAPIServerWithError(http.StatusInternalServerError, expectedCode, expectedDescription)
+
+				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+				client := files.NewWithHealthClient(&hCli)
+				err := client.PatchFile(context.Background(), "a.txt", files.FilePatch{})
+
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldEqual, fmt.Sprintf("%s: %s: %s", files.ErrServer, expectedCode, expectedDescription))
+			})
+
+			Convey("with invalid JSON description", func() {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					w.WriteHeader(http.StatusInternalServerError)
+					fmt.Fprint(w, "<invalid JSON>")
+				}))
+
+				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+				client := files.NewWithHealthClient(&hCli)
+
+				err := client.PatchFile(context.Background(), "a.txt", files.FilePatch{})
+
+				So(err, ShouldBeError)
+				So(err.Error(), ShouldContainSubstring, "invalid character")
+			})
+		})
+
+		Convey("bad request", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusBadRequest)
+			}))
+
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+			err := client.PatchFile(context.Background(), "a.txt", files.FilePatch{})
+
+			So(err, ShouldBeError)
+			So(err, ShouldBeError, files.ErrFileAlreadyInCollection)
+			So(err.Error(), ShouldEqual, "file collection ID already set")
+
+		})
+
+		Convey("file not publishable", func() {
+			expectedCode := "FileNotPublishable"
+			server := newMockFilesAPIServerWithError(http.StatusConflict, expectedCode, "")
+
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+			err := client.PatchFile(context.Background(), "a.txt", files.FilePatch{})
+
+			So(err, ShouldBeError)
+			So(err.Error(), ShouldEqual, "bad request: file already registered")
+		})
+
+		Convey("file is in invalid state", func() {
+			expectedCode := "unspecified invalid state"
+			server := newMockFilesAPIServerWithError(http.StatusConflict, expectedCode, "")
+
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+			err := client.PatchFile(context.Background(), "a.txt", files.FilePatch{})
+
+			So(err, ShouldBeError, files.ErrInvalidState)
+		})
+
+		Convey("unknown error", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusTeapot)
+			}))
+
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+
+			err := client.PatchFile(context.Background(), "a.txt", files.FilePatch{})
+
+			So(err, ShouldBeError)
+			So(err.Error(), ShouldEqual, "unexpected response status code: 418")
+		})
+
+		Convey("HTTP client error", func() {
+			hCli := health.Client{URL: "broken", Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+			err := client.PatchFile(context.Background(), "a.txt", files.FilePatch{})
+
+			So(err, ShouldBeError)
+		})
+	})
+
+	Convey("PatchFile authorises requests to Files API", t, func() {
+		Convey("adds a service token to the header", func() {
+			expectedToken := "auth-token"
+			expectedBearerToken := fmt.Sprintf("Bearer %s", expectedToken)
+
+			var token string
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				token = req.Header.Get("Authorization")
+				w.WriteHeader(http.StatusOK)
+			}))
+
+			client := files.NewAPIClient(server.URL, expectedToken)
+
+			err := client.PatchFile(context.Background(), "a.txt", files.FilePatch{})
+
+			So(err, ShouldBeNil)
+			So(token, ShouldEqual, expectedBearerToken)
+		})
+
+		Convey("returns an error if unauthorised", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusForbidden)
+			}))
+
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+
+			err := client.PatchFile(context.Background(), "a.txt", files.FilePatch{})
+			So(err, ShouldEqual, files.ErrNotAuthorized)
+		})
+	})
+}
+
 func mockServerWithVersionedEndpoint(metadata files.FileMetaData, version string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		reqURL, _ := url.Parse(req.RequestURI)
