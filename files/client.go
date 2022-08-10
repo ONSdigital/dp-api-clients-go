@@ -20,7 +20,8 @@ var (
 	ErrFileNotFound            = errors.New("file not found on dp-files-api")
 	ErrFileAlreadyInCollection = errors.New("file collection ID already set")
 	ErrNoFilesInCollection     = errors.New("no file in the collection")
-	ErrInvalidState            = errors.New("files in an invalid state to publish")
+	ErrInvalidState            = errors.New("file is in an invalid state for this action")
+	ErrNotPublishable          = errors.New("file is not set as publishable")
 	ErrNotAuthorized           = errors.New("you are not authorized for this action")
 	ErrServer                  = errors.New("internal server error")
 	ErrUnexpectedStatus        = errors.New("unexpected response status code")
@@ -34,8 +35,10 @@ const (
 	service = "files-api"
 )
 
-type collectionIDSet struct {
-	CollectionID string `json:"collection_id"`
+type FilePatch struct {
+	State        string `json:"state,omitempty"`
+	ETag         string `json:"etag,omitempty"`
+	CollectionID string `json:"collection_id,omitempty"`
 }
 
 // Client is an files API client which can be used to make requests to the server.
@@ -65,32 +68,6 @@ func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
 // Checker calls image api health endpoint and returns a check object to the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
-}
-
-func (c *Client) SetCollectionID(ctx context.Context, filepath, collectionID string) error {
-	payload, err := json.Marshal(collectionIDSet{collectionID})
-	if err != nil {
-		return err
-	}
-
-	req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("%s/files/%s", c.hcCli.URL, filepath), bytes.NewReader(payload))
-	req.Header.Set("Content-Type", "application/json")
-	dprequest.AddServiceTokenHeader(req, c.authToken)
-	resp, err := dphttp.NewClient().Do(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return ErrFileNotFound
-	case http.StatusBadRequest:
-		return ErrFileAlreadyInCollection
-	}
-
-	return c.handleOtherCodes(resp)
 }
 
 func (c *Client) PublishCollection(ctx context.Context, collectionID string) error {
@@ -172,27 +149,90 @@ func (c *Client) RegisterFile(ctx context.Context, metadata FileMetaData) error 
 	case http.StatusCreated:
 		return nil
 	case http.StatusBadRequest:
-		return c.handleBadRequestResponse(resp)
+		jsonErrors := dperrors.JsonErrors{}
+		if err := json.NewDecoder(resp.Body).Decode(&jsonErrors); err != nil {
+			return fmt.Errorf("%w: %s", ErrBadRequest, err)
+		}
+		e := jsonErrors.Errors[0]
+
+		switch e.Code {
+		case "DuplicateFileError":
+			return ErrFileAlreadyRegistered
+		case "ValidationError":
+			return fmt.Errorf("%w: %s", ErrValidationError, e.Description)
+		default:
+			return fmt.Errorf("%w: %s: %s", ErrUnknown, e.Code, e.Description)
+		}
 	}
 
 	return c.handleOtherCodes(resp)
 }
 
-func (c *Client) handleBadRequestResponse(resp *http.Response) error {
-	jsonErrors := dperrors.JsonErrors{}
-	if err := json.NewDecoder(resp.Body).Decode(&jsonErrors); err != nil {
-		return fmt.Errorf("%w: %s", ErrBadRequest, err)
-	}
-	e := jsonErrors.Errors[0]
+func (c *Client) MarkFileUploaded(ctx context.Context, path string, etag string) error {
+	return c.PatchFile(ctx, path, FilePatch{
+		State: "UPLOADED",
+		ETag:  etag,
+	})
+}
+func (c *Client) MarkFileDecrypted(ctx context.Context, path string, etag string) error {
+	return c.PatchFile(ctx, path, FilePatch{
+		State: "DECRYPTED",
+		ETag:  etag,
+	})
+}
+func (c *Client) MarkFilePublished(ctx context.Context, path string, etag string) error {
+	return c.PatchFile(ctx, path, FilePatch{
+		State: "PUBLISHED",
+		ETag:  etag,
+	})
+}
 
-	switch e.Code {
-	case "DuplicateFileError":
-		return ErrFileAlreadyRegistered
-	case "ValidationError":
-		return fmt.Errorf("%w: %s", ErrValidationError, e.Description)
-	default:
-		return fmt.Errorf("%w: %s: %s", ErrUnknown, e.Code, e.Description)
+func (c *Client) SetCollectionID(ctx context.Context, filepath, collectionID string) error {
+	return c.PatchFile(ctx, filepath, FilePatch{
+		CollectionID: collectionID,
+	})
+}
+
+func (c *Client) PatchFile(ctx context.Context, path string, patch FilePatch) error {
+	payload, err := json.Marshal(patch)
+	if err != nil {
+		return err
 	}
+
+	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("%s/%s/%s", c.hcCli.URL, c.filesRootPath(), path), bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	dprequest.AddServiceTokenHeader(req, c.authToken)
+	resp, err := dphttp.NewClient().Do(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return ErrFileNotFound
+	case http.StatusBadRequest:
+		return ErrFileAlreadyInCollection
+	case http.StatusConflict:
+		jsonErrors := dperrors.JsonErrors{}
+		if err := json.NewDecoder(resp.Body).Decode(&jsonErrors); err != nil {
+			return fmt.Errorf("%w: %s", ErrInvalidState, err)
+		}
+		e := jsonErrors.Errors[0]
+
+		switch e.Code {
+		case "FileNotPublishable":
+			return ErrFileAlreadyRegistered
+		default:
+			return ErrInvalidState
+		}
+	}
+
+	return c.handleOtherCodes(resp)
 }
 
 func (c *Client) handleOtherCodes(resp *http.Response) error {
