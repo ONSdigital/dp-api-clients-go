@@ -320,6 +320,22 @@ func (c *Client) GetPageDescription(ctx context.Context, userAccessToken, collec
 	return desc, nil
 }
 
+func (c *Client) GetFigure(ctx context.Context, userAccessToken, collectionID, lang, uri string) (Figure, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
+
+	if err != nil {
+		return Figure{}, err
+	}
+
+	var f Figure
+	if err = json.Unmarshal(b, &f); err != nil {
+		return f, err
+	}
+
+	return f, nil
+}
+
 func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, collectionID, lang, uri string) (TimeseriesMainFigure, error) {
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
