@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/ONSdigital/dp-healthcheck v1.3.0
 	github.com/ONSdigital/dp-mocking v0.9.1
-	github.com/ONSdigital/dp-net v1.4.2-0.20220815060453-ae2039c4bf38
+	github.com/ONSdigital/dp-net v1.5.0
 	github.com/ONSdigital/dp-net/v2 v2.4.0
 	github.com/ONSdigital/log.go/v2 v2.2.0
 	github.com/golang/mock v1.6.0
