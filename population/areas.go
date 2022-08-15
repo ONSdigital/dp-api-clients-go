@@ -12,6 +12,11 @@ type GetAreasResponse struct {
 	Areas []Area `json:"areas"`
 }
 
+// GetAreasResponse is the response object for GET /areas
+type GetAreaResponse struct {
+	Area Area `json:"area"`
+}
+
 // Area is an area model with ID and Label
 type AreaTypes struct {
 	ID         string `json:"id"`

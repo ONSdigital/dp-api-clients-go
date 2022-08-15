@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/ONSdigital/dp-healthcheck v1.3.0
-	github.com/ONSdigital/dp-mocking v0.0.0-20190905163309-fee2702ad1b9
-	github.com/ONSdigital/dp-net v1.4.1
+	github.com/ONSdigital/dp-mocking v0.9.1
+	github.com/ONSdigital/dp-net v1.5.0
 	github.com/ONSdigital/dp-net/v2 v2.4.0
 	github.com/ONSdigital/log.go/v2 v2.2.0
 	github.com/golang/mock v1.6.0
@@ -18,7 +18,7 @@ require (
 require (
 	github.com/ONSdigital/dp-api-clients-go v1.43.0 // indirect
 	github.com/ONSdigital/log.go v1.1.0 // indirect
-	github.com/aws/aws-sdk-go v1.44.43 // indirect
+	github.com/aws/aws-sdk-go v1.44.76 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
@@ -26,8 +26,8 @@ require (
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/justinas/alice v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/smartystreets/assertions v1.13.0 // indirect
-	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
-	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b // indirect
+	golang.org/x/net v0.0.0-20220812174116-3211cb980234 // indirect
+	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 )
