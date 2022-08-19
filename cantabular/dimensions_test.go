@@ -13,13 +13,13 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestGetDimensionsHappy(t *testing.T) {
-	Convey("Given a correct getDimensions response from the /graphql endpoint", t, func() {
+func TestGetAllDimensionsHappy(t *testing.T) {
+	Convey("Given a correct getAllDimensions response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
-		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetDimensions, http.StatusOK)
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetAllDimensions, http.StatusOK)
 
-		Convey("When GetDimensions is called", func() {
-			resp, err := cantabularClient.GetDimensions(testCtx, "Teaching-Dataset")
+		Convey("When GetAllDimensions is called", func() {
+			resp, err := cantabularClient.GetAllDimensions(testCtx, "Teaching-Dataset")
 
 			Convey("Then no error should be returned", func() {
 				So(err, ShouldBeNil)
@@ -30,7 +30,7 @@ func TestGetDimensionsHappy(t *testing.T) {
 				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
 				validateQuery(
 					mockHttpClient.PostCalls()[0].Body,
-					cantabular.QueryDimensions,
+					cantabular.QueryAllDimensions,
 					cantabular.QueryData{
 						Dataset: "Teaching-Dataset",
 					},
@@ -44,13 +44,13 @@ func TestGetDimensionsHappy(t *testing.T) {
 	})
 }
 
-func TestGetDimensionsUnhappy(t *testing.T) {
+func TestGetAllDimensionsUnhappy(t *testing.T) {
 	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
 		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
 
-		Convey("When GetDimensions is called", func() {
-			resp, err := cantabularClient.GetDimensions(testCtx, "InexistentDataset")
+		Convey("When GetAllDimensions is called", func() {
+			resp, err := cantabularClient.GetAllDimensions(testCtx, "InexistentDataset")
 
 			Convey("Then the expected error is returned", func() {
 				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
@@ -66,8 +66,8 @@ func TestGetDimensionsUnhappy(t *testing.T) {
 		testCtx := context.Background()
 		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
 
-		Convey("When GetDimensions is called", func() {
-			resp, err := cantabularClient.GetDimensions(testCtx, "Teaching-Dataset")
+		Convey("When GetAllDimensions is called", func() {
+			resp, err := cantabularClient.GetAllDimensions(testCtx, "Teaching-Dataset")
 
 			Convey("Then the expected error is not nil", func() {
 				So(err, ShouldNotBeNil)
@@ -846,8 +846,9 @@ func newMockedClient(response string, statusCode int) (*dphttp.ClienterMock, *ca
 	return mockHttpClient, cantabularClient
 }
 
-// mockRespBodyGetDimensions is a successful 'get dimensions' query respose that is returned from a mocked client for testing
-var mockRespBodyGetDimensions = `
+// mockRespBodyGetAllDimensions is a successful 'get all dimensions' query respose that is
+// returned from a mocked client for testing
+var mockRespBodyGetAllDimensions = `
 {
 	"data": {
 		"dataset": {

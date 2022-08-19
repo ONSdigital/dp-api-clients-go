@@ -46,8 +46,8 @@ query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
 	}
 }`
 
-// QueryDimensions is the graphQL query to obtain dimensions (variables without categories)
-const QueryDimensions = `
+// QueryAllDimensions is the graphQL query to obtain all dimensions (variables without categories)
+const QueryAllDimensions = `
 query($dataset: String!) {
 	dataset(name: $dataset) {
 		variables {

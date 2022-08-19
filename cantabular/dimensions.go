@@ -16,7 +16,7 @@ type GetGeographyBatchProcessor func(response *GetGeographyDimensionsResponse) (
 
 // GetDimensions performs a graphQL query to obtain all the dimensions for the provided cantabular dataset.
 // The whole response is loaded to memory.
-func (c *Client) GetDimensions(ctx context.Context, dataset string) (*GetDimensionsResponse, error) {
+func (c *Client) GetAllDimensions(ctx context.Context, dataset string) (*GetDimensionsResponse, error) {
 	resp := &struct {
 		Data   GetDimensionsResponse `json:"data"`
 		Errors []gql.Error           `json:"errors,omitempty"`
@@ -26,7 +26,7 @@ func (c *Client) GetDimensions(ctx context.Context, dataset string) (*GetDimensi
 		Dataset: dataset,
 	}
 
-	if err := c.queryUnmarshal(ctx, QueryDimensions, data, resp); err != nil {
+	if err := c.queryUnmarshal(ctx, QueryAllDimensions, data, resp); err != nil {
 		return nil, err
 	}
 
