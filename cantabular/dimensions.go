@@ -14,7 +14,7 @@ import (
 // GetGeographyBatchProcessor is the type corresponding to a batch processing function for Geography dimensions
 type GetGeographyBatchProcessor func(response *GetGeographyDimensionsResponse) (abort bool, err error)
 
-// GetDimensions performs a graphQL query to obtain all the dimensions for the provided cantabular dataset.
+// GetAllDimensions performs a graphQL query to obtain all the dimensions for the provided cantabular dataset.
 // The whole response is loaded to memory.
 func (c *Client) GetAllDimensions(ctx context.Context, dataset string) (*GetDimensionsResponse, error) {
 	resp := &struct {
@@ -28,6 +28,41 @@ func (c *Client) GetAllDimensions(ctx context.Context, dataset string) (*GetDime
 
 	if err := c.queryUnmarshal(ctx, QueryAllDimensions, data, resp); err != nil {
 		return nil, err
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			resp.Errors[0].StatusCode(),
+			log.Data{"errors": resp.Errors},
+		)
+	}
+
+	return &resp.Data, nil
+}
+
+// GetDimensions performs a graphQL query to obtain all the non-geography dimensions for the provided
+// cantabular dataset. The whole response is loaded to memory.
+func (c *Client) GetDimensions(ctx context.Context, req GetDimensionsRequest) (*GetDimensionsResponse, error) {
+	resp := &struct {
+		Data   GetDimensionsResponse `json:"data"`
+		Errors []gql.Error           `json:"errors,omitempty"`
+	}{}
+
+	data := QueryData{
+		PaginationParams: req.PaginationParams,
+		Dataset:          req.Dataset,
+		Text:             req.Text,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryDimensions, data, resp); err != nil {
+		return nil, err
+	}
+
+	resp.Data.PaginationResponse = PaginationResponse{
+		Count:            len(resp.Data.Dataset.Variables.Search.Edges),
+		TotalCount:       resp.Data.Dataset.Variables.TotalCount,
+		PaginationParams: req.PaginationParams,
 	}
 
 	if resp != nil && len(resp.Errors) != 0 {

@@ -59,6 +59,12 @@ type GetDimensionsByNameRequest struct {
 	DimensionNames []string
 }
 
+type GetDimensionsRequest struct {
+	PaginationParams
+	Dataset string
+	Text    string
+}
+
 // SearchDimensionsRequest holds the request variables required from the
 // caller for making a request to search dimensions (Cantabular variables) by text
 // POST [cantabular-ext]/graphql
@@ -71,6 +77,7 @@ type SearchDimensionsRequest struct {
 // POST [cantabular-ext]/graphql
 // with a query to obtain variables
 type GetDimensionsResponse struct {
+	PaginationResponse
 	Dataset gql.Dataset `json:"dataset"`
 }
 

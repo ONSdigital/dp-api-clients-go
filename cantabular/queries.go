@@ -72,6 +72,28 @@ query($dataset: String!) {
 	}
 }`
 
+// QueryDimensions is the graphQL query to obtain all non-geography base dimensions (variables without categories)
+const QueryDimensions = `
+query ($dataset: String!, $text: String!, $limit: Int!, $offset: Int) {
+	dataset(name: $dataset) {
+		variables(rule: false, base: true) {
+			totalCount
+			search(text: $text, skip: $offset, first: $limit) {
+				edges {
+					node {
+						name
+						label
+						categories {
+							totalCount
+						}
+					}
+				}
+			}
+		}
+	}
+}
+`
+
 // QueryDimensionsByName is the graphQL query to obtain dimensions by name (subset of variables, without categories)
 const QueryDimensionsByName = `
 query($dataset: String!, $variables: [String!]!) {
