@@ -298,11 +298,16 @@ func decodeValues(ctx context.Context, dec jsonstream.Decoder, dims Dimensions, 
 // createCSVHeader creates an array of strings corresponding to a csv header
 // where each column contains the value of the corresponding dimension, with the last column being the 'count'
 func createCSVHeader(dims Dimensions) []string {
-	header := make([]string, len(dims)+1)
-	for i, dim := range dims {
-		header[i+1] = dim.Variable.Label
+	i := 0
+	l := len(dims) * 2
+	header := make([]string, l+1)
+	for _, dim := range dims {
+		header[i] = fmt.Sprintf("%s Code", dim.Variable.Label)
+		i++
+		header[i] = dim.Variable.Label
+		i++
 	}
-	header[0] = "count"
+	header[l] = "Observation"
 
 	return header
 }
@@ -311,16 +316,18 @@ func createCSVHeader(dims Dimensions) []string {
 // for the provided array of dimension, index and count
 // it assumes that the values are sorted with lower weight for the last dimension and higher weight for the first dimension.
 func createCSVRow(dims []Dimension, index, count int) []string {
-	row := make([]string, len(dims)+1)
+	l := len(dims)
+	row := make([]string, l*2+1)
 
 	// Iterate dimensions starting from the last one (lower weight)
-	for i := len(dims) - 1; i >= 0; i-- {
-		catIndex := index % dims[i].Count             // Index of the category for the current dimension
-		row[i+1] = dims[i].Categories[catIndex].Label // The CSV column corresponds to the label of the Category
-		index /= dims[i].Count                        // Modify index for next iteration
+	for i := l - 1; i >= 0; i-- {
+		catIndex := index % dims[i].Count               // Index of the category for the current dimension
+		row[i*2] = dims[i].Categories[catIndex].Code    // The CSV column corresponds to the label of the Category
+		row[i*2+1] = dims[i].Categories[catIndex].Label // The CSV column corresponds to the label of the Category
+		index /= dims[i].Count                          // Modify index for next iteration
 	}
 
-	row[0] = fmt.Sprintf("%d", count)
+	row[l*2] = fmt.Sprintf("%d", count)
 
 	return row
 }
@@ -328,15 +335,17 @@ func createCSVRow(dims []Dimension, index, count int) []string {
 // createCSVRow creates an array of strings corresponding to a csv row
 // for the provided dimensions and count, using the pointer receiver iterator to determine the column value
 func (it *Iterator) createCSVRow(dims []Dimension, count string) ([]string, error) {
-	row := make([]string, len(dims)+1)
+	l := len(dims) * 2
+	row := make([]string, l+1)
 	for i := range dims {
 		category, err := it.CategoryAtColumn(i)
 		if err != nil {
 			return []string{}, fmt.Errorf("failed to find category at column %d, : %w", i, err)
 		}
-		row[i+1] = category.Label
+		row[i*2] = category.Code
+		row[i*2+1] = category.Label
 	}
-	row[0] = count
+	row[l] = count
 
 	return row, nil
 }
