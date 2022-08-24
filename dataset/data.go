@@ -17,7 +17,7 @@ type DatasetDetails struct {
 	License           string            `json:"license,omitempty"`
 	Links             Links             `json:"links,omitempty"`
 	Methodologies     *[]Methodology    `json:"methodologies,omitempty"`
-	NationalStatistic bool              `json:"national_statistic,omitempty"`
+	NationalStatistic bool              `json:"national_statistic"`
 	NextRelease       string            `json:"next_release,omitempty"`
 	NomisReferenceURL string            `json:"nomis_reference_url,omitempty"`
 	Publications      *[]Publication    `json:"publications,omitempty"`
