@@ -1,5 +1,7 @@
 package population
 
+import "github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
+
 // Area is an area model with ID and Label
 type Area struct {
 	ID       string `json:"id"`
@@ -27,4 +29,17 @@ type AreaTypes struct {
 // GetAreaTypeParentsResponse is the response object for GET /areas
 type GetAreaTypeParentsResponse struct {
 	AreaTypes []AreaTypes `json:"area_types"`
+}
+
+// Dimension is an area-type model with ID and Label
+type Dimension struct {
+	Name       string `json:"name"`
+	Label      string `json:"label"`
+	TotalCount int    `json:"total_count"`
+}
+
+// GetDimensionsResponse is the response object for GetDimensions
+type GetDimensionsResponse struct {
+	cantabular.PaginationResponse
+	Dimensions []Dimension `json:"items"`
 }
