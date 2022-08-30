@@ -141,17 +141,20 @@ type GetAreasRequest struct {
 // POST [cantabular-ext]/graphql
 // with a query to obtain static dataset variables and categories, without values.
 type GetAreasResponse struct {
+	PaginationResponse
 	Dataset gql.Dataset `json:"dataset"`
 }
 
 // GetParentsRequest holds the input parameters for the GetParents query
 type GetParentsRequest struct {
+	PaginationParams
 	Dataset  string
 	Variable string
 }
 
 // GetParentsResponse is the response body for the GetParents query
 type GetParentsResponse struct {
+	PaginationResponse
 	Dataset gql.Dataset `json:"dataset"`
 }
 

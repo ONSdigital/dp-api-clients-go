@@ -7,10 +7,11 @@ import (
 	"sync"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestGetAllDimensionsHappy(t *testing.T) {
@@ -712,8 +713,9 @@ func TestGetParentsHappy(t *testing.T) {
 
 		Convey("When GetParents is called", func() {
 			req := cantabular.GetParentsRequest{
-				Dataset:  dataset,
-				Variable: variable,
+				PaginationParams: cantabular.PaginationParams{Limit: 20},
+				Dataset:          dataset,
+				Variable:         variable,
 			}
 
 			resp, err := cantabularClient.GetParents(ctx, req)
@@ -728,8 +730,9 @@ func TestGetParentsHappy(t *testing.T) {
 					mockHttpClient.PostCalls()[0].Body,
 					cantabular.QueryParents,
 					cantabular.QueryData{
-						Dataset:   dataset,
-						Variables: []string{variable},
+						Dataset:          dataset,
+						Variables:        []string{variable},
+						PaginationParams: cantabular.PaginationParams{Limit: 20},
 					},
 				)
 			})
@@ -1199,7 +1202,7 @@ var expectedDimensions = cantabular.GetDimensionsResponse{
 	},
 }
 
-//  mockRespBodyZeroGetGeographyDimensions is a successful 'get geography dimensions' with 0 results query respose that is returned from a mocked client for testing
+// mockRespBodyZeroGetGeographyDimensions is a successful 'get geography dimensions' with 0 results query respose that is returned from a mocked client for testing
 var mockRespBodyZeroGetGeographyDimensions = `
 {
 	"data": {
@@ -1813,6 +1816,7 @@ var mockRespBodyGetAreas = `
 	"data": {
 	  "dataset": {
 		"variables": {
+		  "totalCount": 1,
 		  "edges": [
 			{
 			  "node": {
@@ -1841,8 +1845,15 @@ var mockRespBodyGetAreas = `
 `
 
 var expectedAreas = cantabular.GetAreasResponse{
+	PaginationResponse: cantabular.PaginationResponse{
+		PaginationParams: cantabular.PaginationParams{
+			Limit: 1,
+		},
+		Count: 1, TotalCount: 1,
+	},
 	Dataset: gql.Dataset{
 		Variables: gql.Variables{
+			TotalCount: 1,
 			Edges: []gql.Edge{
 				{
 					Node: gql.Node{
@@ -1897,7 +1908,7 @@ const mockRespBodyGetParents = `
 										}
 									}
 								],
-								"totalCount": 1
+								"totalCount": 2
 							},
 							"label": "City",
 							"name": "city"
@@ -1910,6 +1921,11 @@ const mockRespBodyGetParents = `
 }`
 
 var expectedParents = cantabular.GetParentsResponse{
+	PaginationResponse: cantabular.PaginationResponse{
+		PaginationParams: cantabular.PaginationParams{Limit: 20, Offset: 0},
+		TotalCount:       1,
+		Count:            1,
+	},
 	Dataset: gql.Dataset{
 		Variables: gql.Variables{
 			Edges: []gql.Edge{

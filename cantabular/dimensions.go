@@ -243,6 +243,12 @@ func (c *Client) GetAreas(ctx context.Context, req GetAreasRequest) (*GetAreasRe
 		return nil, errors.Wrap(err, "failed to unmarshal query")
 	}
 
+	resp.Data.PaginationResponse = PaginationResponse{
+		Count:            len(resp.Data.Dataset.Variables.Edges),
+		TotalCount:       resp.Data.Dataset.Variables.TotalCount,
+		PaginationParams: req.PaginationParams,
+	}
+
 	if resp != nil && len(resp.Errors) != 0 {
 		return nil, dperrors.New(
 			errors.New("error(s) returned by graphQL query"),
@@ -262,8 +268,9 @@ func (c *Client) GetParents(ctx context.Context, req GetParentsRequest) (*GetPar
 	}{}
 
 	data := QueryData{
-		Dataset:   req.Dataset,
-		Variables: []string{req.Variable},
+		PaginationParams: req.PaginationParams,
+		Dataset:          req.Dataset,
+		Variables:        []string{req.Variable},
 	}
 
 	if err := c.queryUnmarshal(ctx, QueryParents, data, resp); err != nil {
@@ -288,7 +295,18 @@ func (c *Client) GetParents(ctx context.Context, req GetParentsRequest) (*GetPar
 
 	// last item is guaranteed to be provided variable, only return parents
 	edges := resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.Edges
-	resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.Edges = edges[:len(edges)-1]
+	for i, v := range edges {
+		if v.Node.Name == req.Variable {
+			resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.Edges = append(edges[:i], edges[i+1:]...)
+		}
+	}
+
+	// last edges item is guaranteed to be the provided variable, so we need to decrement the totalCount by one
+	resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.TotalCount--
+
+	resp.Data.TotalCount = resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.TotalCount
+	resp.Data.Count = len(resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.Edges)
+	resp.Data.PaginationParams = req.PaginationParams
 
 	return &resp.Data, nil
 }
