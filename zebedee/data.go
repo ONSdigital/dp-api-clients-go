@@ -139,7 +139,8 @@ type Figure struct {
 	AspectRatio   string        `json:"aspectRatio,omitempty"`
 	Files         []SidecarFile `json:"files,omitempty"`
 	AltType       string        `json:"altType,omitempty"`
-	// TODO: categories, series, headers, data
+	Series        []string      `json:"series,omitempty"`
+	// TODO: categories, headers, data
 }
 
 type SidecarFile struct {
