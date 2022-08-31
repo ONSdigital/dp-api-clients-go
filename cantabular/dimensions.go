@@ -265,6 +265,50 @@ func (c *Client) GetParents(ctx context.Context, req GetParentsRequest) (*GetPar
 	return &resp.Data, nil
 }
 
+// GetParentAreaCount returns the count of the areas for the parent of the provided variable
+// with applied filter. Also returns the list of categories itself.
+func (c *Client) GetParentAreaCount(ctx context.Context, req GetParentAreaCountRequest) (*GetParentAreaCountResult, error) {
+	resp := &struct {
+		Data   GetParentAreaCountResponse `json:"data"`
+		Errors []gql.Error                `json:"errors,omitempty"`
+	}{}
+
+	data := QueryData{
+		Dataset:   req.Dataset,
+		Variables: []string{req.Variable},
+		Filters: []Filter{
+			{
+				Variable: req.Parent,
+				Codes:    req.Codes,
+			},
+		},
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryParentAreaCount, data, resp); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal query")
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			resp.Errors[0].StatusCode(),
+			log.Data{
+				"request": req,
+				"errors":  resp.Errors,
+			},
+		)
+	}
+
+	// should be impossible but to avoid panic
+	if len(resp.Data.Dataset.Table.Dimensions) != 1 {
+		return nil, errors.New("invalid response from graphQL")
+	}
+
+	return &GetParentAreaCountResult{
+		Dimension: resp.Data.Dataset.Table.Dimensions[0],
+	}, nil
+}
+
 // GetGeographyDimensionsInBatches performs a graphQL query to obtain all the geography dimensions for the provided cantabular dataset.
 // The whole response is loaded to memory.
 func (c *Client) GetGeographyDimensionsInBatches(ctx context.Context, datasetID string, batchSize, maxWorkers int) (*gql.Dataset, error) {
