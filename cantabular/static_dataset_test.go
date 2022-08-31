@@ -80,7 +80,7 @@ func TestStream(t *testing.T) {
 							fmt.Errorf("error decoding values: %w",
 								fmt.Errorf("error iterating to next row: %w",
 									fmt.Errorf("context is done: %w", errors.New("context canceled")))))))
-				So(out, ShouldEqual, "count,City,Number of siblings\n1,London,No siblings\n")
+				So(out, ShouldEqual, "City Code,City,Number of siblings Code,Number of siblings,Observation\n0,London,0,No siblings,1\n")
 			})
 		})
 
@@ -344,28 +344,28 @@ var mockRespBodyStaticDataset = `
 }`
 
 // expectedCsv is the expected CSV generated from a successful static dataset query for testing
-var expectedCsv = `count,City,Number of siblings
-1,London,No siblings
-0,London,1 sibling
-0,London,2 siblings
-1,London,3 siblings
-0,London,4 siblings
-0,London,5 siblings
-0,London,6 or more siblings
-0,Liverpool,No siblings
-0,Liverpool,1 sibling
-0,Liverpool,2 siblings
-0,Liverpool,3 siblings
-1,Liverpool,4 siblings
-0,Liverpool,5 siblings
-0,Liverpool,6 or more siblings
-0,Belfast,No siblings
-0,Belfast,1 sibling
-1,Belfast,2 siblings
-0,Belfast,3 siblings
-0,Belfast,4 siblings
-1,Belfast,5 siblings
-1,Belfast,6 or more siblings
+var expectedCsv = `City Code,City,Number of siblings Code,Number of siblings,Observation
+0,London,0,No siblings,1
+0,London,1,1 sibling,0
+0,London,2,2 siblings,0
+0,London,3,3 siblings,1
+0,London,4,4 siblings,0
+0,London,5,5 siblings,0
+0,London,6,6 or more siblings,0
+1,Liverpool,0,No siblings,0
+1,Liverpool,1,1 sibling,0
+1,Liverpool,2,2 siblings,0
+1,Liverpool,3,3 siblings,0
+1,Liverpool,4,4 siblings,1
+1,Liverpool,5,5 siblings,0
+1,Liverpool,6,6 or more siblings,0
+2,Belfast,0,No siblings,0
+2,Belfast,1,1 sibling,0
+2,Belfast,2,2 siblings,1
+2,Belfast,3,3 siblings,0
+2,Belfast,4,4 siblings,0
+2,Belfast,5,5 siblings,1
+2,Belfast,6,6 or more siblings,1
 `
 
 // mockRespBodyNoDataset is an error response that is returned from a mocked client for testing

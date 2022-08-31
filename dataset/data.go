@@ -2,6 +2,7 @@ package dataset
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"unicode"
 )
@@ -16,7 +17,7 @@ type DatasetDetails struct {
 	License           string            `json:"license,omitempty"`
 	Links             Links             `json:"links,omitempty"`
 	Methodologies     *[]Methodology    `json:"methodologies,omitempty"`
-	NationalStatistic bool              `json:"national_statistic,omitempty"`
+	NationalStatistic bool              `json:"national_statistic"`
 	NextRelease       string            `json:"next_release,omitempty"`
 	NomisReferenceURL string            `json:"nomis_reference_url,omitempty"`
 	Publications      *[]Publication    `json:"publications,omitempty"`
@@ -194,6 +195,34 @@ type Metadata struct {
 	Version
 	DatasetDetails
 	DatasetLinks Links `json:"dataset_links,omitempty"`
+}
+
+// UnmarshalJSON is used to disambiguate the 'links' attribute of the incoming Metadata struct. As currently structured
+// both the embedded Version and DatasetDetails objects have a 'links' attribute, and the default json marshaller will
+// not populate either field as it doesn't know which to populate.
+// In order not to introduce a breaking change to the api, the bespoke Unmarshaller below will do the disambiguation
+func (m *Metadata) UnmarshalJSON(js []byte) error {
+	e := json.Unmarshal(js, &m.Version)
+	if e != nil {
+		return e
+	}
+
+	e = json.Unmarshal(js, &m.DatasetDetails)
+	if e != nil {
+		return e
+	}
+	m.DatasetDetails.Links = Links{}
+
+	var dl struct {
+		Links `json:"dataset_links,omitempty"`
+	}
+	e = json.Unmarshal(js, &dl)
+	if e != nil {
+		return e
+	}
+	m.DatasetLinks = dl.Links
+
+	return nil
 }
 
 // DownloadList represents a list of objects of containing information on the downloadable files

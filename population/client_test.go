@@ -12,6 +12,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	dphttp "github.com/ONSdigital/dp-net/v2/http"
@@ -782,6 +783,189 @@ func TestGetAreaTypesParent(t *testing.T) {
 			ServiceAuthToken: serviceAuthToken,
 		}
 		_, err := client.GetAreaTypeParents(nil, input)
+
+		Convey("it should return a client error", func() {
+			So(err, shouldBeDPError, http.StatusBadRequest)
+		})
+	})
+}
+
+func TestGetDimensions(t *testing.T) {
+	const userAuthToken = "user"
+	const serviceAuthToken = "service"
+	const populationType = "populationId"
+	const SearchString = "searchString"
+	Convey("Given a valid request", t, func() {
+		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
+		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))
+		So(err, ShouldBeNil)
+
+		input := GetDimensionsInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+			PopulationType:   populationType,
+			SearchString:     SearchString,
+		}
+		_, _ = client.GetDimensions(context.Background(), input)
+
+		Convey("it should call the get dimensions endpoint", func() {
+			calls := stubClient.DoCalls()
+			So(calls, ShouldNotBeEmpty)
+			fmt.Println(calls[0].Req.URL.String())
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/population-types/populationId/dimensions?q=searchString")
+		})
+	})
+
+	Convey("Given authentication tokens", t, func() {
+		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
+		client := newHealthClient(stubClient)
+
+		input := GetAreaTypeParentsInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+		}
+
+		_, _ = client.GetAreaTypeParents(context.Background(), input)
+
+		Convey("it should set the auth headers on the request", func() {
+			calls := stubClient.DoCalls()
+			So(calls, ShouldNotBeEmpty)
+
+			So(calls[0].Req, shouldHaveAuthHeaders, userAuthToken, serviceAuthToken)
+		})
+	})
+
+	//
+	Convey("Given a valid get dimensions payload", t, func() {
+		dimensions := GetDimensionsResponse{
+			PaginationResponse: cantabular.PaginationResponse{
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  2,
+					Offset: 0,
+				},
+				Count:      2,
+				TotalCount: 6,
+			},
+			Dimensions: []Dimension{
+				{
+					Name:       "",
+					Label:      "Accommodation type (8 categories)",
+					TotalCount: 8,
+				},
+				{
+					Name:       "",
+					Label:      "Type of central heating in household (13 categories)",
+					TotalCount: 13,
+				}},
+		}
+
+		resp, err := json.Marshal(dimensions)
+		So(err, ShouldBeNil)
+
+		stubClient := newStubClient(&http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader(resp)),
+		}, nil)
+		client := newHealthClient(stubClient)
+
+		input := GetDimensionsInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+		}
+		res, err := client.GetDimensions(context.Background(), input)
+
+		Convey("it should return a list of dimensions", func() {
+			So(err, ShouldBeNil)
+			So(res, ShouldResemble, dimensions)
+		})
+	})
+
+	Convey("Given the get dimensions API returns an error", t, func() {
+		stubClient := newStubClient(nil, errors.New("oh no"))
+
+		client := newHealthClient(stubClient)
+
+		input := GetDimensionsInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+		}
+		_, err := client.GetDimensions(context.Background(), input)
+
+		Convey("it should return an internal error", func() {
+			So(err, shouldBeDPError, http.StatusInternalServerError)
+		})
+	})
+
+	Convey("Given the get dimensions API returns a status code of 404", t, func() {
+		stubClient := newStubClient(&http.Response{
+			StatusCode: http.StatusNotFound,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "errors": ["not found"] }`))),
+		}, nil)
+
+		client := newHealthClient(stubClient)
+
+		input := GetDimensionsInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+		}
+		_, err := client.GetDimensions(context.Background(), input)
+
+		Convey("the error chain should contain the original Errors type", func() {
+			So(err, shouldBeDPError, http.StatusInternalServerError)
+
+			var respErr ErrorResp
+			ok := errors.As(err, &respErr)
+			So(ok, ShouldBeTrue)
+			So(respErr, ShouldResemble, ErrorResp{Errors: []string{"not found"}})
+		})
+	})
+
+	Convey("Given the get dimensions API returns a status code other than 200/400", t, func() {
+		stubClient := newStubClient(&http.Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "areas": [] }`))),
+		}, nil)
+
+		client := newHealthClient(stubClient)
+
+		input := GetDimensionsInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+		}
+		_, err := client.GetDimensions(context.Background(), input)
+
+		Convey("it should return an internal error", func() {
+			So(err, shouldBeDPError, http.StatusInternalServerError)
+		})
+	})
+
+	Convey("Given the response cannot be deserialized", t, func() {
+		stubClient := newStubClient(&http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "dimensions" `))),
+		}, nil)
+
+		client := newHealthClient(stubClient)
+
+		input := GetAreaTypeParentsInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+		}
+		_, err := client.GetAreaTypeParents(context.Background(), input)
+
+		Convey("it should return an internal error", func() {
+			So(err, shouldBeDPError, http.StatusInternalServerError)
+		})
+	})
+
+	Convey("Given the request cannot be created", t, func() {
+		client := newHealthClient(newStubClient(nil, nil))
+
+		input := GetDimensionsInput{
+			UserAuthToken:    userAuthToken,
+			ServiceAuthToken: serviceAuthToken,
+		}
+		_, err := client.GetDimensions(nil, input)
 
 		Convey("it should return a client error", func() {
 			So(err, shouldBeDPError, http.StatusBadRequest)

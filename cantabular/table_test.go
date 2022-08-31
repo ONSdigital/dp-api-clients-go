@@ -4,8 +4,9 @@ import (
 	"bufio"
 	"testing"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 )
 
 func TestParseTable(t *testing.T) {
@@ -20,25 +21,25 @@ func TestParseTable(t *testing.T) {
 			Convey("Then the expected reader is returned without error", func() {
 				So(err, ShouldBeNil)
 				validateLines(reader, []string{
-					"count,City,Number of siblings (3 mappings),Sex",
-					"2,London,No siblings,Male",
-					"0,London,No siblings,Female",
-					"1,London,1 or 2 siblings,Male",
-					"3,London,1 or 2 siblings,Female",
-					"5,London,3 or more siblings,Male",
-					"4,London,3 or more siblings,Female",
-					"7,Liverpool,No siblings,Male",
-					"6,Liverpool,No siblings,Female",
-					"11,Liverpool,1 or 2 siblings,Male",
-					"10,Liverpool,1 or 2 siblings,Female",
-					"9,Liverpool,3 or more siblings,Male",
-					"13,Liverpool,3 or more siblings,Female",
-					"14,Belfast,No siblings,Male",
-					"12,Belfast,No siblings,Female",
-					"16,Belfast,1 or 2 siblings,Male",
-					"17,Belfast,1 or 2 siblings,Female",
-					"15,Belfast,3 or more siblings,Male",
-					"8,Belfast,3 or more siblings,Female",
+					"City Code,City,Number of siblings (3 mappings) Code,Number of siblings (3 mappings),Sex Code,Sex,Observation",
+					"0,London,0,No siblings,0,Male,2",
+					"0,London,0,No siblings,1,Female,0",
+					"0,London,1-2,1 or 2 siblings,0,Male,1",
+					"0,London,1-2,1 or 2 siblings,1,Female,3",
+					"0,London,3+,3 or more siblings,0,Male,5",
+					"0,London,3+,3 or more siblings,1,Female,4",
+					"1,Liverpool,0,No siblings,0,Male,7",
+					"1,Liverpool,0,No siblings,1,Female,6",
+					"1,Liverpool,1-2,1 or 2 siblings,0,Male,11",
+					"1,Liverpool,1-2,1 or 2 siblings,1,Female,10",
+					"1,Liverpool,3+,3 or more siblings,0,Male,9",
+					"1,Liverpool,3+,3 or more siblings,1,Female,13",
+					"2,Belfast,0,No siblings,0,Male,14",
+					"2,Belfast,0,No siblings,1,Female,12",
+					"2,Belfast,1-2,1 or 2 siblings,0,Male,16",
+					"2,Belfast,1-2,1 or 2 siblings,1,Female,17",
+					"2,Belfast,3+,3 or more siblings,0,Male,15",
+					"2,Belfast,3+,3 or more siblings,1,Female,8",
 				})
 			})
 		})

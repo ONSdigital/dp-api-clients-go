@@ -9,6 +9,6 @@ type FileMetaData struct {
 	Type          string  `json:"type"`
 	Licence       string  `json:"licence"`
 	LicenceUrl    string  `json:"licence_url"`
-	State         string  `json:"state"`
-	Etag          string  `json:"etag"`
+	State         string  `json:"state,omitempty"`
+	Etag          string  `json:"etag,omitempty"`
 }
