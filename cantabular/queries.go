@@ -225,14 +225,14 @@ query ($dataset: String!, $text: String!, $category: String!, $limit: Int!, $off
 `
 
 const QueryParents = `
-query ($dataset: String!, $variables: [String!]!) {
+query ($dataset: String!, $variables: [String!]!, $limit: Int!, $offset: Int) {
   dataset(name: $dataset) {
     variables(names: $variables){
       edges{
         node{
           label
           name
-          isSourceOf{
+          isSourceOf(first: $limit, skip: $offset){
             totalCount
             edges{
               node{
