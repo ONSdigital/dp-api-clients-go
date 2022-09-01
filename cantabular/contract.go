@@ -115,6 +115,19 @@ type GetDimensionOptionsResponse struct {
 	Dataset StaticDatasetDimensionOptions `json:"dataset"`
 }
 
+// GetAggregatedDimensionOptionsRequest holds the required inputs for the
+// GetAggregatedDimensionOptions query
+type GetAggregatedDimensionOptionsRequest struct {
+	Dataset        string
+	DimensionNames []string
+}
+
+// GetAggregatedDimensionOptionsResponse holds the response body for
+// the GetAggregatedDimensionOptions query
+type GetAggregatedDimensionOptionsResponse struct {
+	Dataset gql.Dataset `json:"dataset"`
+}
+
 // GetAreasRequest holds the request variables required for the
 // POST [cantabular-ext]/graphql QueryAreas query.
 type GetAreasRequest struct {

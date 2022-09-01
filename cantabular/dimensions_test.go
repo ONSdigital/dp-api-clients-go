@@ -500,6 +500,114 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 	})
 }
 
+func TestGetAggregatedDimensionOptionsHappy(t *testing.T) {
+	Convey("Given a correct getAggregatedDimensionOptions response from the /graphql endpoint", t, func() {
+		ctx := context.Background()
+		client, cantabularClient := newMockedClient(
+			mockRespBodyGetAggregatedDimensionOptions,
+			http.StatusOK,
+		)
+
+		Convey("When GetAggregatedDimensionOptions is called", func() {
+			req := cantabular.GetAggregatedDimensionOptionsRequest{
+				Dataset:        "Teaching-Dataset",
+				DimensionNames: []string{"Country", "Age"},
+			}
+			resp, err := cantabularClient.GetAggregatedDimensionOptions(ctx, req)
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(client.PostCalls(), ShouldHaveLength, 1)
+				So(client.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					client.PostCalls()[0].Body,
+					cantabular.QueryAggregatedDimensionOptions,
+					cantabular.QueryData{
+						Dataset:   "Teaching-Dataset",
+						Variables: []string{"Country", "Age"},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedAggregatedDimensionOptions)
+			})
+		})
+	})
+}
+
+func TestGetAggregatedDimensionOptionsUnhappy(t *testing.T) {
+	ctx := context.Background()
+
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When the GetAggregatexDimensionOptions method is called", func() {
+			req := cantabular.GetAggregatedDimensionOptionsRequest{
+				Dataset:        "InexistentDataset",
+				DimensionNames: []string{"Country", "Age"},
+			}
+			resp, err := cantabularClient.GetAggregatedDimensionOptions(ctx, req)
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a no-variable graphql error response from the /graphql endpoint", t, func() {
+		_, cantabularClient := newMockedClient(mockRespBodyNoVariable, http.StatusOK)
+
+		Convey("When the GetDimensionOptions method is called", func() {
+			req := cantabular.GetAggregatedDimensionOptionsRequest{
+				Dataset:        "Teaching-Dataset",
+				DimensionNames: []string{"Country", "Age"},
+			}
+			resp, err := cantabularClient.GetAggregatedDimensionOptions(ctx, req)
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusBadRequest)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		ctx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When GetDimensionOptions is called", func() {
+			req := cantabular.GetAggregatedDimensionOptionsRequest{
+				Dataset:        "Teaching-Dataset",
+				DimensionNames: []string{"Country", "Age", "Occupation"},
+			}
+			resp, err := cantabularClient.GetAggregatedDimensionOptions(ctx, req)
+
+			Convey("Then the expected error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestGetAreas(t *testing.T) {
 	Convey("Given a valid response from the /graphql endpoint", t, func() {
 		const dataset = "Example"
@@ -1425,7 +1533,8 @@ var mockRespBodyGetDimensionOptions = `
     }
 }`
 
-// expectedDimensionOptions is the expected response struct generated from a successful 'get dimension options' query for testing
+// expectedDimensionOptions is the expected response struct generated from a successful
+// 'get dimension options' query for testing
 var expectedDimensionOptions = cantabular.GetDimensionOptionsResponse{
 	Dataset: cantabular.StaticDatasetDimensionOptions{
 		Table: cantabular.DimensionsTable{
@@ -1472,6 +1581,135 @@ var expectedDimensionOptions = cantabular.GetDimensionOptionsResponse{
 						{Code: "8", Label: "Process, Plant and Machine Operatives"},
 						{Code: "9", Label: "Elementary Occupations"},
 						{Code: "-9", Label: "N/A"},
+					},
+				},
+			},
+		},
+	},
+}
+
+// mockRespBodyGetAggregatedDimensionOptions is a successful 'get dimension options'
+// query respose that is returned from a mocked client for testing
+var mockRespBodyGetAggregatedDimensionOptions = `
+{
+	"data": {
+		"dataset": {
+			"variables": {
+				"edges": [
+					{
+						"node": {
+							"name": "Country",
+							"label": "Country",
+							"categories": {
+								"totalCount": 2,
+								"edges": [
+									{
+										"node": {
+											"code": "E",
+											"label": "England"
+										}
+									},
+									{
+										"node": {
+											"code": "W",
+											"label": "Wales"
+										}
+									}
+								]
+							}
+						}
+					},
+					{
+						"node": {
+							"name": "Age",
+							"label": "Age",
+							"categories": {
+								"totalCount": 3,
+								"edges": [
+									{
+										"node": {
+											"code": "1",
+											"label": "0 to 15"
+										}
+									},
+									{
+										"node": {
+											"code": "2",
+											"label": "16 to 24"
+										}
+									},
+									{	
+										"node": {
+											"code": "3",
+											"label": "25+"
+										}
+									}
+								]
+							}
+						}
+					}
+				]
+			}
+		}
+	}
+}`
+
+// expectedAggregatedDimensionOptions is the expected response struct generated from a successful
+// 'get dimension options' query for testing
+var expectedAggregatedDimensionOptions = cantabular.GetAggregatedDimensionOptionsResponse{
+	Dataset: gql.Dataset{
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:  "Country",
+						Label: "Country",
+						Categories: gql.Categories{
+							TotalCount: 2,
+							Edges: []gql.Edge{
+								{
+									Node: gql.Node{
+										Code:  "E",
+										Label: "England",
+									},
+								},
+								{
+									Node: gql.Node{
+										Code:  "W",
+										Label: "Wales",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Node: gql.Node{
+						Name:  "Age",
+						Label: "Age",
+						Categories: gql.Categories{
+							TotalCount: 3,
+							Edges: []gql.Edge{
+								{
+									Node: gql.Node{
+										Code:  "1",
+										Label: "0 to 15",
+									},
+								},
+								{
+									Node: gql.Node{
+										Code:  "2",
+										Label: "16 to 24",
+									},
+								},
+								{
+									Node: gql.Node{
+										Code:  "3",
+										Label: "25+",
+									},
+								},
+							},
+						},
 					},
 				},
 			},

@@ -46,6 +46,30 @@ query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
 	}
 }`
 
+// QueryAggregatedDimensionOptions is the graphQL query to obtain static dataset dimension options
+// for aggregated population types
+const QueryAggregatedDimensionOptions = `
+query($dataset: String!, $variables: [String!]!) {
+	dataset(name: $dataset) {
+		variables(names: $variables){
+			edges{
+		  		node{
+					name
+					label
+					categories{
+						edges{
+							node{
+								label
+								code
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}`
+
 // QueryAllDimensions is the graphQL query to obtain all dimensions (variables without categories)
 const QueryAllDimensions = `
 query($dataset: String!) {
