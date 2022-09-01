@@ -781,6 +781,97 @@ func TestGetParentsUnhappy(t *testing.T) {
 	})
 }
 
+func TestGetParentAreaCountHappy(t *testing.T) {
+	Convey("Given a valid response from the /graphql endpoint", t, func() {
+		dataset := "Example"
+		variable := "City"
+		parent := "Country"
+		codes := []string{"0", "1"}
+
+		ctx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetParentAreaCount, http.StatusOK)
+
+		Convey("When GetParents is called", func() {
+			req := cantabular.GetParentAreaCountRequest{
+				Dataset:  dataset,
+				Variable: variable,
+				Parent:   parent,
+				Codes:    codes,
+			}
+
+			resp, err := cantabularClient.GetParentAreaCount(ctx, req)
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryParentAreaCount,
+					cantabular.QueryData{
+						Dataset:   dataset,
+						Variables: []string{variable},
+						Filters: []cantabular.Filter{
+							{
+								Variable: parent,
+								Codes:    codes,
+							},
+						},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedParentAreaCount)
+			})
+		})
+	})
+}
+
+func TestGetParentAreaCountUnhappy(t *testing.T) {
+	ctx := context.Background()
+	req := cantabular.GetParentAreaCountRequest{
+		Dataset:  "Example",
+		Variable: "City",
+		Parent:   "Country",
+		Codes:    []string{"0", "1"},
+	}
+
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		_, client := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When GetParentAreaCount is called", func() {
+
+			resp, err := client.GetParentAreaCount(ctx, req)
+			Convey("Then the expected error is returned", func() {
+				So(client.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		_, client := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When GetAreas is called", func() {
+			resp, err := client.GetParentAreaCount(ctx, req)
+
+			Convey("Then the expected error is returned", func() {
+			})
+			So(client.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestGetGeographyDimensionsInBatchesHappy(t *testing.T) {
 	Convey("Given a valid empty response from the /graphql endpoint", t, func() {
 		multiResponse := struct {
@@ -1842,6 +1933,47 @@ var expectedParents = cantabular.GetParentsResponse{
 						},
 					},
 				},
+			},
+		},
+	},
+}
+
+const mockRespBodyGetParentAreaCount = `
+{
+	"data": {
+		"dataset": {
+			"table": {
+				"dimensions": [
+					{
+						"Count": 2,
+						"Categories": [
+							{
+								"Code": "0",
+								"Label": "London"
+							},
+							{
+								"Code": "1",
+								"Label": "Liverpool"
+							}
+						]
+					}
+				]
+			}
+		}
+	}
+}`
+
+var expectedParentAreaCount = cantabular.GetParentAreaCountResult{
+	Dimension: cantabular.Dimension{
+		Count: 2,
+		Categories: []cantabular.Category{
+			{
+				Code:  "0",
+				Label: "London",
+			},
+			{
+				Code:  "1",
+				Label: "Liverpool",
 			},
 		},
 	},

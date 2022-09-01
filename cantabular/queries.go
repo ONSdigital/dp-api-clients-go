@@ -250,6 +250,21 @@ query ($dataset: String!, $variables: [String!]!) {
   }
 }`
 
+const QueryParentAreaCount = `
+query ($dataset: String!, $variables: [String!]!, $filters: [Filter!]! ) {
+	dataset(name: $dataset) {
+		table(variables: $variables, filters: $filters) {
+			dimensions {
+				count
+				categories {
+					code
+					label 
+				}
+			}
+		}
+	}
+}`
+
 // QueryData holds all the possible required variables to encode any of the graphql queries defined in this file.
 type QueryData struct {
 	PaginationParams
