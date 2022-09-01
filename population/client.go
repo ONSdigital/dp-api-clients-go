@@ -277,7 +277,13 @@ func (c *Client) GetAreas(ctx context.Context, input GetAreasInput) (GetAreasRes
 	}
 
 	var areas GetAreasResponse
-	if err := json.NewDecoder(resp.Body).Decode(&areas); err != nil {
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return GetAreasResponse{}, err
+	}
+
+	if err := json.Unmarshal(b, &areas); err != nil {
 		return GetAreasResponse{}, dperrors.New(
 			errors.Wrap(err, "unable to deserialize areas response"),
 			http.StatusInternalServerError,
@@ -306,9 +312,9 @@ func (c *Client) GetArea(ctx context.Context, input GetAreaInput) (GetAreaRespon
 		)
 	}
 
-	clientlog.Do(ctx, "getting areas", service, req.URL.String(), logData)
+	clientlog.Do(ctx, "getting area", service, req.URL.String(), logData)
 
-	resp, err := c.hcCli.Client.Do(ctx, req)
+	res, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return GetAreaResponse{}, dperrors.New(
 			errors.Wrap(err, "failed to get response from Population types API"),
@@ -318,25 +324,33 @@ func (c *Client) GetArea(ctx context.Context, input GetAreaInput) (GetAreaRespon
 	}
 
 	defer func() {
-		if err := resp.Body.Close(); err != nil {
+		if err := res.Body.Close(); err != nil {
 			log.Error(ctx, "error closing http response body", err)
 		}
 	}()
 
-	if err := checkGetResponse(resp); err != nil {
+	if err := checkGetResponse(res); err != nil {
 		return GetAreaResponse{}, err
 	}
 
-	var area Area
-	if err := json.NewDecoder(resp.Body).Decode(&area); err != nil {
+	var resp GetAreaResponse
+
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
+		return GetAreaResponse{}, err
+	}
+
+	logData["resp"] = string(b)
+
+	if err := json.Unmarshal(b, &resp); err != nil {
 		return GetAreaResponse{}, dperrors.New(
-			errors.Wrap(err, "unable to deserialize areas response"),
+			errors.Wrap(err, "unable to deserialize area response"),
 			http.StatusInternalServerError,
 			logData,
 		)
 	}
 
-	return GetAreaResponse{Area: area}, nil
+	return resp, nil
 }
 
 func (c *Client) GetAreaTypeParents(ctx context.Context, input GetAreaTypeParentsInput) (GetAreaTypeParentsResponse, error) {
