@@ -243,9 +243,15 @@ func (c *Client) GetAreas(ctx context.Context, req GetAreasRequest) (*GetAreasRe
 		return nil, errors.Wrap(err, "failed to unmarshal query")
 	}
 
+	var count, totalCount int
+	for _, v := range resp.Data.Dataset.Variables.Edges {
+		totalCount = totalCount + v.Node.Categories.TotalCount
+		count = count + len(v.Node.Categories.Search.Edges)
+	}
+
 	resp.Data.PaginationResponse = PaginationResponse{
-		Count:            len(resp.Data.Dataset.Variables.Edges),
-		TotalCount:       resp.Data.Dataset.Variables.TotalCount,
+		Count:            count,
+		TotalCount:       totalCount,
 		PaginationParams: req.PaginationParams,
 	}
 
