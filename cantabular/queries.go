@@ -46,6 +46,30 @@ query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
 	}
 }`
 
+// QueryAggregatedDimensionOptions is the graphQL query to obtain static dataset dimension options
+// for aggregated population types
+const QueryAggregatedDimensionOptions = `
+query($dataset: String!, $variables: [String!]!) {
+	dataset(name: $dataset) {
+		variables(names: $variables){
+			edges{
+		  		node{
+					name
+					label
+					categories{
+						edges{
+							node{
+								label
+								code
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}`
+
 // QueryAllDimensions is the graphQL query to obtain all dimensions (variables without categories)
 const QueryAllDimensions = `
 query($dataset: String!) {
@@ -201,14 +225,14 @@ query ($dataset: String!, $text: String!, $category: String!, $limit: Int!, $off
 `
 
 const QueryParents = `
-query ($dataset: String!, $variables: [String!]!) {
+query ($dataset: String!, $variables: [String!]!, $limit: Int!, $offset: Int) {
   dataset(name: $dataset) {
     variables(names: $variables){
       edges{
         node{
           label
           name
-          isSourceOf{
+          isSourceOf(first: $limit, skip: $offset){
             totalCount
             edges{
               node{
@@ -224,6 +248,21 @@ query ($dataset: String!, $variables: [String!]!) {
       }
     }
   }
+}`
+
+const QueryParentAreaCount = `
+query ($dataset: String!, $variables: [String!]!, $filters: [Filter!]! ) {
+	dataset(name: $dataset) {
+		table(variables: $variables, filters: $filters) {
+			dimensions {
+				count
+				categories {
+					code
+					label 
+				}
+			}
+		}
+	}
 }`
 
 // QueryData holds all the possible required variables to encode any of the graphql queries defined in this file.
