@@ -1849,7 +1849,7 @@ var expectedAreas = cantabular.GetAreasResponse{
 		PaginationParams: cantabular.PaginationParams{
 			Limit: 1,
 		},
-		Count: 1, TotalCount: 1,
+		Count: 1, TotalCount: 100,
 	},
 	Dataset: gql.Dataset{
 		Variables: gql.Variables{

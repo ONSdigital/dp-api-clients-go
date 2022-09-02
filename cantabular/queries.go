@@ -208,6 +208,7 @@ query ($dataset: String!, $text: String!, $category: String!, $limit: Int!, $off
 			name
 			label
 			categories {
+                          totalCount
 			  search(text: $category, first: $limit, skip: $offset ) {
 				edges {
 				  node {
