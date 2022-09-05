@@ -196,6 +196,34 @@ func (c *Client) GetDimensionOptions(ctx context.Context, req GetDimensionOption
 	return &resp.Data, nil
 }
 
+// GetAggregatedDimensionOptions performs an alternative graphQL query to obtain the requested dimension options,
+// specifically for aggregated population type static datasets
+func (c *Client) GetAggregatedDimensionOptions(ctx context.Context, req GetAggregatedDimensionOptionsRequest) (*GetAggregatedDimensionOptionsResponse, error) {
+	resp := &struct {
+		Data   GetAggregatedDimensionOptionsResponse `json:"data"`
+		Errors []gql.Error                           `json:"errors,omitempty"`
+	}{}
+
+	data := QueryData{
+		Dataset:   req.Dataset,
+		Variables: req.DimensionNames,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryAggregatedDimensionOptions, data, resp); err != nil {
+		return nil, err
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			resp.Errors[0].StatusCode(),
+			log.Data{"errors": resp.Errors},
+		)
+	}
+
+	return &resp.Data, nil
+}
+
 // GetAreas performs a graphQL query to retrieve the areas (categories) for a given area type. If the category
 // is left empty, then all categories are returned. Results can also be filtered by area by passing a variable name.
 func (c *Client) GetAreas(ctx context.Context, req GetAreasRequest) (*GetAreasResponse, error) {
@@ -213,6 +241,18 @@ func (c *Client) GetAreas(ctx context.Context, req GetAreasRequest) (*GetAreasRe
 
 	if err := c.queryUnmarshal(ctx, QueryAreas, data, resp); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal query")
+	}
+
+	var count, totalCount int
+	for _, v := range resp.Data.Dataset.Variables.Edges {
+		totalCount = totalCount + v.Node.Categories.TotalCount
+		count = count + len(v.Node.Categories.Search.Edges)
+	}
+
+	resp.Data.PaginationResponse = PaginationResponse{
+		Count:            count,
+		TotalCount:       totalCount,
+		PaginationParams: req.PaginationParams,
 	}
 
 	if resp != nil && len(resp.Errors) != 0 {
@@ -234,8 +274,9 @@ func (c *Client) GetParents(ctx context.Context, req GetParentsRequest) (*GetPar
 	}{}
 
 	data := QueryData{
-		Dataset:   req.Dataset,
-		Variables: []string{req.Variable},
+		PaginationParams: req.PaginationParams,
+		Dataset:          req.Dataset,
+		Variables:        []string{req.Variable},
 	}
 
 	if err := c.queryUnmarshal(ctx, QueryParents, data, resp); err != nil {
@@ -260,9 +301,64 @@ func (c *Client) GetParents(ctx context.Context, req GetParentsRequest) (*GetPar
 
 	// last item is guaranteed to be provided variable, only return parents
 	edges := resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.Edges
-	resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.Edges = edges[:len(edges)-1]
+	for i, v := range edges {
+		if v.Node.Name == req.Variable {
+			resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.Edges = append(edges[:i], edges[i+1:]...)
+		}
+	}
+
+	// last edges item is guaranteed to be the provided variable, so we need to decrement the totalCount by one
+	resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.TotalCount--
+
+	resp.Data.TotalCount = resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.TotalCount
+	resp.Data.Count = len(resp.Data.Dataset.Variables.Edges[0].Node.IsSourceOf.Edges)
+	resp.Data.PaginationParams = req.PaginationParams
 
 	return &resp.Data, nil
+}
+
+// GetParentAreaCount returns the count of the areas for the parent of the provided variable
+// with applied filter. Also returns the list of categories itself.
+func (c *Client) GetParentAreaCount(ctx context.Context, req GetParentAreaCountRequest) (*GetParentAreaCountResult, error) {
+	resp := &struct {
+		Data   GetParentAreaCountResponse `json:"data"`
+		Errors []gql.Error                `json:"errors,omitempty"`
+	}{}
+
+	data := QueryData{
+		Dataset:   req.Dataset,
+		Variables: []string{req.Variable},
+		Filters: []Filter{
+			{
+				Variable: req.Parent,
+				Codes:    req.Codes,
+			},
+		},
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryParentAreaCount, data, resp); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal query")
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			resp.Errors[0].StatusCode(),
+			log.Data{
+				"request": req,
+				"errors":  resp.Errors,
+			},
+		)
+	}
+
+	// should be impossible but to avoid panic
+	if len(resp.Data.Dataset.Table.Dimensions) != 1 {
+		return nil, errors.New("invalid response from graphQL")
+	}
+
+	return &GetParentAreaCountResult{
+		Dimension: resp.Data.Dataset.Table.Dimensions[0],
+	}, nil
 }
 
 // GetGeographyDimensionsInBatches performs a graphQL query to obtain all the geography dimensions for the provided cantabular dataset.

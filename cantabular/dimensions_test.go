@@ -7,10 +7,11 @@ import (
 	"sync"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestGetAllDimensionsHappy(t *testing.T) {
@@ -500,6 +501,114 @@ func TestGetDimensionOptionsUnhappy(t *testing.T) {
 	})
 }
 
+func TestGetAggregatedDimensionOptionsHappy(t *testing.T) {
+	Convey("Given a correct getAggregatedDimensionOptions response from the /graphql endpoint", t, func() {
+		ctx := context.Background()
+		client, cantabularClient := newMockedClient(
+			mockRespBodyGetAggregatedDimensionOptions,
+			http.StatusOK,
+		)
+
+		Convey("When GetAggregatedDimensionOptions is called", func() {
+			req := cantabular.GetAggregatedDimensionOptionsRequest{
+				Dataset:        "Teaching-Dataset",
+				DimensionNames: []string{"Country", "Age"},
+			}
+			resp, err := cantabularClient.GetAggregatedDimensionOptions(ctx, req)
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(client.PostCalls(), ShouldHaveLength, 1)
+				So(client.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					client.PostCalls()[0].Body,
+					cantabular.QueryAggregatedDimensionOptions,
+					cantabular.QueryData{
+						Dataset:   "Teaching-Dataset",
+						Variables: []string{"Country", "Age"},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedAggregatedDimensionOptions)
+			})
+		})
+	})
+}
+
+func TestGetAggregatedDimensionOptionsUnhappy(t *testing.T) {
+	ctx := context.Background()
+
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When the GetAggregatexDimensionOptions method is called", func() {
+			req := cantabular.GetAggregatedDimensionOptionsRequest{
+				Dataset:        "InexistentDataset",
+				DimensionNames: []string{"Country", "Age"},
+			}
+			resp, err := cantabularClient.GetAggregatedDimensionOptions(ctx, req)
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a no-variable graphql error response from the /graphql endpoint", t, func() {
+		_, cantabularClient := newMockedClient(mockRespBodyNoVariable, http.StatusOK)
+
+		Convey("When the GetDimensionOptions method is called", func() {
+			req := cantabular.GetAggregatedDimensionOptionsRequest{
+				Dataset:        "Teaching-Dataset",
+				DimensionNames: []string{"Country", "Age"},
+			}
+			resp, err := cantabularClient.GetAggregatedDimensionOptions(ctx, req)
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusBadRequest)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		ctx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When GetDimensionOptions is called", func() {
+			req := cantabular.GetAggregatedDimensionOptionsRequest{
+				Dataset:        "Teaching-Dataset",
+				DimensionNames: []string{"Country", "Age", "Occupation"},
+			}
+			resp, err := cantabularClient.GetAggregatedDimensionOptions(ctx, req)
+
+			Convey("Then the expected error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestGetAreas(t *testing.T) {
 	Convey("Given a valid response from the /graphql endpoint", t, func() {
 		const dataset = "Example"
@@ -604,8 +713,9 @@ func TestGetParentsHappy(t *testing.T) {
 
 		Convey("When GetParents is called", func() {
 			req := cantabular.GetParentsRequest{
-				Dataset:  dataset,
-				Variable: variable,
+				PaginationParams: cantabular.PaginationParams{Limit: 20},
+				Dataset:          dataset,
+				Variable:         variable,
 			}
 
 			resp, err := cantabularClient.GetParents(ctx, req)
@@ -620,8 +730,9 @@ func TestGetParentsHappy(t *testing.T) {
 					mockHttpClient.PostCalls()[0].Body,
 					cantabular.QueryParents,
 					cantabular.QueryData{
-						Dataset:   dataset,
-						Variables: []string{variable},
+						Dataset:          dataset,
+						Variables:        []string{variable},
+						PaginationParams: cantabular.PaginationParams{Limit: 20},
 					},
 				)
 			})
@@ -661,6 +772,97 @@ func TestGetParentsUnhappy(t *testing.T) {
 
 		Convey("When GetAreas is called", func() {
 			resp, err := client.GetParents(ctx, req)
+
+			Convey("Then the expected error is returned", func() {
+			})
+			So(client.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestGetParentAreaCountHappy(t *testing.T) {
+	Convey("Given a valid response from the /graphql endpoint", t, func() {
+		dataset := "Example"
+		variable := "City"
+		parent := "Country"
+		codes := []string{"0", "1"}
+
+		ctx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetParentAreaCount, http.StatusOK)
+
+		Convey("When GetParents is called", func() {
+			req := cantabular.GetParentAreaCountRequest{
+				Dataset:  dataset,
+				Variable: variable,
+				Parent:   parent,
+				Codes:    codes,
+			}
+
+			resp, err := cantabularClient.GetParentAreaCount(ctx, req)
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryParentAreaCount,
+					cantabular.QueryData{
+						Dataset:   dataset,
+						Variables: []string{variable},
+						Filters: []cantabular.Filter{
+							{
+								Variable: parent,
+								Codes:    codes,
+							},
+						},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedParentAreaCount)
+			})
+		})
+	})
+}
+
+func TestGetParentAreaCountUnhappy(t *testing.T) {
+	ctx := context.Background()
+	req := cantabular.GetParentAreaCountRequest{
+		Dataset:  "Example",
+		Variable: "City",
+		Parent:   "Country",
+		Codes:    []string{"0", "1"},
+	}
+
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		_, client := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When GetParentAreaCount is called", func() {
+
+			resp, err := client.GetParentAreaCount(ctx, req)
+			Convey("Then the expected error is returned", func() {
+				So(client.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		_, client := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When GetAreas is called", func() {
+			resp, err := client.GetParentAreaCount(ctx, req)
 
 			Convey("Then the expected error is returned", func() {
 			})
@@ -1043,7 +1245,7 @@ var expectedDimensions = cantabular.GetDimensionsResponse{
 	},
 }
 
-//  mockRespBodyZeroGetGeographyDimensions is a successful 'get geography dimensions' with 0 results query respose that is returned from a mocked client for testing
+// mockRespBodyZeroGetGeographyDimensions is a successful 'get geography dimensions' with 0 results query respose that is returned from a mocked client for testing
 var mockRespBodyZeroGetGeographyDimensions = `
 {
 	"data": {
@@ -1468,7 +1670,8 @@ var mockRespBodyGetDimensionOptions = `
     }
 }`
 
-// expectedDimensionOptions is the expected response struct generated from a successful 'get dimension options' query for testing
+// expectedDimensionOptions is the expected response struct generated from a successful
+// 'get dimension options' query for testing
 var expectedDimensionOptions = cantabular.GetDimensionOptionsResponse{
 	Dataset: cantabular.StaticDatasetDimensionOptions{
 		Table: cantabular.DimensionsTable{
@@ -1522,11 +1725,141 @@ var expectedDimensionOptions = cantabular.GetDimensionOptionsResponse{
 	},
 }
 
+// mockRespBodyGetAggregatedDimensionOptions is a successful 'get dimension options'
+// query respose that is returned from a mocked client for testing
+var mockRespBodyGetAggregatedDimensionOptions = `
+{
+	"data": {
+		"dataset": {
+			"variables": {
+				"edges": [
+					{
+						"node": {
+							"name": "Country",
+							"label": "Country",
+							"categories": {
+								"totalCount": 2,
+								"edges": [
+									{
+										"node": {
+											"code": "E",
+											"label": "England"
+										}
+									},
+									{
+										"node": {
+											"code": "W",
+											"label": "Wales"
+										}
+									}
+								]
+							}
+						}
+					},
+					{
+						"node": {
+							"name": "Age",
+							"label": "Age",
+							"categories": {
+								"totalCount": 3,
+								"edges": [
+									{
+										"node": {
+											"code": "1",
+											"label": "0 to 15"
+										}
+									},
+									{
+										"node": {
+											"code": "2",
+											"label": "16 to 24"
+										}
+									},
+									{	
+										"node": {
+											"code": "3",
+											"label": "25+"
+										}
+									}
+								]
+							}
+						}
+					}
+				]
+			}
+		}
+	}
+}`
+
+// expectedAggregatedDimensionOptions is the expected response struct generated from a successful
+// 'get dimension options' query for testing
+var expectedAggregatedDimensionOptions = cantabular.GetAggregatedDimensionOptionsResponse{
+	Dataset: gql.Dataset{
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:  "Country",
+						Label: "Country",
+						Categories: gql.Categories{
+							TotalCount: 2,
+							Edges: []gql.Edge{
+								{
+									Node: gql.Node{
+										Code:  "E",
+										Label: "England",
+									},
+								},
+								{
+									Node: gql.Node{
+										Code:  "W",
+										Label: "Wales",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Node: gql.Node{
+						Name:  "Age",
+						Label: "Age",
+						Categories: gql.Categories{
+							TotalCount: 3,
+							Edges: []gql.Edge{
+								{
+									Node: gql.Node{
+										Code:  "1",
+										Label: "0 to 15",
+									},
+								},
+								{
+									Node: gql.Node{
+										Code:  "2",
+										Label: "16 to 24",
+									},
+								},
+								{
+									Node: gql.Node{
+										Code:  "3",
+										Label: "25+",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
 var mockRespBodyGetAreas = `
 {
 	"data": {
 	  "dataset": {
 		"variables": {
+		  "totalCount": 1,
 		  "edges": [
 			{
 			  "node": {
@@ -1555,8 +1888,15 @@ var mockRespBodyGetAreas = `
 `
 
 var expectedAreas = cantabular.GetAreasResponse{
+	PaginationResponse: cantabular.PaginationResponse{
+		PaginationParams: cantabular.PaginationParams{
+			Limit: 1,
+		},
+		Count: 1, TotalCount: 100,
+	},
 	Dataset: gql.Dataset{
 		Variables: gql.Variables{
+			TotalCount: 1,
 			Edges: []gql.Edge{
 				{
 					Node: gql.Node{
@@ -1611,7 +1951,7 @@ const mockRespBodyGetParents = `
 										}
 									}
 								],
-								"totalCount": 1
+								"totalCount": 2
 							},
 							"label": "City",
 							"name": "city"
@@ -1624,6 +1964,11 @@ const mockRespBodyGetParents = `
 }`
 
 var expectedParents = cantabular.GetParentsResponse{
+	PaginationResponse: cantabular.PaginationResponse{
+		PaginationParams: cantabular.PaginationParams{Limit: 20, Offset: 0},
+		TotalCount:       1,
+		Count:            1,
+	},
 	Dataset: gql.Dataset{
 		Variables: gql.Variables{
 			Edges: []gql.Edge{
@@ -1707,6 +2052,47 @@ var expectedCategorisations = &cantabular.GetCategorisationsResponse{
 						},
 					},
 				},
+			},
+		},
+	},
+}
+
+const mockRespBodyGetParentAreaCount = `
+{
+	"data": {
+		"dataset": {
+			"table": {
+				"dimensions": [
+					{
+						"Count": 2,
+						"Categories": [
+							{
+								"Code": "0",
+								"Label": "London"
+							},
+							{
+								"Code": "1",
+								"Label": "Liverpool"
+							}
+						]
+					}
+				]
+			}
+		}
+	}
+}`
+
+var expectedParentAreaCount = cantabular.GetParentAreaCountResult{
+	Dimension: cantabular.Dimension{
+		Count: 2,
+		Categories: []cantabular.Category{
+			{
+				Code:  "0",
+				Label: "London",
+			},
+			{
+				Code:  "1",
+				Label: "Liverpool",
 			},
 		},
 	},

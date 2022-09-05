@@ -115,6 +115,19 @@ type GetDimensionOptionsResponse struct {
 	Dataset StaticDatasetDimensionOptions `json:"dataset"`
 }
 
+// GetAggregatedDimensionOptionsRequest holds the required inputs for the
+// GetAggregatedDimensionOptions query
+type GetAggregatedDimensionOptionsRequest struct {
+	Dataset        string
+	DimensionNames []string
+}
+
+// GetAggregatedDimensionOptionsResponse holds the response body for
+// the GetAggregatedDimensionOptions query
+type GetAggregatedDimensionOptionsResponse struct {
+	Dataset gql.Dataset `json:"dataset"`
+}
+
 // GetAreasRequest holds the request variables required for the
 // POST [cantabular-ext]/graphql QueryAreas query.
 type GetAreasRequest struct {
@@ -128,26 +141,51 @@ type GetAreasRequest struct {
 // POST [cantabular-ext]/graphql
 // with a query to obtain static dataset variables and categories, without values.
 type GetAreasResponse struct {
+	PaginationResponse
 	Dataset gql.Dataset `json:"dataset"`
 }
 
 // GetParentsRequest holds the input parameters for the GetParents query
 type GetParentsRequest struct {
+	PaginationParams
 	Dataset  string
 	Variable string
 }
 
 // GetParentsResponse is the response body for the GetParents query
 type GetParentsResponse struct {
+	PaginationResponse
 	Dataset gql.Dataset `json:"dataset"`
 }
 
+// GetCategorisationsRequest holds the input parameters for the GetCategorisations query
 type GetCategorisationsRequest struct {
 	PaginationParams
 	Dataset  string
 	Variable string
 }
 
+// GetCategorisationsResponse is the response body for the GetCategorisations query
 type GetCategorisationsResponse struct {
 	Dataset gql.Dataset `json:"dataset"`
+}
+
+// GetParentAreaCountRequest holds the input parameters for the GetParents query
+type GetParentAreaCountRequest struct {
+	Dataset  string
+	Variable string
+	Parent   string
+	Codes    []string
+}
+
+// GetParentAreaCountResponse is the response body for the GetParentAreaCount query
+type GetParentAreaCountResponse struct {
+	Dataset struct {
+		Table Table `json:"table`
+	} `json:"dataset"`
+}
+
+// GetParentAreaCountResult is the useful part of the response for GetParentAreaCount
+type GetParentAreaCountResult struct {
+	Dimension Dimension
 }
