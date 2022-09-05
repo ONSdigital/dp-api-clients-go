@@ -141,3 +141,13 @@ type GetParentsRequest struct {
 type GetParentsResponse struct {
 	Dataset gql.Dataset `json:"dataset"`
 }
+
+type GetCategorisationsRequest struct {
+	PaginationParams
+	Dataset  string
+	Variable string
+}
+
+type GetCategorisationsResponse struct {
+	Dataset gql.Dataset `json:"dataset"`
+}

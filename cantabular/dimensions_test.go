@@ -822,6 +822,49 @@ func TestGetGeographyDimensionsInBatchesUnhappy(t *testing.T) {
 	})
 }
 
+func TestGetCategorisationsHappy(t *testing.T) {
+	Convey("Given a valid response from the /graphql endpoint", t, func() {
+		const dataset = "Example"
+		const variable = "Age"
+
+		ctx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetCategorisations, http.StatusOK)
+
+		Convey("When GetCategorisations is called", func() {
+			req := cantabular.GetCategorisationsRequest{
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  20,
+					Offset: 0,
+				},
+				Dataset:  dataset,
+				Variable: variable,
+			}
+
+			resp, err := cantabularClient.GetCategorisations(ctx, req)
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryCategorisations,
+					cantabular.QueryData{
+						Dataset:   dataset,
+						Variables: []string{variable},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(resp, ShouldResemble, expectedCategorisations)
+			})
+		})
+	})
+}
+
 // newMockedClient creates a new cantabular client with a mocked response for post requests,
 // according to the provided response string and status code.
 func newMockedClient(response string, statusCode int) (*dphttp.ClienterMock, *cantabular.Client) {
@@ -1601,6 +1644,66 @@ var expectedParents = cantabular.GetParentsResponse{
 								},
 							},
 							TotalCount: 1,
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+const mockRespBodyGetCategorisations = `
+{
+	"data": {
+		"dataset": {
+			"variables": {
+				"totalCount": 1,
+				"search": {
+					"edges": [
+						{
+							"node": {
+								"categories": {
+									"edges": [
+										{
+											"node": {
+												"label": "label 1",
+												"code": "code 1"
+											}
+										}
+									]
+								},
+								"name": "name 2",
+								"label": "label 2"
+							}
+						}
+						
+					]
+				}
+			}
+		}
+	}
+}`
+
+var expectedCategorisations = &cantabular.GetCategorisationsResponse{
+	Dataset: gql.Dataset{
+		Variables: gql.Variables{
+			TotalCount: 1,
+			Search: gql.Search{
+				Edges: []gql.Edge{
+					{
+						Node: gql.Node{
+							Categories: gql.Categories{
+								Edges: []gql.Edge{
+									{
+										Node: gql.Node{
+											Label: "label 1",
+											Code:  "code 1",
+										},
+									},
+								},
+							},
+							Name:  "name 2",
+							Label: "label 2",
 						},
 					},
 				},

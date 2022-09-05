@@ -326,3 +326,34 @@ func (c *Client) GetGeographyBatchProcess(ctx context.Context, datasetID string,
 
 	return batch.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
 }
+
+// GetCategorisations returns a list of variables that map to the provided variable
+func (c *Client) GetCategorisations(ctx context.Context, req GetCategorisationsRequest) (*GetCategorisationsResponse, error) {
+	resp := &struct {
+		Data   GetCategorisationsResponse `json:"data"`
+		Errors []gql.Error                `json:"errors,omitempty"`
+	}{}
+
+	data := QueryData{
+		PaginationParams: req.PaginationParams,
+		Dataset:          req.Dataset,
+		Variables:        []string{req.Variable},
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryCategorisations, data, resp); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal query")
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			resp.Errors[0].StatusCode(),
+			log.Data{
+				"request": req,
+				"errors":  resp.Errors,
+			},
+		)
+	}
+
+	return &resp.Data, nil
+}

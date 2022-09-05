@@ -226,6 +226,30 @@ query ($dataset: String!, $variables: [String!]!) {
   }
 }`
 
+const QueryCategorisations = `
+query ($dataset: String!, $variables: [String!]!) {
+	dataset(name: $dataset) {
+	  variables(rule: false, base: false) {
+		search(text: $text) {
+		  edges {
+		    node {
+              categories {
+          	    edges {
+                  node {
+                    label
+				    code
+                	}
+           		}
+			  name
+			  label
+       	      }
+		    }
+		  }
+		}
+	  }
+	}
+}`
+
 // QueryData holds all the possible required variables to encode any of the graphql queries defined in this file.
 type QueryData struct {
 	PaginationParams
