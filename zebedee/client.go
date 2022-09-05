@@ -459,6 +459,7 @@ func (c *Client) GetRelease(ctx context.Context, userAccessToken, collectionID, 
 	related := [][]Link{
 		release.RelatedDocuments,
 		release.RelatedDatasets,
+		release.RelatedAPIDatasets,
 		release.RelatedMethodology,
 		release.RelatedMethodologyArticle,
 		release.Links,

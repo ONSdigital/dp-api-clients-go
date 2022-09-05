@@ -65,6 +65,18 @@ func TestGetLegacyRelease(t *testing.T) {
 				URI:     "/dataset/1",
 			},
 		},
+		RelatedAPIDatasets: []Link{
+			{
+				Title:   "Cantabular Dataset 1",
+				Summary: "This is Cantabular dataset 1",
+				URI:     "/cantabular-dataset/1",
+			},
+			{
+				Title:   "CMD Dataset 1",
+				Summary: "This is CMD dataset 1",
+				URI:     "/cmd-dataset/1",
+			},
+		},
 		RelatedMethodology: []Link{
 			{
 				Title:   "Methodology",

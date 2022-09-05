@@ -259,6 +259,7 @@ type Release struct {
 	Markdown                  []string            `json:"markdown"`
 	RelatedDocuments          []Link              `json:"relatedDocuments"`
 	RelatedDatasets           []Link              `json:"relatedDatasets"`
+	RelatedAPIDatasets        []Link              `json:"relatedAPIDatasets"`
 	RelatedMethodology        []Link              `json:"relatedMethodology"`
 	RelatedMethodologyArticle []Link              `json:"relatedMethodologyArticle"`
 	Links                     []Link              `json:"links"`
