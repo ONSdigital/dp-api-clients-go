@@ -703,6 +703,92 @@ func TestGetAreasUnhappy(t *testing.T) {
 	})
 }
 
+func TestGetArea(t *testing.T) {
+	Convey("Given a valid response from the /graphql endpoint", t, func() {
+		const dataset = "Example"
+		const variable = "country"
+		const category = "E"
+
+		testCtx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetArea, http.StatusOK)
+
+		Convey("When GetArea is called", func() {
+			req := cantabular.GetAreaRequest{
+				Dataset:  dataset,
+				Variable: variable,
+				Category: category,
+			}
+
+			resp, err := cantabularClient.GetArea(testCtx, req)
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryArea,
+					cantabular.QueryData{
+						Dataset:  dataset,
+						Text:     variable,
+						Category: category,
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedArea)
+			})
+		})
+	})
+}
+
+func TestGetAreaUnhappy(t *testing.T) {
+	stubReq := cantabular.GetAreaRequest{
+		Dataset:  "Example",
+		Variable: "country",
+		Category: "E",
+	}
+
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When GetArea is called", func() {
+
+			resp, err := cantabularClient.GetArea(testCtx, stubReq)
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When GetArea is called", func() {
+			resp, err := cantabularClient.GetArea(testCtx, stubReq)
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestGetParentsHappy(t *testing.T) {
 	Convey("Given a valid response from the /graphql endpoint", t, func() {
 		const dataset = "Example"
@@ -1887,6 +1973,35 @@ var mockRespBodyGetAreas = `
   }
 `
 
+var mockRespBodyGetArea = `
+{
+  "data": {
+    "dataset": {
+      "variables": {
+        "edges": [
+          {
+            "node": {
+              "categories": {
+                "edges": [
+                  {
+                    "node": {
+                      "code": "E",
+                      "label": "England"
+                    }
+                  }
+                ]
+              },
+              "label": "Country",
+              "name": "country"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+`
+
 var expectedAreas = cantabular.GetAreasResponse{
 	PaginationResponse: cantabular.PaginationResponse{
 		PaginationParams: cantabular.PaginationParams{
@@ -1914,6 +2029,31 @@ var expectedAreas = cantabular.GetAreasResponse{
 								},
 							},
 							TotalCount: 100,
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+var expectedArea = cantabular.GetAreaResponse{
+	Dataset: gql.Dataset{
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:  "country",
+						Label: "Country",
+						Categories: gql.Categories{
+							Edges: []gql.Edge{
+								{
+									Node: gql.Node{
+										Code:  "E",
+										Label: "England",
+									},
+								},
+							},
 						},
 					},
 				},

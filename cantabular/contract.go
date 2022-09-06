@@ -137,11 +137,23 @@ type GetAreasRequest struct {
 	Category string
 }
 
+// GetAreaRequest holds the request required for the POST [cantabular-ext]/graphql QueryArea query
+type GetAreaRequest struct {
+	Dataset  string
+	Variable string
+	Category string
+}
+
 // GetAreasResponse holds the response body for
 // POST [cantabular-ext]/graphql
 // with a query to obtain static dataset variables and categories, without values.
 type GetAreasResponse struct {
 	PaginationResponse
+	Dataset gql.Dataset `json:"dataset"`
+}
+
+// GetAreaResponse holds the response body for POST [cantabular-ext]/graphql
+type GetAreaResponse struct {
 	Dataset gql.Dataset `json:"dataset"`
 }
 
