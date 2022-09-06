@@ -2030,6 +2030,11 @@ const mockRespBodyGetCategorisations = `
 }`
 
 var expectedCategorisations = &cantabular.GetCategorisationsResponse{
+	PaginationResponse: cantabular.PaginationResponse{
+		PaginationParams: cantabular.PaginationParams{Limit: 20, Offset: 0},
+		Count:            1,
+		TotalCount:       1,
+	},
 	Dataset: gql.Dataset{
 		Variables: gql.Variables{
 			TotalCount: 1,

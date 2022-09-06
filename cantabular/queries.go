@@ -257,18 +257,18 @@ query ($dataset: String!, $variables: [String!]!) {
 	  variables(rule: false, base: false) {
 		search(text: $text) {
 		  edges {
-		    node {
-              categories {
-          	    edges {
-                  node {
-                    label
-				    code
-                	}
-           		}
+			node {
+			  categories {
+				edges {
+				  node {
+					label
+					code
+				  }
+				}
+			  }
 			  name
 			  label
-       	      }
-		    }
+			}
 		  }
 		}
 	  }

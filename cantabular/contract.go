@@ -167,6 +167,7 @@ type GetCategorisationsRequest struct {
 
 // GetCategorisationsResponse is the response body for the GetCategorisations query
 type GetCategorisationsResponse struct {
+	PaginationResponse
 	Dataset gql.Dataset `json:"dataset"`
 }
 
