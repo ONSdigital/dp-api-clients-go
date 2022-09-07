@@ -208,7 +208,7 @@ query ($dataset: String!, $text: String!, $category: String!, $limit: Int!, $off
 			name
 			label
 			categories {
-                          totalCount
+			  totalCount
 			  search(text: $category, first: $limit, skip: $offset ) {
 				edges {
 				  node {
@@ -223,6 +223,30 @@ query ($dataset: String!, $text: String!, $category: String!, $limit: Int!, $off
 	  }
 	}
   }
+`
+
+// QueryArea is the graphQL query to search for an area which exactly match a specific string.
+const QueryArea = `
+query ($dataset: String!, $text: String!, $category: String!) {
+  dataset(name: $dataset) {
+    variables(rule: true, names: [ $text ]) {
+      edges {
+        node {
+          name
+          label
+          categories(codes: [ $category ]) {
+            edges {
+              node {
+                code
+                label
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
 `
 
 const QueryParents = `

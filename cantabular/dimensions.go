@@ -266,6 +266,34 @@ func (c *Client) GetAreas(ctx context.Context, req GetAreasRequest) (*GetAreasRe
 	return &resp.Data, nil
 }
 
+// GetArea performs a graphQL query to retrieve the exact area (category) for a given area type
+func (c *Client) GetArea(ctx context.Context, req GetAreaRequest) (*GetAreaResponse, error) {
+	resp := &struct {
+		Data   GetAreaResponse `json:"data"`
+		Errors []gql.Error     `json:"errors,omitempty"`
+	}{}
+
+	data := QueryData{
+		Dataset:  req.Dataset,
+		Text:     req.Variable,
+		Category: req.Category,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryArea, data, resp); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal query")
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			resp.Errors[0].StatusCode(),
+			log.Data{"errors": resp.Errors},
+		)
+	}
+
+	return &resp.Data, nil
+}
+
 // GetParents returns a list of variables that map to the provided variable
 func (c *Client) GetParents(ctx context.Context, req GetParentsRequest) (*GetParentsResponse, error) {
 	resp := &struct {
