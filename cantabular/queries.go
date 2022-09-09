@@ -53,7 +53,7 @@ query($dataset: String!, $variables: [String!]!) {
 	dataset(name: $dataset) {
 		variables(names: $variables){
 			edges{
-		  		node{
+				node{
 					name
 					label
 					categories{
@@ -212,7 +212,7 @@ query ($dataset: String!, $text: String!, $category: String!, $limit: Int!, $off
 			  search(text: $category, first: $limit, skip: $offset ) {
 				edges {
 				  node {
-					code 
+					code
 					label
 				  }
 				}
@@ -231,18 +231,18 @@ query ($dataset: String!, $text: String!, $category: String!) {
   dataset(name: $dataset) {
     variables(rule: true, names: [ $text ]) {
       edges {
-        node {
-          name
-          label
-          categories(codes: [ $category ]) {
-            edges {
-              node {
-                code
-                label
-              }
-            }
-          }
-        }
+	node {
+	  name
+	  label
+	  categories(codes: [ $category ]) {
+	    edges {
+	      node {
+		code
+		label
+	      }
+	    }
+	  }
+	}
       }
     }
   }
@@ -254,29 +254,29 @@ query ($dataset: String!, $variables: [String!]!, $limit: Int!, $offset: Int) {
   dataset(name: $dataset) {
     variables(names: $variables){
       edges{
-        node{
-          label
-          name
-          isSourceOf(first: $limit, skip: $offset){
-            totalCount
-            edges{
-              node{
-                label
-                name
-                categories{
-                  totalCount
-                }
-              }
-            }
-          }
-        }
+	node{
+	  label
+	  name
+	  isSourceOf(first: $limit, skip: $offset){
+	    totalCount
+	    edges{
+	      node{
+		label
+		name
+		categories{
+		  totalCount
+		}
+	      }
+	    }
+	  }
+	}
       }
     }
   }
 }`
 
 const QueryCategorisations = `
-query ($dataset: String!, $variables: [String!]!) {
+query ($dataset: String!, $text: String!) {
 	dataset(name: $dataset) {
 	  variables(rule: false, base: false) {
 		search(text: $text) {
@@ -307,7 +307,7 @@ query ($dataset: String!, $variables: [String!]!, $filters: [Filter!]! ) {
 				count
 				categories {
 					code
-					label 
+					label
 				}
 			}
 		}
