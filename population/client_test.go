@@ -237,6 +237,14 @@ func TestGetAreas(t *testing.T) {
 
 	Convey("Given a valid areas response payload", t, func() {
 		areas := GetAreasResponse{
+			PaginationResponse: cantabular.PaginationResponse{
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  2,
+					Offset: 0,
+				},
+				Count:      2,
+				TotalCount: 6,
+			},
 			Areas: []Area{{ID: "test", Label: "Test", AreaType: "city"}},
 		}
 
@@ -510,6 +518,14 @@ func TestGetPopulationTypes(t *testing.T) {
 
 	Convey("Given a valid areas response payload", t, func() {
 		areas := GetAreasResponse{
+			PaginationResponse: cantabular.PaginationResponse{
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  2,
+					Offset: 0,
+				},
+				Count:      2,
+				TotalCount: 6,
+			},
 			Areas: []Area{{ID: "test", Label: "Test", AreaType: "city"}},
 		}
 
@@ -673,6 +689,14 @@ func TestGetAreaTypesParent(t *testing.T) {
 
 	Convey("Given a valid areaTypes parents response payload", t, func() {
 		parents := GetAreaTypeParentsResponse{
+			PaginationResponse: cantabular.PaginationResponse{
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  2,
+					Offset: 0,
+				},
+				Count:      2,
+				TotalCount: 6,
+			},
 			AreaTypes: []AreaTypes{{ID: "test", Label: "Test", TotalCount: 2}},
 		}
 
@@ -1001,8 +1025,9 @@ func newStubClient(response *http.Response, err error) *dphttp.ClienterMock {
 // shouldBeDPError is a GoConvey matcher that asserts the passed in error
 // includes a dperrors.Error within the chain, and optionally that the status
 // code matches the expected value.
-// Usage:`So(err, shouldBeDPError)`
-//       `So(err, shouldBeDPError, 404)`
+// Usage:
+// `So(err, shouldBeDPError)`
+// `So(err, shouldBeDPError, 404)`
 func shouldBeDPError(actual interface{}, expected ...interface{}) string {
 	err, ok := actual.(error)
 	if !ok {

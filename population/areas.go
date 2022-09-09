@@ -11,6 +11,7 @@ type Area struct {
 
 // GetAreasResponse is the response object for GET /areas
 type GetAreasResponse struct {
+	cantabular.PaginationResponse
 	Areas []Area `json:"areas"`
 }
 
@@ -28,6 +29,7 @@ type AreaTypes struct {
 
 // GetAreaTypeParentsResponse is the response object for GET /areas
 type GetAreaTypeParentsResponse struct {
+	cantabular.PaginationResponse
 	AreaTypes []AreaTypes `json:"area_types"`
 }
 
