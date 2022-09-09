@@ -86,6 +86,7 @@ func (c *Client) GetGeographyDimensions(ctx context.Context, req GetGeographyDim
 
 	data := QueryData{
 		Dataset:          req.Dataset,
+		Text:             req.Text,
 		PaginationParams: req.PaginationParams,
 	}
 

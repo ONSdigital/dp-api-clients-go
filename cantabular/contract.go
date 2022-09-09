@@ -87,6 +87,7 @@ type GetDimensionsResponse struct {
 type GetGeographyDimensionsRequest struct {
 	PaginationParams
 	Dataset string `json:"dataset"`
+	Text    string `json:"text"`
 }
 
 // GetGeographyDimensionsResponse holds the response body for
