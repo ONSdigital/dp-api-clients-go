@@ -462,7 +462,7 @@ func (c *Client) GetCategorisations(ctx context.Context, req GetCategorisationsR
 	data := QueryData{
 		PaginationParams: req.PaginationParams,
 		Dataset:          req.Dataset,
-		Variables:        []string{req.Variable},
+		Text:             req.Variable,
 	}
 
 	if err := c.queryUnmarshal(ctx, QueryCategorisations, data, resp); err != nil {
