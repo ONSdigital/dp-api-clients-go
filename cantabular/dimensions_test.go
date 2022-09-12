@@ -1140,8 +1140,8 @@ func TestGetCategorisationsHappy(t *testing.T) {
 					mockHttpClient.PostCalls()[0].Body,
 					cantabular.QueryCategorisations,
 					cantabular.QueryData{
-						Dataset:   dataset,
-						Variables: []string{variable},
+						Dataset: dataset,
+						Text:    variable,
 					},
 				)
 			})
@@ -1861,7 +1861,7 @@ var mockRespBodyGetAggregatedDimensionOptions = `
 											"label": "16 to 24"
 										}
 									},
-									{	
+									{
 										"node": {
 											"code": "3",
 											"label": "25+"
@@ -1978,24 +1978,24 @@ var mockRespBodyGetArea = `
   "data": {
     "dataset": {
       "variables": {
-        "edges": [
-          {
-            "node": {
-              "categories": {
-                "edges": [
-                  {
-                    "node": {
-                      "code": "E",
-                      "label": "England"
-                    }
-                  }
-                ]
-              },
-              "label": "Country",
-              "name": "country"
-            }
-          }
-        ]
+	"edges": [
+	  {
+	    "node": {
+	      "categories": {
+		"edges": [
+		  {
+		    "node": {
+		      "code": "E",
+		      "label": "England"
+		    }
+		  }
+		]
+	      },
+	      "label": "Country",
+	      "name": "country"
+	    }
+	  }
+	]
       }
     }
   }
@@ -2161,7 +2161,7 @@ const mockRespBodyGetCategorisations = `
 								"label": "label 2"
 							}
 						}
-						
+
 					]
 				}
 			}
