@@ -345,6 +345,7 @@ func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 	vars := map[string]interface{}{
 		"dataset":   data.Dataset,
 		"variables": data.Variables,
+		"filters":   data.Filters,
 		"text":      data.Text,
 		"limit":     data.Limit,
 		"offset":    data.Offset,

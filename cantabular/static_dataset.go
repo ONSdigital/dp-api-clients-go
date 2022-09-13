@@ -2,16 +2,9 @@ package cantabular
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"io"
-	"net/http"
 
-	"github.com/shurcooL/graphql"
-
-	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/stream"
-	"github.com/ONSdigital/log.go/v2/log"
 )
 
 // Consumer is a stream func to read from a reader
@@ -41,49 +34,15 @@ type DimensionsTable struct {
 // loading the whole response to memory.
 // Use this method only if large query responses are NOT expected
 func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryRequest) (*StaticDatasetQuery, error) {
-	if c.gqlClient == nil {
-		return nil, dperrors.New(
-			errors.New("cantabular Extended API Client not configured"),
-			http.StatusServiceUnavailable,
-			nil,
-		)
+	var q struct {
+		Data struct{ *StaticDatasetQuery } `json:"data"`
 	}
 
-	logData := log.Data{
-		"url":     fmt.Sprintf("%s/graphql", c.extApiHost),
-		"request": req,
+	if err := c.queryUnmarshal(ctx, QueryStaticDataset, QueryData{Dataset: req.Dataset, Variables: req.Variables, Filters: req.Filters}, &q); err != nil {
+		return nil, err
 	}
 
-	vars := map[string]interface{}{
-		// GraphQL package requires self defined scalar types for variables
-		// and arguments
-		"name": graphql.String(req.Dataset),
-	}
-
-	gvars := make([]graphql.String, 0)
-	for _, v := range req.Variables {
-		gvars = append(gvars, graphql.String(v))
-	}
-	vars["variables"] = gvars
-
-	var q StaticDatasetQuery
-	if err := c.gqlClient.Query(ctx, &q, vars); err != nil {
-		return nil, dperrors.New(
-			fmt.Errorf("failed to make GraphQL query: %w", err),
-			http.StatusInternalServerError,
-			logData,
-		)
-	}
-
-	if err := q.Dataset.Table.Error; err != "" {
-		return nil, dperrors.New(
-			fmt.Errorf("GraphQL error: %s", err),
-			http.StatusBadRequest,
-			logData,
-		)
-	}
-
-	return &q, nil
+	return q.Data.StaticDatasetQuery, nil
 }
 
 // StaticDatasetQueryStreamCSV performs a StaticDatasetQuery call

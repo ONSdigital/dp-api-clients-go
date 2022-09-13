@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/mock"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	dphttp "github.com/ONSdigital/dp-net/http"
 	"github.com/ONSdigital/log.go/v2/log"
@@ -217,12 +217,9 @@ func TestStaticDatasetQueryHappy(t *testing.T) {
 	Convey("Given a correct response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
 
-		mockHttpClient := &dphttp.ClienterMock{}
-		mockGQLClient := &mock.GraphQLClientMock{
-			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
-				return nil
-			},
-		}
+		mockHttpClient := &dphttp.ClienterMock{PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+			return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(mockRespBodyStaticDataset))}, nil
+		}}
 
 		cantabularClient := cantabular.NewClient(
 			cantabular.Config{
@@ -230,7 +227,7 @@ func TestStaticDatasetQueryHappy(t *testing.T) {
 				ExtApiHost: "cantabular.ext.host",
 			},
 			mockHttpClient,
-			mockGQLClient,
+			nil,
 		)
 
 		Convey("When the StaticDatasetQuery method is called", func() {
@@ -246,14 +243,17 @@ func TestStaticDatasetQueryHappy(t *testing.T) {
 
 func TestStaticDatasetQueryUnHappy(t *testing.T) {
 
-	Convey("Given the graphQL Client is not configured", t, func() {
+	Convey("Given a GraphQL error from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
 
-		mockHttpClient := &dphttp.ClienterMock{}
+		mockHttpClient := &dphttp.ClienterMock{PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader(mockRespBodyNoTable))}, nil
+		}}
 
 		cantabularClient := cantabular.NewClient(
 			cantabular.Config{
-				Host: "cantabular.host",
+				Host:       "cantabular.host",
+				ExtApiHost: "cantabular.ext.host",
 			},
 			mockHttpClient,
 			nil,
@@ -262,45 +262,10 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 		Convey("When the StaticDatasetQuery method is called", func() {
 			req := cantabular.StaticDatasetQueryRequest{}
 			_, err := cantabularClient.StaticDatasetQuery(testCtx, req)
-			So(err, ShouldNotBeNil)
-
-			Convey("Status Code 503 Service Unavailable should be recoverable from error", func() {
-				_, err := cantabularClient.StaticDatasetQuery(testCtx, req)
-				So(dperrors.StatusCode(err), ShouldEqual, http.StatusServiceUnavailable)
-			})
-		})
-	})
-
-	Convey("Given a GraphQL error from the /graphql endpoint", t, func() {
-		testCtx := context.Background()
-
-		mockHttpClient := &dphttp.ClienterMock{}
-		mockGQLClient := &mock.GraphQLClientMock{
-			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
-				if q, ok := query.(*cantabular.StaticDatasetQuery); ok {
-					q.Dataset.Table.Error = "I am error response"
-					return nil
-				}
-				return errors.New("query could not be cast to correct type")
-			},
-		}
-
-		cantabularClient := cantabular.NewClient(
-			cantabular.Config{
-				Host:       "cantabular.host",
-				ExtApiHost: "cantabular.ext.host",
-			},
-			mockHttpClient,
-			mockGQLClient,
-		)
-
-		Convey("When the StaticDatasetQuery method is called", func() {
-			req := cantabular.StaticDatasetQueryRequest{}
-			_, err := cantabularClient.StaticDatasetQuery(testCtx, req)
 
 			Convey("An error should be returned with status code 400 Bad Request", func() {
 				So(err, ShouldNotBeNil)
-				So(dperrors.StatusCode(err), ShouldEqual, http.StatusBadRequest)
+				So(dperrors.StatusCode(err), ShouldEqual, http.StatusInternalServerError)
 			})
 		})
 	})
