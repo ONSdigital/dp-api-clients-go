@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -445,7 +446,9 @@ func (c *Client) GetBulletin(ctx context.Context, userAccessToken, collectionID,
 
 // GetRelease retrieves a release from zebedee
 func (c *Client) GetRelease(ctx context.Context, userAccessToken, collectionID, lang, uri string) (Release, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
+	// Prefix with / so that Clean removes starting .. elements, then remove the prefix
+	cleanUri := strings.TrimPrefix(filepath.Clean("/"+uri), "/")
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+cleanUri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
 		return Release{}, err
