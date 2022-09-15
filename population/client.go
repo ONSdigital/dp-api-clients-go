@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -48,6 +49,15 @@ type GetAreaTypeParentsInput struct {
 	ServiceAuthToken string
 	DatasetID        string
 	AreaTypeID       string
+}
+
+type GetParentAreaCountInput struct {
+	UserAuthToken    string
+	ServiceAuthToken string
+	DatasetID        string
+	AreaTypeID       string
+	ParentAreaTypeID string
+	Areas            []string
 }
 
 type GetDimensionsInput struct {
@@ -403,6 +413,73 @@ func (c *Client) GetAreaTypeParents(ctx context.Context, input GetAreaTypeParent
 	}
 
 	return atp, nil
+}
+
+func (c *Client) GetParentAreaCount(ctx context.Context, input GetParentAreaCountInput) (int, error) {
+	logData := log.Data{
+		"method":              http.MethodGet,
+		"dataset_id":          input.DatasetID,
+		"area_type_id":        input.AreaTypeID,
+		"parent_area_type_id": input.ParentAreaTypeID,
+		"areas":               input.Areas,
+	}
+
+	urlPath := fmt.Sprintf("population-types/%s/area-types/%s/parents/%s/areas-count",
+		input.DatasetID,
+		input.AreaTypeID,
+		input.ParentAreaTypeID,
+	)
+
+	urlValues := map[string][]string{"areas": input.Areas}
+
+	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
+	if err != nil {
+		return 0, dperrors.New(
+			err,
+			dperrors.StatusCode(err),
+			logData,
+		)
+	}
+
+	clientlog.Do(ctx, "getting area-types parents", service, req.URL.String(), logData)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return 0, dperrors.New(
+			errors.Wrap(err, "failed to get response from Population types API"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}()
+
+	if err := checkGetResponse(resp); err != nil {
+		return 0, err
+	}
+
+	var countStr string
+	if err := json.NewDecoder(resp.Body).Decode(&countStr); err != nil {
+		return 0, dperrors.New(
+			errors.Wrap(err, "unable to deserialize parent areas count response"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	count, err := strconv.Atoi(countStr)
+	if err != nil {
+		return 0, dperrors.New(
+			errors.Wrap(err, "unable to convert parent areas count API response"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+	return count, nil
 }
 
 func (c *Client) GetDimensions(ctx context.Context, input GetDimensionsInput) (GetDimensionsResponse, error) {
