@@ -2,7 +2,11 @@ package cantabular
 
 import (
 	"context"
+	"fmt"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	"github.com/ONSdigital/log.go/v2/log"
 	"io"
+	"net/http"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/stream"
 )
@@ -34,12 +38,20 @@ type DimensionsTable struct {
 // loading the whole response to memory.
 // Use this method only if large query responses are NOT expected
 func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryRequest) (*StaticDatasetQuery, error) {
+	logData := log.Data{
+		"url":     fmt.Sprintf("%s/graphql", c.extApiHost),
+		"request": req,
+	}
+
 	var q struct {
 		Data struct{ *StaticDatasetQuery } `json:"data"`
 	}
-
 	if err := c.queryUnmarshal(ctx, QueryStaticDataset, QueryData{Dataset: req.Dataset, Variables: req.Variables, Filters: req.Filters}, &q); err != nil {
-		return nil, err
+		return nil, dperrors.New(
+			fmt.Errorf("failed to make GraphQL query: %w", err),
+			http.StatusInternalServerError,
+			logData,
+		)
 	}
 
 	return q.Data.StaticDatasetQuery, nil
