@@ -863,7 +863,7 @@ func TestGetParentAreaCount(t *testing.T) {
 	})
 
 	Convey("Given a valid parents areas count response payload", t, func() {
-		resp, err := json.Marshal("1")
+		resp, err := json.Marshal(1)
 		So(err, ShouldBeNil)
 
 		stubClient := newStubClient(&http.Response{
