@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -430,7 +429,7 @@ func (c *Client) GetParentAreaCount(ctx context.Context, input GetParentAreaCoun
 		input.ParentAreaTypeID,
 	)
 
-	urlValues := map[string][]string{"areas": input.Areas}
+	urlValues := map[string][]string{"areas": {strings.Join(input.Areas, ",")}}
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {
@@ -462,8 +461,8 @@ func (c *Client) GetParentAreaCount(ctx context.Context, input GetParentAreaCoun
 		return 0, err
 	}
 
-	var countStr string
-	if err := json.NewDecoder(resp.Body).Decode(&countStr); err != nil {
+	var count int
+	if err := json.NewDecoder(resp.Body).Decode(&count); err != nil {
 		return 0, dperrors.New(
 			errors.Wrap(err, "unable to deserialize parent areas count response"),
 			http.StatusInternalServerError,
@@ -471,7 +470,6 @@ func (c *Client) GetParentAreaCount(ctx context.Context, input GetParentAreaCoun
 		)
 	}
 
-	count, err := strconv.Atoi(countStr)
 	if err != nil {
 		return 0, dperrors.New(
 			errors.Wrap(err, "unable to convert parent areas count API response"),
