@@ -429,7 +429,7 @@ func (c *Client) GetParentAreaCount(ctx context.Context, input GetParentAreaCoun
 		input.ParentAreaTypeID,
 	)
 
-	urlValues := map[string][]string{"areas": input.Areas}
+	urlValues := map[string][]string{"areas": {strings.Join(input.Areas, ",")}}
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {

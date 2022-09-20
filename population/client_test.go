@@ -839,7 +839,7 @@ func TestGetParentAreaCount(t *testing.T) {
 		Convey("it should call the parent areas count endpoint", func() {
 			calls := stubClient.DoCalls()
 			So(calls, ShouldNotBeEmpty)
-			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/datasetId/area-types/areaId/parents/parentAreaTypeId/areas-count?areas=area1&areas=area2")
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/datasetId/area-types/areaId/parents/parentAreaTypeId/areas-count?areas=area1%2Carea2")
 		})
 	})
 
