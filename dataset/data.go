@@ -32,6 +32,8 @@ type DatasetDetails struct {
 	UnitOfMeasure     string            `json:"unit_of_measure,omitempty"`
 	URI               string            `json:"uri,omitempty"`
 	IsBasedOn         *IsBasedOn        `json:"is_based_on,omitempty"`
+	CanonicalTopic 	  *TopicTagObject   `json:"canonical_topic,omitempty"`
+	SubTopics 	      *[]TopicTagObject `json:"sub_topics,omitempty"`
 }
 
 // Dataset represents a dataset resource
@@ -195,6 +197,11 @@ type Metadata struct {
 	Version
 	DatasetDetails
 	DatasetLinks Links `json:"dataset_links,omitempty"`
+}
+
+type TopicTagObject struct {
+	ID    string `json:"id,omitempty"`
+	Title string `json:"title,omitempty"`
 }
 
 // UnmarshalJSON is used to disambiguate the 'links' attribute of the incoming Metadata struct. As currently structured
