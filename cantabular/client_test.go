@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/http"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 type testError struct {
@@ -74,7 +75,7 @@ func TestChecker(t *testing.T) {
 
 			Convey("Then the expected endpoint is called", func() {
 				So(mockHttpClient.GetCalls(), ShouldHaveLength, 1)
-				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, "/graphql?query={}")
+				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, "/graphql?query={datasets{name}}")
 			})
 
 			Convey("Then the CheckState is updated to the expected OK state", func() {
@@ -126,7 +127,7 @@ func TestChecker(t *testing.T) {
 
 			Convey("Then the expected endpoint is called", func() {
 				So(mockHttpClient.GetCalls(), ShouldHaveLength, 1)
-				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, "/graphql?query={}")
+				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, "/graphql?query={datasets{name}}")
 			})
 
 			Convey("Then the CheckState is updated to the expected CRITICAL state", func() {
@@ -182,7 +183,7 @@ func TestChecker(t *testing.T) {
 
 			Convey("Then the expected endpoint is called", func() {
 				So(mockHttpClient.GetCalls(), ShouldHaveLength, 1)
-				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, "/graphql?query={}")
+				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, "/graphql?query={datasets{name}}")
 			})
 
 			Convey("Then the CheckState is updated to the expected CRITICAL state", func() {

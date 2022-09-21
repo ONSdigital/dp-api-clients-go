@@ -124,7 +124,7 @@ func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) err
 
 // CheckerAPIExt contacts the /graphql endpoint with an empty query and updates the healthcheck state accordingly.
 func (c *Client) CheckerAPIExt(ctx context.Context, state *healthcheck.CheckState) error {
-	reqURL := fmt.Sprintf("%s/graphql?query={}", c.extApiHost)
+	reqURL := fmt.Sprintf("%s/graphql?query={datasets{name}}", c.extApiHost)
 	return c.checkHealth(ctx, state, ServiceAPIExt, reqURL)
 }
 
