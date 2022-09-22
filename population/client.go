@@ -7,10 +7,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
@@ -36,6 +38,7 @@ type GetAreaInput struct {
 }
 
 type GetAreasInput struct {
+	cantabular.PaginationParams
 	UserAuthToken    string
 	ServiceAuthToken string
 	DatasetID        string
@@ -247,12 +250,19 @@ func (c *Client) GetAreas(ctx context.Context, input GetAreasInput) (GetAreasRes
 		"dataset_id":   input.DatasetID,
 		"area_type_id": input.AreaTypeID,
 		"text":         input.Text,
+		"limit":        input.Limit,
+		"offset":       input.Offset,
 	}
 
 	urlPath := fmt.Sprintf("population-types/%s/area-types/%s/areas", input.DatasetID, input.AreaTypeID)
-	var urlValues map[string][]string
+
+	urlValues := map[string][]string{
+		"offset": {strconv.Itoa(input.Offset)},
+		"limit":  {strconv.Itoa(input.Limit)},
+	}
+
 	if input.Text != "" {
-		urlValues = url.Values{"q": []string{input.Text}}
+		urlValues["q"] = []string{input.Text}
 	}
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)

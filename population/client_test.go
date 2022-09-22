@@ -184,7 +184,7 @@ func TestGetAreas(t *testing.T) {
 		Convey("it should call the areas endpoint, serializing the dataset, area type and text query params", func() {
 			calls := stubClient.DoCalls()
 			So(calls, ShouldNotBeEmpty)
-			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/testDataSet/area-types/testAreaType/areas?q=testText")
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/testDataSet/area-types/testAreaType/areas?limit=0&offset=0&q=testText")
 		})
 	})
 
@@ -206,7 +206,7 @@ func TestGetAreas(t *testing.T) {
 		Convey("it should call the areas endpoint, omitting the text query param", func() {
 			calls := stubClient.DoCalls()
 			So(calls, ShouldNotBeEmpty)
-			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/testDataSet/area-types/testAreaType/areas")
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/testDataSet/area-types/testAreaType/areas?limit=0&offset=0")
 		})
 	})
 
