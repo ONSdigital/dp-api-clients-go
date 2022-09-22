@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
@@ -31,6 +32,7 @@ type GetAreaInput struct {
 
 type GetAreasInput struct {
 	AuthTokens
+	PaginationParams
 	PopulationType string
 	AreaTypeID     string
 	Text           string
@@ -123,7 +125,10 @@ func (c *Client) GetAreas(ctx context.Context, input GetAreasInput) (GetAreasRes
 	}
 
 	urlPath := fmt.Sprintf("population-types/%s/area-types/%s/areas", input.PopulationType, input.AreaTypeID)
-	var urlValues map[string][]string
+	urlValues := url.Values{
+		"limit":  []string{strconv.Itoa(input.Limit)},
+		"offset": []string{strconv.Itoa(input.Offset)},
+	}
 	if input.Text != "" {
 		urlValues = url.Values{"q": []string{input.Text}}
 	}

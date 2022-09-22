@@ -43,7 +43,11 @@ func TestGetAreaTypes(t *testing.T) {
 		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))
 		So(err, ShouldBeNil)
 
-		_, _ = client.GetAreaTypes(context.Background(), "", "", "test")
+		input := GetAreaTypesInput{
+			PopulationType: "test",
+		}
+
+		client.GetAreaTypes(context.Background(), input)
 
 		Convey("it should call the area types endpoint, serializing the dataset query", func() {
 			calls := stubClient.DoCalls()
@@ -59,7 +63,15 @@ func TestGetAreaTypes(t *testing.T) {
 		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
 		client := newHealthClient(stubClient)
 
-		_, _ = client.GetAreaTypes(context.Background(), userAuthToken, serviceAuthToken, "test")
+		input := GetAreaTypesInput{
+			AuthTokens: AuthTokens{
+				ServiceAuthToken: serviceAuthToken,
+				UserAuthToken:    userAuthToken,
+			},
+			PopulationType: "test",
+		}
+
+		client.GetAreaTypes(context.Background(), input)
 
 		Convey("it should set the auth headers on the request", func() {
 			calls := stubClient.DoCalls()
@@ -84,7 +96,10 @@ func TestGetAreaTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		types, err := client.GetAreaTypes(context.Background(), "", "", "test")
+		input := GetAreaTypesInput{
+			PopulationType: "test",
+		}
+		types, err := client.GetAreaTypes(context.Background(), input)
 
 		Convey("it should return a list of area types", func() {
 			So(err, ShouldBeNil)
@@ -97,7 +112,10 @@ func TestGetAreaTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		_, err := client.GetAreaTypes(context.Background(), "", "", "test")
+		input := GetAreaTypesInput{
+			PopulationType: "test",
+		}
+		_, err := client.GetAreaTypes(context.Background(), input)
 
 		Convey("it should return an internal error", func() {
 			So(err, shouldBeDPError, http.StatusInternalServerError)
@@ -112,7 +130,10 @@ func TestGetAreaTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		_, err := client.GetAreaTypes(context.Background(), "", "", "test")
+		input := GetAreaTypesInput{
+			PopulationType: "test",
+		}
+		_, err := client.GetAreaTypes(context.Background(), input)
 
 		Convey("the error chain should contain the original Errors type", func() {
 			So(err, shouldBeDPError, http.StatusInternalServerError)
@@ -132,7 +153,10 @@ func TestGetAreaTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		_, err := client.GetAreaTypes(context.Background(), "", "", "test")
+		input := GetAreaTypesInput{
+			PopulationType: "test",
+		}
+		_, err := client.GetAreaTypes(context.Background(), input)
 
 		Convey("it should return an internal error", func() {
 			So(err, shouldBeDPError, http.StatusInternalServerError)
@@ -147,7 +171,10 @@ func TestGetAreaTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		_, err := client.GetAreaTypes(context.Background(), "", "", "test")
+		input := GetAreaTypesInput{
+			PopulationType: "test",
+		}
+		_, err := client.GetAreaTypes(context.Background(), input)
 
 		Convey("it should return an internal error", func() {
 			So(err, shouldBeDPError, http.StatusInternalServerError)
@@ -157,7 +184,10 @@ func TestGetAreaTypes(t *testing.T) {
 	Convey("Given the request cannot be created", t, func() {
 		client := newHealthClient(newStubClient(nil, nil))
 
-		_, err := client.GetAreaTypes(nil, "", "", "test")
+		input := GetAreaTypesInput{
+			PopulationType: "test",
+		}
+		_, err := client.GetAreaTypes(nil, input)
 
 		Convey("it should return a client error", func() {
 			So(err, shouldBeDPError, http.StatusBadRequest)
@@ -177,7 +207,7 @@ func TestGetAreas(t *testing.T) {
 			AreaTypeID:     "testAreaType",
 			Text:           "testText",
 		}
-		_, _ = client.GetAreas(context.Background(), input)
+		client.GetAreas(context.Background(), input)
 
 		Convey("it should call the areas endpoint, serializing the dataset, area type and text query params", func() {
 			calls := stubClient.DoCalls()
@@ -198,7 +228,7 @@ func TestGetAreas(t *testing.T) {
 			Text:           "",
 		}
 
-		_, _ = client.GetAreas(context.Background(), input)
+		client.GetAreas(context.Background(), input)
 
 		Convey("it should call the areas endpoint, omitting the text query param", func() {
 			calls := stubClient.DoCalls()
@@ -224,7 +254,7 @@ func TestGetAreas(t *testing.T) {
 			Text:           "",
 		}
 
-		_, _ = client.GetAreas(context.Background(), input)
+		client.GetAreas(context.Background(), input)
 
 		Convey("it should set the auth headers on the request", func() {
 			calls := stubClient.DoCalls()
@@ -393,7 +423,7 @@ func TestGetArea(t *testing.T) {
 			Area:           "ID",
 		}
 
-		_, _ = client.GetArea(context.Background(), input)
+		client.GetArea(context.Background(), input)
 		calls := stubClient.DoCalls()
 
 		Convey("it should call the specific area endpoint", func() {
@@ -491,7 +521,7 @@ func TestGetPopulationTypes(t *testing.T) {
 				ServiceAuthToken: serviceAuthToken,
 			},
 		}
-		_, _ = client.GetPopulationTypes(context.Background(), input)
+		client.GetPopulationTypes(context.Background(), input)
 
 		Convey("it should call the population types endpoint", func() {
 			calls := stubClient.DoCalls()
@@ -511,7 +541,7 @@ func TestGetPopulationTypes(t *testing.T) {
 			},
 		}
 
-		_, _ = client.GetPopulationTypes(context.Background(), input)
+		client.GetPopulationTypes(context.Background(), input)
 
 		Convey("it should set the auth headers on the request", func() {
 			calls := stubClient.DoCalls()
@@ -670,7 +700,7 @@ func TestGetAreaTypesParent(t *testing.T) {
 			PopulationType: populationType,
 			AreaTypeID:     areaTypeId,
 		}
-		_, _ = client.GetAreaTypeParents(context.Background(), input)
+		client.GetAreaTypeParents(context.Background(), input)
 
 		Convey("it should call the area types parens endpoint", func() {
 			calls := stubClient.DoCalls()
@@ -690,7 +720,7 @@ func TestGetAreaTypesParent(t *testing.T) {
 			},
 		}
 
-		_, _ = client.GetAreaTypeParents(context.Background(), input)
+		client.GetAreaTypeParents(context.Background(), input)
 
 		Convey("it should set the auth headers on the request", func() {
 			calls := stubClient.DoCalls()
@@ -861,7 +891,7 @@ func TestGetParentAreaCount(t *testing.T) {
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
 		}
-		_, _ = client.GetParentAreaCount(context.Background(), input)
+		client.GetParentAreaCount(context.Background(), input)
 
 		Convey("it should call the parent areas count endpoint", func() {
 			calls := stubClient.DoCalls()
@@ -881,7 +911,7 @@ func TestGetParentAreaCount(t *testing.T) {
 			},
 		}
 
-		_, _ = client.GetParentAreaCount(context.Background(), input)
+		client.GetParentAreaCount(context.Background(), input)
 
 		Convey("it should set the auth headers on the request", func() {
 			calls := stubClient.DoCalls()
@@ -1087,7 +1117,8 @@ func TestGetDimensions(t *testing.T) {
 			PopulationType: populationType,
 			SearchString:   SearchString,
 		}
-		_, _ = client.GetDimensions(context.Background(), input)
+
+		client.GetDimensions(context.Background(), input)
 
 		Convey("it should call the get dimensions endpoint", func() {
 			calls := stubClient.DoCalls()
@@ -1108,7 +1139,7 @@ func TestGetDimensions(t *testing.T) {
 			},
 		}
 
-		_, _ = client.GetAreaTypeParents(context.Background(), input)
+		client.GetAreaTypeParents(context.Background(), input)
 
 		Convey("it should set the auth headers on the request", func() {
 			calls := stubClient.DoCalls()

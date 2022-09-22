@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
@@ -20,8 +21,15 @@ type AreaType struct {
 	TotalCount int    `json:"total_count"`
 }
 
+type GetAreaTypesInput struct {
+	AuthTokens
+	PaginationParams
+	PopulationType string
+}
+
 type GetAreaTypeParentsInput struct {
 	AuthTokens
+	PaginationParams
 	PopulationType string
 	AreaTypeID     string
 }
@@ -39,16 +47,19 @@ type GetAreaTypeParentsResponse struct {
 }
 
 // GetPopulationAreaTypes retrieves the Cantabular area-types associated with a dataset
-func (c *Client) GetAreaTypes(ctx context.Context, userAuthToken, serviceAuthToken, datasetID string) (GetAreaTypesResponse, error) {
+func (c *Client) GetAreaTypes(ctx context.Context, input GetAreaTypesInput) (GetAreaTypesResponse, error) {
 	logData := log.Data{
 		"method":     http.MethodGet,
-		"dataset_id": datasetID,
+		"dataset_id": input.PopulationType,
 	}
 
-	urlPath := fmt.Sprintf("population-types/%s/area-types", datasetID)
-	urlValues := url.Values{}
+	urlPath := fmt.Sprintf("population-types/%s/area-types", input.PopulationType)
+	urlValues := url.Values{
+		"limit":  []string{strconv.Itoa(input.Limit)},
+		"offset": []string{strconv.Itoa(input.Offset)},
+	}
 
-	req, err := c.createGetRequest(ctx, userAuthToken, serviceAuthToken, urlPath, urlValues)
+	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {
 		return GetAreaTypesResponse{}, dperrors.New(
 			err,
@@ -98,7 +109,10 @@ func (c *Client) GetAreaTypeParents(ctx context.Context, input GetAreaTypeParent
 	}
 
 	urlPath := fmt.Sprintf("population-types/%s/area-types/%s/parents", input.PopulationType, input.AreaTypeID)
-	var urlValues map[string][]string
+	urlValues := url.Values{
+		"limit":  []string{strconv.Itoa(input.Limit)},
+		"offset": []string{strconv.Itoa(input.Offset)},
+	}
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {
