@@ -12,7 +12,6 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	dphttp "github.com/ONSdigital/dp-net/http"
@@ -38,13 +37,13 @@ func TestNewClient(t *testing.T) {
 	})
 }
 
-func TestGetPopulationAreaTypes(t *testing.T) {
+func TestGetAreaTypes(t *testing.T) {
 	Convey("Given a valid request", t, func() {
 		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
 		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))
 		So(err, ShouldBeNil)
 
-		_, _ = client.GetPopulationAreaTypes(context.Background(), "", "", "test")
+		_, _ = client.GetAreaTypes(context.Background(), "", "", "test")
 
 		Convey("it should call the area types endpoint, serializing the dataset query", func() {
 			calls := stubClient.DoCalls()
@@ -60,7 +59,7 @@ func TestGetPopulationAreaTypes(t *testing.T) {
 		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
 		client := newHealthClient(stubClient)
 
-		_, _ = client.GetPopulationAreaTypes(context.Background(), userAuthToken, serviceAuthToken, "test")
+		_, _ = client.GetAreaTypes(context.Background(), userAuthToken, serviceAuthToken, "test")
 
 		Convey("it should set the auth headers on the request", func() {
 			calls := stubClient.DoCalls()
@@ -85,7 +84,7 @@ func TestGetPopulationAreaTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		types, err := client.GetPopulationAreaTypes(context.Background(), "", "", "test")
+		types, err := client.GetAreaTypes(context.Background(), "", "", "test")
 
 		Convey("it should return a list of area types", func() {
 			So(err, ShouldBeNil)
@@ -98,7 +97,7 @@ func TestGetPopulationAreaTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		_, err := client.GetPopulationAreaTypes(context.Background(), "", "", "test")
+		_, err := client.GetAreaTypes(context.Background(), "", "", "test")
 
 		Convey("it should return an internal error", func() {
 			So(err, shouldBeDPError, http.StatusInternalServerError)
@@ -113,7 +112,7 @@ func TestGetPopulationAreaTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		_, err := client.GetPopulationAreaTypes(context.Background(), "", "", "test")
+		_, err := client.GetAreaTypes(context.Background(), "", "", "test")
 
 		Convey("the error chain should contain the original Errors type", func() {
 			So(err, shouldBeDPError, http.StatusInternalServerError)
@@ -133,7 +132,7 @@ func TestGetPopulationAreaTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		_, err := client.GetPopulationAreaTypes(context.Background(), "", "", "test")
+		_, err := client.GetAreaTypes(context.Background(), "", "", "test")
 
 		Convey("it should return an internal error", func() {
 			So(err, shouldBeDPError, http.StatusInternalServerError)
@@ -148,7 +147,7 @@ func TestGetPopulationAreaTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		_, err := client.GetPopulationAreaTypes(context.Background(), "", "", "test")
+		_, err := client.GetAreaTypes(context.Background(), "", "", "test")
 
 		Convey("it should return an internal error", func() {
 			So(err, shouldBeDPError, http.StatusInternalServerError)
@@ -158,7 +157,7 @@ func TestGetPopulationAreaTypes(t *testing.T) {
 	Convey("Given the request cannot be created", t, func() {
 		client := newHealthClient(newStubClient(nil, nil))
 
-		_, err := client.GetPopulationAreaTypes(nil, "", "", "test")
+		_, err := client.GetAreaTypes(nil, "", "", "test")
 
 		Convey("it should return a client error", func() {
 			So(err, shouldBeDPError, http.StatusBadRequest)
@@ -173,11 +172,10 @@ func TestGetAreas(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		input := GetAreasInput{
-			UserAuthToken:    "",
-			ServiceAuthToken: "",
-			DatasetID:        "testDataSet",
-			AreaTypeID:       "testAreaType",
-			Text:             "testText",
+			AuthTokens:     AuthTokens{},
+			PopulationType: "testDataSet",
+			AreaTypeID:     "testAreaType",
+			Text:           "testText",
 		}
 		_, _ = client.GetAreas(context.Background(), input)
 
@@ -194,11 +192,10 @@ func TestGetAreas(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		input := GetAreasInput{
-			UserAuthToken:    "",
-			ServiceAuthToken: "",
-			DatasetID:        "testDataSet",
-			AreaTypeID:       "testAreaType",
-			Text:             "",
+			AuthTokens:     AuthTokens{},
+			PopulationType: "testDataSet",
+			AreaTypeID:     "testAreaType",
+			Text:           "",
 		}
 
 		_, _ = client.GetAreas(context.Background(), input)
@@ -218,11 +215,13 @@ func TestGetAreas(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreasInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			DatasetID:        "testDataSet",
-			AreaTypeID:       "testAreaType",
-			Text:             "",
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType: "testDataSet",
+			AreaTypeID:     "testAreaType",
+			Text:           "",
 		}
 
 		_, _ = client.GetAreas(context.Background(), input)
@@ -237,8 +236,8 @@ func TestGetAreas(t *testing.T) {
 
 	Convey("Given a valid areas response payload", t, func() {
 		areas := GetAreasResponse{
-			PaginationResponse: cantabular.PaginationResponse{
-				PaginationParams: cantabular.PaginationParams{
+			PaginationResponse: PaginationResponse{
+				PaginationParams: PaginationParams{
 					Limit:  2,
 					Offset: 0,
 				},
@@ -258,11 +257,10 @@ func TestGetAreas(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreasInput{
-			UserAuthToken:    "",
-			ServiceAuthToken: "",
-			DatasetID:        "testDataSet",
-			AreaTypeID:       "testAreaType",
-			Text:             "",
+			AuthTokens:     AuthTokens{},
+			PopulationType: "testDataSet",
+			AreaTypeID:     "testAreaType",
+			Text:           "",
 		}
 		types, err := client.GetAreas(context.Background(), input)
 
@@ -278,11 +276,10 @@ func TestGetAreas(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreasInput{
-			UserAuthToken:    "",
-			ServiceAuthToken: "",
-			DatasetID:        "testDataSet",
-			AreaTypeID:       "testAreaType",
-			Text:             "",
+			AuthTokens:     AuthTokens{},
+			PopulationType: "testDataSet",
+			AreaTypeID:     "testAreaType",
+			Text:           "",
 		}
 		_, err := client.GetAreas(context.Background(), input)
 
@@ -300,11 +297,10 @@ func TestGetAreas(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreasInput{
-			UserAuthToken:    "",
-			ServiceAuthToken: "",
-			DatasetID:        "testDataSet",
-			AreaTypeID:       "testAreaType",
-			Text:             "",
+			AuthTokens:     AuthTokens{},
+			PopulationType: "testDataSet",
+			AreaTypeID:     "testAreaType",
+			Text:           "",
 		}
 		_, err := client.GetAreas(context.Background(), input)
 
@@ -327,11 +323,10 @@ func TestGetAreas(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreasInput{
-			UserAuthToken:    "",
-			ServiceAuthToken: "",
-			DatasetID:        "testDataSet",
-			AreaTypeID:       "testAreaType",
-			Text:             "",
+			AuthTokens:     AuthTokens{},
+			PopulationType: "testDataSet",
+			AreaTypeID:     "testAreaType",
+			Text:           "",
 		}
 		_, err := client.GetAreas(context.Background(), input)
 
@@ -349,11 +344,10 @@ func TestGetAreas(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreasInput{
-			UserAuthToken:    "",
-			ServiceAuthToken: "",
-			DatasetID:        "testDataSet",
-			AreaTypeID:       "testAreaType",
-			Text:             "",
+			AuthTokens:     AuthTokens{},
+			PopulationType: "testDataSet",
+			AreaTypeID:     "testAreaType",
+			Text:           "",
 		}
 		_, err := client.GetAreas(context.Background(), input)
 
@@ -366,11 +360,10 @@ func TestGetAreas(t *testing.T) {
 		client := newHealthClient(newStubClient(nil, nil))
 
 		input := GetAreasInput{
-			UserAuthToken:    "",
-			ServiceAuthToken: "",
-			DatasetID:        "testDataSet",
-			AreaTypeID:       "testAreaType",
-			Text:             "",
+			AuthTokens:     AuthTokens{},
+			PopulationType: "testDataSet",
+			AreaTypeID:     "testAreaType",
+			Text:           "",
 		}
 		_, err := client.GetAreas(nil, input)
 
@@ -391,11 +384,13 @@ func TestGetArea(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		input := GetAreaInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			PopulationType:   "popType",
-			AreaType:         "areaType",
-			Area:             "ID",
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType: "popType",
+			AreaType:       "areaType",
+			Area:           "ID",
 		}
 
 		_, _ = client.GetArea(context.Background(), input)
@@ -420,11 +415,13 @@ func TestGetArea(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 		input := GetAreaInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			PopulationType:   "popType",
-			AreaType:         "areaType",
-			Area:             "ID",
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType: "popType",
+			AreaType:       "areaType",
+			Area:           "ID",
 		}
 
 		_, err := client.GetArea(context.Background(), input)
@@ -444,8 +441,10 @@ func TestGetArea(t *testing.T) {
 		client := newHealthClient(newStubClient(nil, nil))
 
 		input := GetAreaInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetArea(nil, input)
 
@@ -463,8 +462,10 @@ func TestGetArea(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreaInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetArea(context.Background(), input)
 
@@ -484,9 +485,11 @@ func TestGetPopulationTypes(t *testing.T) {
 		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))
 		So(err, ShouldBeNil)
 
-		input := GetAreasInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+		input := GetPopulationTypesInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, _ = client.GetPopulationTypes(context.Background(), input)
 
@@ -501,9 +504,11 @@ func TestGetPopulationTypes(t *testing.T) {
 		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
 		client := newHealthClient(stubClient)
 
-		input := GetAreasInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+		input := GetPopulationTypesInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 
 		_, _ = client.GetPopulationTypes(context.Background(), input)
@@ -516,20 +521,12 @@ func TestGetPopulationTypes(t *testing.T) {
 		})
 	})
 
-	Convey("Given a valid areas response payload", t, func() {
-		areas := GetAreasResponse{
-			PaginationResponse: cantabular.PaginationResponse{
-				PaginationParams: cantabular.PaginationParams{
-					Limit:  2,
-					Offset: 0,
-				},
-				Count:      2,
-				TotalCount: 6,
-			},
-			Areas: []Area{{ID: "test", Label: "Test", AreaType: "city"}},
+	Convey("Given a valid population types response payload", t, func() {
+		ptypes := GetPopulationTypesResponse{
+			Items: []PopulationType{{Name: "test"}},
 		}
 
-		resp, err := json.Marshal(areas)
+		resp, err := json.Marshal(ptypes)
 		So(err, ShouldBeNil)
 
 		stubClient := newStubClient(&http.Response{
@@ -538,15 +535,17 @@ func TestGetPopulationTypes(t *testing.T) {
 		}, nil)
 		client := newHealthClient(stubClient)
 
-		input := GetAreasInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+		input := GetPopulationTypesInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		types, err := client.GetPopulationTypes(context.Background(), input)
 
 		Convey("it should return a list of population types", func() {
 			So(err, ShouldBeNil)
-			So(types, ShouldResemble, areas)
+			So(types, ShouldResemble, ptypes)
 		})
 	})
 
@@ -555,9 +554,11 @@ func TestGetPopulationTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		input := GetAreasInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+		input := GetPopulationTypesInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetPopulationTypes(context.Background(), input)
 
@@ -574,9 +575,11 @@ func TestGetPopulationTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		input := GetAreasInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+		input := GetPopulationTypesInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetPopulationTypes(context.Background(), input)
 
@@ -598,9 +601,11 @@ func TestGetPopulationTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		input := GetAreasInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+		input := GetPopulationTypesInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetPopulationTypes(context.Background(), input)
 
@@ -617,9 +622,11 @@ func TestGetPopulationTypes(t *testing.T) {
 
 		client := newHealthClient(stubClient)
 
-		input := GetAreasInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+		input := GetPopulationTypesInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetPopulationTypes(context.Background(), input)
 
@@ -631,9 +638,11 @@ func TestGetPopulationTypes(t *testing.T) {
 	Convey("Given the request cannot be created", t, func() {
 		client := newHealthClient(newStubClient(nil, nil))
 
-		input := GetAreasInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+		input := GetPopulationTypesInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetPopulationTypes(nil, input)
 
@@ -646,7 +655,7 @@ func TestGetPopulationTypes(t *testing.T) {
 func TestGetAreaTypesParent(t *testing.T) {
 	const userAuthToken = "user"
 	const serviceAuthToken = "service"
-	const datasetId = "datasetId"
+	const populationType = "populationType"
 	const areaTypeId = "areaId"
 	Convey("Given a valid request", t, func() {
 		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
@@ -654,17 +663,19 @@ func TestGetAreaTypesParent(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		input := GetAreaTypeParentsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			DatasetID:        datasetId,
-			AreaTypeID:       areaTypeId,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType: populationType,
+			AreaTypeID:     areaTypeId,
 		}
 		_, _ = client.GetAreaTypeParents(context.Background(), input)
 
 		Convey("it should call the area types parens endpoint", func() {
 			calls := stubClient.DoCalls()
 			So(calls, ShouldNotBeEmpty)
-			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/datasetId/area-types/areaId/parents")
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/populationType/area-types/areaId/parents")
 		})
 	})
 
@@ -673,8 +684,10 @@ func TestGetAreaTypesParent(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreaTypeParentsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 
 		_, _ = client.GetAreaTypeParents(context.Background(), input)
@@ -689,15 +702,15 @@ func TestGetAreaTypesParent(t *testing.T) {
 
 	Convey("Given a valid areaTypes parents response payload", t, func() {
 		parents := GetAreaTypeParentsResponse{
-			PaginationResponse: cantabular.PaginationResponse{
-				PaginationParams: cantabular.PaginationParams{
+			PaginationResponse: PaginationResponse{
+				PaginationParams: PaginationParams{
 					Limit:  2,
 					Offset: 0,
 				},
 				Count:      2,
 				TotalCount: 6,
 			},
-			AreaTypes: []AreaTypes{{ID: "test", Label: "Test", TotalCount: 2}},
+			AreaTypes: []AreaType{{ID: "test", Label: "Test", TotalCount: 2}},
 		}
 
 		resp, err := json.Marshal(parents)
@@ -710,8 +723,10 @@ func TestGetAreaTypesParent(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreaTypeParentsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		res, err := client.GetAreaTypeParents(context.Background(), input)
 
@@ -727,8 +742,10 @@ func TestGetAreaTypesParent(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreaTypeParentsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetAreaTypeParents(context.Background(), input)
 
@@ -746,8 +763,10 @@ func TestGetAreaTypesParent(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreaTypeParentsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetAreaTypeParents(context.Background(), input)
 
@@ -770,8 +789,10 @@ func TestGetAreaTypesParent(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreaTypeParentsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetAreaTypeParents(context.Background(), input)
 
@@ -789,8 +810,10 @@ func TestGetAreaTypesParent(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreaTypeParentsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetAreaTypeParents(context.Background(), input)
 
@@ -803,8 +826,10 @@ func TestGetAreaTypesParent(t *testing.T) {
 		client := newHealthClient(newStubClient(nil, nil))
 
 		input := GetAreaTypeParentsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetAreaTypeParents(nil, input)
 
@@ -817,7 +842,7 @@ func TestGetAreaTypesParent(t *testing.T) {
 func TestGetParentAreaCount(t *testing.T) {
 	const userAuthToken = "user"
 	const serviceAuthToken = "service"
-	const datasetId = "datasetId"
+	const populationType = "populationType"
 	const areaTypeId = "areaId"
 	const parentAreaTypeId = "parentAreaTypeId"
 	areas := []string{"area1", "area2"}
@@ -827,9 +852,11 @@ func TestGetParentAreaCount(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		input := GetParentAreaCountInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			DatasetID:        datasetId,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType:   populationType,
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
@@ -839,7 +866,7 @@ func TestGetParentAreaCount(t *testing.T) {
 		Convey("it should call the parent areas count endpoint", func() {
 			calls := stubClient.DoCalls()
 			So(calls, ShouldNotBeEmpty)
-			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/datasetId/area-types/areaId/parents/parentAreaTypeId/areas-count?areas=area1%2Carea2")
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/populationType/area-types/areaId/parents/parentAreaTypeId/areas-count?areas=area1%2Carea2")
 		})
 	})
 
@@ -848,8 +875,10 @@ func TestGetParentAreaCount(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetParentAreaCountInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 
 		_, _ = client.GetParentAreaCount(context.Background(), input)
@@ -873,9 +902,11 @@ func TestGetParentAreaCount(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetParentAreaCountInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			DatasetID:        datasetId,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType:   populationType,
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
@@ -894,9 +925,11 @@ func TestGetParentAreaCount(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetParentAreaCountInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			DatasetID:        datasetId,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType:   populationType,
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
@@ -917,9 +950,11 @@ func TestGetParentAreaCount(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetParentAreaCountInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			DatasetID:        datasetId,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType:   populationType,
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
@@ -945,9 +980,11 @@ func TestGetParentAreaCount(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetParentAreaCountInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			DatasetID:        datasetId,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType:   populationType,
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
@@ -968,9 +1005,11 @@ func TestGetParentAreaCount(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetParentAreaCountInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			DatasetID:        datasetId,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType:   populationType,
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
@@ -986,9 +1025,11 @@ func TestGetParentAreaCount(t *testing.T) {
 		client := newHealthClient(newStubClient(nil, nil))
 
 		input := GetParentAreaCountInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			DatasetID:        datasetId,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType:   populationType,
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
@@ -1011,9 +1052,11 @@ func TestGetParentAreaCount(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetParentAreaCountInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			DatasetID:        datasetId,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType:   populationType,
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
@@ -1037,10 +1080,12 @@ func TestGetDimensions(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		input := GetDimensionsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
-			PopulationType:   populationType,
-			SearchString:     SearchString,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType: populationType,
+			SearchString:   SearchString,
 		}
 		_, _ = client.GetDimensions(context.Background(), input)
 
@@ -1057,8 +1102,10 @@ func TestGetDimensions(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreaTypeParentsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 
 		_, _ = client.GetAreaTypeParents(context.Background(), input)
@@ -1074,8 +1121,8 @@ func TestGetDimensions(t *testing.T) {
 	//
 	Convey("Given a valid get dimensions payload", t, func() {
 		dimensions := GetDimensionsResponse{
-			PaginationResponse: cantabular.PaginationResponse{
-				PaginationParams: cantabular.PaginationParams{
+			PaginationResponse: PaginationResponse{
+				PaginationParams: PaginationParams{
 					Limit:  2,
 					Offset: 0,
 				},
@@ -1105,8 +1152,10 @@ func TestGetDimensions(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetDimensionsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		res, err := client.GetDimensions(context.Background(), input)
 
@@ -1122,8 +1171,10 @@ func TestGetDimensions(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetDimensionsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetDimensions(context.Background(), input)
 
@@ -1141,8 +1192,10 @@ func TestGetDimensions(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetDimensionsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetDimensions(context.Background(), input)
 
@@ -1165,8 +1218,10 @@ func TestGetDimensions(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetDimensionsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetDimensions(context.Background(), input)
 
@@ -1184,8 +1239,10 @@ func TestGetDimensions(t *testing.T) {
 		client := newHealthClient(stubClient)
 
 		input := GetAreaTypeParentsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetAreaTypeParents(context.Background(), input)
 
@@ -1198,8 +1255,10 @@ func TestGetDimensions(t *testing.T) {
 		client := newHealthClient(newStubClient(nil, nil))
 
 		input := GetDimensionsInput{
-			UserAuthToken:    userAuthToken,
-			ServiceAuthToken: serviceAuthToken,
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
 		}
 		_, err := client.GetDimensions(nil, input)
 
