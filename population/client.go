@@ -81,14 +81,27 @@ func (c *Client) createGetRequest(ctx context.Context, userAuthToken, serviceAut
 
 func checkGetResponse(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK {
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read error response body: %w", err)
+		}
+
 		var errorResp ErrorResp
-		if err := json.NewDecoder(resp.Body).Decode(&errorResp); err == nil {
+		if err := json.Unmarshal(b, &errorResp); err != nil {
 			return dperrors.New(
-				fmt.Errorf("error response from Population Type API (%d): %w", resp.StatusCode, errorResp),
-				http.StatusInternalServerError,
-				log.Data{},
+				fmt.Errorf("failed to unmarshal response body: %w", err),
+				resp.StatusCode,
+				log.Data{
+					"response_body": string(b),
+				},
 			)
 		}
+
+		return dperrors.New(
+			fmt.Errorf("error response from Population Type API: %w", errorResp),
+			resp.StatusCode,
+			nil,
+		)
 	}
 
 	return nil

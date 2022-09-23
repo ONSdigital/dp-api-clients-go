@@ -136,30 +136,12 @@ func TestGetAreaTypes(t *testing.T) {
 		_, err := client.GetAreaTypes(context.Background(), input)
 
 		Convey("the error chain should contain the original Errors type", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
+			So(err, shouldBeDPError, http.StatusNotFound)
 
 			var respErr ErrorResp
 			ok := errors.As(err, &respErr)
 			So(ok, ShouldBeTrue)
 			So(respErr, ShouldResemble, ErrorResp{Errors: []string{"not found"}})
-		})
-	})
-
-	Convey("Given the population types API returns a status code other than 200/400", t, func() {
-		stubClient := newStubClient(&http.Response{
-			StatusCode: http.StatusBadRequest,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "area-types": [] }`))),
-		}, nil)
-
-		client := newHealthClient(stubClient)
-
-		input := GetAreaTypesInput{
-			PopulationType: "test",
-		}
-		_, err := client.GetAreaTypes(context.Background(), input)
-
-		Convey("it should return an internal error", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
 		})
 	})
 
@@ -337,33 +319,12 @@ func TestGetAreas(t *testing.T) {
 		_, err := client.GetAreas(context.Background(), input)
 
 		Convey("the error chain should contain the original Errors type", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
+			So(err, shouldBeDPError, http.StatusNotFound)
 
 			var respErr ErrorResp
 			ok := errors.As(err, &respErr)
 			So(ok, ShouldBeTrue)
 			So(respErr, ShouldResemble, ErrorResp{Errors: []string{"not found"}})
-		})
-	})
-
-	Convey("Given the dimensions API returns a status code other than 200/400", t, func() {
-		stubClient := newStubClient(&http.Response{
-			StatusCode: http.StatusBadRequest,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "areas": [] }`))),
-		}, nil)
-
-		client := newHealthClient(stubClient)
-
-		input := GetAreasInput{
-			AuthTokens:     AuthTokens{},
-			PopulationType: "testDataSet",
-			AreaTypeID:     "testAreaType",
-			Text:           "",
-		}
-		_, err := client.GetAreas(context.Background(), input)
-
-		Convey("it should return an internal error", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
 		})
 	})
 
@@ -459,7 +420,7 @@ func TestGetArea(t *testing.T) {
 		_, err := client.GetArea(context.Background(), input)
 
 		Convey("the error chain should contain the original Errors type", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
+			So(err, shouldBeDPError, http.StatusNotFound)
 
 			var respErr ErrorResp
 			ok := errors.As(err, &respErr)
@@ -616,33 +577,12 @@ func TestGetPopulationTypes(t *testing.T) {
 		_, err := client.GetPopulationTypes(context.Background(), input)
 
 		Convey("the error chain should contain the original Errors type", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
+			So(err, shouldBeDPError, http.StatusNotFound)
 
 			var respErr ErrorResp
 			ok := errors.As(err, &respErr)
 			So(ok, ShouldBeTrue)
 			So(respErr, ShouldResemble, ErrorResp{Errors: []string{"not found"}})
-		})
-	})
-
-	Convey("Given the population types API returns a status code other than 200/400", t, func() {
-		stubClient := newStubClient(&http.Response{
-			StatusCode: http.StatusBadRequest,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "areas": [] }`))),
-		}, nil)
-
-		client := newHealthClient(stubClient)
-
-		input := GetPopulationTypesInput{
-			AuthTokens: AuthTokens{
-				UserAuthToken:    userAuthToken,
-				ServiceAuthToken: serviceAuthToken,
-			},
-		}
-		_, err := client.GetPopulationTypes(context.Background(), input)
-
-		Convey("it should return an internal error", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
 		})
 	})
 
@@ -803,33 +743,12 @@ func TestGetAreaTypesParent(t *testing.T) {
 		_, err := client.GetAreaTypeParents(context.Background(), input)
 
 		Convey("the error chain should contain the original Errors type", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
+			So(err, shouldBeDPError, http.StatusNotFound)
 
 			var respErr ErrorResp
 			ok := errors.As(err, &respErr)
 			So(ok, ShouldBeTrue)
 			So(respErr, ShouldResemble, ErrorResp{Errors: []string{"not found"}})
-		})
-	})
-
-	Convey("Given the area types parents API returns a status code other than 200/400", t, func() {
-		stubClient := newStubClient(&http.Response{
-			StatusCode: http.StatusBadRequest,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "areas": [] }`))),
-		}, nil)
-
-		client := newHealthClient(stubClient)
-
-		input := GetAreaTypeParentsInput{
-			AuthTokens: AuthTokens{
-				UserAuthToken:    userAuthToken,
-				ServiceAuthToken: serviceAuthToken,
-			},
-		}
-		_, err := client.GetAreaTypeParents(context.Background(), input)
-
-		Convey("it should return an internal error", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
 		})
 	})
 
@@ -994,37 +913,12 @@ func TestGetParentAreaCount(t *testing.T) {
 		_, err := client.GetParentAreaCount(context.Background(), input)
 
 		Convey("the error chain should contain the original Errors type", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
+			So(err, shouldBeDPError, http.StatusNotFound)
 
 			var respErr ErrorResp
 			ok := errors.As(err, &respErr)
 			So(ok, ShouldBeTrue)
 			So(respErr, ShouldResemble, ErrorResp{Errors: []string{"not found"}})
-		})
-	})
-
-	Convey("Given the parent areas count API returns a status code other than 200/400", t, func() {
-		stubClient := newStubClient(&http.Response{
-			StatusCode: http.StatusBadRequest,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "areas": [] }`))),
-		}, nil)
-
-		client := newHealthClient(stubClient)
-
-		input := GetParentAreaCountInput{
-			AuthTokens: AuthTokens{
-				UserAuthToken:    userAuthToken,
-				ServiceAuthToken: serviceAuthToken,
-			},
-			PopulationType:   populationType,
-			AreaTypeID:       areaTypeId,
-			ParentAreaTypeID: parentAreaTypeId,
-			Areas:            areas,
-		}
-		_, err := client.GetParentAreaCount(context.Background(), input)
-
-		Convey("it should return an internal error", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
 		})
 	})
 
@@ -1233,33 +1127,12 @@ func TestGetDimensions(t *testing.T) {
 		_, err := client.GetDimensions(context.Background(), input)
 
 		Convey("the error chain should contain the original Errors type", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
+			So(err, shouldBeDPError, http.StatusNotFound)
 
 			var respErr ErrorResp
 			ok := errors.As(err, &respErr)
 			So(ok, ShouldBeTrue)
 			So(respErr, ShouldResemble, ErrorResp{Errors: []string{"not found"}})
-		})
-	})
-
-	Convey("Given the get dimensions API returns a status code other than 200/400", t, func() {
-		stubClient := newStubClient(&http.Response{
-			StatusCode: http.StatusBadRequest,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "areas": [] }`))),
-		}, nil)
-
-		client := newHealthClient(stubClient)
-
-		input := GetDimensionsInput{
-			AuthTokens: AuthTokens{
-				UserAuthToken:    userAuthToken,
-				ServiceAuthToken: serviceAuthToken,
-			},
-		}
-		_, err := client.GetDimensions(context.Background(), input)
-
-		Convey("it should return an internal error", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
 		})
 	})
 
@@ -1412,33 +1285,13 @@ func TestGetCategorisations(t *testing.T) {
 		_, err := client.GetCategorisations(context.Background(), input)
 
 		Convey("the error chain should contain the original Errors type", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
+			So(err, shouldBeDPError, http.StatusNotFound)
 
 			var respErr ErrorResp
 			ok := errors.As(err, &respErr)
+			t.Log("DEBUG", err)
 			So(ok, ShouldBeTrue)
 			So(respErr, ShouldResemble, ErrorResp{Errors: []string{"not found"}})
-		})
-	})
-
-	Convey("Given the get population-types API returns a status code other than 200/400", t, func() {
-		stubClient := newStubClient(&http.Response{
-			StatusCode: http.StatusBadRequest,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "areas": [] }`))),
-		}, nil)
-
-		client := newHealthClient(stubClient)
-
-		input := GetCategorisationsInput{
-			AuthTokens: AuthTokens{
-				UserAuthToken:    userAuthToken,
-				ServiceAuthToken: serviceAuthToken,
-			},
-		}
-		_, err := client.GetCategorisations(context.Background(), input)
-
-		Convey("it should return an internal error", func() {
-			So(err, shouldBeDPError, http.StatusInternalServerError)
 		})
 	})
 
