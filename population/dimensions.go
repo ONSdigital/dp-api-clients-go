@@ -115,7 +115,7 @@ func (c *Client) GetCategorisations(ctx context.Context, input GetCategorisation
 		"dimension":       input.Dimension,
 	}
 
-	urlPath := fmt.Sprintf("/population-types/%s/dimensions/categorisations", input.PopulationType)
+	urlPath := fmt.Sprintf("/population-types/%s/dimensions/%s/categorisations", input.PopulationType, input.Dimension)
 	urlValues := url.Values{
 		"limit":  []string{strconv.Itoa(input.Limit)},
 		"offset": []string{strconv.Itoa(input.Offset)},
