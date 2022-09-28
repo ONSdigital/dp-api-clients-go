@@ -32,8 +32,8 @@ type DatasetDetails struct {
 	UnitOfMeasure     string            `json:"unit_of_measure,omitempty"`
 	URI               string            `json:"uri,omitempty"`
 	IsBasedOn         *IsBasedOn        `json:"is_based_on,omitempty"`
-	CanonicalTopic    *TopicTagObject   `json:"canonical_topic,omitempty"`
-	SubTopics         *[]TopicTagObject `json:"sub_topics,omitempty"`
+	CanonicalTopic    *Topic            `json:"canonical_topic,omitempty"`
+	SubTopics         []Topic           `json:"sub_topics,omitempty"`
 }
 
 // Dataset represents a dataset resource
@@ -199,7 +199,7 @@ type Metadata struct {
 	DatasetLinks Links `json:"dataset_links,omitempty"`
 }
 
-type TopicTagObject struct {
+type Topic struct {
 	ID    string `json:"id,omitempty"`
 	Title string `json:"title,omitempty"`
 }
@@ -507,7 +507,7 @@ func (m Metadata) ToString() string {
 		b.WriteString(fmt.Sprintf("Canonical Topic: %s\n", *m.CanonicalTopic))
 	}
 	if m.SubTopics != nil {
-		b.WriteString(fmt.Sprintf("SubTopics: %s\n", *m.SubTopics))
+		b.WriteString(fmt.Sprintf("SubTopics: %s\n", m.SubTopics))
 	}
 	return b.String()
 }

@@ -86,11 +86,11 @@ func setupMetadata() Metadata {
 					Title: "related dataset title",
 				},
 			},
-			CanonicalTopic: &TopicTagObject{
+			CanonicalTopic: &Topic{
 				ID:    "canonicalTopicID",
 				Title: "Canonical Topic title",
 			},
-			SubTopics: &[]TopicTagObject{{
+			SubTopics: []Topic{{
 				ID:    "secondaryTopic1ID",
 				Title: "Secondary topic 1 title",
 			}, {
