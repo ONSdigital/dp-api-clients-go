@@ -90,14 +90,13 @@ func setupMetadata() Metadata {
 				ID:    "canonicalTopicID",
 				Title: "Canonical Topic title",
 			},
-			SubTopics:  &[]TopicTagObject{{
+			SubTopics: &[]TopicTagObject{{
 				ID:    "secondaryTopic1ID",
 				Title: "Secondary topic 1 title",
 			}, {
 				ID:    "secondaryTopic2ID",
 				Title: "Secondary topic 2 title",
 			}},
-
 		},
 	}
 
