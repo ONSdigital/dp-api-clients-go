@@ -213,9 +213,6 @@ func (c *Client) MetadataTableQuery(ctx context.Context, req MetadataTableQueryR
 // MetadataDatasetQuery
 func (c *Client) MetadataDatasetQuery(ctx context.Context, req MetadataDatasetQueryRequest) (*MetadataDatasetQuery, error) {
 
-	//c.gqlClient = graphql.NewClient("http://localhost:2112/graphql", &http.Client{})
-	//q.Q(c)
-
 	if c.gqlClient == nil {
 		return nil, dperrors.New(
 			errors.New("cantabular metadata client not configured"),
