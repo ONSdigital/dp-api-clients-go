@@ -32,6 +32,8 @@ type DatasetDetails struct {
 	UnitOfMeasure     string            `json:"unit_of_measure,omitempty"`
 	URI               string            `json:"uri,omitempty"`
 	IsBasedOn         *IsBasedOn        `json:"is_based_on,omitempty"`
+	CanonicalTopic    *Topic            `json:"canonical_topic,omitempty"`
+	SubTopics         []Topic           `json:"sub_topics,omitempty"`
 }
 
 // Dataset represents a dataset resource
@@ -195,6 +197,11 @@ type Metadata struct {
 	Version
 	DatasetDetails
 	DatasetLinks Links `json:"dataset_links,omitempty"`
+}
+
+type Topic struct {
+	ID    string `json:"id,omitempty"`
+	Title string `json:"title,omitempty"`
 }
 
 // UnmarshalJSON is used to disambiguate the 'links' attribute of the incoming Metadata struct. As currently structured
@@ -496,7 +503,12 @@ func (m Metadata) ToString() string {
 	if m.RelatedDatasets != nil {
 		b.WriteString(fmt.Sprintf("Related Links: %s\n", *m.RelatedDatasets))
 	}
-
+	if m.CanonicalTopic != nil {
+		b.WriteString(fmt.Sprintf("Canonical Topic: %s\n", *m.CanonicalTopic))
+	}
+	if len(m.SubTopics) > 0 {
+		b.WriteString(fmt.Sprintf("SubTopics: %s\n", m.SubTopics))
+	}
 	return b.String()
 }
 

@@ -86,6 +86,17 @@ func setupMetadata() Metadata {
 					Title: "related dataset title",
 				},
 			},
+			CanonicalTopic: &Topic{
+				ID:    "canonicalTopicID",
+				Title: "Canonical Topic title",
+			},
+			SubTopics: []Topic{{
+				ID:    "secondaryTopic1ID",
+				Title: "Secondary topic 1 title",
+			}, {
+				ID:    "secondaryTopic2ID",
+				Title: "Secondary topic 2 title",
+			}},
 		},
 	}
 
@@ -128,7 +139,9 @@ func expectedData(isEmpty bool) string {
 		"Methodologies: [{methodology description methodology url methodology title}]\n" +
 		"National Statistic: true\n" +
 		"Publications: [{publication description publication url publication title}]\n" +
-		"Related Links: [{related dataset url related dataset title}]\n"
+		"Related Links: [{related dataset url related dataset title}]\n" +
+		"Canonical Topic: {canonicalTopicID Canonical Topic title}\n" +
+		"SubTopics: [{secondaryTopic1ID Secondary topic 1 title} {secondaryTopic2ID Secondary topic 2 title}]\n"
 }
 
 // writeToFile, helpful function to write expected and actual outputs for syntax comparison
