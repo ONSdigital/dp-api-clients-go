@@ -203,3 +203,12 @@ type GetParentAreaCountResponse struct {
 type GetParentAreaCountResult struct {
 	Dimension Dimension
 }
+
+type GetBaseVariableRequest struct {
+	Dataset  string
+	Variable string
+}
+
+type GetBaseVariableResponse struct {
+	Dataset gql.Dataset `json:"dataset"`
+}

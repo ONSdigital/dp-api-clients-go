@@ -14,6 +14,41 @@ import (
 	dphttp "github.com/ONSdigital/dp-net/http"
 )
 
+func TestGetBaseVariable(t *testing.T) {
+	Convey("Given a correct getBaseVariables response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespGetBaseVariables, http.StatusOK)
+
+		Convey("When GetAllDimensions is called", func() {
+			resp, err := cantabularClient.GetBaseVariable(testCtx, cantabular.GetBaseVariableRequest{
+				Dataset:  "dummy_data_households",
+				Variable: "accommodation_type_5a",
+			})
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryBaseVariable,
+					cantabular.QueryData{
+						Dataset:   "dummy_data_households",
+						Variables: []string{"accommodation_type_5a"},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedBaseVariable)
+			})
+		})
+	})
+}
+
 func TestGetAllDimensionsHappy(t *testing.T) {
 	Convey("Given a correct getAllDimensions response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
@@ -1177,6 +1212,35 @@ func newMockedClient(response string, statusCode int) (*dphttp.ClienterMock, *ca
 	return mockHttpClient, cantabularClient
 }
 
+var mockRespGetBaseVariables = `
+{
+  "data": {
+    "dataset": {
+      "variables": {
+	"edges": [
+	  {
+	    "node": {
+	      "mapFrom": [
+		{
+		  "edges": [
+		    {
+		      "node": {
+			"label": "Accommodation type (8 categories)",
+			"name": "accommodation_type"
+		      }
+		    }
+		  ]
+		}
+	      ]
+	    }
+	  }
+	]
+      }
+    }
+  }
+}
+`
+
 // mockRespBodyGetAllDimensions is a successful 'get all dimensions' query respose that is
 // returned from a mocked client for testing
 var mockRespBodyGetAllDimensions = `
@@ -1261,6 +1325,32 @@ var mockRespBodyGetAllDimensions = `
 		}
 	}
 }`
+
+var expectedBaseVariable = cantabular.GetBaseVariableResponse{
+	Dataset: gql.Dataset{
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Categories: gql.Categories{TotalCount: 0},
+						MapFrom: []gql.Variables{
+							{
+								Edges: []gql.Edge{
+									{
+										Node: gql.Node{
+											Name:  "accommodation_type",
+											Label: "Accommodation type (8 categories)",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+}
 
 // expectedDimensions is the expected response struct generated from a successful 'get dimensions' query for testing
 var expectedDimensions = cantabular.GetDimensionsResponse{

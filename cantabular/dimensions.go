@@ -14,6 +14,33 @@ import (
 // GetGeographyBatchProcessor is the type corresponding to a batch processing function for Geography dimensions
 type GetGeographyBatchProcessor func(response *GetGeographyDimensionsResponse) (abort bool, err error)
 
+// (c *Client) GetBaseVariable gets a base variable for a provided catergorisation
+func (c *Client) GetBaseVariable(ctx context.Context, req GetBaseVariableRequest) (*GetBaseVariableResponse, error) {
+	resp := &struct {
+		Data   GetBaseVariableResponse `json:"data"`
+		Errors []gql.Error             `json:"errors,omitempty"`
+	}{}
+
+	data := QueryData{
+		Dataset:   req.Dataset,
+		Variables: []string{req.Variable},
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryBaseVariable, data, resp); err != nil {
+		return nil, err
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			resp.Errors[0].StatusCode(),
+			log.Data{"errors": resp.Errors},
+		)
+	}
+
+	return &resp.Data, nil
+}
+
 // GetAllDimensions performs a graphQL query to obtain all the dimensions for the provided cantabular dataset.
 // The whole response is loaded to memory.
 func (c *Client) GetAllDimensions(ctx context.Context, dataset string) (*GetDimensionsResponse, error) {

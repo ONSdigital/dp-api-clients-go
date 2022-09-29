@@ -16,6 +16,27 @@ const (
 	defaultLimit = 20
 )
 
+const QueryBaseVariable = `
+query ($dataset: String!, $variables: [String!]!) {
+  dataset(name: $dataset) {
+    variables(names: $variables) {
+      edges {
+	node {
+	  mapFrom {
+	    edges {
+	      node {
+		name
+		label
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  }
+}
+`
+
 // QueryStaticDataset is the graphQL query to obtain static dataset counts (variables with categories and counts)
 const QueryStaticDataset = `
 query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
