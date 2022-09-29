@@ -506,7 +506,7 @@ func (m Metadata) ToString() string {
 	if m.CanonicalTopic != nil {
 		b.WriteString(fmt.Sprintf("Canonical Topic: %s\n", *m.CanonicalTopic))
 	}
-	if m.SubTopics != nil {
+	if len(m.SubTopics) > 0 {
 		b.WriteString(fmt.Sprintf("SubTopics: %s\n", m.SubTopics))
 	}
 	return b.String()
