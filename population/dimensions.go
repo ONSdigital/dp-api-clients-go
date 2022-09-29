@@ -46,6 +46,17 @@ type GetCategorisationsResponse struct {
 	Items []Dimension `json:"items"`
 }
 
+type GetBaseVariableInput struct {
+	AuthTokens
+	PopulationType string
+	Variable       string
+}
+
+type GetBaseVariableResponse struct {
+	Name  string
+	Lable string
+}
+
 func (c *Client) GetDimensions(ctx context.Context, input GetDimensionsInput) (GetDimensionsResponse, error) {
 	logData := log.Data{
 		"method":          http.MethodGet,
@@ -155,6 +166,57 @@ func (c *Client) GetCategorisations(ctx context.Context, input GetCategorisation
 	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
 		return GetCategorisationsResponse{}, dperrors.New(
 			errors.Wrap(err, "unable to deserialize categorisations response"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	return resp, nil
+}
+
+func (c *Client) GetBaseVariable(ctx context.Context, input GetBaseVariableInput) (GetBaseVariableResponse, error) {
+	logData := log.Data{
+		"method":          http.MethodGet,
+		"population_type": input.PopulationType,
+		"variable":        input.Variable,
+	}
+
+	urlPath := fmt.Sprintf("/population-types/%s/dimensions/%s/base", input.PopulationType, input.Variable)
+
+	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, nil)
+	if err != nil {
+		return GetBaseVariableResponse{}, dperrors.New(
+			err,
+			dperrors.StatusCode(err),
+			logData,
+		)
+	}
+
+	clientlog.Do(ctx, "getting base variable", service, req.URL.String(), logData)
+
+	res, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return GetBaseVariableResponse{}, dperrors.New(
+			errors.Wrap(err, "failed to get response from Population types API"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}()
+
+	if err := checkGetResponse(res); err != nil {
+		return GetBaseVariableResponse{}, err
+	}
+
+	var resp GetBaseVariableResponse
+	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
+		return GetBaseVariableResponse{}, dperrors.New(
+			errors.Wrap(err, "unable to deserialize base variable response"),
 			http.StatusInternalServerError,
 			logData,
 		)
