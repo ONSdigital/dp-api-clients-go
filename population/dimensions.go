@@ -53,8 +53,8 @@ type GetBaseVariableInput struct {
 }
 
 type GetBaseVariableResponse struct {
-	Name  string
-	Lable string
+	Name  string `json:"name"`
+	Label string `json:"label"`
 }
 
 func (c *Client) GetDimensions(ctx context.Context, input GetDimensionsInput) (GetDimensionsResponse, error) {
