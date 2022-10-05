@@ -49,7 +49,7 @@ type GetParentAreaCountInput struct {
 // GetAreasResponse is the response object for GET /areas
 type GetAreasResponse struct {
 	PaginationResponse
-	Areas []Area `json:"areas"`
+	Areas []Area `json:"items"`
 }
 
 // GetAreasResponse is the response object for GET /areas
