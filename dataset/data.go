@@ -33,7 +33,7 @@ type DatasetDetails struct {
 	URI               string            `json:"uri,omitempty"`
 	IsBasedOn         *IsBasedOn        `json:"is_based_on,omitempty"`
 	CanonicalTopic    *Topic            `json:"canonical_topic,omitempty"`
-	SubTopics         *[]Topic           `json:"sub_topics,omitempty"`
+	SubTopics         *[]Topic          `json:"sub_topics,omitempty"`
 }
 
 // Dataset represents a dataset resource
@@ -507,7 +507,7 @@ func (m Metadata) ToString() string {
 		b.WriteString(fmt.Sprintf("Canonical Topic: %s\n", *m.CanonicalTopic))
 	}
 	if m.SubTopics != nil {
-		subTopics:=*m.SubTopics
+		subTopics := *m.SubTopics
 		if len(subTopics) > 0 {
 			b.WriteString(fmt.Sprintf("SubTopics: %s\n", subTopics))
 		}
