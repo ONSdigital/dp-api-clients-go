@@ -37,13 +37,13 @@ type GetAreaTypeParentsInput struct {
 // GetAreaTypesResponse is the response object for GET /area-types
 type GetAreaTypesResponse struct {
 	PaginationResponse
-	AreaTypes []AreaType `json:"area_types"`
+	AreaTypes []AreaType `json:"items"`
 }
 
 // GetAreaTypeParentsResponse is the response object for GET /areas
 type GetAreaTypeParentsResponse struct {
 	PaginationResponse
-	AreaTypes []AreaType `json:"area_types"`
+	AreaTypes []AreaType `json:"items"`
 }
 
 // GetPopulationAreaTypes retrieves the Cantabular area-types associated with a dataset
