@@ -35,6 +35,7 @@ type DatasetDetails struct {
 	CanonicalTopic    *Topic            `json:"canonical_topic,omitempty"`
 	SubTopics         *[]Topic          `json:"sub_topics,omitempty"`
 	VersionsList      VersionsList      `json:"versions_list,omitempty"`
+	Survey            string            `json:"survey,omitempty"`
 }
 
 // Dataset represents a dataset resource
@@ -513,6 +514,7 @@ func (m Metadata) ToString() string {
 			b.WriteString(fmt.Sprintf("SubTopics: %s\n", subTopics))
 		}
 	}
+	b.WriteString(fmt.Sprintf("Survey: %s\n", m.Survey))
 	return b.String()
 }
 
