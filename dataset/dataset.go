@@ -362,7 +362,9 @@ func (c *Client) PutDataset(ctx context.Context, userAuthToken, serviceAuthToken
 
 	clientlog.Do(ctx, "updating dataset", service, uri)
 
+	fmt.Println("putDataset DatasetDetails", d)
 	payload, err := json.Marshal(d)
+	fmt.Println("putDataset payload", payload)
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to marshall dataset")
 	}
