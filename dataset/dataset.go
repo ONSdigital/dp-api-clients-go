@@ -162,9 +162,7 @@ func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, colle
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -203,9 +201,7 @@ func (c *Client) GetDatasetCurrentAndNext(ctx context.Context, userAuthToken, se
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -232,9 +228,7 @@ func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken,
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -283,9 +277,7 @@ func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToke
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -367,9 +359,7 @@ func (c *Client) PutDataset(ctx context.Context, userAuthToken, serviceAuthToken
 	if err != nil {
 		return errors.Wrap(err, "http client returned error while attempting to make request")
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return NewDatasetAPIResponse(resp, uri)
@@ -385,9 +375,7 @@ func (c *Client) GetEdition(ctx context.Context, userAuthToken, serviceAuthToken
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -423,9 +411,7 @@ func (c *Client) GetFullEditionsDetails(ctx context.Context, userAuthToken, serv
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -453,9 +439,7 @@ func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToke
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -507,9 +491,7 @@ func (c *Client) GetVersions(ctx context.Context, userAuthToken, serviceAuthToke
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -591,9 +573,7 @@ func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -628,9 +608,7 @@ func (c *Client) GetInstanceBytes(ctx context.Context, userAuthToken, serviceAut
 	if err != nil {
 		return nil, "", err
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -664,9 +642,7 @@ func (c *Client) PostInstance(ctx context.Context, serviceAuthToken string, newI
 	if err != nil {
 		return nil, "", err
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
 		return nil, "", NewDatasetAPIResponse(resp, uri)
@@ -704,9 +680,7 @@ func (c *Client) GetInstanceDimensionsBytes(ctx context.Context, serviceAuthToke
 	if err != nil {
 		return nil, "", err
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -734,9 +708,7 @@ func (c *Client) GetInstances(ctx context.Context, userAuthToken, serviceAuthTok
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -815,9 +787,7 @@ func (c *Client) PutInstance(ctx context.Context, userAuthToken, serviceAuthToke
 	if err != nil {
 		return "", errors.Wrap(err, "http client returned error while attempting to make request")
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -844,9 +814,7 @@ func (c *Client) PutInstanceState(ctx context.Context, serviceAuthToken, instanc
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -873,9 +841,7 @@ func (c *Client) PutInstanceData(ctx context.Context, serviceAuthToken, instance
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -902,9 +868,7 @@ func (c *Client) PutInstanceImportTasks(ctx context.Context, serviceAuthToken, i
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -926,9 +890,7 @@ func (c *Client) UpdateInstanceWithNewInserts(ctx context.Context, serviceAuthTo
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -1037,9 +999,7 @@ func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, i
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -1099,9 +1059,7 @@ func (c *Client) PatchInstanceDimensions(ctx context.Context, serviceAuthToken, 
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -1147,9 +1105,7 @@ func (c *Client) PatchInstanceDimensionOption(ctx context.Context, serviceAuthTo
 	if err != nil {
 		return "", errors.Wrap(err, "http client returned error while attempting to make request")
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -1176,9 +1132,7 @@ func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken
 	if err != nil {
 		return errors.Wrap(err, "http client returned error while attempting to make request")
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return errors.Errorf("incorrect http status, expected: 200, actual: %d, uri: %s", resp.StatusCode, uri)
@@ -1199,9 +1153,7 @@ func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceA
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -1258,9 +1210,7 @@ func (c *Client) GetVersionDimensions(ctx context.Context, userAuthToken, servic
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -1300,9 +1250,7 @@ func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = closeResponseBody(ctx, resp)
-	}()
+	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -1390,9 +1338,7 @@ func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatase
 			e.body = "Client failed to read DatasetAPI body"
 			return
 		}
-		defer func() {
-			err = closeResponseBody(nil, resp)
-		}()
+		defer closeResponseBody(nil, resp)
 
 		e.body = string(b)
 	}
@@ -1495,12 +1441,14 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	return c.hcCli.Client.Do(ctx, req)
 }
 
-// closeResponseBody closes the response body and logs an error if unsuccessful
-func closeResponseBody(ctx context.Context, resp *http.Response) error {
-	if resp.Body != nil {
-		if err := resp.Body.Close(); err != nil {
-			return err
-		}
+// closeResponseBody closes the response body
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp != nil && resp.Body != nil {
+		// attempting to close the response body, not checking error
+		// as we do not want to log this out in client and cannot return
+		// error as we don't want to override other errors seen by the client
+		// TODO refactor client to return this error when this migrates
+		// back into the api sdk package
+		resp.Body.Close()
 	}
-	return nil
 }
