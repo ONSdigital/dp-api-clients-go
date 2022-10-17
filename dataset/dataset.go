@@ -14,12 +14,10 @@ import (
 	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
-	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
-	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/pkg/errors"
 )
 
@@ -160,13 +158,13 @@ func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m DatasetDetails, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s", c.hcCli.URL, datasetID)
 
-	clientlog.Do(ctx, "retrieving dataset", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -201,13 +199,13 @@ func (c *Client) Get(ctx context.Context, userAuthToken, serviceAuthToken, colle
 func (c *Client) GetDatasetCurrentAndNext(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m Dataset, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s", c.hcCli.URL, datasetID)
 
-	clientlog.Do(ctx, "retrieving dataset", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -230,13 +228,13 @@ func (c *Client) GetDatasetCurrentAndNext(ctx context.Context, userAuthToken, se
 func (c *Client) GetByPath(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, path string) (m DatasetDetails, err error) {
 	uri := fmt.Sprintf("%s/%s", c.hcCli.URL, strings.Trim(path, "/"))
 
-	clientlog.Do(ctx, "retrieving data from dataset API", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -281,13 +279,13 @@ func (c *Client) GetDatasets(ctx context.Context, userAuthToken, serviceAuthToke
 		}
 	}
 
-	clientlog.Do(ctx, "retrieving datasets", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -360,8 +358,6 @@ func (c *Client) GetDatasetsBatchProcess(ctx context.Context, userAuthToken, ser
 func (c *Client) PutDataset(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string, d DatasetDetails) error {
 	uri := fmt.Sprintf("%s/datasets/%s", c.hcCli.URL, datasetID)
 
-	clientlog.Do(ctx, "updating dataset", service, uri)
-
 	payload, err := json.Marshal(d)
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to marshall dataset")
@@ -371,7 +367,9 @@ func (c *Client) PutDataset(ctx context.Context, userAuthToken, serviceAuthToken
 	if err != nil {
 		return errors.Wrap(err, "http client returned error while attempting to make request")
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return NewDatasetAPIResponse(resp, uri)
@@ -383,13 +381,13 @@ func (c *Client) PutDataset(ctx context.Context, userAuthToken, serviceAuthToken
 func (c *Client) GetEdition(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition string) (m Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s", c.hcCli.URL, datasetID, edition)
 
-	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -421,13 +419,13 @@ func (c *Client) GetEdition(ctx context.Context, userAuthToken, serviceAuthToken
 func (c *Client) GetFullEditionsDetails(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m []EditionsDetails, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions", c.hcCli.URL, datasetID)
 
-	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -451,13 +449,13 @@ func (c *Client) GetFullEditionsDetails(ctx context.Context, userAuthToken, serv
 func (c *Client) GetEditions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID string) (m []Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions", c.hcCli.URL, datasetID)
 
-	clientlog.Do(ctx, "retrieving dataset editions", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -505,13 +503,13 @@ func (c *Client) GetVersions(ctx context.Context, userAuthToken, serviceAuthToke
 		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
 	}
 
-	clientlog.Do(ctx, "retrieving dataset versions", service, uri)
-
 	resp, err := c.doGetWithAuthHeadersAndWithDownloadToken(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -589,13 +587,13 @@ func (c *Client) GetVersionsBatchProcess(ctx context.Context, userAuthToken, ser
 func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (m Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, datasetID, edition, version)
 
-	clientlog.Do(ctx, "retrieving dataset version", service, uri)
-
 	resp, err := c.doGetWithAuthHeadersAndWithDownloadToken(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -626,13 +624,13 @@ func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToke
 func (c *Client) GetInstanceBytes(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID, ifMatch string) (b []byte, eTag string, err error) {
 	uri := fmt.Sprintf("%s/instances/%s", c.hcCli.URL, instanceID)
 
-	clientlog.Do(ctx, "retrieving dataset version", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, ifMatch)
 	if err != nil {
 		return nil, "", err
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -666,7 +664,9 @@ func (c *Client) PostInstance(ctx context.Context, serviceAuthToken string, newI
 	if err != nil {
 		return nil, "", err
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusCreated {
 		return nil, "", NewDatasetAPIResponse(resp, uri)
@@ -700,13 +700,13 @@ func (c *Client) GetInstanceDimensionsBytes(ctx context.Context, serviceAuthToke
 		uri = fmt.Sprintf("%s?offset=%d&limit=%d", uri, q.Offset, q.Limit)
 	}
 
-	clientlog.Do(ctx, "retrieving instance dimensions", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, nil, ifMatch)
 	if err != nil {
 		return nil, "", err
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -730,13 +730,13 @@ func (c *Client) GetInstanceDimensionsBytes(ctx context.Context, serviceAuthToke
 func (c *Client) GetInstances(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, vars url.Values) (m Instances, err error) {
 	uri := fmt.Sprintf("%s/instances", c.hcCli.URL)
 
-	clientlog.Do(ctx, "retrieving dataset version", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, vars, "")
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -806,8 +806,6 @@ func (c *Client) GetInstancesBatchProcess(ctx context.Context, userAuthToken, se
 func (c *Client) PutInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID string, i UpdateInstance, ifMatch string) (eTag string, err error) {
 	uri := fmt.Sprintf("%s/instances/%s", c.hcCli.URL, instanceID)
 
-	clientlog.Do(ctx, "updating dataset version", service, uri)
-
 	payload, err := json.Marshal(i)
 	if err != nil {
 		return "", errors.Wrap(err, "error while attempting to marshall instance")
@@ -817,7 +815,9 @@ func (c *Client) PutInstance(ctx context.Context, userAuthToken, serviceAuthToke
 	if err != nil {
 		return "", errors.Wrap(err, "http client returned error while attempting to make request")
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -840,13 +840,13 @@ func (c *Client) PutInstanceState(ctx context.Context, serviceAuthToken, instanc
 
 	uri := fmt.Sprintf("%s/instances/%s", c.hcCli.URL, instanceID)
 
-	clientlog.Do(ctx, "putting state to instance", service, uri)
-
 	resp, err := c.doPutWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, payload, ifMatch)
 	if err != nil {
 		return "", err
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -869,13 +869,13 @@ func (c *Client) PutInstanceData(ctx context.Context, serviceAuthToken, instance
 
 	uri := fmt.Sprintf("%s/instances/%s", c.hcCli.URL, instanceID)
 
-	clientlog.Do(ctx, "putting data to instance", service, uri)
-
 	resp, err := c.doPutWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, payload, ifMatch)
 	if err != nil {
 		return "", err
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -898,13 +898,13 @@ func (c *Client) PutInstanceImportTasks(ctx context.Context, serviceAuthToken, i
 
 	uri := fmt.Sprintf("%s/instances/%s/import_tasks", c.hcCli.URL, instanceID)
 
-	clientlog.Do(ctx, "updating instance import_tasks", service, uri)
-
 	resp, err := c.doPutWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, payload, ifMatch)
 	if err != nil {
 		return "", err
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -922,13 +922,13 @@ func (c *Client) PutInstanceImportTasks(ctx context.Context, serviceAuthToken, i
 func (c *Client) UpdateInstanceWithNewInserts(ctx context.Context, serviceAuthToken, instanceID string, observationsInserted int32, ifMatch string) (eTag string, err error) {
 	uri := fmt.Sprintf("%s/instances/%s/inserted_observations/%d", c.hcCli.URL, instanceID, observationsInserted)
 
-	clientlog.Do(ctx, "updating instance inserted observations", service, uri)
-
 	resp, err := c.doPutWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, nil, ifMatch)
 	if err != nil {
 		return "", err
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -1033,13 +1033,13 @@ func (c *Client) PostInstanceDimensions(ctx context.Context, serviceAuthToken, i
 
 	uri := fmt.Sprintf("%s/instances/%s/dimensions", c.hcCli.URL, instanceID)
 
-	clientlog.Do(ctx, "posting options to instance dimensions", service, uri)
-
 	resp, err := c.doPostWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, payload, ifMatch)
 	if err != nil {
 		return "", err
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -1059,7 +1059,6 @@ func (c *Client) PatchInstanceDimensions(ctx context.Context, serviceAuthToken, 
 
 	// if nil or empty slices are provided, there is noting to update
 	if len(upserts) == 0 && len(updates) == 0 {
-		log.Info(ctx, "skipping patch call because no update was provided", log.Data{"uri": uri})
 		return ifMatch, nil
 	}
 
@@ -1096,13 +1095,13 @@ func (c *Client) PatchInstanceDimensions(ctx context.Context, serviceAuthToken, 
 		}
 	}
 
-	clientlog.Do(ctx, "patching (upserting) dimension options to instance", service, uri)
-
 	resp, err := c.doPatchWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, patchBody, ifMatch)
 	if err != nil {
 		return "", err
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -1140,18 +1139,17 @@ func (c *Client) PatchInstanceDimensionOption(ctx context.Context, serviceAuthTo
 	uri := fmt.Sprintf("%s/instances/%s/dimensions/%s/options/%s", c.hcCli.URL, instanceID, dimensionID, optionID)
 
 	if nodeID == "" && order == nil {
-		log.Info(ctx, "skipping patch call because no update was provided", log.Data{"uri": uri})
 		return ifMatch, nil
 	}
 	patchBody := createInstanceDimensionOptionPatch(nodeID, order)
-
-	clientlog.Do(ctx, "updating instance dimension option node_id and/or order", service, uri, log.Data{"patch_body": patchBody})
 
 	resp, err := c.doPatchWithAuthHeaders(ctx, "", serviceAuthToken, "", uri, patchBody, ifMatch)
 	if err != nil {
 		return "", errors.Wrap(err, "http client returned error while attempting to make request")
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", NewDatasetAPIResponse(resp, uri)
@@ -1169,8 +1167,6 @@ func (c *Client) PatchInstanceDimensionOption(ctx context.Context, serviceAuthTo
 func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version string, v Version) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, datasetID, edition, version)
 
-	clientlog.Do(ctx, "updating version", service, uri)
-
 	payload, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "error while attempting to marshall version")
@@ -1180,7 +1176,9 @@ func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken
 	if err != nil {
 		return errors.Wrap(err, "http client returned error while attempting to make request")
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return errors.Errorf("incorrect http status, expected: 200, actual: %d, uri: %s", resp.StatusCode, uri)
@@ -1197,13 +1195,13 @@ func (c *Client) GetMetadataURL(id, edition, version string) string {
 func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m Metadata, err error) {
 	uri := c.GetMetadataURL(id, edition, version)
 
-	clientlog.Do(ctx, "retrieving dataset version metadata", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -1256,13 +1254,13 @@ func (c *Client) GetVersionMetadataSelection(ctx context.Context, req GetVersion
 func (c *Client) GetVersionDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m VersionDimensions, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/dimensions", c.hcCli.URL, id, edition, version)
 
-	clientlog.Do(ctx, "retrieving dataset version dimensions", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -1298,13 +1296,13 @@ func (c *Client) GetOptions(ctx context.Context, userAuthToken, serviceAuthToken
 		}
 	}
 
-	clientlog.Do(ctx, "retrieving options for dimension", service, uri)
-
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
 	if err != nil {
 		return
 	}
-	defer closeResponseBody(ctx, resp)
+	defer func() {
+		err = closeResponseBody(ctx, resp)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		err = NewDatasetAPIResponse(resp, uri)
@@ -1392,7 +1390,9 @@ func NewDatasetAPIResponse(resp *http.Response, uri string) (e *ErrInvalidDatase
 			e.body = "Client failed to read DatasetAPI body"
 			return
 		}
-		defer closeResponseBody(nil, resp)
+		defer func() {
+			err = closeResponseBody(nil, resp)
+		}()
 
 		e.body = string(b)
 	}
@@ -1496,10 +1496,11 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 }
 
 // closeResponseBody closes the response body and logs an error if unsuccessful
-func closeResponseBody(ctx context.Context, resp *http.Response) {
+func closeResponseBody(ctx context.Context, resp *http.Response) error {
 	if resp.Body != nil {
 		if err := resp.Body.Close(); err != nil {
-			log.Error(ctx, "error closing http response body", err)
+			return err
 		}
 	}
+	return nil
 }
