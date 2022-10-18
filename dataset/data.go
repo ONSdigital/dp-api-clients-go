@@ -505,14 +505,11 @@ func (m Metadata) ToString() string {
 	if m.RelatedDatasets != nil {
 		b.WriteString(fmt.Sprintf("Related Links: %s\n", *m.RelatedDatasets))
 	}
-	if m.CanonicalTopic != nil {
-		b.WriteString(fmt.Sprintf("Canonical Topic: %s\n", *m.CanonicalTopic))
+	if m.CanonicalTopic != (Topic{}) {
+		b.WriteString(fmt.Sprintf("Canonical Topic: %s\n", m.CanonicalTopic))
 	}
-	if m.SubTopics != nil {
-		subTopics := *m.SubTopics
-		if len(subTopics) > 0 {
-			b.WriteString(fmt.Sprintf("SubTopics: %s\n", subTopics))
-		}
+	if len(m.SubTopics) > 0 {
+		b.WriteString(fmt.Sprintf("SubTopics: %s\n", m.SubTopics))
 	}
 	b.WriteString(fmt.Sprintf("Survey: %s\n", m.Survey))
 	return b.String()
