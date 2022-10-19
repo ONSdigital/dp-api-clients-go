@@ -34,6 +34,7 @@ type DatasetDetails struct {
 	IsBasedOn         *IsBasedOn        `json:"is_based_on,omitempty"`
 	CanonicalTopic    *Topic            `json:"canonical_topic,omitempty"`
 	SubTopics         *[]Topic          `json:"sub_topics,omitempty"`
+	VersionsList      VersionsList      `json:"versions_list,omitempty"`
 }
 
 // Dataset represents a dataset resource
