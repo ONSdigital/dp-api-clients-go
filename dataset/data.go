@@ -32,9 +32,9 @@ type DatasetDetails struct {
 	UnitOfMeasure     string            `json:"unit_of_measure,omitempty"`
 	URI               string            `json:"uri,omitempty"`
 	IsBasedOn         *IsBasedOn        `json:"is_based_on,omitempty"`
-	CanonicalTopic    *Topic            `json:"canonical_topic,omitempty"`
-	SubTopics         *[]Topic          `json:"sub_topics,omitempty"`
 	VersionsList      VersionsList      `json:"versions_list,omitempty"`
+	CanonicalTopic    string            `json:"canonical_topic,omitempty"`
+	Subtopics         []string          `json:"subtopics,omitempty"`
 	Survey            string            `json:"survey,omitempty"`
 }
 
@@ -505,11 +505,9 @@ func (m Metadata) ToString() string {
 	if m.RelatedDatasets != nil {
 		b.WriteString(fmt.Sprintf("Related Links: %s\n", *m.RelatedDatasets))
 	}
-	if m.CanonicalTopic != (Topic{}) {
-		b.WriteString(fmt.Sprintf("Canonical Topic: %s\n", m.CanonicalTopic))
-	}
-	if len(m.SubTopics) > 0 {
-		b.WriteString(fmt.Sprintf("SubTopics: %s\n", m.SubTopics))
+	b.WriteString(fmt.Sprintf("Canonical Topic: %s\n", m.CanonicalTopic))
+	if len(m.Subtopics) > 0 {
+		b.WriteString(fmt.Sprintf("Subtopics: %s\n", m.Subtopics))
 	}
 	b.WriteString(fmt.Sprintf("Survey: %s\n", m.Survey))
 	return b.String()
