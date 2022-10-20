@@ -86,17 +86,12 @@ func setupMetadata() Metadata {
 					Title: "related dataset title",
 				},
 			},
-			CanonicalTopic: &Topic{
-				ID:    "canonicalTopicID",
-				Title: "Canonical Topic title",
+			CanonicalTopic: "canonicalTopicID",
+			Subtopics: []string{
+				"secondaryTopic1ID",
+				"secondaryTopic2ID",
 			},
-			SubTopics: &[]Topic{{
-				ID:    "secondaryTopic1ID",
-				Title: "Secondary topic 1 title",
-			}, {
-				ID:    "secondaryTopic2ID",
-				Title: "Secondary topic 2 title",
-			}},
+			Survey: "census",
 		},
 	}
 
@@ -116,7 +111,9 @@ func expectedData(isEmpty bool) string {
 			"Distribution:\n" +
 			"Unit of measure: \n" +
 			"License: \n" +
-			"National Statistic: false\n"
+			"National Statistic: false\n" +
+			"Canonical Topic: \n" +
+			"Survey: \n"
 	}
 
 	return "Title: title\n" +
@@ -140,8 +137,9 @@ func expectedData(isEmpty bool) string {
 		"National Statistic: true\n" +
 		"Publications: [{publication description publication url publication title}]\n" +
 		"Related Links: [{related dataset url related dataset title}]\n" +
-		"Canonical Topic: {canonicalTopicID Canonical Topic title}\n" +
-		"SubTopics: [{secondaryTopic1ID Secondary topic 1 title} {secondaryTopic2ID Secondary topic 2 title}]\n"
+		"Canonical Topic: canonicalTopicID\n" +
+		"Subtopics: [secondaryTopic1ID secondaryTopic2ID]\n" +
+		"Survey: census\n"
 }
 
 // writeToFile, helpful function to write expected and actual outputs for syntax comparison
