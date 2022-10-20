@@ -1500,7 +1500,8 @@ var mockRespBodyGetGeographyDimensions = `
 									]
 								}
 							],
-							"name": "Country"
+							"name": "Country",
+							"description": "Within a Country"
 						}
 					},
 					{
@@ -1510,7 +1511,8 @@ var mockRespBodyGetGeographyDimensions = `
 							},
 							"label": "Region",
 							"mapFrom": [],
-							"name": "Region"
+							"name": "Region",
+							"description": "Within a Region"
 						}
 					}
 				]
@@ -1552,9 +1554,10 @@ var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
 			Edges: []gql.Edge{
 				{
 					Node: gql.Node{
-						Name:       "Country",
-						Label:      "Country",
-						Categories: gql.Categories{TotalCount: 2},
+						Name:        "Country",
+						Description: "Within a Country",
+						Label:       "Country",
+						Categories:  gql.Categories{TotalCount: 2},
 						MapFrom: []gql.Variables{
 							{
 								Edges: []gql.Edge{
@@ -1573,10 +1576,11 @@ var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
 				},
 				{
 					Node: gql.Node{
-						Name:       "Region",
-						Label:      "Region",
-						Categories: gql.Categories{TotalCount: 10},
-						MapFrom:    []gql.Variables{},
+						Name:        "Region",
+						Description: "Within a Region",
+						Label:       "Region",
+						Categories:  gql.Categories{TotalCount: 10},
+						MapFrom:     []gql.Variables{},
 					},
 				},
 			},

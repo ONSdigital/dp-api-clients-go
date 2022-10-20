@@ -27,6 +27,7 @@ type Edge struct {
 
 type Node struct {
 	Name             string      `json:"name"`
+	Description      string      `json:"description"`
 	Code             string      `json:"code"`
 	Label            string      `json:"label"`
 	Categories       Categories  `json:"categories"`
