@@ -18,11 +18,16 @@ import (
 // These are updated against v1.2 of the metadata schema and would need changing
 // for future releases.
 
+// MetadataQueryResult represents the full response including both the
+// table response and the dataset response
 type MetadataQueryResult struct {
 	TableQueryResult   *MetadataTableQuery   `json:"table_query_result"`
 	DatasetQueryResult *MetadataDatasetQuery `json:"dataset_query_result"`
 }
 
+// MetadataTableQuery represents the metadata schema for a table based query.
+// It's used for forming a request (see the graphql tags) and parsing a
+// response (json tags)
 type MetadataTableQuery struct {
 	Service struct {
 		Tables []struct {
@@ -87,6 +92,9 @@ type MetadataTableQuery struct {
 	} `graphql:"service(lang: $lang)" json:"service"`
 }
 
+// MetadataDatasetQuery represents the metadata schema for a dataset based query.
+// It's used for forming a request (see the graphql tags) and parsing a
+// response (json tags)
 type MetadataDatasetQuery struct {
 	Dataset struct {
 		Label       graphql.String `graphql:"label" json:"label"`
@@ -163,12 +171,13 @@ type MetadataDatasetQuery struct {
 	} `graphql:"dataset(name: $ds, lang: $lang)" json:"dataset"`
 }
 
-// params for GraphQL reqs
+// MetadataTableQueryRequest represents the params for a GraphQL table request
 type MetadataTableQueryRequest struct {
 	Lang      string   `json:"lang"`
 	Variables []string `json:"variables"`
 }
 
+// MetadataDatasetQueryRequest represents the params for a GraphQL dataset request
 type MetadataDatasetQueryRequest struct {
 	Dataset   string   `json:"dataset"`
 	Lang      string   `json:"lang"`
