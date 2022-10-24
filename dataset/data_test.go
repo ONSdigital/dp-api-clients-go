@@ -92,6 +92,13 @@ func setupMetadata() Metadata {
 				"secondaryTopic2ID",
 			},
 			Survey: "census",
+			RelatedContent: &[]GeneralDetails{
+				{
+					Description: "related content description",
+					HRef:        "related content url",
+					Title:       "related content title",
+				},
+			},
 		},
 	}
 
@@ -139,7 +146,8 @@ func expectedData(isEmpty bool) string {
 		"Related Links: [{related dataset url related dataset title}]\n" +
 		"Canonical Topic: canonicalTopicID\n" +
 		"Subtopics: [secondaryTopic1ID secondaryTopic2ID]\n" +
-		"Survey: census\n"
+		"Survey: census\n" +
+		"Related Content: [{related content description related content url related content title}]\n"
 }
 
 // writeToFile, helpful function to write expected and actual outputs for syntax comparison
