@@ -11,6 +11,13 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
+// These structures correspond to GraphQL query/responses to use directly
+// against the cantabular metadata service endpoint.  They would need changing
+// to be used against the ext-api.
+
+// These are updated against v1.2 of the metadata schema and would need changing
+// for future releases.
+
 type MetadataQueryResult struct {
 	TableQueryResult   *MetadataTableQuery   `json:"table_query_result"`
 	DatasetQueryResult *MetadataDatasetQuery `json:"dataset_query_result"`
