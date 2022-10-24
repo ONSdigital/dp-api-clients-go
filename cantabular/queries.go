@@ -177,6 +177,7 @@ query($dataset: String!, $limit: Int!, $offset: Int) {
 					mapFrom {
 						edges {
 							node {
+								description
 								label
 								name
 							}
