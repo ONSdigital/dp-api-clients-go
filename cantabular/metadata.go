@@ -68,8 +68,6 @@ type MetadataTableQuery struct {
 					Observation_Type_Code graphql.String `graphql:"Observation_Type_Code" json:"observation_type_code"`
 				} `graphql:"Observation_Type" json:"observation_type"`
 
-				//Keywords            []graphql.String `graphql:"Keywords" json:"keywords"`
-
 				Publications []struct {
 					PublisherName    graphql.String `graphql:"Publisher_Name" json:"publisher_name"`
 					PublicationTitle graphql.String `graphql:"Publication_Title" json:"publication_title"`
@@ -83,14 +81,13 @@ type MetadataTableQuery struct {
 					StatisticalUnitDescription graphql.String `graphql:"Statistical_Unit_Description" json:"statistical_unit_description"`
 				} `graphql:"Statistical_Unit" json:"statistical_unit"`
 
-				//UniqueUrl graphql.String `graphql:"Unique_Url" json:"unique_url"`
 				Version graphql.String `graphql:"Version" json:"version"`
 			} `json:"meta"`
 		} `graphql:"tables(names: $vars)" json:"tables"`
 	} `graphql:"service(lang: $lang)" json:"service"`
 }
 
-type MetadataDatasetQuery struct { // rename DatasetMDQuery
+type MetadataDatasetQuery struct {
 	Dataset struct {
 		Label       graphql.String `graphql:"label" json:"label"`
 		Description graphql.String `graphql:"description" json:"description"`
@@ -119,16 +116,14 @@ type MetadataDatasetQuery struct { // rename DatasetMDQuery
 
 				ONSVariable struct {
 					ComparabilityComments graphql.String `graphql:"Comparability_Comments" json:"comparability_comments"`
-					//					GeographicAbbreviation graphql.String   `graphql:"Geographic_Abbreviation" json:"geographic_abbreviation"`
-					GeographicCoverage graphql.String `graphql:"Geographic_Coverage" json:"geographic_coverage"`
-					GeographicTheme    graphql.String `graphql:"Geographic_Theme" json:"geographic_theme"`
-					//					Keywords             []graphql.String `graphql:"Keywords" json:"keywords"`
-					QualityStatementText graphql.String `graphql:"Quality_Statement_Text"  json:"quality_statement_text"`
-					QualitySummaryURL    graphql.String `graphql:"Quality_Summary_URL"  json:"quality_summary_url"`
-					UkComparisonComments graphql.String `graphql:"Uk_Comparison_Comments"  json:"uk_comparison_comments"`
-					VariableMnemonic     graphql.String `graphql:"Variable_Mnemonic"  json:"variable_mnemonic"`
-					VariableMnemonic2011 graphql.String `graphql:"Variable_Mnemonic_2011" json:"variable_mnemonic_2011"`
-					VariableTitle        graphql.String `graphql:"Variable_Title"  json:"variable_title"`
+					GeographicCoverage    graphql.String `graphql:"Geographic_Coverage" json:"geographic_coverage"`
+					GeographicTheme       graphql.String `graphql:"Geographic_Theme" json:"geographic_theme"`
+					QualityStatementText  graphql.String `graphql:"Quality_Statement_Text"  json:"quality_statement_text"`
+					QualitySummaryURL     graphql.String `graphql:"Quality_Summary_URL"  json:"quality_summary_url"`
+					UkComparisonComments  graphql.String `graphql:"Uk_Comparison_Comments"  json:"uk_comparison_comments"`
+					VariableMnemonic      graphql.String `graphql:"Variable_Mnemonic"  json:"variable_mnemonic"`
+					VariableMnemonic2011  graphql.String `graphql:"Variable_Mnemonic_2011" json:"variable_mnemonic_2011"`
+					VariableTitle         graphql.String `graphql:"Variable_Title"  json:"variable_title"`
 
 					Version graphql.String `graphql:"Version"  json:"version"`
 
