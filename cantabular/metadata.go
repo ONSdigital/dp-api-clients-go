@@ -175,7 +175,11 @@ type MetadataDatasetQueryRequest struct {
 	Variables []string `json:"variables"`
 }
 
-// MetadataQuery
+// MetadataTableQuery takes variables (typically a ONS dataset id) and language
+// params and returns a struct representing the metadata server response for a
+// table query which typically contain variables (dimensions) and Cantabular
+// dataset id
+
 func (c *Client) MetadataTableQuery(ctx context.Context, req MetadataTableQueryRequest) (*MetadataTableQuery, error) {
 	if c.gqlClient == nil {
 		return nil, dperrors.New(
@@ -212,7 +216,10 @@ func (c *Client) MetadataTableQuery(ctx context.Context, req MetadataTableQueryR
 	return &fq, nil
 }
 
-// MetadataDatasetQuery
+// MetadataDatasetQuery takes cantabular dataset id, language and variables
+// (dimensions) params and returns a struct representing the metadata server
+// response for a dataset query
+
 func (c *Client) MetadataDatasetQuery(ctx context.Context, req MetadataDatasetQueryRequest) (*MetadataDatasetQuery, error) {
 
 	if c.gqlClient == nil {
