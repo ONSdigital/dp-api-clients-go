@@ -139,15 +139,17 @@ type UpdateInstance struct {
 
 // VersionDimension represents a dimension model nested in the Version model
 type VersionDimension struct {
-	ID              string `json:"id"`
-	Name            string `json:"name"`
-	Links           Links  `json:"links"`
-	Description     string `json:"description"`
-	Label           string `json:"label"`
-	URL             string `json:"href,omitempty"`
-	Variable        string `json:"variable,omitempty"`
-	NumberOfOptions int    `json:"number_of_options,omitempty"`
-	IsAreaType      *bool  `json:"is_area_type,omitempty"`
+	ID                   string `json:"id"`
+	Name                 string `json:"name"`
+	Links                Links  `json:"links"`
+	Description          string `json:"description"`
+	Label                string `json:"label"`
+	URL                  string `json:"href,omitempty"`
+	Variable             string `json:"variable,omitempty"`
+	NumberOfOptions      int    `json:"number_of_options,omitempty"`
+	IsAreaType           *bool  `json:"is_area_type,omitempty"`
+	QualityStatementText string `json:"quality_statement_text,omitempty"`
+	QualityStatementURL  string `json:"quality_statement_url,omitempty"`
 }
 
 // InstanceImportTasks represents all of the tasks required to complete an import job.
