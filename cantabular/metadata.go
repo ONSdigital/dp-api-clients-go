@@ -135,7 +135,7 @@ type MetadataDatasetQuery struct {
 
 					Version graphql.String `graphql:"Version"  json:"version"`
 
-					Questions struct {
+					Questions []struct {
 						QuestionCode             graphql.String `graphql:"Question_Code" json:"question_code"`
 						QuestionFirstAskedInYear graphql.String `graphql:"Question_First_Asked_In_Year" json:"question_first_asked_in_year"`
 						QuestionLabel            graphql.String `graphql:"Question_Label" json:"question_label"`
