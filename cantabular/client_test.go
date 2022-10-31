@@ -38,12 +38,17 @@ func (e *testError) Code() int {
 func TestChecker(t *testing.T) {
 	testCtx := context.Background()
 
+	cfg := cantabular.Config{
+		Host:       "cantabular-host",
+		ExtApiHost: "cantabular-ext-api-host",
+	}
+
 	Convey("Given that a 200 OK response is returned", t, func() {
 
 		mockHttpClient := createMockHttpClient(http.StatusOK)
 
 		cantabularClient := cantabular.NewClient(
-			cantabular.Config{},
+			cfg,
 			&mockHttpClient,
 			nil,
 		)
@@ -55,7 +60,7 @@ func TestChecker(t *testing.T) {
 
 			Convey("Then the expected endpoint is called", func() {
 				So(mockHttpClient.GetCalls(), ShouldHaveLength, 1)
-				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, fmt.Sprintf("/%s/datasets", cantabular.SoftwareVersion))
+				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, fmt.Sprintf("%s/%s/datasets", cfg.Host, cantabular.SoftwareVersion))
 			})
 
 			Convey("Then the CheckState is updated to the expected OK state", func() {
@@ -75,7 +80,7 @@ func TestChecker(t *testing.T) {
 
 			Convey("Then the expected endpoint is called", func() {
 				So(mockHttpClient.GetCalls(), ShouldHaveLength, 1)
-				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, "/graphql?query={datasets{name}}")
+				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, fmt.Sprintf("%s/graphql?query={datasets{name}}", cfg.ExtApiHost))
 			})
 
 			Convey("Then the CheckState is updated to the expected OK state", func() {
@@ -83,6 +88,26 @@ func TestChecker(t *testing.T) {
 				So(check.StatusCode(), ShouldEqual, 200)
 				So(check.Status(), ShouldEqual, healthcheck.StatusOK)
 				So(check.Message(), ShouldEqual, "cantabularAPIExt is ok")
+				So(check.LastFailure(), ShouldBeNil)
+				So(err, ShouldBeNil)
+			})
+		})
+
+		Convey("When the CheckerMetadataService method is called", func() {
+			check := healthcheck.NewCheckState(cantabular.Service)
+			err := cantabularClient.CheckerMetadataService(testCtx, check)
+			So(err, ShouldBeNil)
+
+			Convey("Then the expected endpoint is called", func() {
+				So(mockHttpClient.GetCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, fmt.Sprintf("%s/graphql", cfg.ExtApiHost))
+			})
+
+			Convey("Then the CheckState is updated to the expected OK state", func() {
+				So(check.Name(), ShouldEqual, cantabular.Service)
+				So(check.StatusCode(), ShouldEqual, 200)
+				So(check.Status(), ShouldEqual, healthcheck.StatusOK)
+				So(check.Message(), ShouldEqual, "cantabularMetadataService is ok")
 				So(check.LastFailure(), ShouldBeNil)
 				So(err, ShouldBeNil)
 			})
@@ -95,7 +120,7 @@ func TestChecker(t *testing.T) {
 		beforeCall := time.Now().UTC()
 
 		cantabularClient := cantabular.NewClient(
-			cantabular.Config{},
+			cfg,
 			&mockHttpClient,
 			nil,
 		)
@@ -107,7 +132,7 @@ func TestChecker(t *testing.T) {
 
 			Convey("Then the expected endpoint is called", func() {
 				So(mockHttpClient.GetCalls(), ShouldHaveLength, 1)
-				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, fmt.Sprintf("/%s/datasets", cantabular.SoftwareVersion))
+				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, fmt.Sprintf("%s/%s/datasets", cfg.Host, cantabular.SoftwareVersion))
 			})
 
 			Convey("Then the CheckState is updated to the expected CRITICAL state", func() {
@@ -127,7 +152,7 @@ func TestChecker(t *testing.T) {
 
 			Convey("Then the expected endpoint is called", func() {
 				So(mockHttpClient.GetCalls(), ShouldHaveLength, 1)
-				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, "/graphql?query={datasets{name}}")
+				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, fmt.Sprintf("%s/graphql?query={datasets{name}}", cfg.ExtApiHost))
 			})
 
 			Convey("Then the CheckState is updated to the expected CRITICAL state", func() {
@@ -135,6 +160,26 @@ func TestChecker(t *testing.T) {
 				So(check.StatusCode(), ShouldEqual, 500)
 				So(check.Status(), ShouldEqual, healthcheck.StatusCritical)
 				So(check.Message(), ShouldEqual, "cantabularAPIExt functionality is unavailable or non-functioning")
+				So(*check.LastFailure(), ShouldHappenBetween, beforeCall, time.Now().UTC())
+				So(err, ShouldBeNil)
+			})
+		})
+
+		Convey("When the CheckerMetadataService method is called", func() {
+			check := healthcheck.NewCheckState(cantabular.Service)
+			err := cantabularClient.CheckerMetadataService(testCtx, check)
+			So(err, ShouldBeNil)
+
+			Convey("Then the expected endpoint is called", func() {
+				So(mockHttpClient.GetCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.GetCalls()[0].URL, ShouldEqual, fmt.Sprintf("%s/graphql", cfg.ExtApiHost))
+			})
+
+			Convey("Then the CheckState is updated to the expected CRITICAL state", func() {
+				So(check.Name(), ShouldEqual, cantabular.Service)
+				So(check.StatusCode(), ShouldEqual, 500)
+				So(check.Status(), ShouldEqual, healthcheck.StatusCritical)
+				So(check.Message(), ShouldEqual, "cantabularMetadataService functionality is unavailable or non-functioning")
 				So(*check.LastFailure(), ShouldHappenBetween, beforeCall, time.Now().UTC())
 				So(err, ShouldBeNil)
 			})
