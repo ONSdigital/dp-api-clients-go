@@ -37,6 +37,7 @@ type DatasetDetails struct {
 	Subtopics         []string          `json:"subtopics,omitempty"`
 	Survey            string            `json:"survey,omitempty"`
 	RelatedContent    *[]GeneralDetails `json:"related_content,omitempty"`
+	LowestGeography   string            `json:"lowest_geography,omitempty"`
 }
 
 // Dataset represents a dataset resource
