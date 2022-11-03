@@ -99,6 +99,7 @@ func setupMetadata() Metadata {
 					Title:       "related content title",
 				},
 			},
+			LowestGeography: "lowest geography",
 		},
 	}
 
@@ -120,7 +121,8 @@ func expectedData(isEmpty bool) string {
 			"License: \n" +
 			"National Statistic: false\n" +
 			"Canonical Topic: \n" +
-			"Survey: \n"
+			"Survey: \n" +
+			"Lowest Geography: \n"
 	}
 
 	return "Title: title\n" +
@@ -147,7 +149,8 @@ func expectedData(isEmpty bool) string {
 		"Canonical Topic: canonicalTopicID\n" +
 		"Subtopics: [secondaryTopic1ID secondaryTopic2ID]\n" +
 		"Survey: census\n" +
-		"Related Content: [{related content description related content url related content title}]\n"
+		"Related Content: [{related content description related content url related content title}]\n" +
+		"Lowest Geography: lowest geography\n"
 }
 
 // writeToFile, helpful function to write expected and actual outputs for syntax comparison

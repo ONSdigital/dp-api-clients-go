@@ -37,6 +37,7 @@ type DatasetDetails struct {
 	Subtopics         []string          `json:"subtopics,omitempty"`
 	Survey            string            `json:"survey,omitempty"`
 	RelatedContent    *[]GeneralDetails `json:"related_content,omitempty"`
+	LowestGeography   string            `json:"lowest_geography,omitempty"`
 }
 
 // Dataset represents a dataset resource
@@ -517,6 +518,7 @@ func (m Metadata) ToString() string {
 	if m.RelatedContent != nil {
 		b.WriteString(fmt.Sprintf("Related Content: %s\n", *m.RelatedContent))
 	}
+	b.WriteString(fmt.Sprintf("Lowest Geography: %s\n", m.LowestGeography))
 	return b.String()
 }
 
