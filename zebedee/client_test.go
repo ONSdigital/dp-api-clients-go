@@ -105,7 +105,7 @@ func contentData(w http.ResponseWriter, req *http.Request) {
 	case "/bulletin/latest":
 		w.Write([]byte(`{"title":"latest release","edition":"2021","uri":"/bulletin/collection/2021"}`))
 	case "/release":
-		w.Write([]byte(`{"markdown":["markdown"],"relatedDocuments":[{"uri":"pageDescription2"}],"relatedDatasets":[{"uri":"pageDescription1"}],"relatedAPIDatasets":[{"uri":"cantabularPageDescription"},{"uri":"cmdPageDescription"}],"relatedMethodology":[{"uri":"pageDescription1"}],"relatedMethodologyArticle":[{"uri":"pageDescription2"}],"links":[{"uri":"pageDescription1"}, {"uri":"pageDescription2"}],"dateChanges":[{"previousDate":"2021-08-15T11:12:05.592Z","changeNotice":"change notice"}],"uri":"/releases/indexofproductionukdecember2021timeseries","description":{"finalised":true,"title":"Index of Production","summary":"Movements in the volume of production for the UK production industries","nationalStatistic":true,"contact":{"email":"indexofproduction@ons.gov.uk","name":"Contact name","telephone":"+44 1633 456980"},"releaseDate":"2022-02-11T07:00:00.000Z","nextRelease":"11 March 2022","cancelled":true,"cancellationNotice":["notice"],"finalised":true,"published":true,"provisionalDate":"Dec 22"}}`))
+		w.Write([]byte(`{"markdown":["markdown"],"relatedDocuments":[{"uri":"pageDescription2"}],"relatedDatasets":[{"uri":"pageDescription1"}],"relatedAPIDatasets":[{"uri":"cantabularDataset","title":"Title for cantabularDataset"},{"uri":"cmdDataset","title":"Title for cmdDataset"}],"relatedMethodology":[{"uri":"pageDescription1"}],"relatedMethodologyArticle":[{"uri":"pageDescription2"}],"links":[{"uri":"pageDescription1"}, {"uri":"pageDescription2"}],"dateChanges":[{"previousDate":"2021-08-15T11:12:05.592Z","changeNotice":"change notice"}],"uri":"/releases/indexofproductionukdecember2021timeseries","description":{"finalised":true,"title":"Index of Production","summary":"Movements in the volume of production for the UK production industries","nationalStatistic":true,"contact":{"email":"indexofproduction@ons.gov.uk","name":"Contact name","telephone":"+44 1633 456980"},"releaseDate":"2022-02-11T07:00:00.000Z","nextRelease":"11 March 2022","cancelled":true,"cancellationNotice":["notice"],"finalised":true,"published":true,"provisionalDate":"Dec 22"}}`))
 	case "/":
 		w.Write([]byte(`{"intro":{"title":"Welcome to the Office for National Statistics","markdown":"Test markdown"},"featuredContent":[{"title":"Featured Content One","description":"Featured Content One Description","uri":"/one","image":"testImage"}],"aroundONS":[{"title":"Around ONS One","description":"Around ONS One Description","uri":"/one","image":"testImage"}],"serviceMessage":"","emergencyBanner":{"type":"notable_death","title":"Emergency banner title","description":"Emergency banner description","uri":"www.google.com","linkText":"More info"},"description":{"keywords":[ "keywordOne", "keywordTwo" ],"metaDescription":"","unit":"","preUnit":"","source":""}}`))
 	case "notFound":
@@ -685,8 +685,10 @@ func TestUnitClient(t *testing.T) {
 					So(r.RelatedDatasets[0].Title, ShouldEqual, "Page title: August 2015")
 					So(r.RelatedDatasets[0].Summary, ShouldEqual, "This is the page summary")
 					So(len(r.RelatedAPIDatasets), ShouldEqual, 2)
-					So(r.RelatedAPIDatasets[0].URI, ShouldEqual, "cantabularPageDescription")
-					So(r.RelatedAPIDatasets[1].URI, ShouldEqual, "cmdPageDescription")
+					So(r.RelatedAPIDatasets[0].URI, ShouldEqual, "cantabularDataset")
+					So(r.RelatedAPIDatasets[0].Title, ShouldEqual, "Title for cantabularDataset")
+					So(r.RelatedAPIDatasets[1].URI, ShouldEqual, "cmdDataset")
+					So(r.RelatedAPIDatasets[1].Title, ShouldEqual, "Title for cmdDataset")
 					So(len(r.RelatedMethodology), ShouldEqual, 1)
 					So(r.RelatedMethodology[0].URI, ShouldEqual, "pageDescription1")
 					So(r.RelatedMethodology[0].Title, ShouldEqual, "Page title: August 2015")
@@ -739,8 +741,10 @@ func TestUnitClient(t *testing.T) {
 					So(r.RelatedDatasets[0].Title, ShouldEqual, "Page title: August 2015")
 					So(r.RelatedDatasets[0].Summary, ShouldEqual, "This is the page summary")
 					So(len(r.RelatedAPIDatasets), ShouldEqual, 2)
-					So(r.RelatedAPIDatasets[0].URI, ShouldEqual, "cantabularPageDescription")
-					So(r.RelatedAPIDatasets[1].URI, ShouldEqual, "cmdPageDescription")
+					So(r.RelatedAPIDatasets[0].URI, ShouldEqual, "cantabularDataset")
+					So(r.RelatedAPIDatasets[0].Title, ShouldEqual, "Title for cantabularDataset")
+					So(r.RelatedAPIDatasets[1].URI, ShouldEqual, "cmdDataset")
+					So(r.RelatedAPIDatasets[1].Title, ShouldEqual, "Title for cmdDataset")
 					So(len(r.RelatedMethodology), ShouldEqual, 1)
 					So(r.RelatedMethodology[0].URI, ShouldEqual, "pageDescription1")
 					So(r.RelatedMethodology[0].Title, ShouldEqual, "Page title: August 2015")
