@@ -518,6 +518,7 @@ func (m Metadata) ToString() string {
 	if m.RelatedContent != nil {
 		b.WriteString(fmt.Sprintf("Related Content: %s\n", *m.RelatedContent))
 	}
+	b.WriteString(fmt.Sprintf("Lowest Geography: %s\n", m.LowestGeography))
 	return b.String()
 }
 
