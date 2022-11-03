@@ -98,10 +98,6 @@ func contentData(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte(`{"uri":"path/to/page-description","description":{"title":"Page title", "summary":"This is the page summary","keywords":["Economy","Retail"],"metaDescription":"meta","nationalStatistic":true,"latestRelease":true,"contact":{"email": "contact@ons.gov.uk","name":"Contact","telephone":"+44 (0) 1633 456900"},"releaseDate":"2015-09-14T23:00:00.000Z","nextRelease":"13 October 2015","edition":"August 2015"}}`))
 	case "pageDescription2":
 		w.Write([]byte(`{"uri":"page-description-2","description":{"title":"UK Environmental Accounts", "summary":"Measuring the contribution of the environment to the economy","keywords":["emissions","climate"],"metaDescription":"meta2","nationalStatistic":true,"latestRelease":true,"contact":{"email": "contact@ons.gov.uk","name":"Contact","telephone":"+44 (0) 1633 456900"},"releaseDate":"2021-06-02T23:00:00.000Z","nextRelease":"June 2022","edition":"2021"}}`))
-	case "cantabularPageDescription":
-		w.Write([]byte(`{"uri":"cantabular-page-description","description":{"title":"Census data for London - population by age", "summary":"Population by age in the boroughs of London","keywords":["cantabular","population"],"edition":"2021", "nationalStatistic":true,"latestRelease":true,"contact":{"email": "contact@ons.gov.uk","name":"Contact","telephone":"+44 (0) 1633 456900"},"releaseDate":"2021-06-02T23:00:00.000Z"}}`))
-	case "cmdPageDescription":
-		w.Write([]byte(`{"uri":"cmd-page-description","description":{"title":"A CMD dataset Title", "summary":"A CMD dataset Summary","keywords":["CMD"],"edition":"singular","latestRelease":true,"contact":{"email": "contact@ons.gov.uk","name":"Contact","telephone":"+44 (0) 1633 456900"},"releaseDate":"2021-06-02T23:00:00.000Z"}}`))
 	case "bulletin-latest-release":
 		w.Write([]byte(`{"relatedBulletins":[{"uri":"pageTitle1"}],"sections":[{"title":"Main points","markdown":"Main points markdown"},{"title":"Overview","markdown":"Overview markdown"}],"accordion":[{"title":"Background notes","markdown":"Notes markdown"}],"relatedData":[{"uri":"/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging"}],"charts":[{"title":"Figure 1.1","filename":"38d8c337","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337"}],"tables":[{"title":"Table 5.1","filename":"6f587872","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872"}],"images":[],"equations":[],"links":[{"uri":"pageTitle1"}, {"uri":"pageTitle2"}],"alerts":[{"date":"2021-09-30T07:10:46.230Z","markdown":"alert"}],"versions":[{"uri":"v1","updateDate":"2021-10-19T10:43:34.507Z","correctionNotice":"Notice"}],"type":"bulletin","uri":"/bulletin/2015-07-09","description":{"title":"UK Environmental Accounts","summary":"Measures the contribution of the environment to the economy","keywords":["fuel, energy"],"metaDescription":"Measures the contribution of the environment.","nationalStatistic":true,"latestRelease":true,"contact":{"email":"environment.accounts@ons.gsi.gov.uk","name":"Someone","telephone":"+44 (0)1633 455680"},"releaseDate":"2015-07-08T23:00:00.000Z","nextRelease":"","edition":"2015","unit":"","preUnit":"","source":""}}`))
 	case "bulletin-not-latest-release":
@@ -690,11 +686,7 @@ func TestUnitClient(t *testing.T) {
 					So(r.RelatedDatasets[0].Summary, ShouldEqual, "This is the page summary")
 					So(len(r.RelatedAPIDatasets), ShouldEqual, 2)
 					So(r.RelatedAPIDatasets[0].URI, ShouldEqual, "cantabularPageDescription")
-					So(r.RelatedAPIDatasets[0].Title, ShouldEqual, "Census data for London - population by age: 2021")
-					So(r.RelatedAPIDatasets[0].Summary, ShouldEqual, "Population by age in the boroughs of London")
 					So(r.RelatedAPIDatasets[1].URI, ShouldEqual, "cmdPageDescription")
-					So(r.RelatedAPIDatasets[1].Title, ShouldEqual, "A CMD dataset Title: singular")
-					So(r.RelatedAPIDatasets[1].Summary, ShouldEqual, "A CMD dataset Summary")
 					So(len(r.RelatedMethodology), ShouldEqual, 1)
 					So(r.RelatedMethodology[0].URI, ShouldEqual, "pageDescription1")
 					So(r.RelatedMethodology[0].Title, ShouldEqual, "Page title: August 2015")
@@ -748,11 +740,7 @@ func TestUnitClient(t *testing.T) {
 					So(r.RelatedDatasets[0].Summary, ShouldEqual, "This is the page summary")
 					So(len(r.RelatedAPIDatasets), ShouldEqual, 2)
 					So(r.RelatedAPIDatasets[0].URI, ShouldEqual, "cantabularPageDescription")
-					So(r.RelatedAPIDatasets[0].Title, ShouldEqual, "Census data for London - population by age: 2021")
-					So(r.RelatedAPIDatasets[0].Summary, ShouldEqual, "Population by age in the boroughs of London")
 					So(r.RelatedAPIDatasets[1].URI, ShouldEqual, "cmdPageDescription")
-					So(r.RelatedAPIDatasets[1].Title, ShouldEqual, "A CMD dataset Title: singular")
-					So(r.RelatedAPIDatasets[1].Summary, ShouldEqual, "A CMD dataset Summary")
 					So(len(r.RelatedMethodology), ShouldEqual, 1)
 					So(r.RelatedMethodology[0].URI, ShouldEqual, "pageDescription1")
 					So(r.RelatedMethodology[0].Title, ShouldEqual, "Page title: August 2015")
