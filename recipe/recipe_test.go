@@ -37,11 +37,24 @@ func checkRequest(httpClient *dphttp.ClienterMock, callIndex int, expectedMethod
 
 func TestGetRecipe(t *testing.T) {
 	recipeID := "testRecipe"
-	recipeBody := `{"id":"` + recipeID + `", "format": "cantabular_table", "cantabular_blob": "123"}`
+	recipeBody := `
+	{
+		"id":"` + recipeID + `",
+		"format": "cantabular_table",
+		"cantabular_blob": "123",
+		"output_instances":[{
+			"lowest_geography":"lowest_geo"
+		}]
+	}`
 	expectedRecipe := Recipe{
 		ID:             recipeID,
 		Format:         "cantabular_table",
 		CantabularBlob: "123",
+		OutputInstances: []Instance{
+			{
+				LowestGeography: "lowest_geo",
+			},
+		},
 	}
 
 	Convey("Given that 200 OK is returned by recipe API with a valid recipe body", t, func() {
