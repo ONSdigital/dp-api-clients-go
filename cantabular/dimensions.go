@@ -293,6 +293,29 @@ func (c *Client) GetAreas(ctx context.Context, req GetAreasRequest) (*GetAreasRe
 
 	return &resp.Data, nil
 }
+func (c *Client) GetAreasTotalCount(ctx context.Context, req GetAreasRequest) (int, error) {
+	resp := &struct {
+		Data   GetAreasResponse `json:"data"`
+		Errors []gql.Error      `json:"errors,omitempty"`
+	}{}
+
+	data := QueryData{
+		Dataset:  req.Dataset,
+		Text:     req.Variable,
+		Category: req.Category,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryAreasWithoutPagination, data, resp); err != nil {
+		return -1, errors.Wrap(err, "failed to unmarshal query")
+	}
+
+	var totalCount int
+	for _, v := range resp.Data.Dataset.Variables.Edges {
+		totalCount = totalCount + len(v.Node.Categories.Search.Edges)
+	}
+
+	return totalCount, nil
+}
 
 // GetArea performs a graphQL query to retrieve the exact area (category) for a given area type
 func (c *Client) GetArea(ctx context.Context, req GetAreaRequest) (*GetAreaResponse, error) {
