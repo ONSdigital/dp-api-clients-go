@@ -293,6 +293,7 @@ func (c *Client) GetAreas(ctx context.Context, req GetAreasRequest) (*GetAreasRe
 
 	return &resp.Data, nil
 }
+
 func (c *Client) GetAreasTotalCount(ctx context.Context, req GetAreasRequest) (int, error) {
 	resp := &struct {
 		Data   GetAreasResponse `json:"data"`

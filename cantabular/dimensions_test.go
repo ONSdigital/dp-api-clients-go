@@ -1175,6 +1175,10 @@ func TestGetCategorisationsHappy(t *testing.T) {
 					mockHttpClient.PostCalls()[0].Body,
 					cantabular.QueryCategorisations,
 					cantabular.QueryData{
+						PaginationParams: cantabular.PaginationParams{
+							Limit:  20,
+							Offset: 0,
+						},
 						Dataset: dataset,
 						Text:    variable,
 					},

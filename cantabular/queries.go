@@ -247,6 +247,33 @@ query ($dataset: String!, $text: String!, $category: String!, $limit: Int!, $off
   }
 `
 
+// QueryAreasWithoutPagination is the graphQL query to search for areas and area types which match a specific string.
+const QueryAreasWithoutPagination = `
+query ($dataset: String!, $text: String!, $category: String!) {
+	dataset(name: $dataset) {
+	  variables(rule:true, names: [ $text ]) {
+		edges {
+		  node {
+			name
+			label
+			categories {
+			  totalCount
+			  search(text: $category ) {
+				edges {
+				  node {
+					code
+					label
+				  }
+				}
+			  }
+			}
+		  }
+		}
+	  }
+	}
+  }
+`
+
 // QueryArea is the graphQL query to search for an area which exactly match a specific string.
 const QueryArea = `
 query ($dataset: String!, $text: String!, $category: String!) {
@@ -271,32 +298,6 @@ query ($dataset: String!, $text: String!, $category: String!) {
 }
 `
 
-// QueryAreasWithoutPagination is the graphQL query to search for areas and area types which match a specific string.
-const QueryAreasWithoutPagination = `
-query ($dataset: String!, $text: String!, $category: String!, $limit: Int!, $offset: Int) {
-	dataset(name: $dataset) {
-	  variables(rule:true, names: [ $text ]) {
-		edges {
-		  node {
-			name
-			label
-			categories {
-			  totalCount
-			  search(text: $category ) {
-				edges {
-				  node {
-					code
-					label
-				  }
-				}
-			  }
-			}
-		  }
-		}
-	  }
-	}
-  }
-`
 const QueryParents = `
 query ($dataset: String!, $variables: [String!]!, $limit: Int!, $offset: Int) {
   dataset(name: $dataset) {
@@ -387,9 +388,6 @@ func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 
-	if data.Limit == 0 {
-		data.Limit = defaultLimit
-	}
 	vars := map[string]interface{}{
 		"dataset":   data.Dataset,
 		"variables": data.Variables,
