@@ -14,6 +14,10 @@ import (
 	dphttp "github.com/ONSdigital/dp-net/http"
 )
 
+var limit20 *int = nil //non initialised limit is treated as default i.e. 20
+var limit10 = 10
+var limit1 = 1
+
 func TestGetBaseVariable(t *testing.T) {
 	Convey("Given a correct getBaseVariables response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
@@ -129,7 +133,7 @@ func TestGetGeographyDimensionsHappy(t *testing.T) {
 			resp, err := cantabularClient.GetGeographyDimensions(testCtx, cantabular.GetGeographyDimensionsRequest{
 				Dataset: "Teaching-Dataset",
 				PaginationParams: cantabular.PaginationParams{
-					Limit:  10,
+					Limit:  &limit10,
 					Offset: 0,
 				},
 			})
@@ -147,7 +151,7 @@ func TestGetGeographyDimensionsHappy(t *testing.T) {
 					cantabular.QueryData{
 						Dataset: "Teaching-Dataset",
 						PaginationParams: cantabular.PaginationParams{
-							Limit:  10,
+							Limit:  &limit10,
 							Offset: 0,
 						},
 					},
@@ -170,7 +174,7 @@ func TestGetGeographyDimensionsUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetGeographyDimensions(testCtx, cantabular.GetGeographyDimensionsRequest{
 				Dataset: "InexistentDataset",
 				PaginationParams: cantabular.PaginationParams{
-					Limit:  10,
+					Limit:  &limit10,
 					Offset: 0,
 				},
 			})
@@ -193,7 +197,7 @@ func TestGetGeographyDimensionsUnhappy(t *testing.T) {
 			resp, err := cantabularClient.GetGeographyDimensions(testCtx, cantabular.GetGeographyDimensionsRequest{
 				Dataset: "Teaching-Dataset",
 				PaginationParams: cantabular.PaginationParams{
-					Limit:  10,
+					Limit:  &limit10,
 					Offset: 0,
 				},
 			})
@@ -645,6 +649,7 @@ func TestGetAggregatedDimensionOptionsUnhappy(t *testing.T) {
 }
 
 func TestGetAreas(t *testing.T) {
+	limit := 1
 	Convey("Given a valid response from the /graphql endpoint", t, func() {
 		const dataset = "Example"
 		const variable = "city"
@@ -656,7 +661,7 @@ func TestGetAreas(t *testing.T) {
 		Convey("When GetAreas is called", func() {
 			req := cantabular.GetAreasRequest{
 				PaginationParams: cantabular.PaginationParams{
-					Limit:  1,
+					Limit:  &limit,
 					Offset: 0,
 				},
 				Dataset:  dataset,
@@ -678,7 +683,7 @@ func TestGetAreas(t *testing.T) {
 					cantabular.QueryAreas,
 					cantabular.QueryData{
 						PaginationParams: cantabular.PaginationParams{
-							Limit:  1,
+							Limit:  &limit,
 							Offset: 0,
 						},
 						Dataset:  dataset,
@@ -834,7 +839,7 @@ func TestGetParentsHappy(t *testing.T) {
 
 		Convey("When GetParents is called", func() {
 			req := cantabular.GetParentsRequest{
-				PaginationParams: cantabular.PaginationParams{Limit: 20},
+				PaginationParams: cantabular.PaginationParams{Limit: limit20},
 				Dataset:          dataset,
 				Variable:         variable,
 			}
@@ -853,7 +858,7 @@ func TestGetParentsHappy(t *testing.T) {
 					cantabular.QueryData{
 						Dataset:          dataset,
 						Variables:        []string{variable},
-						PaginationParams: cantabular.PaginationParams{Limit: 20},
+						PaginationParams: cantabular.PaginationParams{Limit: limit20},
 					},
 				)
 			})
@@ -997,6 +1002,7 @@ func TestGetParentAreaCountUnhappy(t *testing.T) {
 }
 
 func TestGetGeographyDimensionsInBatchesHappy(t *testing.T) {
+	limit := 1
 	Convey("Given a valid empty response from the /graphql endpoint", t, func() {
 		multiResponse := struct {
 			responses []string
@@ -1042,7 +1048,7 @@ func TestGetGeographyDimensionsInBatchesHappy(t *testing.T) {
 						cantabular.QueryData{
 							Dataset: "Teaching-Dataset",
 							PaginationParams: cantabular.PaginationParams{
-								Limit:  1,
+								Limit:  &limit,
 								Offset: 0,
 							},
 						},
@@ -1054,7 +1060,7 @@ func TestGetGeographyDimensionsInBatchesHappy(t *testing.T) {
 						cantabular.QueryData{
 							Dataset: "Teaching-Dataset",
 							PaginationParams: cantabular.PaginationParams{
-								Limit:  1,
+								Limit:  &limit,
 								Offset: 1,
 							},
 						},
@@ -1111,7 +1117,7 @@ func TestGetGeographyDimensionsInBatchesZeroHappy(t *testing.T) {
 						cantabular.QueryData{
 							Dataset: "Teaching-Dataset",
 							PaginationParams: cantabular.PaginationParams{
-								Limit:  10,
+								Limit:  &limit10,
 								Offset: 0,
 							},
 						},
@@ -1156,7 +1162,7 @@ func TestGetCategorisationsHappy(t *testing.T) {
 		Convey("When GetCategorisations is called", func() {
 			req := cantabular.GetCategorisationsRequest{
 				PaginationParams: cantabular.PaginationParams{
-					Limit:  20,
+					Limit:  limit20,
 					Offset: 0,
 				},
 				Dataset:  dataset,
@@ -1176,7 +1182,7 @@ func TestGetCategorisationsHappy(t *testing.T) {
 					cantabular.QueryCategorisations,
 					cantabular.QueryData{
 						PaginationParams: cantabular.PaginationParams{
-							Limit:  20,
+							Limit:  limit20,
 							Offset: 0,
 						},
 						Dataset: dataset,
@@ -1594,7 +1600,7 @@ var expectedGeographyDimensions = cantabular.GetGeographyDimensionsResponse{
 		Count:      2,
 		TotalCount: 2,
 		PaginationParams: cantabular.PaginationParams{
-			Limit:  10,
+			Limit:  &limit10,
 			Offset: 0,
 		},
 	},
@@ -2103,7 +2109,7 @@ var mockRespBodyGetArea = `
 var expectedAreas = cantabular.GetAreasResponse{
 	PaginationResponse: cantabular.PaginationResponse{
 		PaginationParams: cantabular.PaginationParams{
-			Limit: 1,
+			Limit: &limit1,
 		},
 		Count: 1, TotalCount: 100,
 	},
@@ -2203,7 +2209,7 @@ const mockRespBodyGetParents = `
 
 var expectedParents = cantabular.GetParentsResponse{
 	PaginationResponse: cantabular.PaginationResponse{
-		PaginationParams: cantabular.PaginationParams{Limit: 20, Offset: 0},
+		PaginationParams: cantabular.PaginationParams{Limit: limit20, Offset: 0},
 		TotalCount:       1,
 		Count:            1,
 	},
@@ -2269,7 +2275,7 @@ const mockRespBodyGetCategorisations = `
 
 var expectedCategorisations = &cantabular.GetCategorisationsResponse{
 	PaginationResponse: cantabular.PaginationResponse{
-		PaginationParams: cantabular.PaginationParams{Limit: 20, Offset: 0},
+		PaginationParams: cantabular.PaginationParams{Limit: limit20, Offset: 0},
 		Count:            1,
 		TotalCount:       1,
 	},

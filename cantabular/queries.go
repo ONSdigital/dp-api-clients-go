@@ -12,9 +12,7 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-const (
-	defaultLimit = 20
-)
+var defaultLimit = 20
 
 const QueryBaseVariable = `
 query ($dataset: String!, $variables: [String!]!) {
@@ -387,6 +385,10 @@ type Filter struct {
 func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
+
+	if data.Limit == nil {
+		data.Limit = &defaultLimit
+	}
 
 	vars := map[string]interface{}{
 		"dataset":   data.Dataset,

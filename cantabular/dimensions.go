@@ -478,7 +478,7 @@ func (c *Client) GetGeographyBatchProcess(ctx context.Context, datasetID string,
 		req := GetGeographyDimensionsRequest{
 			PaginationParams: PaginationParams{
 				Offset: offset,
-				Limit:  batchSize,
+				Limit:  &batchSize,
 			},
 			Dataset: datasetID,
 		}
