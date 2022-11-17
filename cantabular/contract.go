@@ -8,8 +8,8 @@ type ErrorResponse struct {
 }
 
 type PaginationParams struct {
-	Limit  *int `json:"limit,omitempty"`
-	Offset int  `json:"offset"`
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
 }
 
 type PaginationResponse struct {

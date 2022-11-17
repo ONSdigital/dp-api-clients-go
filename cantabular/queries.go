@@ -12,7 +12,9 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-var defaultLimit = 20
+const (
+	defaultLimit = 20
+)
 
 const QueryBaseVariable = `
 query ($dataset: String!, $variables: [String!]!) {
@@ -386,10 +388,9 @@ func (data *QueryData) Encode(query string) (bytes.Buffer, error) {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 
-	if data.Limit == nil {
-		data.Limit = &defaultLimit
+	if data.Limit == 0 {
+		data.Limit = defaultLimit
 	}
-
 	vars := map[string]interface{}{
 		"dataset":   data.Dataset,
 		"variables": data.Variables,
