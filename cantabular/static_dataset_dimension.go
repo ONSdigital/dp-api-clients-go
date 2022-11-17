@@ -10,7 +10,7 @@ type (
 	// Dimension represents the 'dimension' field from a GraphQL
 	// query dataset response
 	Dimension struct {
-		Count      int          `json:"count"`
+		Count      float32      `json:"count"`
 		Categories []Category   `json:"categories"`
 		Variable   VariableBase `json:"variable"`
 	}
@@ -22,7 +22,7 @@ type (
 	Iterator struct {
 		ctx        context.Context
 		dims       Dimensions
-		dimIndices []int
+		dimIndices []float32
 	}
 )
 
@@ -31,7 +31,7 @@ func (dims Dimensions) NewIterator(ctx context.Context) *Iterator {
 	return &Iterator{
 		ctx:        ctx,
 		dims:       dims,
-		dimIndices: make([]int, len(dims)),
+		dimIndices: make([]float32, len(dims)),
 	}
 }
 
@@ -65,7 +65,7 @@ func (it *Iterator) CategoryAtColumn(i int) (Category, error) {
 	if err := it.checkNotAtEnd(); err != nil {
 		return Category{}, err
 	}
-	return it.dims[i].Categories[it.dimIndices[i]], nil
+	return it.dims[i].Categories[int(it.dimIndices[i])], nil
 }
 
 func (it *Iterator) checkNotAtEnd() error {

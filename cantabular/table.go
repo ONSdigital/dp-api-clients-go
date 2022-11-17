@@ -51,7 +51,7 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 
 	// Obtain the CSV rows according to the cantabular dimensions and counts
 	for i, count := range table.Values {
-		row := createCSVRow(table.Dimensions, i, int(count))
+		row := createCSVRow(table.Dimensions, i, count)
 		if err := write(row); err != nil {
 			return nil, fmt.Errorf("error writing a csv row: %w", err)
 		}
@@ -315,19 +315,19 @@ func createCSVHeader(dims Dimensions) []string {
 // createCSVRow creates an array of strings corresponding to a csv row
 // for the provided array of dimension, index and count
 // it assumes that the values are sorted with lower weight for the last dimension and higher weight for the first dimension.
-func createCSVRow(dims []Dimension, index, count int) []string {
+func createCSVRow(dims []Dimension, index int, count float32) []string {
 	l := len(dims)
 	row := make([]string, l*2+1)
 
 	// Iterate dimensions starting from the last one (lower weight)
 	for i := l - 1; i >= 0; i-- {
-		catIndex := index % dims[i].Count               // Index of the category for the current dimension
+		catIndex := index % int(dims[i].Count)          // Index of the category for the current dimension
 		row[i*2] = dims[i].Categories[catIndex].Code    // The CSV column corresponds to the label of the Category
 		row[i*2+1] = dims[i].Categories[catIndex].Label // The CSV column corresponds to the label of the Category
-		index /= dims[i].Count                          // Modify index for next iteration
+		index /= int(dims[i].Count)                     // Modify index for next iteration
 	}
 
-	row[l*2] = fmt.Sprintf("%d", count)
+	row[l*2] = fmt.Sprintf("%d", int(count))
 
 	return row
 }
