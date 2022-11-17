@@ -17,7 +17,7 @@ import (
 // query response
 type Table struct {
 	Dimensions []Dimension `json:"dimensions"`
-	Values     []int       `json:"values"`
+	Values     []float32   `json:"values"`
 	Error      string      `json:"error,omitempty" `
 }
 
@@ -51,7 +51,7 @@ func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
 
 	// Obtain the CSV rows according to the cantabular dimensions and counts
 	for i, count := range table.Values {
-		row := createCSVRow(table.Dimensions, i, count)
+		row := createCSVRow(table.Dimensions, i, int(count))
 		if err := write(row); err != nil {
 			return nil, fmt.Errorf("error writing a csv row: %w", err)
 		}

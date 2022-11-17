@@ -125,7 +125,7 @@ func testStaticDatasetQuery() *cantabular.StaticDatasetQuery {
 						},
 					},
 				},
-				Values: []int{2, 0, 1, 3, 5, 4, 7, 6, 11, 10, 9, 13, 14, 12, 16, 17, 15, 8},
+				Values: []float32{2, 0, 1, 3, 5, 4, 7, 6, 11, 10, 9, 13, 14, 12, 16, 17, 15, 8},
 			},
 		},
 	}
