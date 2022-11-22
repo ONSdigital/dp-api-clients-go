@@ -127,6 +127,7 @@ query ($dataset: String!, $text: String!, $limit: Int!, $offset: Int) {
 					node {
 						name
 						label
+						description
 						categories {
 							totalCount
 						}
