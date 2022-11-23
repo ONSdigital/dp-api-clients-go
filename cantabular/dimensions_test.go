@@ -1627,17 +1627,19 @@ var expectedDims = cantabular.GetDimensionsResponse{
 			Edges: []gql.Edge{
 				{
 					Node: gql.Node{
-						Name:       "Age",
-						Label:      "Age",
-						Categories: gql.Categories{TotalCount: 8},
-						MapFrom:    []gql.Variables{},
+						Name:        "Age",
+						Label:       "Age",
+						Description: "age description",
+						Categories:  gql.Categories{TotalCount: 8},
+						MapFrom:     []gql.Variables{},
 					},
 				},
 				{
 					Node: gql.Node{
-						Name:       "Country",
-						Label:      "Country",
-						Categories: gql.Categories{TotalCount: 2},
+						Name:        "Country",
+						Label:       "Country",
+						Description: "country description",
+						Categories:  gql.Categories{TotalCount: 2},
 						MapFrom: []gql.Variables{
 							{
 								Edges: []gql.Edge{
@@ -1656,7 +1658,7 @@ var expectedDims = cantabular.GetDimensionsResponse{
 					Node: gql.Node{
 						Name:        "Health",
 						Label:       "Health",
-						Description: "description 1",
+						Description: "health description",
 						Categories:  gql.Categories{TotalCount: 6},
 						MapFrom:     []gql.Variables{},
 					},
@@ -1665,24 +1667,25 @@ var expectedDims = cantabular.GetDimensionsResponse{
 					Node: gql.Node{
 						Name:        "Marital Status",
 						Label:       "Marital Status",
-						Description: "description 2",
+						Description: "marital status description",
 						Categories:  gql.Categories{TotalCount: 5},
 						MapFrom:     []gql.Variables{},
 					},
 				},
 				{
 					Node: gql.Node{
-						Name:       "Region",
-						Label:      "Region",
-						Categories: gql.Categories{TotalCount: 10},
-						MapFrom:    []gql.Variables{},
+						Name:        "Region",
+						Label:       "Region",
+						Description: "region description",
+						Categories:  gql.Categories{TotalCount: 10},
+						MapFrom:     []gql.Variables{},
 					},
 				},
 				{
 					Node: gql.Node{
 						Name:        "Sex",
 						Label:       "Sex",
-						Description: "description 3",
+						Description: "sex description",
 						Categories:  gql.Categories{TotalCount: 2},
 						MapFrom:     []gql.Variables{},
 					},
@@ -1705,7 +1708,8 @@ var mockRespBodyGetDimensions = `
 							},
 							"label": "Age",
 							"mapFrom": [],
-							"name": "Age"
+							"name": "Age",
+							"description": "age description"
 						}
 					},
 					{
@@ -1726,7 +1730,8 @@ var mockRespBodyGetDimensions = `
 									]
 								}
 							],
-							"name": "Country"
+							"name": "Country",
+							"description": "country description"
 						}
 					},
 					{
@@ -1737,7 +1742,7 @@ var mockRespBodyGetDimensions = `
 							"label": "Health",
 							"mapFrom": [],
 							"name": "Health",
-							"description": "description 1"
+							"description": "health description"
 						}
 					},
 					{
@@ -1748,7 +1753,7 @@ var mockRespBodyGetDimensions = `
 							"label": "Marital Status",
 							"mapFrom": [],
 							"name": "Marital Status",
-							"description": "description 2"
+							"description": "marital status description"
 						}
 					},
 					{
@@ -1758,7 +1763,8 @@ var mockRespBodyGetDimensions = `
 							},
 							"label": "Region",
 							"mapFrom": [],
-							"name": "Region"
+							"name": "Region",
+							"description": "region description"
 						}
 					},
 					{
@@ -1769,7 +1775,7 @@ var mockRespBodyGetDimensions = `
 							"label": "Sex",
 							"mapFrom":[],
 							"name":"Sex",
-							"description": "description 3"
+							"description": "sex description"
 						}
 					}
 				]
