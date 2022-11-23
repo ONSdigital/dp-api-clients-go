@@ -253,6 +253,57 @@ func TestGetDimensionsHappy(t *testing.T) {
 	})
 }
 
+func TestGetDimensionsUnhappy(t *testing.T) {
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When GetDimensions is called", func() {
+			resp, err := cantabularClient.GetDimensions(testCtx, cantabular.GetDimensionsRequest{
+				Dataset: "InexistentDataset",
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  10,
+					Offset: 0,
+				},
+			})
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When GetDimensions is called", func() {
+			resp, err := cantabularClient.GetDimensions(testCtx, cantabular.GetDimensionsRequest{
+				Dataset: "Teaching-Dataset",
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  10,
+					Offset: 0,
+				},
+			})
+
+			Convey("Then the expected error shoud not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+			})
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestGetDimensionsByNameHappy(t *testing.T) {
 	Convey("Given a correct getDimensionsByName response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
