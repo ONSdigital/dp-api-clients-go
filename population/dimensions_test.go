@@ -40,7 +40,7 @@ func TestGetDimensions(t *testing.T) {
 			calls := stubClient.DoCalls()
 			So(calls, ShouldNotBeEmpty)
 			fmt.Println(calls[0].Req.URL.String())
-			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/population-types/populationId/dimensions?limit=0&offset=0&q=searchString")
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/populationId/dimensions?limit=0&offset=0&q=searchString")
 		})
 	})
 
@@ -259,7 +259,7 @@ func TestGetCategorisations(t *testing.T) {
 				calls := stubClient.DoCalls()
 				So(calls, ShouldNotBeEmpty)
 				fmt.Println(calls[0].Req.URL.String())
-				So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/population-types/population-id/dimensions/dimension-id/categorisations?limit=10&offset=0")
+				So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/population-id/dimensions/dimension-id/categorisations?limit=10&offset=0")
 			})
 
 			Convey("And A list of categorisations should be returned", func() {
