@@ -212,6 +212,98 @@ func TestGetGeographyDimensionsUnhappy(t *testing.T) {
 	})
 }
 
+func TestGetDimensionsHappy(t *testing.T) {
+	Convey("Given a correct getDimensions response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetDimensions, http.StatusOK)
+
+		Convey("When GetDimensions is called", func() {
+			resp, err := cantabularClient.GetDimensions(testCtx, cantabular.GetDimensionsRequest{
+				Dataset: "Teaching-Dataset",
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  10,
+					Offset: 0,
+				},
+			})
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryDimensions,
+					cantabular.QueryData{
+						Dataset: "Teaching-Dataset",
+						PaginationParams: cantabular.PaginationParams{
+							Limit:  10,
+							Offset: 0,
+						},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedDims)
+			})
+		})
+	})
+}
+
+func TestGetDimensionsUnhappy(t *testing.T) {
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When GetDimensions is called", func() {
+			resp, err := cantabularClient.GetDimensions(testCtx, cantabular.GetDimensionsRequest{
+				Dataset: "InexistentDataset",
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  10,
+					Offset: 0,
+				},
+			})
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		_, cantabularClient := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When GetDimensions is called", func() {
+			resp, err := cantabularClient.GetDimensions(testCtx, cantabular.GetDimensionsRequest{
+				Dataset: "Teaching-Dataset",
+				PaginationParams: cantabular.PaginationParams{
+					Limit:  10,
+					Offset: 0,
+				},
+			})
+
+			Convey("Then the expected error shoud not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("Then the expected error is returned", func() {
+				So(cantabularClient.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+			})
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestGetDimensionsByNameHappy(t *testing.T) {
 	Convey("Given a correct getDimensionsByName response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
@@ -1525,6 +1617,172 @@ var mockRespBodyGetGeographyDimensions = `
 	}
 }
 `
+
+var expectedDims = cantabular.GetDimensionsResponse{
+	PaginationResponse: cantabular.PaginationResponse{
+		PaginationParams: cantabular.PaginationParams{Limit: 10, Offset: 0},
+	},
+	Dataset: gql.Dataset{
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:        "Age",
+						Label:       "Age",
+						Description: "age description",
+						Categories:  gql.Categories{TotalCount: 8},
+						MapFrom:     []gql.Variables{},
+					},
+				},
+				{
+					Node: gql.Node{
+						Name:        "Country",
+						Label:       "Country",
+						Description: "country description",
+						Categories:  gql.Categories{TotalCount: 2},
+						MapFrom: []gql.Variables{
+							{
+								Edges: []gql.Edge{
+									{
+										Node: gql.Node{
+											Label: "Region",
+											Name:  "Region",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Node: gql.Node{
+						Name:        "Health",
+						Label:       "Health",
+						Description: "health description",
+						Categories:  gql.Categories{TotalCount: 6},
+						MapFrom:     []gql.Variables{},
+					},
+				},
+				{
+					Node: gql.Node{
+						Name:        "Marital Status",
+						Label:       "Marital Status",
+						Description: "marital status description",
+						Categories:  gql.Categories{TotalCount: 5},
+						MapFrom:     []gql.Variables{},
+					},
+				},
+				{
+					Node: gql.Node{
+						Name:        "Region",
+						Label:       "Region",
+						Description: "region description",
+						Categories:  gql.Categories{TotalCount: 10},
+						MapFrom:     []gql.Variables{},
+					},
+				},
+				{
+					Node: gql.Node{
+						Name:        "Sex",
+						Label:       "Sex",
+						Description: "sex description",
+						Categories:  gql.Categories{TotalCount: 2},
+						MapFrom:     []gql.Variables{},
+					},
+				},
+			},
+		},
+	},
+}
+
+var mockRespBodyGetDimensions = `
+{
+	"data": {
+		"dataset": {
+			"variables": {
+				"edges": [
+					{
+						"node": {
+							"categories": {
+								"totalCount":8
+							},
+							"label": "Age",
+							"mapFrom": [],
+							"name": "Age",
+							"description": "age description"
+						}
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount":2
+							},
+							"label": "Country",
+							"mapFrom": [
+								{
+									"edges": [
+										{
+											"node": {
+												"label": "Region",
+												"name": "Region"
+											}
+										}
+									]
+								}
+							],
+							"name": "Country",
+							"description": "country description"
+						}
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount": 6
+							},
+							"label": "Health",
+							"mapFrom": [],
+							"name": "Health",
+							"description": "health description"
+						}
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount":5
+							},
+							"label": "Marital Status",
+							"mapFrom": [],
+							"name": "Marital Status",
+							"description": "marital status description"
+						}
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount":10
+							},
+							"label": "Region",
+							"mapFrom": [],
+							"name": "Region",
+							"description": "region description"
+						}
+					},
+					{
+						"node": {
+							"categories": {
+								"totalCount":2
+							},
+							"label": "Sex",
+							"mapFrom":[],
+							"name":"Sex",
+							"description": "sex description"
+						}
+					}
+				]
+			}
+		}
+	}
+}`
 
 var expectedBatchZeroGeographyDimensions = gql.Dataset{
 	Variables: gql.Variables{
