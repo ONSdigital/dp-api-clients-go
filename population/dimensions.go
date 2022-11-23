@@ -66,7 +66,7 @@ func (c *Client) GetDimensions(ctx context.Context, input GetDimensionsInput) (G
 		"search_string":   input.SearchString,
 	}
 
-	urlPath := fmt.Sprintf("/population-types/%s/dimensions", input.PopulationType)
+	urlPath := fmt.Sprintf("population-types/%s/dimensions", input.PopulationType)
 	urlValues := url.Values{
 		"limit":  []string{strconv.Itoa(input.Limit)},
 		"offset": []string{strconv.Itoa(input.Offset)},
@@ -126,7 +126,7 @@ func (c *Client) GetCategorisations(ctx context.Context, input GetCategorisation
 		"dimension":       input.Dimension,
 	}
 
-	urlPath := fmt.Sprintf("/population-types/%s/dimensions/%s/categorisations", input.PopulationType, input.Dimension)
+	urlPath := fmt.Sprintf("population-types/%s/dimensions/%s/categorisations", input.PopulationType, input.Dimension)
 	urlValues := url.Values{
 		"limit":  []string{strconv.Itoa(input.Limit)},
 		"offset": []string{strconv.Itoa(input.Offset)},
@@ -181,7 +181,7 @@ func (c *Client) GetBaseVariable(ctx context.Context, input GetBaseVariableInput
 		"variable":        input.Variable,
 	}
 
-	urlPath := fmt.Sprintf("/population-types/%s/dimensions/%s/base", input.PopulationType, input.Variable)
+	urlPath := fmt.Sprintf("population-types/%s/dimensions/%s/base", input.PopulationType, input.Variable)
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, nil)
 	if err != nil {
