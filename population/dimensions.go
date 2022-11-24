@@ -16,7 +16,7 @@ import (
 
 // Dimension is an area-type model with ID and Label
 type Dimension struct {
-	Name       string `json:"name"`
+	ID         string `json:"id"`
 	Label      string `json:"label"`
 	TotalCount int    `json:"total_count"`
 }
@@ -53,7 +53,7 @@ type GetBaseVariableInput struct {
 }
 
 type GetBaseVariableResponse struct {
-	Name  string `json:"name"`
+	ID    string `json:"id"`
 	Label string `json:"label"`
 }
 

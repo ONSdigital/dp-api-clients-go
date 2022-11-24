@@ -77,12 +77,12 @@ func TestGetDimensions(t *testing.T) {
 			},
 			Dimensions: []Dimension{
 				{
-					Name:       "",
+					ID:         "",
 					Label:      "Accommodation type (8 categories)",
 					TotalCount: 8,
 				},
 				{
-					Name:       "",
+					ID:         "",
 					Label:      "Type of central heating in household (13 categories)",
 					TotalCount: 13,
 				}},
@@ -211,12 +211,12 @@ func TestGetCategorisations(t *testing.T) {
 			},
 			Items: []Dimension{
 				{
-					Name:       "",
+					ID:         "",
 					Label:      "Accommodation type (8 categories)",
 					TotalCount: 8,
 				},
 				{
-					Name:       "",
+					ID:         "",
 					Label:      "Accomodation type (13 categories)",
 					TotalCount: 13,
 				}},
@@ -402,7 +402,7 @@ func TestGetBaseVariable(t *testing.T) {
 
 	Convey("Given a valid request categorisations payload", t, func() {
 		baseVariable := GetBaseVariableResponse{
-			Name:  "givenName",
+			ID:    "givenName",
 			Label: "givenLabel",
 		}
 
