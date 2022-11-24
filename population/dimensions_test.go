@@ -77,14 +77,16 @@ func TestGetDimensions(t *testing.T) {
 			},
 			Dimensions: []Dimension{
 				{
-					ID:         "",
-					Label:      "Accommodation type (8 categories)",
-					TotalCount: 8,
+					ID:          "",
+					Label:       "Accommodation type (8 categories)",
+					Description: "description",
+					TotalCount:  8,
 				},
 				{
-					ID:         "",
-					Label:      "Type of central heating in household (13 categories)",
-					TotalCount: 13,
+					ID:          "",
+					Label:       "Type of central heating in household (13 categories)",
+					Description: "description",
+					TotalCount:  13,
 				}},
 		}
 
@@ -211,14 +213,16 @@ func TestGetCategorisations(t *testing.T) {
 			},
 			Items: []Dimension{
 				{
-					ID:         "",
-					Label:      "Accommodation type (8 categories)",
-					TotalCount: 8,
+					ID:          "",
+					Label:       "Accommodation type (8 categories)",
+					Description: "description",
+					TotalCount:  8,
 				},
 				{
-					ID:         "",
-					Label:      "Accomodation type (13 categories)",
-					TotalCount: 13,
+					ID:          "",
+					Label:       "Accomodation type (13 categories)",
+					Description: "description",
+					TotalCount:  13,
 				}},
 		}
 
