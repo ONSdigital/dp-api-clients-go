@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -1451,4 +1452,46 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 		// back into the api sdk package
 		resp.Body.Close()
 	}
+}
+
+// PatchDataset update the dataset
+func (c *Client) PatchDataset(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, ifMatch string, requestBody io.ReadCloser) error {
+	uri := fmt.Sprintf("%s/datasets/%s", c.hcCli.URL, datasetID)
+
+	patchBody, err := dprequest.GetPatches(requestBody, []dprequest.PatchOp{dprequest.OpReplace})
+	if err != nil {
+		return errors.Wrap(err, "error obtaining dataset patch from request body")
+	}
+
+	resp, err := c.doPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, patchBody, ifMatch)
+	if err != nil {
+		return errors.Wrap(err, "http client returned error while attempting to make request")
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewDatasetAPIResponse(resp, uri)
+	}
+	return nil
+}
+
+// PatchVersion update the version
+func (c *Client) PatchVersion(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version, ifMatch string, requestBody io.ReadCloser ) error {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, datasetID, edition, version)
+
+	patchBody, err := dprequest.GetPatches(requestBody, []dprequest.PatchOp{dprequest.OpReplace})
+	if err != nil {
+		return errors.Wrap(err, "error obtaining version patch from request body")
+	}
+
+	resp, err := c.doPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, patchBody, ifMatch)
+	if err != nil {
+		return errors.Wrap(err, "http client returned error while attempting to make request")
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("incorrect http status, expected: 200, actual: %d, uri: %s", resp.StatusCode, uri)
+	}
+	return nil
 }
