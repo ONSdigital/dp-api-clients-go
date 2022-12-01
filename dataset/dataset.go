@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -20,6 +19,7 @@ import (
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/request"
 	"github.com/pkg/errors"
+	dpreq "github.com/ONSdigital/dp-net/v2/request"
 )
 
 const service = "dataset-api"
@@ -1427,6 +1427,27 @@ func (c *Client) doPatchWithAuthHeaders(ctx context.Context, userAuthToken, serv
 	return c.hcCli.Client.Do(ctx, req)
 }
 
+// callPatchWithAuthHeaders executes a PATCH request by using clienter.Do for the provided URI and patchBody.
+// It sets the user and service authentication and collectionID as a request header. Returns the http.Response and any error.
+// It is the callers responsibility to ensure response.Body is closed on completion.
+func (c *Client) callPatchWithAuthHeaders(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string, patchBody []dpreq.Patch, ifMatch string) (*http.Response, error) {
+	b, err := json.Marshal(patchBody)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, uri, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
+	headers.SetIfMatch(req, ifMatch)
+	addCollectionIDHeader(req, collectionID)
+	dprequest.AddFlorenceHeader(req, userAuthToken)
+	dprequest.AddServiceTokenHeader(req, serviceAuthToken)
+	return c.hcCli.Client.Do(ctx, req)
+}
+
 // doGetWithAuthHeadersAndWithDownloadToken executes clienter.Do setting the user and service authentication and download token token as a request header. Returns the http.Response and any error.
 // It is the callers responsibility to ensure response.Body is closed on completion.
 func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, userAuthToken, serviceAuthToken, downloadserviceAuthToken, collectionID, uri string) (*http.Response, error) {
@@ -1455,15 +1476,10 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 }
 
 // PatchDataset update the dataset
-func (c *Client) PatchDataset(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, ifMatch string, requestBody io.ReadCloser) error {
+func (c *Client) PatchDataset(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, ifMatch string, datasetPatches []dpreq.Patch ) error {
 	uri := fmt.Sprintf("%s/datasets/%s", c.hcCli.URL, datasetID)
 
-	patchBody, err := dprequest.GetPatches(requestBody, []dprequest.PatchOp{dprequest.OpReplace})
-	if err != nil {
-		return errors.Wrap(err, "error obtaining dataset patch from request body")
-	}
-
-	resp, err := c.doPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, patchBody, ifMatch)
+	resp, err := c.callPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, datasetPatches, ifMatch)
 	if err != nil {
 		return errors.Wrap(err, "http client returned error while attempting to make request")
 	}
@@ -1476,15 +1492,10 @@ func (c *Client) PatchDataset(ctx context.Context, userAuthToken, serviceAuthTok
 }
 
 // PatchVersion update the version
-func (c *Client) PatchVersion(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version, ifMatch string, requestBody io.ReadCloser ) error {
+func (c *Client) PatchVersion(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version, ifMatch string, datasetVersionPatches []dpreq.Patch ) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, datasetID, edition, version)
 
-	patchBody, err := dprequest.GetPatches(requestBody, []dprequest.PatchOp{dprequest.OpReplace})
-	if err != nil {
-		return errors.Wrap(err, "error obtaining version patch from request body")
-	}
-
-	resp, err := c.doPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, patchBody, ifMatch)
+	resp, err := c.callPatchWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, datasetVersionPatches, ifMatch)
 	if err != nil {
 		return errors.Wrap(err, "http client returned error while attempting to make request")
 	}
