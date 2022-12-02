@@ -415,6 +415,9 @@ func (c *Client) GetParentAreaCount(ctx context.Context, req GetParentAreaCountR
 			},
 		},
 	}
+	if sVar := req.SVariable; len(sVar) > 0 {
+		data.Variables = append(data.Variables, sVar)
+	}
 
 	if err := c.queryUnmarshal(ctx, QueryParentAreaCount, data, resp); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal query")
