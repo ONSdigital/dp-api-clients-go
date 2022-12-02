@@ -2,6 +2,7 @@ package cantabular
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
@@ -435,8 +436,15 @@ func (c *Client) GetParentAreaCount(ctx context.Context, req GetParentAreaCountR
 	}
 
 	// should be impossible but to avoid panic
-	if len(resp.Data.Dataset.Table.Dimensions) != 1 {
-		return nil, errors.New("invalid response from graphQL")
+	if l := len(resp.Data.Dataset.Table.Dimensions); l != 1 && l != 2 {
+		return nil, dperrors.New(
+			errors.New("invalid response from graphQL"),
+			http.StatusInternalServerError,
+			log.Data{
+				"expected_response_length": "1-2",
+				"response_length":          l,
+			},
+		)
 	}
 
 	return &GetParentAreaCountResult{
