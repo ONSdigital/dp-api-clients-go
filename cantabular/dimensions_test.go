@@ -1043,6 +1043,49 @@ func TestGetParentAreaCountHappy(t *testing.T) {
 				So(*resp, ShouldResemble, expectedParentAreaCount)
 			})
 		})
+
+		Convey("Given a supplemtary variable is also provided", func() {
+			sVar := "hh_tenura_7a"
+
+			req := cantabular.GetParentAreaCountRequest{
+				Dataset:   dataset,
+				Variable:  variable,
+				Parent:    parent,
+				Codes:     codes,
+				SVariable: sVar,
+			}
+
+			Convey("When GetParents is called", func() {
+
+				resp, err := cantabularClient.GetParentAreaCount(ctx, req)
+				Convey("Then no error should be returned", func() {
+					So(err, ShouldBeNil)
+				})
+
+				Convey("And the expected query is posted to cantabular api-ext", func() {
+					So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+					So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+					validateQuery(
+						mockHttpClient.PostCalls()[0].Body,
+						cantabular.QueryParentAreaCount,
+						cantabular.QueryData{
+							Dataset:   dataset,
+							Variables: []string{variable, sVar},
+							Filters: []cantabular.Filter{
+								{
+									Variable: parent,
+									Codes:    codes,
+								},
+							},
+						},
+					)
+				})
+
+				Convey("And the expected response is returned", func() {
+					So(*resp, ShouldResemble, expectedParentAreaCount)
+				})
+			})
+		})
 	})
 }
 
