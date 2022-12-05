@@ -327,26 +327,36 @@ query ($dataset: String!, $variables: [String!]!, $limit: Int!, $offset: Int) {
 
 const QueryCategorisations = `
 query ($dataset: String!, $text: String!) {
-	dataset(name: $dataset) {
-	  variables(rule: false, base: false) {
-		search(text: $text) {
-		  edges {
-			node {
-			  categories {
-				edges {
-				  node {
-					label
-					code
-				  }
-				}
-			  }
-			  name
-			  label
-			}
+  dataset(name: $dataset) {
+    variables(names: [ $text ] ) {
+      edges {
+	node {
+	  isSourceOf{
+	    edges{
+	      node{
+		name
+		label
+	      }
+	    }
+	  }
+	  mapFrom {
+	    edges {
+	      node {
+		isSourceOf{
+		  edges{
+		    node{
+		      name
+		      label
+		    }
 		  }
 		}
+	      }
+	    }
 	  }
 	}
+      }
+    }
+  }
 }`
 
 const QueryParentAreaCount = `
