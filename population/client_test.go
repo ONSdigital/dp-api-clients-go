@@ -796,6 +796,8 @@ func TestGetParentAreaCount(t *testing.T) {
 	const areaTypeId = "areaId"
 	const parentAreaTypeId = "parentAreaTypeId"
 	areas := []string{"area1", "area2"}
+	svar := "var1"
+
 	Convey("Given a valid request", t, func() {
 		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
 		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))
@@ -810,13 +812,17 @@ func TestGetParentAreaCount(t *testing.T) {
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
+			SVarID:           svar,
 		}
 		client.GetParentAreaCount(context.Background(), input)
 
 		Convey("it should call the parent areas count endpoint", func() {
 			calls := stubClient.DoCalls()
 			So(calls, ShouldNotBeEmpty)
-			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/populationType/area-types/areaId/parents/parentAreaTypeId/areas-count?areas=area1%2Carea2")
+			So(
+				calls[0].Req.URL.String(),
+				ShouldEqual,
+				"http://test.test:2000/v1/population-types/populationType/area-types/areaId/parents/parentAreaTypeId/areas-count?areas=area1%2Carea2&svar=var1")
 		})
 	})
 
@@ -860,6 +866,7 @@ func TestGetParentAreaCount(t *testing.T) {
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
+			SVarID:           svar,
 		}
 		res, err := client.GetParentAreaCount(context.Background(), input)
 
@@ -883,6 +890,7 @@ func TestGetParentAreaCount(t *testing.T) {
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
+			SVarID:           svar,
 		}
 		_, err := client.GetParentAreaCount(context.Background(), input)
 
@@ -908,6 +916,7 @@ func TestGetParentAreaCount(t *testing.T) {
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
+			SVarID:           svar,
 		}
 		_, err := client.GetParentAreaCount(context.Background(), input)
 
@@ -938,6 +947,7 @@ func TestGetParentAreaCount(t *testing.T) {
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
+			SVarID:           svar,
 		}
 		_, err := client.GetParentAreaCount(context.Background(), input)
 
@@ -958,6 +968,7 @@ func TestGetParentAreaCount(t *testing.T) {
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
+			SVarID:           svar,
 		}
 		_, err := client.GetParentAreaCount(nil, input)
 
@@ -985,6 +996,7 @@ func TestGetParentAreaCount(t *testing.T) {
 			AreaTypeID:       areaTypeId,
 			ParentAreaTypeID: parentAreaTypeId,
 			Areas:            areas,
+			SVarID:           svar,
 		}
 		_, err = client.GetParentAreaCount(context.Background(), input)
 

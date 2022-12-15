@@ -38,11 +38,15 @@ type GetAreasInput struct {
 	Text           string
 }
 
+// GetParentAreaCountInput holds the required fields for GetParentAreaCount.
+// SVarID stands for Supplentary Variable ID and is required when querying
+// pre-build tables.
 type GetParentAreaCountInput struct {
 	AuthTokens
 	PopulationType   string
 	AreaTypeID       string
 	ParentAreaTypeID string
+	SVarID           string
 	Areas            []string
 }
 
@@ -198,7 +202,10 @@ func (c *Client) GetParentAreaCount(ctx context.Context, input GetParentAreaCoun
 		input.ParentAreaTypeID,
 	)
 
-	urlValues := map[string][]string{"areas": {strings.Join(input.Areas, ",")}}
+	urlValues := map[string][]string{
+		"areas": {strings.Join(input.Areas, ",")},
+		"svar":  {input.SVarID},
+	}
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {
