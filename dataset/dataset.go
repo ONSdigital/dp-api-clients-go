@@ -1193,8 +1193,9 @@ func (c *Client) GetVersionMetadataSelection(ctx context.Context, req GetVersion
 		validDimensions[d] = struct{}{}
 	}
 
-	for i, md := range m.Dimensions {
-		if _, ok := validDimensions[md.Name]; !ok {
+	// loop backwards over slice to avoid index out of bounds panic after deleted elements
+	for i := len(m.Dimensions) - 1; i >= 0; i-- {
+		if _, ok := validDimensions[m.Dimensions[i].Name]; !ok {
 			m.Dimensions = append(m.Dimensions[:i], m.Dimensions[i+1:]...)
 		}
 	}
