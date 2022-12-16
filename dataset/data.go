@@ -37,6 +37,7 @@ type DatasetDetails struct {
 	Subtopics         []string          `json:"subtopics,omitempty"`
 	Survey            string            `json:"survey,omitempty"`
 	RelatedContent    *[]GeneralDetails `json:"related_content,omitempty"`
+	LowestGeography   string            `json:"lowest_geography,omitempty"`
 }
 
 // Dataset represents a dataset resource
@@ -77,6 +78,7 @@ type NewInstance struct {
 	LastUpdated       string               `json:"last_updated,omitempty"`
 	ImportTasks       *InstanceImportTasks `json:"import_tasks"`
 	Type              string               `json:"type,omitempty"`
+	LowestGeography   string               `json:"lowest_geography,omitempty"`
 }
 
 // Event holds one of the event which has happened to a new Instance
@@ -115,6 +117,7 @@ type Version struct {
 	CSVHeader            []string             `json:"headers,omitempty"`
 	UsageNotes           *[]UsageNote         `json:"usage_notes,omitempty"`
 	IsBasedOn            *IsBasedOn           `json:"is_based_on,omitempty"`
+	LowestGeography      string               `json:"lowest_geography,omitempty"`
 }
 
 type UpdateInstance struct {
@@ -517,6 +520,7 @@ func (m Metadata) ToString() string {
 	if m.RelatedContent != nil {
 		b.WriteString(fmt.Sprintf("Related Content: %s\n", *m.RelatedContent))
 	}
+	b.WriteString(fmt.Sprintf("Lowest Geography: %s\n", m.DatasetDetails.LowestGeography))
 	return b.String()
 }
 

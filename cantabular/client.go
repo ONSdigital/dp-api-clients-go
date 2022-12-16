@@ -22,6 +22,7 @@ import (
 const (
 	Service         = "cantabular"
 	ServiceAPIExt   = "cantabularAPIExt"
+	ServiceMetadata = "cantabularMetadataService"
 	SoftwareVersion = "v10"
 )
 
@@ -126,6 +127,14 @@ func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) err
 func (c *Client) CheckerAPIExt(ctx context.Context, state *healthcheck.CheckState) error {
 	reqURL := fmt.Sprintf("%s/graphql?query={datasets{name}}", c.extApiHost)
 	return c.checkHealth(ctx, state, ServiceAPIExt, reqURL)
+}
+
+// CheckerMetadataService contacts the /graphql endpoint and updates the healthcheck state accordingly.
+func (c *Client) CheckerMetadataService(ctx context.Context, state *healthcheck.CheckState) error {
+	// FIXME: We should not be using ext api host but that is the host used to create the graphql client
+	// despite it actually containing the dp-cantabular-metadata-service url as a value
+	reqURL := fmt.Sprintf("%s/graphql", c.extApiHost)
+	return c.checkHealth(ctx, state, ServiceMetadata, reqURL)
 }
 
 func (c *Client) checkHealth(ctx context.Context, state *healthcheck.CheckState, service, reqURL string) error {

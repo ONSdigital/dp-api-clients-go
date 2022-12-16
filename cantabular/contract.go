@@ -184,12 +184,13 @@ type GetCategorisationsResponse struct {
 	Dataset gql.Dataset `json:"dataset"`
 }
 
-// GetParentAreaCountRequest holds the input parameters for the GetParents query
+// GetParentAreaCountRequest holds the input parameters for the GetParentAreaCount query
 type GetParentAreaCountRequest struct {
-	Dataset  string
-	Variable string
-	Parent   string
-	Codes    []string
+	Dataset   string
+	Variable  string
+	Parent    string
+	SVariable string
+	Codes     []string
 }
 
 // GetParentAreaCountResponse is the response body for the GetParentAreaCount query

@@ -40,7 +40,7 @@ func TestGetDimensions(t *testing.T) {
 			calls := stubClient.DoCalls()
 			So(calls, ShouldNotBeEmpty)
 			fmt.Println(calls[0].Req.URL.String())
-			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/population-types/populationId/dimensions?limit=0&offset=0&q=searchString")
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/populationId/dimensions?limit=0&offset=0&q=searchString")
 		})
 	})
 
@@ -77,14 +77,16 @@ func TestGetDimensions(t *testing.T) {
 			},
 			Dimensions: []Dimension{
 				{
-					Name:       "",
-					Label:      "Accommodation type (8 categories)",
-					TotalCount: 8,
+					ID:          "",
+					Label:       "Accommodation type (8 categories)",
+					Description: "description",
+					TotalCount:  8,
 				},
 				{
-					Name:       "",
-					Label:      "Type of central heating in household (13 categories)",
-					TotalCount: 13,
+					ID:          "",
+					Label:       "Type of central heating in household (13 categories)",
+					Description: "description",
+					TotalCount:  13,
 				}},
 		}
 
@@ -211,14 +213,16 @@ func TestGetCategorisations(t *testing.T) {
 			},
 			Items: []Dimension{
 				{
-					Name:       "",
-					Label:      "Accommodation type (8 categories)",
-					TotalCount: 8,
+					ID:          "",
+					Label:       "Accommodation type (8 categories)",
+					Description: "description",
+					TotalCount:  8,
 				},
 				{
-					Name:       "",
-					Label:      "Accomodation type (13 categories)",
-					TotalCount: 13,
+					ID:          "",
+					Label:       "Accomodation type (13 categories)",
+					Description: "description",
+					TotalCount:  13,
 				}},
 		}
 
@@ -259,7 +263,7 @@ func TestGetCategorisations(t *testing.T) {
 				calls := stubClient.DoCalls()
 				So(calls, ShouldNotBeEmpty)
 				fmt.Println(calls[0].Req.URL.String())
-				So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/population-types/population-id/dimensions/dimension-id/categorisations?limit=10&offset=0")
+				So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/population-id/dimensions/dimension-id/categorisations?limit=10&offset=0")
 			})
 
 			Convey("And A list of categorisations should be returned", func() {
@@ -402,7 +406,7 @@ func TestGetBaseVariable(t *testing.T) {
 
 	Convey("Given a valid request categorisations payload", t, func() {
 		baseVariable := GetBaseVariableResponse{
-			Name:  "givenName",
+			ID:    "givenName",
 			Label: "givenLabel",
 		}
 

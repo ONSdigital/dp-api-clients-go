@@ -127,6 +127,7 @@ query ($dataset: String!, $text: String!, $limit: Int!, $offset: Int) {
 					node {
 						name
 						label
+						description
 						categories {
 							totalCount
 						}
@@ -177,6 +178,7 @@ query($dataset: String!, $limit: Int!, $offset: Int) {
 					mapFrom {
 						edges {
 							node {
+								description
 								label
 								name
 							}
@@ -246,6 +248,33 @@ query ($dataset: String!, $text: String!, $category: String!, $limit: Int!, $off
   }
 `
 
+// QueryAreasWithoutPagination is the graphQL query to search for areas and area types which match a specific string.
+const QueryAreasWithoutPagination = `
+query ($dataset: String!, $text: String!, $category: String!) {
+	dataset(name: $dataset) {
+	  variables(rule:true, names: [ $text ]) {
+		edges {
+		  node {
+			name
+			label
+			categories {
+			  totalCount
+			  search(text: $category ) {
+				edges {
+				  node {
+					code
+					label
+				  }
+				}
+			  }
+			}
+		  }
+		}
+	  }
+	}
+  }
+`
+
 // QueryArea is the graphQL query to search for an area which exactly match a specific string.
 const QueryArea = `
 query ($dataset: String!, $text: String!, $category: String!) {
@@ -298,26 +327,36 @@ query ($dataset: String!, $variables: [String!]!, $limit: Int!, $offset: Int) {
 
 const QueryCategorisations = `
 query ($dataset: String!, $text: String!) {
-	dataset(name: $dataset) {
-	  variables(rule: false, base: false) {
-		search(text: $text) {
-		  edges {
-			node {
-			  categories {
-				edges {
-				  node {
-					label
-					code
-				  }
-				}
-			  }
-			  name
-			  label
-			}
+  dataset(name: $dataset) {
+    variables(names: [ $text ] ) {
+      edges {
+	node {
+	  isSourceOf{
+	    edges{
+	      node{
+		name
+		label
+	      }
+	    }
+	  }
+	  mapFrom {
+	    edges {
+	      node {
+		isSourceOf{
+		  edges{
+		    node{
+		      name
+		      label
+		    }
 		  }
 		}
+	      }
+	    }
 	  }
 	}
+      }
+    }
+  }
 }`
 
 const QueryParentAreaCount = `

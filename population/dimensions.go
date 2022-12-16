@@ -16,9 +16,10 @@ import (
 
 // Dimension is an area-type model with ID and Label
 type Dimension struct {
-	Name       string `json:"name"`
-	Label      string `json:"label"`
-	TotalCount int    `json:"total_count"`
+	ID          string `json:"id"`
+	Label       string `json:"label"`
+	Description string `json:"description"`
+	TotalCount  int    `json:"total_count"`
 }
 
 type GetDimensionsInput struct {
@@ -53,7 +54,7 @@ type GetBaseVariableInput struct {
 }
 
 type GetBaseVariableResponse struct {
-	Name  string `json:"name"`
+	ID    string `json:"id"`
 	Label string `json:"label"`
 }
 
@@ -66,7 +67,7 @@ func (c *Client) GetDimensions(ctx context.Context, input GetDimensionsInput) (G
 		"search_string":   input.SearchString,
 	}
 
-	urlPath := fmt.Sprintf("/population-types/%s/dimensions", input.PopulationType)
+	urlPath := fmt.Sprintf("population-types/%s/dimensions", input.PopulationType)
 	urlValues := url.Values{
 		"limit":  []string{strconv.Itoa(input.Limit)},
 		"offset": []string{strconv.Itoa(input.Offset)},
@@ -126,7 +127,7 @@ func (c *Client) GetCategorisations(ctx context.Context, input GetCategorisation
 		"dimension":       input.Dimension,
 	}
 
-	urlPath := fmt.Sprintf("/population-types/%s/dimensions/%s/categorisations", input.PopulationType, input.Dimension)
+	urlPath := fmt.Sprintf("population-types/%s/dimensions/%s/categorisations", input.PopulationType, input.Dimension)
 	urlValues := url.Values{
 		"limit":  []string{strconv.Itoa(input.Limit)},
 		"offset": []string{strconv.Itoa(input.Offset)},
@@ -181,7 +182,7 @@ func (c *Client) GetBaseVariable(ctx context.Context, input GetBaseVariableInput
 		"variable":        input.Variable,
 	}
 
-	urlPath := fmt.Sprintf("/population-types/%s/dimensions/%s/base", input.PopulationType, input.Variable)
+	urlPath := fmt.Sprintf("population-types/%s/dimensions/%s/base", input.PopulationType, input.Variable)
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, nil)
 	if err != nil {

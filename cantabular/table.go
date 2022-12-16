@@ -1,8 +1,6 @@
 package cantabular
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/csv"
 	"errors"
@@ -17,7 +15,7 @@ import (
 // query response
 type Table struct {
 	Dimensions []Dimension `json:"dimensions"`
-	Values     []int       `json:"values"`
+	Values     []float32   `json:"values"`
 	Error      string      `json:"error,omitempty" `
 }
 
@@ -27,45 +25,6 @@ var (
 	errNullDataset = errors.New(`dataset object expected but "null" found`)
 	errNullTable   = errors.New(`table object expected but "null" found`)
 )
-
-// ParseTable takes a table from a GraphQL response and parses it into a
-// header and rows of counts (observations) ready to be read line-by-line.
-func (c *Client) ParseTable(table Table) (*bufio.Reader, error) {
-	// Create CSV writer with underlying buffer
-	b := new(bytes.Buffer)
-	w := csv.NewWriter(b)
-
-	// aux func to write to the csv writer, returning any error (returned by w.Write or w.Errors)
-	write := func(record []string) error {
-		if err := w.Write(record); err != nil {
-			return err
-		}
-		return w.Error()
-	}
-
-	// Create and write header separately
-	header := createCSVHeader(table.Dimensions)
-	if err := write(header); err != nil {
-		return nil, fmt.Errorf("error writing the csv header: %w", err)
-	}
-
-	// Obtain the CSV rows according to the cantabular dimensions and counts
-	for i, count := range table.Values {
-		row := createCSVRow(table.Dimensions, i, count)
-		if err := write(row); err != nil {
-			return nil, fmt.Errorf("error writing a csv row: %w", err)
-		}
-	}
-
-	// Flush to make sure all data is present in the byte buffer
-	w.Flush()
-	if err := w.Error(); err != nil {
-		return nil, fmt.Errorf("error flushing the csv writer: %w", err)
-	}
-
-	// Return a reader with the same underlying Byte buffer as written by the csv writer
-	return bufio.NewReader(b), nil
-}
 
 // GraphQLJSONToCSV converts a JSON response in r to CSV on w, returning the row count
 // if an error happens, the process is aborted and the error is returned.
@@ -310,26 +269,6 @@ func createCSVHeader(dims Dimensions) []string {
 	header[l] = "Observation"
 
 	return header
-}
-
-// createCSVRow creates an array of strings corresponding to a csv row
-// for the provided array of dimension, index and count
-// it assumes that the values are sorted with lower weight for the last dimension and higher weight for the first dimension.
-func createCSVRow(dims []Dimension, index, count int) []string {
-	l := len(dims)
-	row := make([]string, l*2+1)
-
-	// Iterate dimensions starting from the last one (lower weight)
-	for i := l - 1; i >= 0; i-- {
-		catIndex := index % dims[i].Count               // Index of the category for the current dimension
-		row[i*2] = dims[i].Categories[catIndex].Code    // The CSV column corresponds to the label of the Category
-		row[i*2+1] = dims[i].Categories[catIndex].Label // The CSV column corresponds to the label of the Category
-		index /= dims[i].Count                          // Modify index for next iteration
-	}
-
-	row[l*2] = fmt.Sprintf("%d", count)
-
-	return row
 }
 
 // createCSVRow creates an array of strings corresponding to a csv row

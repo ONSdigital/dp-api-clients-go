@@ -32,6 +32,7 @@ type Instance struct {
 	Editions  []string   `json:"editions,omitempty"`
 	Title     string     `json:"title,omitempty"`
 	CodeLists []CodeList `json:"code_lists,omitempty"`
+	LowestGeography string `json:"lowest_geography,omitempty"`
 }
 
 // file holds one of the file descriptions corresponding to a recipe

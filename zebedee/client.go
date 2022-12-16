@@ -462,7 +462,6 @@ func (c *Client) GetRelease(ctx context.Context, userAccessToken, collectionID, 
 	related := [][]Link{
 		release.RelatedDocuments,
 		release.RelatedDatasets,
-		release.RelatedAPIDatasets,
 		release.RelatedMethodology,
 		release.RelatedMethodologyArticle,
 		release.Links,
@@ -482,12 +481,14 @@ func (c *Client) GetRelease(ctx context.Context, userAccessToken, collectionID, 
 					<-sem
 					wg.Done()
 				}()
-				t, _ := c.GetPageDescription(ctx, userAccessToken, collectionID, lang, e.URI)
-				element[i].Title = t.Description.Title
-				if t.Description.Edition != "" {
-					element[i].Title += fmt.Sprintf(": %s", t.Description.Edition)
+				t, err := c.GetPageDescription(ctx, userAccessToken, collectionID, lang, e.URI)
+				if err == nil {
+					element[i].Title = t.Description.Title
+					if t.Description.Edition != "" {
+						element[i].Title += fmt.Sprintf(": %s", t.Description.Edition)
+					}
+					element[i].Summary = t.Description.Summary
 				}
-				element[i].Summary = t.Description.Summary
 			}(i, e, element)
 		}
 	}
