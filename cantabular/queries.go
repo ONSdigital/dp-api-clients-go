@@ -343,15 +343,15 @@ query ($dataset: String!, $text: String!) {
 	  mapFrom {
 	    edges {
 	      node {
-		isSourceOf{
+		  isSourceOf{
 			totalCount
-		  edges{
-		    node{
-		      name
-		      label
+		    edges{
+		      node{
+		        name
+		        label
+		      }
 		    }
 		  }
-		}
 	      }
 	    }
 	  }
