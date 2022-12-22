@@ -332,7 +332,7 @@ query ($dataset: String!, $text: String!) {
       edges {
 	node {
 	  isSourceOf{
-		totalCount
+	    totalCount
 	    edges{
 	      node{
 		name
@@ -344,7 +344,7 @@ query ($dataset: String!, $text: String!) {
 	    edges {
 	      node {
 		  isSourceOf{
-			totalCount
+		    totalCount
 		    edges{
 		      node{
 		        name
