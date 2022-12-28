@@ -2,7 +2,6 @@ package cantabular
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
@@ -548,9 +547,6 @@ func (c *Client) GetCategorisations(ctx context.Context, req GetCategorisationsR
 		TotalCount:       resp.Data.Dataset.Variables.TotalCount,
 		PaginationParams: req.PaginationParams,
 	}
-
-	fmt.Println("RESPONSE FROM API CLIENTS GO IS")
-	fmt.Println(resp.Data)
 
 	return &resp.Data, nil
 }
