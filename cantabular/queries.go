@@ -335,6 +335,14 @@ query ($dataset: String!, $text: String!) {
 	    totalCount
 	    edges{
 	      node{
+			categories{
+				edges{
+				  node{
+					label
+					code
+				  }
+				}
+			  }
 		name
 		label
 	      }
@@ -347,6 +355,14 @@ query ($dataset: String!, $text: String!) {
 		    totalCount
 		    edges{
 		      node{
+				categories{
+					edges{
+					  node{
+						label
+						code
+					  }
+					}
+				  }
 		        name
 		        label
 		      }
