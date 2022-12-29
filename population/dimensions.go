@@ -24,7 +24,7 @@ type Dimension struct {
 }
 
 type Category struct {
-	Code  string `json:"code"`
+	ID    string `json:"id"`
 	Label string `json:"label"`
 }
 
