@@ -175,6 +175,11 @@ query($dataset: String!, $limit: Int!, $offset: Int) {
 				node {
 					name
 					description
+					meta{
+						ONS_Variable{
+							  Geography_Hierarchy_Order
+						}
+					 }
 					mapFrom {
 						edges {
 							node {
@@ -311,6 +316,11 @@ query ($dataset: String!, $variables: [String!]!, $limit: Int!, $offset: Int) {
 	    totalCount
 	    edges{
 	      node{
+			meta{
+				ONS_Variable{
+				  Geography_Hierarchy_Order
+				}
+			  }
 		label
 		name
 		categories{

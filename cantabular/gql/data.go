@@ -25,6 +25,14 @@ type Edge struct {
 	Node Node `json:"node"`
 }
 
+type Meta struct {
+	ONSVariable ONS_Variable `json:"ONS_Variable"`
+}
+
+type ONS_Variable struct {
+	GeographyHierarchyOrder string `json:"Geography_Hierarchy_Order"`
+}
+
 type Node struct {
 	Name             string      `json:"name"`
 	Description      string      `json:"description"`
@@ -35,6 +43,7 @@ type Node struct {
 	Variable         Variable    `json:"variable"`
 	IsDirectSourceOf Variables   `json:"isDirectSourceOf"`
 	IsSourceOf       Variables   `json:"isSourceOf"`
+	Meta             Meta        `json:"meta"`
 }
 
 type Categories struct {
