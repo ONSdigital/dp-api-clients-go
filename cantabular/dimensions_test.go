@@ -14,6 +14,42 @@ import (
 	dphttp "github.com/ONSdigital/dp-net/http"
 )
 
+func TestGetDimensionCategory(t *testing.T) {
+	testCtx := context.Background()
+	mockHttpClient, cantabularClient := newMockedClient(mockRespGetBaseVariables, http.StatusOK)
+	Convey("Given a correct getDimensionCategory response from the /graphql endpoint", t, func() {
+		Convey("When GetDimensionCategories is called", func() {
+			resp, err := cantabularClient.GetDimensionCategories(testCtx, cantabular.GetDimensionCategoriesRequest{
+				PaginationParams: cantabular.PaginationParams{},
+				Dataset:          "UR",
+				Variables:        []string{"sex"},
+			})
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				// why 2 and not 1 like others?
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 2)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryDimensionCategories,
+					cantabular.QueryData{
+						Dataset:   "UR",
+						Variables: []string{"sex"},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedDimensionCategories)
+			})
+
+		})
+	})
+}
 func TestGetBaseVariable(t *testing.T) {
 	Convey("Given a correct getBaseVariables response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
@@ -1500,6 +1536,47 @@ var mockRespBodyGetAllDimensions = `
 	}
 }`
 
+var mockResponseBodyDimensionCategories = `
+{
+  "data": {
+    "dataset": {
+      "variables": {
+	"edges": [
+	  {
+	    "node": {
+	      "categories": {
+		"edges": [
+		  {
+		    "node": {
+		      "code": "1",
+		      "label": "Female",
+		      "variable": {
+			"name": "sex"
+		      }
+		    }
+		  },
+		  {
+		    "node": {
+		      "code": "2",
+		      "label": "Male",
+		      "variable": {
+			"name": "sex"
+		      }
+		    }
+		  }
+		],
+		"totalCount": 2
+	      },
+	      "label": "Sex (2 categories)",
+	      "name": "sex"
+	    }
+	  }
+	]
+      }
+    }
+  }
+}
+`
 var expectedBaseVariable = cantabular.GetBaseVariableResponse{
 	Dataset: gql.Dataset{
 		Variables: gql.Variables{
@@ -1522,6 +1599,48 @@ var expectedBaseVariable = cantabular.GetBaseVariableResponse{
 					},
 				},
 			},
+		},
+	},
+}
+
+var expectedDimensionCategories = cantabular.GetDimensionCategoriesResponse{
+	Dataset: gql.Dataset{
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Name:  "sex",
+						Label: "Sex (2 Categories)",
+						Categories: gql.Categories{
+							TotalCount: 2,
+							Edges: []gql.Edge{
+
+								{
+									Node: gql.Node{
+										Name:        "",
+										Description: "",
+										Code:        "1",
+										Label:       "Male",
+										Variable: gql.Variable{
+											Name: "sex",
+										},
+									},
+								},
+								{
+									Node: gql.Node{
+										Code:  "2",
+										Label: "Female",
+										Variable: gql.Variable{
+											Name: "sex",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			TotalCount: 2,
 		},
 	},
 }

@@ -48,8 +48,9 @@ func (c *Client) GetDimensionCategories(ctx context.Context, req GetDimensionCat
 	}{}
 
 	data := QueryData{
-		Dataset:   req.Dataset,
-		Variables: []string{req.Variable},
+		PaginationParams: req.PaginationParams,
+		Dataset:          req.Dataset,
+		Variables:        req.Variables,
 	}
 
 	if err := c.queryUnmarshal(ctx, QueryDimensionCategories, data, resp); err != nil {
