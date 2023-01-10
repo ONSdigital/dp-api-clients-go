@@ -22,13 +22,14 @@ type Dimensions struct {
 
 // Dimension represents a dimension response from the filter api
 type Dimension struct {
-	Name           string   `json:"name"`
-	ID             string   `json:"id,omitempty"`
-	Label          string   `json:"label,omitempty"`
-	URI            string   `json:"dimension_url"`
-	IsAreaType     *bool    `json:"is_area_type,omitempty"`
-	Options        []string `json:"options,omitempty"`
-	FilterByParent string   `json:"filter_by_parent,omitempty"`
+	Name                  string   `json:"name"`
+	ID                    string   `json:"id,omitempty"`
+	Label                 string   `json:"label,omitempty"`
+	URI                   string   `json:"dimension_url"`
+	IsAreaType            *bool    `json:"is_area_type,omitempty"`
+	Options               []string `json:"options,omitempty"`
+	DefaultCategorisation string   `json:"default_categorisation"`
+	FilterByParent        string   `json:"filter_by_parent,omitempty"`
 }
 
 // DimensionOption represents a dimension option from the filter api
