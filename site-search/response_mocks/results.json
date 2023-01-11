@@ -1,5 +1,6 @@
 {
     "count": 5,
+    "distinct_topic_count": 4,
     "took": 36,
     "content_types": [
         {
