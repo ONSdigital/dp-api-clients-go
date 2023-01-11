@@ -20,7 +20,7 @@ type AreaType struct {
 	Label           string `json:"label"`
 	Description     string `json:"description"`
 	TotalCount      int    `json:"total_count"`
-	Hierarchy_Order string `json:"hierarchy_order"`
+	Hierarchy_Order int    `json:"hierarchy_order"`
 }
 
 type GetAreaTypesInput struct {
