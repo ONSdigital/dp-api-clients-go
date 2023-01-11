@@ -16,10 +16,11 @@ import (
 
 // AreaType is an area type model with ID and Label
 type AreaType struct {
-	ID          string `json:"id"`
-	Label       string `json:"label"`
-	Description string `json:"description"`
-	TotalCount  int    `json:"total_count"`
+	ID              string `json:"id"`
+	Label           string `json:"label"`
+	Description     string `json:"description"`
+	TotalCount      int    `json:"total_count"`
+	Hierarchy_Order string `json:"hierarchy_order"`
 }
 
 type GetAreaTypesInput struct {
