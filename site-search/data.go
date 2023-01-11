@@ -5,7 +5,7 @@ type Response struct {
 	ES_710                bool          `json:"es_710"`
 	Count                 int           `json:"count"`
 	ContentTypes          []FilterCount `json:"content_types"`
-	DistinctTopicCount    int           `json:"distinct_topic_count"`
+	DistinctTopicCount    int           `json:"distinct_topics_count"`
 	Items                 []ContentItem `json:"items"`
 	Suggestions           []string      `json:"suggestions,omitempty"`
 	Topics                []FilterCount `json:"topics"`
