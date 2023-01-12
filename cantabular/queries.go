@@ -402,6 +402,14 @@ query ($dataset: String!, $variables: [String!]!, $filters: [Filter!]! ) {
 	}
 }`
 
+const QueryListDatasets = `
+query {
+	datasets {
+		name
+		label
+	}
+}`
+
 // QueryData holds all the possible required variables to encode any of the graphql queries defined in this file.
 type QueryData struct {
 	PaginationParams
