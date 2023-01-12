@@ -2,26 +2,30 @@ package cantabular
 
 import (
 	"context"
+	"errors"
 
-	"github.com/shurcooL/graphql"
+	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
-type ListDatasetsItem struct {
-	Name graphql.String
-}
+func (c *Client) ListDatasets(ctx context.Context) (*ListDatasetsResponse, error) {
+	resp := &struct {
+		Data   ListDatasetsResponse `json:"data"`
+		Errors []gql.Error          `json:"errors,omitempty"`
+	}{}
 
-type ListDatasetsQuery struct {
-	Datasets []ListDatasetsItem
-}
-
-func (c *Client) ListDatasets(ctx context.Context) ([]string, error) {
-	var query ListDatasetsQuery
-	if err := c.gqlClient.Query(ctx, &query, nil); err != nil {
+	if err := c.queryUnmarshal(ctx, QueryListDatasets, QueryData{}, resp); err != nil {
 		return nil, err
 	}
-	names := make([]string, len(query.Datasets))
-	for i, dataset := range query.Datasets {
-		names[i] = string(dataset.Name)
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			resp.Errors[0].StatusCode(),
+			log.Data{"errors": resp.Errors},
+		)
 	}
-	return names, nil
+
+	return &resp.Data, nil
 }
