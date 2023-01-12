@@ -79,6 +79,30 @@ func (c *Client) createGetRequest(ctx context.Context, userAuthToken, serviceAut
 	return req, nil
 }
 
+func (c *Client) createGetDimensionsDescriptionRequest(ctx context.Context, userAuthToken, serviceAuthToken, urlPath string, urlValues url.Values) (*http.Request, error) {
+	populationURL, err := c.baseURL.Parse(urlPath)
+	if err != nil {
+		return &http.Request{}, dperrors.New(
+			errors.Wrap(err, "failed to parse areas URL"),
+			http.StatusInternalServerError,
+			log.Data{},
+		)
+	}
+
+	populationURL.RawQuery = urlValues.Encode()
+	reqURL := populationURL.String()
+
+	req, err := newRequest(ctx, http.MethodGet, reqURL, nil, userAuthToken, serviceAuthToken)
+	if err != nil {
+		return &http.Request{}, dperrors.New(
+			errors.Wrap(err, "failed to create request"),
+			http.StatusBadRequest,
+			log.Data{},
+		)
+	}
+	return req, nil
+}
+
 func checkGetResponse(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK {
 		b, err := io.ReadAll(resp.Body)

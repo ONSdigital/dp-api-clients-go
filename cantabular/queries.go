@@ -138,6 +138,24 @@ query ($dataset: String!, $text: String!, $limit: Int!, $offset: Int) {
 	}
 }
 `
+const QueryDimensionsDescription = `
+query ($dataset: String!, $variables: [String!]!){
+	dataset(name:$dataset) {
+	  	variables( names: $variables ) {
+			totalCount
+			edges {
+		  		node {
+					name
+					label
+					description
+					categories {
+			  			totalCount
+					}
+		  		}
+			}
+	  	}
+	}
+}`
 
 // QueryDimensionsByName is the graphQL query to obtain dimensions by name (subset of variables, without categories)
 const QueryDimensionsByName = `

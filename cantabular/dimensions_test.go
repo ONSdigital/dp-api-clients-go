@@ -120,6 +120,41 @@ func TestGetAllDimensionsUnhappy(t *testing.T) {
 	})
 }
 
+func TestGetDimensionsDescriptionHappy(t *testing.T) {
+	Convey("Given a correct GetDimensionsDescription response from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetDimensionsDescription, http.StatusOK)
+
+		Convey("When GetDimensionsDescription is called", func() {
+			resp, err := cantabularClient.GetDimensionsDescription(testCtx, cantabular.GetDimensionsDescriptionRequest{
+				Dataset:        "Teaching-Dataset",
+				DimensionNames: []string{"hh_carers", "hh_deprivation"},
+			})
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryDimensionsDescription,
+					cantabular.QueryData{
+						Dataset:   "Teaching-Dataset",
+						Variables: []string{"hh_carers", "hh_deprivation"},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*resp, ShouldResemble, expectedDimensionsDescription)
+			})
+		})
+	})
+}
+
 func TestGetGeographyDimensionsHappy(t *testing.T) {
 	Convey("Given a correct getGeographyDimensions response from the /graphql endpoint", t, func() {
 		testCtx := context.Background()
@@ -1560,6 +1595,32 @@ var expectedDimensions = cantabular.GetDimensionsResponse{
 	},
 }
 
+var expectedDimensionsDescription = cantabular.GetDimensionsResponse{
+	Dataset: gql.Dataset{
+		Variables: gql.Variables{
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						Categories:  gql.Categories{TotalCount: 32},
+						Label:       "Number of unpaid carers in household (32 categories)",
+						Name:        "hh_carers",
+						Description: "description1",
+					},
+				},
+				{
+					Node: gql.Node{
+						Categories:  gql.Categories{TotalCount: 6},
+						Label:       "Household deprivation (6 categories)",
+						Name:        "hh_deprivation",
+						Description: "description2",
+					},
+				},
+			},
+			TotalCount: 2,
+		},
+	},
+}
+
 // mockRespBodyZeroGetGeographyDimensions is a successful 'get geography dimensions' with 0 results query respose that is returned from a mocked client for testing
 var mockRespBodyZeroGetGeographyDimensions = `
 {
@@ -1999,6 +2060,37 @@ var mockRespBodySearchDimensions = `{
 	}
 }
 `
+var mockRespBodyGetDimensionsDescription = `{
+	"data": {
+		"dataset": {
+			"variables": {
+			"edges": [
+				{
+				"node": {
+					"categories": {
+					"totalCount": 32
+					},
+					"description": "description1",
+					"label": "Number of unpaid carers in household (32 categories)",
+					"name": "hh_carers"
+				}
+				},
+				{
+				"node": {
+					"categories": {
+					"totalCount": 6
+					},
+					"description": "description2",
+					"label": "Household deprivation (6 categories)",
+					"name": "hh_deprivation"
+				}
+				}
+			],
+			"totalCount": 2
+			}
+		}
+	}
+  }`
 
 // expectedSearchDimensionsResponse is the expected response struct generated from a successful 'search dimensions' query for testing
 var expectedSearchDimensionsResponse = cantabular.GetDimensionsResponse{

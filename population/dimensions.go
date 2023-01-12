@@ -35,6 +35,12 @@ type GetDimensionsInput struct {
 	SearchString   string
 }
 
+type GetDimensionsDescriptionInput struct {
+	AuthTokens
+	PopulationType string
+	DimensionIDs   []string
+}
+
 type GetCategorisationsInput struct {
 	AuthTokens
 	PaginationParams
@@ -83,6 +89,62 @@ func (c *Client) GetDimensions(ctx context.Context, input GetDimensionsInput) (G
 	}
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
+	if err != nil {
+		return GetDimensionsResponse{}, dperrors.New(
+			err,
+			dperrors.StatusCode(err),
+			logData,
+		)
+	}
+
+	clientlog.Do(ctx, "getting dimensions", service, req.URL.String(), logData)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return GetDimensionsResponse{}, dperrors.New(
+			errors.Wrap(err, "failed to get response from Population types API"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}()
+
+	if err := checkGetResponse(resp); err != nil {
+		return GetDimensionsResponse{}, err
+	}
+
+	var dimensions GetDimensionsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&dimensions); err != nil {
+		return GetDimensionsResponse{}, dperrors.New(
+			errors.Wrap(err, "unable to deserialize areas response"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	return dimensions, nil
+}
+
+func (c *Client) GetDimensionsDescription(ctx context.Context, input GetDimensionsDescriptionInput) (GetDimensionsResponse, error) {
+	logData := log.Data{
+		"method":       http.MethodGet,
+		"dimensionIDs": input.DimensionIDs,
+	}
+
+	urlPath := fmt.Sprintf("population-types/%s/dimensions-description", input.PopulationType)
+
+	var urlValues url.Values
+	if input.DimensionIDs != nil {
+		urlValues = make(url.Values)
+		urlValues["q"] = input.DimensionIDs
+	}
+
+	req, err := c.createGetDimensionsDescriptionRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {
 		return GetDimensionsResponse{}, dperrors.New(
 			err,
