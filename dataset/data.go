@@ -30,6 +30,7 @@ type DatasetDetails struct {
 	Title             string            `json:"title,omitempty"`
 	Type              string            `json:"type,omitempty"`
 	UnitOfMeasure     string            `json:"unit_of_measure,omitempty"`
+	UsageNotes        *[]UsageNote      `json:"usage_notes,omitempty"`
 	URI               string            `json:"uri,omitempty"`
 	IsBasedOn         *IsBasedOn        `json:"is_based_on,omitempty"`
 	VersionsList      VersionsList      `json:"versions_list,omitempty"`
