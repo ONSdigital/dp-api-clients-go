@@ -16,7 +16,7 @@ import (
 
 func TestGetDimensionCategory(t *testing.T) {
 	testCtx := context.Background()
-	mockHttpClient, cantabularClient := newMockedClient(mockRespGetBaseVariables, http.StatusOK)
+	mockHttpClient, cantabularClient := newMockedClient(mockRespBodyDimensionCategories, http.StatusOK)
 	Convey("Given a correct getDimensionCategory response from the /graphql endpoint", t, func() {
 		Convey("When GetDimensionCategories is called", func() {
 			resp, err := cantabularClient.GetDimensionCategories(testCtx, cantabular.GetDimensionCategoriesRequest{
@@ -1536,7 +1536,7 @@ var mockRespBodyGetAllDimensions = `
 	}
 }`
 
-var mockResponseBodyDimensionCategories = `
+var mockRespBodyDimensionCategories = `
 {
   "data": {
     "dataset": {
@@ -1549,7 +1549,7 @@ var mockResponseBodyDimensionCategories = `
 		  {
 		    "node": {
 		      "code": "1",
-		      "label": "Female",
+		      "label": "Male",
 		      "variable": {
 			"name": "sex"
 		      }
@@ -1558,7 +1558,7 @@ var mockResponseBodyDimensionCategories = `
 		  {
 		    "node": {
 		      "code": "2",
-		      "label": "Male",
+		      "label": "Female",
 		      "variable": {
 			"name": "sex"
 		      }
@@ -1610,7 +1610,7 @@ var expectedDimensionCategories = cantabular.GetDimensionCategoriesResponse{
 				{
 					Node: gql.Node{
 						Name:  "sex",
-						Label: "Sex (2 Categories)",
+						Label: "Sex (2 categories)",
 						Categories: gql.Categories{
 							TotalCount: 2,
 							Edges: []gql.Edge{
@@ -1640,7 +1640,7 @@ var expectedDimensionCategories = cantabular.GetDimensionCategoriesResponse{
 					},
 				},
 			},
-			TotalCount: 2,
+			TotalCount: 0,
 		},
 	},
 }

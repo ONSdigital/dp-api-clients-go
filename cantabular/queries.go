@@ -117,26 +117,26 @@ query($dataset: String!) {
 }`
 
 const QueryDimensionCategories = `
-query($dataset: String!, $variables: [String!]!) {
-    dataset(name: $dataset) {
-	variables(names: $variables) {
+query ($dataset: String!, $variables: [String!]!) {
+  dataset(name: $dataset) {
+    variables(names: $variables) {
+      edges {
+	node {
+	  name
+	  label
+	  categories {
 	    edges {
-		node {
-		    name
-		    label
-		    categories {
-	    edges{
-	      node{
+	      node {
 		label
 		code
 	      }
 	    }
-	       totalCount
-		    }
-		}
-	    }
+	    totalCount
+	  }
 	}
+      }
     }
+  }
 }
 `
 

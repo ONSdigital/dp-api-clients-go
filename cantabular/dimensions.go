@@ -66,7 +66,6 @@ func (c *Client) GetDimensionCategories(ctx context.Context, req GetDimensionCat
 	}
 
 	return &resp.Data, nil
-
 }
 
 // GetAllDimensions performs a graphQL query to obtain all the dimensions for the provided cantabular dataset.
