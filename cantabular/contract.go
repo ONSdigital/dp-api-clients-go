@@ -219,6 +219,17 @@ type GetBaseVariableResponse struct {
 	Dataset gql.Dataset `json:"dataset"`
 }
 
+type GetDimensionCategoriesRequest struct {
+	PaginationParams
+	Dataset   string   `json:"dataset"`
+	Variables []string `json:"variables"`
+}
+
+type GetDimensionCategoriesResponse struct {
+	PaginationResponse
+	Dataset gql.Dataset `json:"dataset"`
+}
+
 type ListDatasetsResponse struct {
 	Datasets []gql.Dataset `json:"datasets"`
 }
