@@ -1853,8 +1853,13 @@ var expectedDims = cantabular.GetDimensionsResponse{
 						Name:        "Age",
 						Label:       "Age",
 						Description: "age description",
-						Categories:  gql.Categories{TotalCount: 8},
-						MapFrom:     []gql.Variables{},
+						Meta: gql.Meta{
+							ONSVariable: gql.ONS_Variable{
+								QualityStatementText: "quality statement",
+							},
+						},
+						Categories: gql.Categories{TotalCount: 8},
+						MapFrom:    []gql.Variables{},
 					},
 				},
 				{
@@ -1862,7 +1867,12 @@ var expectedDims = cantabular.GetDimensionsResponse{
 						Name:        "Country",
 						Label:       "Country",
 						Description: "country description",
-						Categories:  gql.Categories{TotalCount: 2},
+						Meta: gql.Meta{
+							ONSVariable: gql.ONS_Variable{
+								QualityStatementText: "quality statement",
+							},
+						},
+						Categories: gql.Categories{TotalCount: 2},
 						MapFrom: []gql.Variables{
 							{
 								Edges: []gql.Edge{
@@ -1932,7 +1942,12 @@ var mockRespBodyGetDimensions = `
 							"label": "Age",
 							"mapFrom": [],
 							"name": "Age",
-							"description": "age description"
+							"description": "age description",
+							"meta": {
+								"ONS_Variable": {
+									"quality_statement_text": "quality statement"
+								}
+							}
 						}
 					},
 					{
@@ -1954,7 +1969,12 @@ var mockRespBodyGetDimensions = `
 								}
 							],
 							"name": "Country",
-							"description": "country description"
+							"description": "country description",
+							"meta": {
+								"ONS_Variable": {
+									"quality_statement_text": "quality statement"
+								}
+							}
 						}
 					},
 					{
