@@ -77,16 +77,18 @@ func TestGetDimensions(t *testing.T) {
 			},
 			Dimensions: []Dimension{
 				{
-					ID:          "",
-					Label:       "Accommodation type (8 categories)",
-					Description: "description",
-					TotalCount:  8,
+					ID:                   "",
+					Label:                "Accommodation type (8 categories)",
+					Description:          "description",
+					TotalCount:           8,
+					QualityStatementText: "quality statement",
 				},
 				{
-					ID:          "",
-					Label:       "Type of central heating in household (13 categories)",
-					Description: "description",
-					TotalCount:  13,
+					ID:                   "",
+					Label:                "Type of central heating in household (13 categories)",
+					Description:          "description",
+					TotalCount:           13,
+					QualityStatementText: "quality statement",
 				}},
 		}
 
