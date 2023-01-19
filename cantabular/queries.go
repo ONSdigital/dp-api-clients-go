@@ -152,8 +152,8 @@ query ($dataset: String!, $text: String!, $limit: Int!, $offset: Int) {
 						name
 						label
 						description
-						meta{
-							ONS_Variable{
+						meta {
+							ONS_Variable {
 								Quality_Statement_Text
 						 	}
 					    }
