@@ -3,10 +3,11 @@ package cantabular
 import (
 	"context"
 	"fmt"
-	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
-	"github.com/ONSdigital/log.go/v2/log"
 	"io"
 	"net/http"
+
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+	"github.com/ONSdigital/log.go/v2/log"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/stream"
 )

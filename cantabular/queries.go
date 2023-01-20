@@ -141,19 +141,19 @@ query ($dataset: String!, $text: String!, $limit: Int!, $offset: Int) {
 const QueryDimensionsDescription = `
 query ($dataset: String!, $variables: [String!]!){
 	dataset(name:$dataset) {
-	  	variables( names: $variables ) {
+		variables( names: $variables ) {
 			totalCount
 			edges {
-		  		node {
+				node {
 					name
 					label
 					description
 					categories {
-			  			totalCount
+						totalCount
 					}
-		  		}
+				}
 			}
-	  	}
+		}
 	}
 }`
 
@@ -176,6 +176,58 @@ query($dataset: String!, $variables: [String!]!) {
 					label
 					categories {
 						totalCount
+					}
+				}
+			}
+		}
+	}
+}`
+
+// QueryNonGeoDimensionsByName is the graphQL query to obtain dimensions by name (subset of variables, without categories)
+// but excluding geography dimensions
+const QueryNonGeoDimensionsByName = `
+query($dataset: String!, $variables: [String!]!) {
+	dataset(name: $dataset) {
+		variables(names: $variables, rule: false) {
+			edges {
+				node {
+					name
+					mapFrom {
+						edges {
+							node {
+								label
+								name
+							}
+						}
+					}
+					label
+					categories {
+						totalCount
+					}
+				}
+			}
+		}
+	}
+}`
+
+const QueryDimensionsSearch = `
+query($dataset: String!, $text: String!) {
+	dataset(name: $dataset) {
+		variables {
+			search(text: $text) {
+				edges {
+					node {
+						name
+						label
+						mapFrom {
+							totalCount
+							edges {
+								node {
+									name
+									label
+								}
+							}
+						}
 					}
 				}
 			}
@@ -210,31 +262,6 @@ query($dataset: String!, $limit: Int!, $offset: Int) {
 					label
 					categories{
 						totalCount
-					}
-				}
-			}
-		}
-	}
-}`
-
-const QueryDimensionsSearch = `
-query($dataset: String!, $text: String!) {
-	dataset(name: $dataset) {
-		variables {
-			search(text: $text) {
-				edges {
-					node {
-						name
-						label
-						mapFrom {
-							totalCount
-							edges {
-								node {
-									name
-									label
-								}
-							}
-						}
 					}
 				}
 			}

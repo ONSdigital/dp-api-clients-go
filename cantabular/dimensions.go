@@ -179,7 +179,12 @@ func (c *Client) GetDimensionsByName(ctx context.Context, req GetDimensionsByNam
 		Variables: req.DimensionNames,
 	}
 
-	if err := c.queryUnmarshal(ctx, QueryDimensionsByName, data, resp); err != nil {
+	q := QueryDimensionsByName
+	if req.ExcludeGeography {
+		q = QueryNonGeoDimensionsByName
+	}
+
+	if err := c.queryUnmarshal(ctx, q, data, resp); err != nil {
 		return nil, err
 	}
 
