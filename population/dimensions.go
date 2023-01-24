@@ -25,8 +25,9 @@ type Dimension struct {
 }
 
 type Category struct {
-	ID    string `json:"id"`
-	Label string `json:"label"`
+	ID                   string `json:"id"`
+	Label                string `json:"label"`
+	QualityStatementText string `json:"quality_statement_text"`
 }
 
 type GetDimensionsInput struct {

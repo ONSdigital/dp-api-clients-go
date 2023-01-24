@@ -339,16 +339,18 @@ func TestGetCategorisations(t *testing.T) {
 			},
 			Items: []Dimension{
 				{
-					ID:          "",
-					Label:       "Accommodation type (8 categories)",
-					Description: "description",
-					TotalCount:  8,
+					ID:                   "",
+					Label:                "Accommodation type (8 categories)",
+					Description:          "description",
+					QualityStatementText: "quality statement",
+					TotalCount:           8,
 				},
 				{
-					ID:          "",
-					Label:       "Accomodation type (13 categories)",
-					Description: "description",
-					TotalCount:  13,
+					ID:                   "",
+					Label:                "Accomodation type (13 categories)",
+					Description:          "description",
+					QualityStatementText: "quality statement",
+					TotalCount:           13,
 				}},
 		}
 

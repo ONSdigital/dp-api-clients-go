@@ -2782,13 +2782,23 @@ const mockRespBodyGetCategorisations = `
 										{
 											"node": {
 												"label": "label 1",
-												"code": "code 1"
+												"code": "code 1",
+												"meta": {
+													"ONS_Variable": {
+														"quality_statement_text": "quality statement"
+													}
+												}
 											}
 										}
 									]
 								},
 								"name": "name 2",
-								"label": "label 2"
+								"label": "label 2",
+								"meta": {
+									"ONS_Variable": {
+										"quality_statement_text": "quality statement"
+									}
+								}
 							}
 						}
 
@@ -2818,12 +2828,22 @@ var expectedCategorisations = &cantabular.GetCategorisationsResponse{
 										Node: gql.Node{
 											Label: "label 1",
 											Code:  "code 1",
+											Meta: gql.Meta{
+												ONSVariable: gql.ONS_Variable{
+													QualityStatementText: "quality statement",
+												},
+											},
 										},
 									},
 								},
 							},
 							Name:  "name 2",
 							Label: "label 2",
+							Meta: gql.Meta{
+								ONSVariable: gql.ONS_Variable{
+									QualityStatementText: "quality statement",
+								},
+							},
 						},
 					},
 				},

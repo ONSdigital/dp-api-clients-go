@@ -392,6 +392,11 @@ query ($dataset: String!, $text: String!) {
 	    totalCount
 	    edges{
 	      node{
+			meta {
+				ONS_Variable {
+				  Quality_Statement_Text
+				}
+			  }
 			categories{
 				edges{
 				  node{
@@ -415,6 +420,11 @@ query ($dataset: String!, $text: String!) {
 				categories{
 					edges{
 					  node{
+						meta {
+							ONS_Variable {
+							  Quality_Statement_Text
+							}
+						  }
 						label
 						code
 					  }
