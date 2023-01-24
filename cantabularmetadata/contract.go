@@ -11,7 +11,7 @@ type GetDefaultClassificationRequest struct {
 }
 
 type GetDefaultClassificationResponse struct {
-	Variable string
+	Variables []string
 }
 
 type Data struct {
