@@ -218,7 +218,10 @@ func TestStaticDatasetQueryHappy(t *testing.T) {
 		testCtx := context.Background()
 
 		mockHttpClient := &dphttp.ClienterMock{PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
-			return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(mockRespBodyStaticDataset))}, nil
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(mockRespBodyStaticDataset)),
+			}, nil
 		}}
 
 		cantabularClient := cantabular.NewClient(
@@ -247,7 +250,10 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 		testCtx := context.Background()
 
 		mockHttpClient := &dphttp.ClienterMock{PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
-			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader(mockRespBodyNoTable))}, nil
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(mockRespBodyNoTable)),
+			}, nil
 		}}
 
 		cantabularClient := cantabular.NewClient(
@@ -265,7 +271,7 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 
 			Convey("An error should be returned with status code 400 Bad Request", func() {
 				So(err, ShouldNotBeNil)
-				So(dperrors.StatusCode(err), ShouldEqual, http.StatusInternalServerError)
+				So(dperrors.StatusCode(err), ShouldEqual, http.StatusBadRequest)
 			})
 		})
 	})

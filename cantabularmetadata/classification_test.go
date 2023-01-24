@@ -42,7 +42,7 @@ func TestGetDefaultClassificationHappy(t *testing.T) {
 			})
 
 			expected := &cantabularmetadata.GetDefaultClassificationResponse{
-				Variable: "test_variable_2",
+				Variables: []string{"test_variable_2"},
 			}
 
 			Convey("And the expected response is returned", func() {
@@ -66,8 +66,7 @@ func TestGetDefaultClassificationNoDefaultVariables(t *testing.T) {
 			resp, err := client.GetDefaultClassification(ctx, req)
 
 			Convey("Then the experected error should be returned", func() {
-				So(err, ShouldNotBeNil)
-				So(client.StatusCode(err), ShouldEqual, http.StatusBadRequest)
+				So(err, ShouldBeNil)
 			})
 
 			Convey("And the expected query is posted to cantabular metadata service", func() {
@@ -83,8 +82,10 @@ func TestGetDefaultClassificationNoDefaultVariables(t *testing.T) {
 				)
 			})
 
-			Convey("And the response should be nil", func() {
-				So(resp, ShouldBeNil)
+			expected := &cantabularmetadata.GetDefaultClassificationResponse{}
+
+			Convey("And the expected response should be returned", func() {
+				So(resp, ShouldResemble, expected)
 			})
 		})
 	})
@@ -103,9 +104,8 @@ func TestGetDefaultClassificationMultipleDefaultVariables(t *testing.T) {
 
 			resp, err := client.GetDefaultClassification(ctx, req)
 
-			Convey("Then the experected error should be returned", func() {
-				So(err, ShouldNotBeNil)
-				So(client.StatusCode(err), ShouldEqual, http.StatusBadRequest)
+			Convey("Then the experected error should be nil", func() {
+				So(err, ShouldBeNil)
 			})
 
 			Convey("And the expected query is posted to cantabular metadata service", func() {
@@ -121,8 +121,11 @@ func TestGetDefaultClassificationMultipleDefaultVariables(t *testing.T) {
 				)
 			})
 
+			expected := &cantabularmetadata.GetDefaultClassificationResponse{
+				Variables: []string{"test_variable_1", "test_variable_2"},
+			}
 			Convey("And the response should be nil", func() {
-				So(resp, ShouldBeNil)
+				So(resp, ShouldResemble, expected)
 			})
 		})
 	})

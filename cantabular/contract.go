@@ -55,8 +55,9 @@ type StaticDatasetQuery struct {
 // caller for making a request to obtain dimensions (Cantabular variables) by name
 // POST [cantabular-ext]/graphql
 type GetDimensionsByNameRequest struct {
-	Dataset        string
-	DimensionNames []string
+	Dataset          string
+	DimensionNames   []string
+	ExcludeGeography bool
 }
 
 type GetDimensionsRequest struct {

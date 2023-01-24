@@ -3,12 +3,15 @@ package cantabular
 import (
 	"context"
 	"fmt"
-	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
-	"github.com/ONSdigital/log.go/v2/log"
 	"io"
 	"net/http"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular/gql"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/stream"
+	"github.com/ONSdigital/log.go/v2/log"
+
+	"github.com/pkg/errors"
 )
 
 // Consumer is a stream func to read from a reader
@@ -44,9 +47,17 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 	}
 
 	var q struct {
-		Data struct{ *StaticDatasetQuery } `json:"data"`
+		Data   StaticDatasetQuery `json:"data"`
+		Errors []gql.Error        `json:"errors"`
 	}
-	if err := c.queryUnmarshal(ctx, QueryStaticDataset, QueryData{Dataset: req.Dataset, Variables: req.Variables, Filters: req.Filters}, &q); err != nil {
+
+	qd := QueryData{
+		Dataset:   req.Dataset,
+		Variables: req.Variables,
+		Filters:   req.Filters,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryStaticDataset, qd, &q); err != nil {
 		return nil, dperrors.New(
 			fmt.Errorf("failed to make GraphQL query: %w", err),
 			http.StatusInternalServerError,
@@ -54,7 +65,15 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 		)
 	}
 
-	return q.Data.StaticDatasetQuery, nil
+	if len(q.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			q.Errors[0].StatusCode(),
+			log.Data{"errors": q.Errors},
+		)
+	}
+
+	return &q.Data, nil
 }
 
 // StaticDatasetQueryStreamCSV performs a StaticDatasetQuery call
