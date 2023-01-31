@@ -1202,6 +1202,152 @@ func TestGetParentAreaCountUnhappy(t *testing.T) {
 	})
 }
 
+func TestGetBlockedAreaCountHappy(t *testing.T) {
+	Convey("Given a valid response from the /graphql endpoint", t, func() {
+		dataset := "Example"
+		variable := "City"
+		codes := []string{"0", "1"}
+
+		ctx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetBlockedAreaCountWithFilter, http.StatusOK)
+
+		Convey("When Get blocked are count is called with filter", func() {
+			req := cantabular.GetBlockedAreaCountRequest{
+				Dataset:   dataset,
+				Variables: []string{variable},
+				Filters: []cantabular.Filter{
+					{
+						Variable: variable,
+						Codes:    codes,
+					},
+				},
+			}
+
+			resp, err := cantabularClient.GetBlockedAreaCount(ctx, req)
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryBlockedAreaCountWithFilters,
+					cantabular.QueryData{
+						Dataset:   dataset,
+						Variables: []string{variable},
+						Filters: []cantabular.Filter{
+							{
+								Variable: variable,
+								Codes:    codes,
+							},
+						},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				res := cantabular.GetBlockedAreaCountResult{
+					Blocked: 1,
+					Total:   1,
+					Passed:  0,
+				}
+				So(resp, ShouldResemble, &res)
+			})
+		})
+
+		Convey("Given filter variable is not provided", func() {
+			mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetBlockedAreaCount, http.StatusOK)
+
+			req := cantabular.GetBlockedAreaCountRequest{
+				Dataset:   dataset,
+				Variables: []string{variable},
+			}
+
+			Convey("When Get blocked area is called", func() {
+
+				resp, err := cantabularClient.GetBlockedAreaCount(ctx, req)
+				Convey("Then no error should be returned", func() {
+					So(err, ShouldBeNil)
+				})
+
+				Convey("And the expected query is posted to cantabular api-ext", func() {
+					So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+					So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+					validateQuery(
+						mockHttpClient.PostCalls()[0].Body,
+						cantabular.QueryBlockedAreaCount,
+						cantabular.QueryData{
+							Dataset:   dataset,
+							Variables: []string{variable},
+						},
+					)
+				})
+
+				Convey("And the expected response is returned", func() {
+					res := cantabular.GetBlockedAreaCountResult{
+						Blocked: 188880,
+						Total:   188880,
+						Passed:  0,
+					}
+					So(resp, ShouldResemble, &res)
+				})
+			})
+		})
+	})
+}
+
+func TestGetBlockedAreaCountUnhappy(t *testing.T) {
+	ctx := context.Background()
+	dataset := "Example"
+	variable := "City"
+	codes := []string{"0", "1"}
+
+	req := cantabular.GetBlockedAreaCountRequest{
+		Dataset:   dataset,
+		Variables: []string{variable},
+		Filters: []cantabular.Filter{
+			{
+				Variable: variable,
+				Codes:    codes,
+			},
+		},
+	}
+
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		_, client := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When GetBlockedAreaCount is called", func() {
+
+			resp, err := client.GetBlockedAreaCount(ctx, req)
+			Convey("Then the expected error is returned", func() {
+				So(client.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		_, client := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When GetAreas is called", func() {
+			resp, err := client.GetBlockedAreaCount(ctx, req)
+
+			Convey("Then the expected error is returned", func() {
+			})
+			So(client.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestGetGeographyDimensionsInBatchesHappy(t *testing.T) {
 	Convey("Given a valid empty response from the /graphql endpoint", t, func() {
 		multiResponse := struct {
@@ -2872,6 +3018,50 @@ const mockRespBodyGetParentAreaCount = `
 						]
 					}
 				]
+			}
+		}
+	}
+}`
+
+const mockRespBodyGetBlockedAreaCount = `
+{
+	"data": {
+		"dataset": {
+			"table": {
+				"error": null,
+				"rules": {
+					"blocked": {
+						"count": 188880
+					},
+					"evaluated": {
+						"count": 188880
+					},
+					"passed": {
+						"count": 0
+					}
+				}
+			}
+		}
+	}
+}`
+
+const mockRespBodyGetBlockedAreaCountWithFilter = `
+{
+	"data": {
+		"dataset": {
+			"table": {
+				"error": null,
+				"rules": {
+					"blocked": {
+						"count": 1
+					},
+					"evaluated": {
+						"count": 1
+					},
+					"passed": {
+						"count": 0
+					}
+				}
 			}
 		}
 	}
