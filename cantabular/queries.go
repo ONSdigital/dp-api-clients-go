@@ -331,27 +331,27 @@ query ($dataset: String!, $text: String!, $category: String!, $limit: Int!, $off
 const QueryAreasWithoutPagination = `
 query ($dataset: String!, $text: String!, $category: String!) {
 	dataset(name: $dataset) {
-	  variables(rule:true, names: [ $text ]) {
-		edges {
-		  node {
-			name
-			label
-			categories {
-			  totalCount
-			  search(text: $category ) {
-				edges {
-				  node {
-					code
+		variables(rule:true, names: [ $text ]) {
+			edges {
+				node {
+					name
 					label
-				  }
+					categories {
+						totalCount
+						search(text: $category ) {
+							edges {
+								node {
+									code
+									label
+								}
+							}
+						}
+					}
 				}
-			  }
 			}
-		  }
 		}
-	  }
 	}
-  }
+}
 `
 
 // QueryArea is the graphQL query to search for an area which exactly match a specific string.
@@ -456,19 +456,33 @@ query ($dataset: String!, $text: String!) {
 						code
 					  }
 					}
-				  }
-			name
-			label
-		      }
-		    }
-		  }
-	      }
-	    }
-	  }
+					mapFrom {
+						edges {
+							node {
+								isSourceOf {
+									totalCount
+									edges {
+										node {
+											name
+											label
+											categories {
+												edges {
+													node {
+														label
+														code
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
-      }
-    }
-  }
 }`
 
 const QueryParentAreaCount = `
@@ -602,8 +616,8 @@ func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, data Q
 	res, err := c.postQuery(ctx, graphQLQuery, data)
 	if err != nil {
 		return dperrors.New(
-			fmt.Errorf("failed to post query: %s", err),
-			http.StatusInternalServerError,
+			fmt.Errorf("failed to post query: %w", err),
+			c.StatusCode(err),
 			logData,
 		)
 	}
@@ -612,7 +626,7 @@ func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, data Q
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return dperrors.New(
-			fmt.Errorf("failed to read response body: %s", err),
+			fmt.Errorf("failed to read response body: %w", err),
 			c.StatusCode(err),
 			logData,
 		)
@@ -620,7 +634,7 @@ func (c *Client) queryUnmarshal(ctx context.Context, graphQLQuery string, data Q
 
 	if err := json.Unmarshal(b, v); err != nil {
 		return dperrors.New(
-			fmt.Errorf("failed to unmarshal response body: %s", err),
+			fmt.Errorf("failed to unmarshal response body: %w", err),
 			http.StatusInternalServerError,
 			logData,
 		)

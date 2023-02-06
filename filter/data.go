@@ -54,23 +54,6 @@ type createBlueprint struct {
 	FilterID   string           `json:"filter_id"`
 }
 
-type createFlexBlueprintRequest struct {
-	Dataset        Dataset          `json:"dataset"`
-	Dimensions     []ModelDimension `json:"dimensions"`
-	PopulationType string           `json:"population_type"`
-}
-
-type createFlexBlueprintResponse struct {
-	FilterID string `json:"filter_id"`
-}
-
-// createFlexDimensionRequest represents the fields required to add a dimension to a flex filter
-type createFlexDimensionRequest struct {
-	Name       string   `json:"name"`
-	IsAreaType bool     `json:"is_area_type"`
-	Options    []string `json:"options"`
-}
-
 // Dataset represents the dataset fields required to create a filter blueprint
 type Dataset struct {
 	DatasetID string `json:"id"`
@@ -93,6 +76,7 @@ type Model struct {
 	Events         []Event             `json:"events,omitempty"`
 	IsPublished    bool                `json:"published"`
 	PopulationType string              `json:"population_type,omitempty"`
+	Custom         *bool               `json:"custom,omitempty"`
 }
 
 // Links represents a links object on the filter api response
