@@ -68,6 +68,12 @@ type GetAreasResponse struct {
 	Areas []Area `json:"items"`
 }
 
+type GetBlockedAreaCountResult struct {
+	Passed  int `json:"passed"`
+	Blocked int `json:"blocked"`
+	Total   int `json:"total"`
+}
+
 // GetAreasResponse is the response object for GET /areas
 type GetAreaResponse struct {
 	Area Area `json:"area"`
@@ -261,7 +267,7 @@ func (c *Client) GetParentAreaCount(ctx context.Context, input GetParentAreaCoun
 	return count, nil
 }
 
-func (c *Client) GetBlockedAreaCount(ctx context.Context, input GetBlockedAreaCountInput) (int, error) {
+func (c *Client) GetBlockedAreaCount(ctx context.Context, input GetBlockedAreaCountInput) (*GetBlockedAreaCountResult, error) {
 	logData := log.Data{
 		"method":     http.MethodGet,
 		"dataset_id": input.PopulationType,
@@ -277,7 +283,7 @@ func (c *Client) GetBlockedAreaCount(ctx context.Context, input GetBlockedAreaCo
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {
-		return 0, dperrors.New(
+		return nil, dperrors.New(
 			err,
 			dperrors.StatusCode(err),
 			logData,
@@ -288,7 +294,7 @@ func (c *Client) GetBlockedAreaCount(ctx context.Context, input GetBlockedAreaCo
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
-		return 0, dperrors.New(
+		return nil, dperrors.New(
 			errors.Wrap(err, "failed to get response from Population types API"),
 			http.StatusInternalServerError,
 			logData,
@@ -302,17 +308,17 @@ func (c *Client) GetBlockedAreaCount(ctx context.Context, input GetBlockedAreaCo
 	}()
 
 	if err := checkGetResponse(resp); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	var count int
+	var count GetBlockedAreaCountResult
 	if err := json.NewDecoder(resp.Body).Decode(&count); err != nil {
-		return 0, dperrors.New(
+		return nil, dperrors.New(
 			errors.Wrap(err, "unable to deserialize blocked areas count response"),
 			http.StatusInternalServerError,
 			logData,
 		)
 	}
 
-	return count, nil
+	return &count, nil
 }

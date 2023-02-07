@@ -1061,7 +1061,13 @@ func TestGetBlockedAreaCount(t *testing.T) {
 	})
 
 	Convey("Given a valid blocked areas count response payload", t, func() {
-		resp, err := json.Marshal(1)
+
+		result := GetBlockedAreaCountResult{
+			Passed:  1,
+			Blocked: 2,
+			Total:   3,
+		}
+		resp, err := json.Marshal(result)
 		So(err, ShouldBeNil)
 
 		stubClient := newStubClient(&http.Response{
@@ -1084,7 +1090,7 @@ func TestGetBlockedAreaCount(t *testing.T) {
 
 		Convey("it should return a list of population types", func() {
 			So(err, ShouldBeNil)
-			So(res, ShouldResemble, 1)
+			So(res, ShouldResemble, &result)
 		})
 	})
 
