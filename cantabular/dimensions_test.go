@@ -1202,6 +1202,152 @@ func TestGetParentAreaCountUnhappy(t *testing.T) {
 	})
 }
 
+func TestGetBlockedAreaCountHappy(t *testing.T) {
+	Convey("Given a valid response from the /graphql endpoint", t, func() {
+		dataset := "Example"
+		variable := "City"
+		codes := []string{"0", "1"}
+
+		ctx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetBlockedAreaCountWithFilter, http.StatusOK)
+
+		Convey("When Get blocked are count is called with filter", func() {
+			req := cantabular.GetBlockedAreaCountRequest{
+				Dataset:   dataset,
+				Variables: []string{variable},
+				Filters: []cantabular.Filter{
+					{
+						Variable: variable,
+						Codes:    codes,
+					},
+				},
+			}
+
+			resp, err := cantabularClient.GetBlockedAreaCount(ctx, req)
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryBlockedAreaCountWithFilters,
+					cantabular.QueryData{
+						Dataset:   dataset,
+						Variables: []string{variable},
+						Filters: []cantabular.Filter{
+							{
+								Variable: variable,
+								Codes:    codes,
+							},
+						},
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				res := cantabular.GetBlockedAreaCountResult{
+					Blocked: 1,
+					Total:   1,
+					Passed:  0,
+				}
+				So(resp, ShouldResemble, &res)
+			})
+		})
+
+		Convey("Given filter variable is not provided", func() {
+			mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetBlockedAreaCount, http.StatusOK)
+
+			req := cantabular.GetBlockedAreaCountRequest{
+				Dataset:   dataset,
+				Variables: []string{variable},
+			}
+
+			Convey("When Get blocked area is called", func() {
+
+				resp, err := cantabularClient.GetBlockedAreaCount(ctx, req)
+				Convey("Then no error should be returned", func() {
+					So(err, ShouldBeNil)
+				})
+
+				Convey("And the expected query is posted to cantabular api-ext", func() {
+					So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+					So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+					validateQuery(
+						mockHttpClient.PostCalls()[0].Body,
+						cantabular.QueryBlockedAreaCount,
+						cantabular.QueryData{
+							Dataset:   dataset,
+							Variables: []string{variable},
+						},
+					)
+				})
+
+				Convey("And the expected response is returned", func() {
+					res := cantabular.GetBlockedAreaCountResult{
+						Blocked: 188880,
+						Total:   188880,
+						Passed:  0,
+					}
+					So(resp, ShouldResemble, &res)
+				})
+			})
+		})
+	})
+}
+
+func TestGetBlockedAreaCountUnhappy(t *testing.T) {
+	ctx := context.Background()
+	dataset := "Example"
+	variable := "City"
+	codes := []string{"0", "1"}
+
+	req := cantabular.GetBlockedAreaCountRequest{
+		Dataset:   dataset,
+		Variables: []string{variable},
+		Filters: []cantabular.Filter{
+			{
+				Variable: variable,
+				Codes:    codes,
+			},
+		},
+	}
+
+	Convey("Given a no-dataset graphql error response from the /graphql endpoint", t, func() {
+		_, client := newMockedClient(mockRespBodyNoDataset, http.StatusOK)
+
+		Convey("When GetBlockedAreaCount is called", func() {
+
+			resp, err := client.GetBlockedAreaCount(ctx, req)
+			Convey("Then the expected error is returned", func() {
+				So(client.StatusCode(err), ShouldResemble, http.StatusNotFound)
+			})
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
+		_, client := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
+
+		Convey("When GetAreas is called", func() {
+			resp, err := client.GetBlockedAreaCount(ctx, req)
+
+			Convey("Then the expected error is returned", func() {
+			})
+			So(client.StatusCode(err), ShouldResemble, http.StatusInternalServerError)
+
+			Convey("And no response is returned", func() {
+				So(resp, ShouldBeNil)
+			})
+		})
+	})
+}
+
 func TestGetGeographyDimensionsInBatchesHappy(t *testing.T) {
 	Convey("Given a valid empty response from the /graphql endpoint", t, func() {
 		multiResponse := struct {
@@ -2769,79 +2915,75 @@ var expectedParents = cantabular.GetParentsResponse{
 
 const mockRespBodyGetCategorisations = `
 {
-	"data": {
-		"dataset": {
-			"variables": {
-				"totalCount": 1,
-				"search": {
-					"edges": [
-						{
-							"node": {
-								"categories": {
-									"edges": [
-										{
-											"node": {
-												"label": "label 1",
-												"code": "code 1",
-												"meta": {
-													"ONS_Variable": {
-														"quality_statement_text": "quality statement"
-													}
-												}
-											}
-										}
-									]
-								},
-								"name": "name 2",
-								"label": "label 2",
-								"meta": {
-									"ONS_Variable": {
-										"quality_statement_text": "quality statement"
-									}
-								}
-							}
-						}
-
-					]
-				}
-			}
-		}
-	}
+    "data": {
+        "dataset": {
+            "variables": {
+                "edges": [
+                    {
+                        "node": {
+                            "isSourceOf": {
+                                "edges": [
+                                    {
+                                        "node": {
+                                            "categories": {
+                                                "edges": [
+                                                    {
+                                                        "node": {
+                                                            "code": "code 1",
+                                                            "label": "label 1"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "label": "label 2",
+                                            "meta": {
+                                                "ONS_Variable": {
+                                                    "Quality_Statement_Text": "quality statement 1"
+                                                }
+                                            },
+                                            "name": "name 1"
+                                        }
+                                    }
+                                ],
+                                "totalCount": 1
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
 }`
 
 var expectedCategorisations = &cantabular.GetCategorisationsResponse{
-	PaginationResponse: cantabular.PaginationResponse{
-		PaginationParams: cantabular.PaginationParams{Limit: 20, Offset: 0},
-		Count:            1,
-		TotalCount:       1,
-	},
 	Dataset: gql.Dataset{
 		Variables: gql.Variables{
-			TotalCount: 1,
-			Search: gql.Search{
-				Edges: []gql.Edge{
-					{
-						Node: gql.Node{
-							Categories: gql.Categories{
-								Edges: []gql.Edge{
-									{
-										Node: gql.Node{
-											Label: "label 1",
-											Code:  "code 1",
-											Meta: gql.Meta{
-												ONSVariable: gql.ONS_Variable{
-													QualityStatementText: "quality statement",
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						IsSourceOf: gql.Variables{
+							TotalCount: 1,
+							Edges: []gql.Edge{
+								{
+									Node: gql.Node{
+										Name:  "name 1",
+										Label: "label 2",
+										Meta: gql.Meta{
+											ONSVariable: gql.ONS_Variable{
+												QualityStatementText: "quality statement 1",
+											},
+										},
+										Categories: gql.Categories{
+											Edges: []gql.Edge{
+												{
+													Node: gql.Node{
+														Code:  "code 1",
+														Label: "label 1",
+													},
 												},
 											},
 										},
 									},
-								},
-							},
-							Name:  "name 2",
-							Label: "label 2",
-							Meta: gql.Meta{
-								ONSVariable: gql.ONS_Variable{
-									QualityStatementText: "quality statement",
 								},
 							},
 						},
@@ -2872,6 +3014,50 @@ const mockRespBodyGetParentAreaCount = `
 						]
 					}
 				]
+			}
+		}
+	}
+}`
+
+const mockRespBodyGetBlockedAreaCount = `
+{
+	"data": {
+		"dataset": {
+			"table": {
+				"error": null,
+				"rules": {
+					"blocked": {
+						"count": 188880
+					},
+					"evaluated": {
+						"count": 188880
+					},
+					"passed": {
+						"count": 0
+					}
+				}
+			}
+		}
+	}
+}`
+
+const mockRespBodyGetBlockedAreaCountWithFilter = `
+{
+	"data": {
+		"dataset": {
+			"table": {
+				"error": null,
+				"rules": {
+					"blocked": {
+						"count": 1
+					},
+					"evaluated": {
+						"count": 1
+					},
+					"passed": {
+						"count": 0
+					}
+				}
 			}
 		}
 	}

@@ -50,10 +50,28 @@ type GetParentAreaCountInput struct {
 	Areas            []string
 }
 
+type Filter struct {
+	Codes    []string
+	Variable string
+}
+
+type GetBlockedAreaCountInput struct {
+	AuthTokens
+	PopulationType string
+	Variables      []string
+	Filter         Filter
+}
+
 // GetAreasResponse is the response object for GET /areas
 type GetAreasResponse struct {
 	PaginationResponse
 	Areas []Area `json:"items"`
+}
+
+type GetBlockedAreaCountResult struct {
+	Passed  int `json:"passed"`
+	Blocked int `json:"blocked"`
+	Total   int `json:"total"`
 }
 
 // GetAreasResponse is the response object for GET /areas
@@ -246,12 +264,61 @@ func (c *Client) GetParentAreaCount(ctx context.Context, input GetParentAreaCoun
 		)
 	}
 
+	return count, nil
+}
+
+func (c *Client) GetBlockedAreaCount(ctx context.Context, input GetBlockedAreaCountInput) (*GetBlockedAreaCountResult, error) {
+	logData := log.Data{
+		"method":     http.MethodGet,
+		"dataset_id": input.PopulationType,
+	}
+
+	urlPath := fmt.Sprintf("population-types/%s/blocked-areas-count", input.PopulationType)
+
+	urlValues := map[string][]string{
+		"vars":  {strings.Join(input.Variables, ",")},
+		"fvar":  {input.Filter.Variable},
+		"areas": {strings.Join(input.Filter.Codes, ",")},
+	}
+
+	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {
-		return 0, dperrors.New(
-			errors.Wrap(err, "unable to convert parent areas count API response"),
+		return nil, dperrors.New(
+			err,
+			dperrors.StatusCode(err),
+			logData,
+		)
+	}
+
+	clientlog.Do(ctx, "getting blocked area count", service, req.URL.String(), logData)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return nil, dperrors.New(
+			errors.Wrap(err, "failed to get response from Population types API"),
 			http.StatusInternalServerError,
 			logData,
 		)
 	}
-	return count, nil
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}()
+
+	if err := checkGetResponse(resp); err != nil {
+		return nil, err
+	}
+
+	var count GetBlockedAreaCountResult
+	if err := json.NewDecoder(resp.Body).Decode(&count); err != nil {
+		return nil, dperrors.New(
+			errors.Wrap(err, "unable to deserialize blocked areas count response"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	return &count, nil
 }
