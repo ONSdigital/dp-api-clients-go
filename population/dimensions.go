@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
@@ -24,10 +25,28 @@ type Dimension struct {
 	QualityStatementText string     `json:"quality_statement_text"`
 }
 
+type DimensionCategory struct {
+	Id         string                  `json:"id"`
+	Label      string                  `json:"label"`
+	Categories []DimensionCategoryItem `json:"categories"`
+}
+
+type DimensionCategoryItem struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+}
+
 type Category struct {
 	ID                   string `json:"id"`
 	Label                string `json:"label"`
 	QualityStatementText string `json:"quality_statement_text"`
+}
+
+type GetDimensionCategoryInput struct {
+	AuthTokens
+	PaginationParams
+	PopulationType string
+	Dimensions     []string
 }
 
 type GetDimensionsInput struct {
@@ -48,6 +67,11 @@ type GetCategorisationsInput struct {
 	PaginationParams
 	PopulationType string
 	Dimension      string
+}
+
+type GetDimensionCategoriesResponse struct {
+	PaginationResponse
+	Categories []DimensionCategory `json:"items"`
 }
 
 // GetDimensionsResponse is the response object for GetDimensions
@@ -72,6 +96,65 @@ type GetBaseVariableResponse struct {
 	Label string `json:"label"`
 }
 
+func (c *Client) GetDimensionCategories(ctx context.Context, input GetDimensionCategoryInput) (GetDimensionCategoriesResponse, error) {
+	logData := log.Data{
+		"method":          http.MethodGet,
+		"limit":           input.Limit,
+		"offset":          input.Offset,
+		"population_type": input.PopulationType,
+		"dimensions":      input.Dimensions,
+	}
+
+	urlPath := fmt.Sprintf("population-types/%s/dimension-categories", input.PopulationType)
+	dimensionsString := strings.Join(input.Dimensions[:], ",")
+	urlValues := url.Values{
+		"dims":   []string{dimensionsString},
+		"limit":  []string{strconv.Itoa(input.Limit)},
+		"offset": []string{strconv.Itoa(input.Offset)},
+	}
+
+	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
+	if err != nil {
+		return GetDimensionCategoriesResponse{}, dperrors.New(
+			err,
+			dperrors.StatusCode(err),
+			logData,
+		)
+	}
+
+	clientlog.Do(ctx, "getting dimension categories", service, req.URL.String(), logData)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return GetDimensionCategoriesResponse{}, dperrors.New(
+			errors.Wrap(err, "failed to get response from Population types API"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}()
+
+	if err := checkGetResponse(resp); err != nil {
+		return GetDimensionCategoriesResponse{}, err
+	}
+
+	var dimensionCategories GetDimensionCategoriesResponse
+	if err := json.NewDecoder(resp.Body).Decode(&dimensionCategories); err != nil {
+		return GetDimensionCategoriesResponse{}, dperrors.New(
+			errors.Wrap(err, "unable to deserialize areas response"),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	return dimensionCategories, nil
+
+}
 func (c *Client) GetDimensions(ctx context.Context, input GetDimensionsInput) (GetDimensionsResponse, error) {
 	logData := log.Data{
 		"method":          http.MethodGet,

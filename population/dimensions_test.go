@@ -15,6 +15,150 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func TestGetDimensionCategories(t *testing.T) {
+	const userAuthToken = "user"
+	const serviceAuthToken = "service"
+	const populationType = "UR"
+	const dimension = "sex"
+
+	Convey("Given a valid multi dimension request", t, func() {
+		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
+		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))
+		So(err, ShouldBeNil)
+		input := GetDimensionCategoryInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType: populationType,
+			Dimensions:     []string{"one", "two"},
+		}
+
+		client.GetDimensionCategories(context.Background(), input)
+		Convey("It should call the dimensions category endpoint with multiple dimensions", func() {
+			calls := stubClient.DoCalls()
+			So(calls, ShouldNotBeEmpty)
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/UR/dimension-categories?dims=one%2Ctwo&limit=0&offset=0")
+		})
+
+	})
+
+	Convey("Given a valid request", t, func() {
+		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
+		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))
+		So(err, ShouldBeNil)
+		input := GetDimensionCategoryInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType: populationType,
+			Dimensions:     []string{dimension},
+		}
+
+		client.GetDimensionCategories(context.Background(), input)
+		Convey("It should call the dimensions category endpoint", func() {
+			calls := stubClient.DoCalls()
+			So(calls, ShouldNotBeEmpty)
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/UR/dimension-categories?dims=sex&limit=0&offset=0")
+		})
+
+		Convey("Given a valid payload", func() {
+			categories := GetDimensionCategoriesResponse{
+				PaginationResponse: PaginationResponse{
+					PaginationParams: PaginationParams{
+						Limit:  1,
+						Offset: 0,
+					},
+					Count:      1,
+					TotalCount: 1,
+				},
+				Categories: []DimensionCategory{
+					{
+						Id:    "sex",
+						Label: "Sex (2 categories)",
+						Categories: []DimensionCategoryItem{
+							{
+								ID:    "1",
+								Label: "Female",
+							},
+							{
+								ID:    "2",
+								Label: "Male",
+							},
+						},
+					},
+				},
+			}
+
+			resp, err := json.Marshal(categories)
+			So(err, ShouldBeNil)
+
+			stubClient := newStubClient(&http.Response{
+				StatusCode: http.StatusOK,
+				Body:       ioutil.NopCloser(bytes.NewReader(resp)),
+			}, nil)
+			client := newHealthClient(stubClient)
+
+			input := GetDimensionCategoryInput{
+				AuthTokens:     AuthTokens{UserAuthToken: userAuthToken, ServiceAuthToken: serviceAuthToken},
+				PopulationType: populationType,
+				Dimensions:     []string{dimension},
+			}
+			res, err := client.GetDimensionCategories(context.Background(), input)
+
+			Convey("it should return a list of dimensions", func() {
+				So(err, ShouldBeNil)
+				So(res, ShouldResemble, categories)
+			})
+		})
+	})
+
+	Convey("Given the get dimension category API returns an error", t, func() {
+		stubClient := newStubClient(nil, errors.New("oh no"))
+
+		client := newHealthClient(stubClient)
+
+		input := GetDimensionCategoryInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+		}
+		_, err := client.GetDimensionCategories(context.Background(), input)
+
+		Convey("it should return an internal error", func() {
+			So(err, shouldBeDPError, http.StatusInternalServerError)
+		})
+	})
+
+	Convey("Given the get dimension category API returns a status code of 404", t, func() {
+		stubClient := newStubClient(&http.Response{
+			StatusCode: http.StatusNotFound,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "errors": ["not found"] }`))),
+		}, nil)
+
+		client := newHealthClient(stubClient)
+
+		input := GetDimensionCategoryInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+		}
+		_, err := client.GetDimensionCategories(context.Background(), input)
+
+		Convey("the error chain should contain the original Errors type", func() {
+			So(err, shouldBeDPError, http.StatusNotFound)
+
+			var respErr ErrorResp
+			ok := errors.As(err, &respErr)
+			So(ok, ShouldBeTrue)
+			So(respErr, ShouldResemble, ErrorResp{Errors: []string{"not found"}})
+		})
+	})
+}
+
 func TestGetDimensions(t *testing.T) {
 	const userAuthToken = "user"
 	const serviceAuthToken = "service"

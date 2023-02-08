@@ -11,12 +11,28 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/stream/jsonstream"
 )
 
+type Categories struct {
+	Code  string `json:"code,omitempty"`
+	Label string `json:"label,omitempty"`
+}
+type RuleVariable struct {
+	Categories []Categories `json:"categories,omitempty"`
+	Count      int          `json:"count,omitempty"`
+}
+
+type Rules struct {
+	Blocked RuleVariable `json:"blocked,omitempty"`
+	Passed  RuleVariable `json:"passed,omitempty"`
+	Total   RuleVariable `json:"evaluated,omitempty"`
+}
+
 // Table represents the 'table' field from the GraphQL dataset
 // query response
 type Table struct {
 	Dimensions []Dimension `json:"dimensions"`
 	Values     []float32   `json:"values"`
 	Error      string      `json:"error,omitempty" `
+	Rules      Rules       `json:"rules,omitempty"`
 }
 
 // possible errors that may be returned while parsing a 'data' field value

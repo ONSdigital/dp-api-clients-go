@@ -202,13 +202,32 @@ type GetParentAreaCountRequest struct {
 // GetParentAreaCountResponse is the response body for the GetParentAreaCount query
 type GetParentAreaCountResponse struct {
 	Dataset struct {
-		Table Table `json:"table`
+		Table Table `json:"table"`
+	} `json:"dataset"`
+}
+
+type GetBlockedAreaCountRequest struct {
+	Dataset   string
+	Variables []string
+	Filters   []Filter
+}
+
+// GetParentAreaCountResponse is the response body for the GetParentAreaCount query
+type GetBlockedAreaCountResponse struct {
+	Dataset struct {
+		Table Table `json:"table"`
 	} `json:"dataset"`
 }
 
 // GetParentAreaCountResult is the useful part of the response for GetParentAreaCount
 type GetParentAreaCountResult struct {
 	Dimension Dimension
+}
+
+type GetBlockedAreaCountResult struct {
+	Passed  int `json:"passed"`
+	Blocked int `json:"blocked"`
+	Total   int `json:"total"`
 }
 
 type GetBaseVariableRequest struct {
