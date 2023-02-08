@@ -532,13 +532,22 @@ func (c *Client) GetBlockedAreaCount(ctx context.Context, req GetBlockedAreaCoun
 		}
 	}
 
-	if resp != nil && len(resp.Errors) != 0 {
+	if len(resp.Errors) != 0 {
 		return nil, dperrors.New(
 			errors.New("error(s) returned by graphQL query"),
 			resp.Errors[0].StatusCode(),
 			log.Data{
 				"request": req,
 				"errors":  resp.Errors,
+			},
+		)
+	} else if resp.Data.Dataset.Table.Error != "" {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			0,
+			log.Data{
+				"request": req,
+				"errors":  resp.Data.Dataset.Table.Error,
 			},
 		)
 	}
