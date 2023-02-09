@@ -2915,79 +2915,75 @@ var expectedParents = cantabular.GetParentsResponse{
 
 const mockRespBodyGetCategorisations = `
 {
-	"data": {
-		"dataset": {
-			"variables": {
-				"totalCount": 1,
-				"search": {
-					"edges": [
-						{
-							"node": {
-								"categories": {
-									"edges": [
-										{
-											"node": {
-												"label": "label 1",
-												"code": "code 1",
-												"meta": {
-													"ONS_Variable": {
-														"quality_statement_text": "quality statement"
-													}
-												}
-											}
-										}
-									]
-								},
-								"name": "name 2",
-								"label": "label 2",
-								"meta": {
-									"ONS_Variable": {
-										"quality_statement_text": "quality statement"
-									}
-								}
-							}
-						}
-
-					]
-				}
-			}
-		}
-	}
+    "data": {
+        "dataset": {
+            "variables": {
+                "edges": [
+                    {
+                        "node": {
+                            "isSourceOf": {
+                                "edges": [
+                                    {
+                                        "node": {
+                                            "categories": {
+                                                "edges": [
+                                                    {
+                                                        "node": {
+                                                            "code": "code 1",
+                                                            "label": "label 1"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "label": "label 2",
+                                            "meta": {
+                                                "ONS_Variable": {
+                                                    "Quality_Statement_Text": "quality statement 1"
+                                                }
+                                            },
+                                            "name": "name 1"
+                                        }
+                                    }
+                                ],
+                                "totalCount": 1
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
 }`
 
 var expectedCategorisations = &cantabular.GetCategorisationsResponse{
-	PaginationResponse: cantabular.PaginationResponse{
-		PaginationParams: cantabular.PaginationParams{Limit: 20, Offset: 0},
-		Count:            1,
-		TotalCount:       1,
-	},
 	Dataset: gql.Dataset{
 		Variables: gql.Variables{
-			TotalCount: 1,
-			Search: gql.Search{
-				Edges: []gql.Edge{
-					{
-						Node: gql.Node{
-							Categories: gql.Categories{
-								Edges: []gql.Edge{
-									{
-										Node: gql.Node{
-											Label: "label 1",
-											Code:  "code 1",
-											Meta: gql.Meta{
-												ONSVariable: gql.ONS_Variable{
-													QualityStatementText: "quality statement",
+			Edges: []gql.Edge{
+				{
+					Node: gql.Node{
+						IsSourceOf: gql.Variables{
+							TotalCount: 1,
+							Edges: []gql.Edge{
+								{
+									Node: gql.Node{
+										Name:  "name 1",
+										Label: "label 2",
+										Meta: gql.Meta{
+											ONSVariable: gql.ONS_Variable{
+												QualityStatementText: "quality statement 1",
+											},
+										},
+										Categories: gql.Categories{
+											Edges: []gql.Edge{
+												{
+													Node: gql.Node{
+														Code:  "code 1",
+														Label: "label 1",
+													},
 												},
 											},
 										},
 									},
-								},
-							},
-							Name:  "name 2",
-							Label: "label 2",
-							Meta: gql.Meta{
-								ONSVariable: gql.ONS_Variable{
-									QualityStatementText: "quality statement",
 								},
 							},
 						},

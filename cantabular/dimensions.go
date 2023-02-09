@@ -640,11 +640,5 @@ func (c *Client) GetCategorisations(ctx context.Context, req GetCategorisationsR
 		)
 	}
 
-	resp.Data.PaginationResponse = PaginationResponse{
-		Count:            len(resp.Data.Dataset.Variables.Search.Edges),
-		TotalCount:       resp.Data.Dataset.Variables.TotalCount,
-		PaginationParams: req.PaginationParams,
-	}
-
 	return &resp.Data, nil
 }
