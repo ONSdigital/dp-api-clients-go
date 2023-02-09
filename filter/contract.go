@@ -43,6 +43,7 @@ type FilterLinks struct {
 	Version    Link `json:"version,omitempty"`
 }
 
+// CreateFlexBlueprintRequest holds the input required for CreateFlexBlueprint
 type CreateFlexBlueprintRequest struct {
 	Dataset        Dataset          `json:"dataset"`
 	Dimensions     []ModelDimension `json:"dimensions"`
@@ -51,6 +52,7 @@ type CreateFlexBlueprintRequest struct {
 	CollectionID   string           `json:"-"`
 }
 
+// createFlexBlueprintResponse holds the fields for the response from CreateFlexBlueprint
 type createFlexBlueprintResponse struct {
 	FilterID string `json:"filter_id"`
 }
