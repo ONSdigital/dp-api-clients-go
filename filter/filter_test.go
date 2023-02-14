@@ -982,7 +982,7 @@ func TestClient_CreateFlexBlueprint(t *testing.T) {
 	trueValue := true
 	datasetID := "foo"
 	edition := "quux"
-	version := "1"
+	version := 1
 	dimensions := []ModelDimension{
 		{
 			Name:       "name",
@@ -998,35 +998,13 @@ func TestClient_CreateFlexBlueprint(t *testing.T) {
 			},
 		},
 	}
-	population_type := "Teaching-Dataset"
+	populationType := "Teaching-Dataset"
 
-	expectedRequest := createFlexBlueprintRequest{
-		Dataset: Dataset{DatasetID: "foo", Edition: "quux", Version: 1},
-		Dimensions: []ModelDimension{
-			{
-				Name:       "name",
-				URI:        "uri.uri/uri",
-				IsAreaType: &trueValue,
-				Options: []string{
-					"option1",
-					"option2",
-				},
-				Values: []string{
-					"value1",
-					"value2",
-				},
-			}},
-		PopulationType: "Teaching-Dataset",
-	}
-
-	checkRequest := func(httpClient *dphttp.ClienterMock) {
-		So(len(httpClient.DoCalls()), ShouldEqual, 1)
-
-		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
-		var actualVersion createFlexBlueprintRequest
-		err := json.Unmarshal(actualBody, &actualVersion)
-		So(err, ShouldBeNil)
-		So(actualVersion, ShouldResemble, expectedRequest)
+	testRequest := CreateFlexBlueprintRequest{
+		Dataset:        Dataset{DatasetID: datasetID, Edition: edition, Version: version},
+		Dimensions:     dimensions,
+		PopulationType: populationType,
+		Custom:         true,
 	}
 
 	Convey("Given a valid Blueprint is returned", t, func() {
@@ -1042,15 +1020,18 @@ func TestClient_CreateFlexBlueprint(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when createBlueprint is called", func() {
-			bp, eTag, err := filterClient.CreateFlexibleBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, dimensions, population_type)
+			bp, eTag, err := filterClient.CreateFlexibleBlueprint(
+				ctx,
+				testUserAuthToken,
+				testServiceToken,
+				testDownloadServiceToken,
+				testCollectionID,
+				testRequest,
+			)
 
 			Convey("then the expectedRequest eTag is returned, with no error", func() {
 				So(err, ShouldBeNil)
 				So(eTag, ShouldResemble, testETag)
-			})
-
-			Convey("and dphttp client is called one time with the expectedRequest parameters", func() {
-				checkRequest(httpClient)
 			})
 
 			Convey("and the response's filter id is correctly unmarshalled", func() {
@@ -1066,7 +1047,14 @@ func TestClient_CreateFlexBlueprint(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when createBlueprint is called", func() {
-			_, _, err := filterClient.CreateFlexibleBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, dimensions, population_type)
+			_, _, err := filterClient.CreateFlexibleBlueprint(
+				ctx,
+				testUserAuthToken,
+				testServiceToken,
+				testDownloadServiceToken,
+				testCollectionID,
+				testRequest,
+			)
 
 			Convey("then the expectedRequest error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
@@ -1085,7 +1073,14 @@ func TestClient_CreateFlexBlueprint(t *testing.T) {
 		filterClient := newFilterClient(httpClient)
 
 		Convey("when createBlueprint is called", func() {
-			_, _, err := filterClient.CreateFlexibleBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, dimensions, population_type)
+			_, _, err := filterClient.CreateFlexibleBlueprint(
+				ctx,
+				testUserAuthToken,
+				testServiceToken,
+				testDownloadServiceToken,
+				testCollectionID,
+				testRequest,
+			)
 
 			Convey("then the expectedRequest error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())

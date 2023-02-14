@@ -516,34 +516,35 @@ func (c *Client) DeleteDimensionOptions(ctx context.Context, userAuthToken, serv
 }
 
 // CreateFlexibleBlueprint creates a flexible filter blueprint and returns the associated filterID and eTag
-func (c *Client) CreateFlexibleBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, dimensions []ModelDimension, population_type string) (filterID, eTag string, err error) {
-	ver, err := strconv.Atoi(version)
+func (c *Client) CreateFlexibleBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID string, req CreateFlexBlueprintRequest) (filterID, eTag string, err error) {
+	reqBody, err := json.Marshal(req)
 	if err != nil {
-		return "", "", err
+		return
 	}
 
-	cb := createFlexBlueprintRequest{
-		Dimensions:     dimensions,
-		Dataset:        Dataset{DatasetID: datasetID, Edition: edition, Version: ver},
-		PopulationType: population_type,
-	}
-
-	reqBody, err := json.Marshal(cb)
+	respBody, eTag, err := c.postBlueprint(
+		ctx,
+		userAuthToken,
+		serviceAuthToken,
+		downloadServiceToken,
+		collectionID,
+		req.Dataset.DatasetID,
+		req.Dataset.Edition,
+		strconv.Itoa(req.Dataset.Version),
+		reqBody,
+	)
 	if err != nil {
-		return "", "", err
+		return
 	}
 
-	respBody, eTag, err := c.postBlueprint(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, reqBody)
-	if err != nil {
-		return "", "", err
+	var resp createFlexBlueprintResponse
+	if err = json.Unmarshal(respBody, &resp); err != nil {
+		return
 	}
 
-	var respData createFlexBlueprintResponse
-	if err = json.Unmarshal(respBody, &respData); err != nil {
-		return "", "", err
-	}
+	filterID = resp.FilterID
 
-	return respData.FilterID, eTag, nil
+	return
 }
 
 // CreateBlueprint creates a filter blueprint and returns the associated filterID and eTag

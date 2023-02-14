@@ -178,7 +178,7 @@ func (c *Client) errorResponse(url string, res *http.Response) error {
 	}
 
 	if len(b) == 0 {
-		b = []byte("[response body empty]")
+		b = []byte(`{"message": "(error response body empty)"}`)
 	}
 
 	var resp ErrorResponse
