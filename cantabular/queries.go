@@ -411,78 +411,64 @@ query ($dataset: String!, $variables: [String!]!, $limit: Int!, $offset: Int) {
 
 const QueryCategorisations = `
 query ($dataset: String!, $text: String!) {
-  dataset(name: $dataset) {
-    variables(names: [ $text ] ) {
+   dataset(name: $dataset) {
+    variables(names: [ $text ]) {
       edges {
-	node {
-	  isSourceOf{
-	    totalCount
-	    edges{
-	      node{
-			meta {
-				ONS_Variable {
-				  Quality_Statement_Text
-				}
-			  }
-			categories{
-				edges{
-				  node{
-					label
-					code
-				  }
-				}
-			  }
-		name
-		label
-	      }
-	    }
-	  }
-	  mapFrom {
-	    edges {
-	      node {
-		  isSourceOf{
-		    totalCount
-		    edges{
-		      node{
-				meta {
+        node {
+          isSourceOf {
+            totalCount
+            edges {
+              node {
+                meta {
                   ONS_Variable {
                     Quality_Statement_Text
                   }
                 }
-				categories{
-					edges{
-					  node{
-						label
-						code
-					  }
-					}
-					mapFrom {
-						edges {
-							node {
-								isSourceOf {
-									totalCount
-									edges {
-										node {
-											name
-											label
-											categories {
-												edges {
-													node {
-														label
-														code
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+                categories {
+                  edges {
+                    node {
+                      label
+                      code
+                    }
+                  }
+                }
+                name
+                label
+              }
+            }
+          }
+          mapFrom {
+            edges {
+              node {
+                isSourceOf {
+                  totalCount
+                  edges {
+                    node {
+                      name
+                      label
+                      meta {
+                        ONS_Variable {
+                          Quality_Statement_Text
+                        }
+                      }
+                      categories {
+                        edges {
+                          node {
+                            label
+                            code
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }`
 
 const QueryParentAreaCount = `
