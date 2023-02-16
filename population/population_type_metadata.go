@@ -13,19 +13,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-type GetMetaDataInput struct {
+// GetPopulationTypeMetadataInput is a model with auth token and population type
+type GetPopulationTypeMetadataInput struct {
 	AuthTokens
 	PopulationType string
 }
 
-type GetMetadataResponse struct {
-	PopulationType   string `json:"population-type"`
+// GetPopulationTypeMetadataResponse model with contain the metadata for poulation type
+type GetPopulationTypeMetadataResponse struct {
+	PopulationType   string `json:"population_type"`
 	DefaultDatasetID string `json:"default_dataset_id"`
 	Edition          string `json:"edition"`
 	Version          int    `json:"version"`
 }
 
-func (c *Client) GetMetadata(ctx context.Context, input GetMetaDataInput) (GetMetadataResponse, error) {
+func (c *Client) GetPopulationTypeMetadata(ctx context.Context, input GetPopulationTypeMetadataInput) (GetPopulationTypeMetadataResponse, error) {
 	logData := log.Data{
 		"method": http.MethodGet,
 	}
@@ -33,17 +35,17 @@ func (c *Client) GetMetadata(ctx context.Context, input GetMetaDataInput) (GetMe
 	vals := url.Values{}
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, uri, vals)
 	if err != nil {
-		return GetMetadataResponse{}, dperrors.New(
+		return GetPopulationTypeMetadataResponse{}, dperrors.New(
 			err,
 			dperrors.StatusCode(err),
 			logData,
 		)
 	}
-	clientlog.Do(ctx, "getting metadata", service, req.URL.String(), logData)
+	clientlog.Do(ctx, "getting population type metadata", service, req.URL.String(), logData)
 
 	res, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
-		return GetMetadataResponse{}, dperrors.New(
+		return GetPopulationTypeMetadataResponse{}, dperrors.New(
 			errors.Wrap(err, "failed to get response from Population types API (GetMetadata)"),
 			http.StatusInternalServerError,
 			logData,
@@ -57,17 +59,17 @@ func (c *Client) GetMetadata(ctx context.Context, input GetMetaDataInput) (GetMe
 	}()
 
 	if err := checkGetResponse(res); err != nil {
-		return GetMetadataResponse{}, err
+		return GetPopulationTypeMetadataResponse{}, err
 	}
 
-	var metadata GetMetadataResponse
-	if err := json.NewDecoder(res.Body).Decode(&metadata); err != nil {
-		return GetMetadataResponse{}, dperrors.New(
+	var resp GetPopulationTypeMetadataResponse
+	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
+		return GetPopulationTypeMetadataResponse{}, dperrors.New(
 			errors.Wrap(err, "failed to unmarshal response from GetMetadata"),
 			http.StatusInternalServerError,
 			logData,
 		)
 	}
 
-	return metadata, nil
+	return resp, nil
 }
