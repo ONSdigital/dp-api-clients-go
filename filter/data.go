@@ -77,6 +77,7 @@ type Model struct {
 	IsPublished    bool                `json:"published"`
 	PopulationType string              `json:"population_type,omitempty"`
 	Custom         *bool               `json:"custom,omitempty"`
+	Type           string              `json:"type"`
 }
 
 // Links represents a links object on the filter api response
