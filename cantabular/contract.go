@@ -225,9 +225,10 @@ type GetParentAreaCountResult struct {
 }
 
 type GetBlockedAreaCountResult struct {
-	Passed  int `json:"passed"`
-	Blocked int `json:"blocked"`
-	Total   int `json:"total"`
+	Passed         int     `json:"passed"`
+	Blocked        int     `json:"blocked"`
+	Total          int     `json:"total"`
+	TableLeveError *string `json:"table_level_error,omitempty"`
 }
 
 type GetBaseVariableRequest struct {

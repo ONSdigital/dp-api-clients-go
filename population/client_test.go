@@ -1063,9 +1063,45 @@ func TestGetBlockedAreaCount(t *testing.T) {
 	Convey("Given a valid blocked areas count response payload", t, func() {
 
 		result := GetBlockedAreaCountResult{
-			Passed:  1,
-			Blocked: 2,
-			Total:   3,
+			Passed:         1,
+			Blocked:        2,
+			Total:          3,
+			TableLeveError: nil,
+		}
+		resp, err := json.Marshal(result)
+		So(err, ShouldBeNil)
+
+		stubClient := newStubClient(&http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader(resp)),
+		}, nil)
+		client := newHealthClient(stubClient)
+
+		input := GetBlockedAreaCountInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType: populationType,
+			Variables:      []string{svar},
+			Filter:         Filter{Variable: svar, Codes: areas},
+		}
+
+		res, err := client.GetBlockedAreaCount(context.Background(), input)
+
+		Convey("it should return a list of population types", func() {
+			So(err, ShouldBeNil)
+			So(res, ShouldResemble, &result)
+		})
+	})
+
+	Convey("Given a areas count result where quer doesn't fail but table level error is returned", t, func() {
+		error := "some error at table level"
+		result := GetBlockedAreaCountResult{
+			Passed:         0,
+			Blocked:        0,
+			Total:          0,
+			TableLeveError: &error,
 		}
 		resp, err := json.Marshal(result)
 		So(err, ShouldBeNil)

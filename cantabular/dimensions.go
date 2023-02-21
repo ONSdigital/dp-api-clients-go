@@ -541,21 +541,18 @@ func (c *Client) GetBlockedAreaCount(ctx context.Context, req GetBlockedAreaCoun
 				"errors":  resp.Errors,
 			},
 		)
-	} else if resp.Data.Dataset.Table.Error != "" {
-		return nil, dperrors.New(
-			errors.New("error(s) returned by graphQL query"),
-			0,
-			log.Data{
-				"request": req,
-				"errors":  resp.Data.Dataset.Table.Error,
-			},
-		)
+	}
+
+	var tError *string
+	if resp.Data.Dataset.Table.Error != "" {
+		tError = &resp.Data.Dataset.Table.Error
 	}
 
 	return &GetBlockedAreaCountResult{
-		Passed:  resp.Data.Dataset.Table.Rules.Passed.Count,
-		Blocked: resp.Data.Dataset.Table.Rules.Blocked.Count,
-		Total:   resp.Data.Dataset.Table.Rules.Total.Count,
+		Passed:         resp.Data.Dataset.Table.Rules.Passed.Count,
+		Blocked:        resp.Data.Dataset.Table.Rules.Blocked.Count,
+		Total:          resp.Data.Dataset.Table.Rules.Total.Count,
+		TableLeveError: tError,
 	}, nil
 }
 

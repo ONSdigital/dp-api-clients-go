@@ -1331,6 +1331,30 @@ func TestGetBlockedAreaCountUnhappy(t *testing.T) {
 		})
 	})
 
+	Convey("Given a table level error is retured from graphql endpoint", t, func() {
+		_, client := newMockedClient(mockRespBodyGetBlockedAreaWithTableLevelError, http.StatusOK)
+
+		Convey("When GetBlockedAreaCount is called", func() {
+
+			resp, err := client.GetBlockedAreaCount(ctx, req)
+			Convey("Then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And in the response error returned", func() {
+				error := "withinMaxCells"
+				expected := cantabular.GetBlockedAreaCountResult{
+					Passed:         0,
+					Blocked:        0,
+					Total:          0,
+					TableLeveError: &error,
+				}
+
+				So(*resp, ShouldResemble, expected)
+			})
+		})
+	})
+
 	Convey("Given a 500 HTTP Status response from the /graphql endpoint", t, func() {
 		_, client := newMockedClient(mockRespInternalServerErr, http.StatusInternalServerError)
 
@@ -3058,6 +3082,18 @@ const mockRespBodyGetBlockedAreaCountWithFilter = `
 						"count": 0
 					}
 				}
+			}
+		}
+	}
+}`
+
+const mockRespBodyGetBlockedAreaWithTableLevelError = `
+{
+	"data": {
+		"dataset": {
+			"table": {
+				"error": "withinMaxCells",
+				"rules": null
 			}
 		}
 	}
