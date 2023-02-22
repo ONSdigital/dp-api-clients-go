@@ -490,6 +490,7 @@ const QueryListDatasets = `
 query {
 	datasets {
 		name
+		description
 		label
 	}
 }`
