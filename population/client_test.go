@@ -12,6 +12,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	dphttp "github.com/ONSdigital/dp-net/http"
@@ -1062,11 +1063,11 @@ func TestGetBlockedAreaCount(t *testing.T) {
 
 	Convey("Given a valid blocked areas count response payload", t, func() {
 
-		result := GetBlockedAreaCountResult{
-			Passed:         1,
-			Blocked:        2,
-			Total:          3,
-			TableLeveError: nil,
+		result := cantabular.GetBlockedAreaCountResult{
+			Passed:     1,
+			Blocked:    2,
+			Total:      3,
+			TableError: "",
 		}
 		resp, err := json.Marshal(result)
 		So(err, ShouldBeNil)
@@ -1096,12 +1097,11 @@ func TestGetBlockedAreaCount(t *testing.T) {
 	})
 
 	Convey("Given a areas count result where quer doesn't fail but table level error is returned", t, func() {
-		error := "some error at table level"
-		result := GetBlockedAreaCountResult{
-			Passed:         0,
-			Blocked:        0,
-			Total:          0,
-			TableLeveError: &error,
+		result := cantabular.GetBlockedAreaCountResult{
+			Passed:     0,
+			Blocked:    0,
+			Total:      0,
+			TableError: "some error at table level",
 		}
 		resp, err := json.Marshal(result)
 		So(err, ShouldBeNil)

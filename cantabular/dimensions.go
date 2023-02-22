@@ -543,16 +543,11 @@ func (c *Client) GetBlockedAreaCount(ctx context.Context, req GetBlockedAreaCoun
 		)
 	}
 
-	var tError *string
-	if resp.Data.Dataset.Table.Error != "" {
-		tError = &resp.Data.Dataset.Table.Error
-	}
-
 	return &GetBlockedAreaCountResult{
-		Passed:         resp.Data.Dataset.Table.Rules.Passed.Count,
-		Blocked:        resp.Data.Dataset.Table.Rules.Blocked.Count,
-		Total:          resp.Data.Dataset.Table.Rules.Total.Count,
-		TableLeveError: tError,
+		Passed:     resp.Data.Dataset.Table.Rules.Passed.Count,
+		Blocked:    resp.Data.Dataset.Table.Rules.Blocked.Count,
+		Total:      resp.Data.Dataset.Table.Rules.Total.Count,
+		TableError: resp.Data.Dataset.Table.Error,
 	}, nil
 }
 

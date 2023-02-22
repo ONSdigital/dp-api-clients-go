@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/log.go/v2/log"
@@ -66,13 +67,6 @@ type GetBlockedAreaCountInput struct {
 type GetAreasResponse struct {
 	PaginationResponse
 	Areas []Area `json:"items"`
-}
-
-type GetBlockedAreaCountResult struct {
-	Passed         int     `json:"passed"`
-	Blocked        int     `json:"blocked"`
-	Total          int     `json:"total"`
-	TableLeveError *string `json:"table_level_error,omitempty"`
 }
 
 // GetAreasResponse is the response object for GET /areas
@@ -268,7 +262,7 @@ func (c *Client) GetParentAreaCount(ctx context.Context, input GetParentAreaCoun
 	return count, nil
 }
 
-func (c *Client) GetBlockedAreaCount(ctx context.Context, input GetBlockedAreaCountInput) (*GetBlockedAreaCountResult, error) {
+func (c *Client) GetBlockedAreaCount(ctx context.Context, input GetBlockedAreaCountInput) (*cantabular.GetBlockedAreaCountResult, error) {
 	logData := log.Data{
 		"method":     http.MethodGet,
 		"dataset_id": input.PopulationType,
@@ -312,7 +306,7 @@ func (c *Client) GetBlockedAreaCount(ctx context.Context, input GetBlockedAreaCo
 		return nil, err
 	}
 
-	var count GetBlockedAreaCountResult
+	var count cantabular.GetBlockedAreaCountResult
 	if err := json.NewDecoder(resp.Body).Decode(&count); err != nil {
 		return nil, dperrors.New(
 			errors.Wrap(err, "unable to deserialize blocked areas count response"),

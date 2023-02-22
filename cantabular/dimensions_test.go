@@ -1342,12 +1342,11 @@ func TestGetBlockedAreaCountUnhappy(t *testing.T) {
 			})
 
 			Convey("And in the response error returned", func() {
-				error := "withinMaxCells"
 				expected := cantabular.GetBlockedAreaCountResult{
-					Passed:         0,
-					Blocked:        0,
-					Total:          0,
-					TableLeveError: &error,
+					Passed:     0,
+					Blocked:    0,
+					Total:      0,
+					TableError: "withinMaxCells",
 				}
 
 				So(*resp, ShouldResemble, expected)
