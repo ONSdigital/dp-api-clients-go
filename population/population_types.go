@@ -13,7 +13,9 @@ import (
 )
 
 type PopulationType struct {
-	Name string `json:"name"`
+	Name        string `json:"name"`
+	Label       string `json:"label"`
+	Description string `json:"description"`
 }
 
 type GetPopulationTypesInput struct {
