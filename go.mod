@@ -31,3 +31,7 @@ require (
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 )
+
+retract (
+	[v2.226.0,v2.227.0] // contains breaking code
+)
