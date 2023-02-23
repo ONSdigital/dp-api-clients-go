@@ -166,7 +166,6 @@ type MetadataDatasetQuery struct {
 					TopicTitle       graphql.String `graphql:"Topic_Title" json:"topic_title"`
 				} `graphql:"Topics" json:"topics"`
 			} `json:"meta"`
-			CatLabels *graphql.String `graphql:"catLabels" json:"catLabels,omitempty"`
 		} `graphql:"vars(names: $vars)" json:"vars"`
 	} `graphql:"dataset(name: $ds, lang: $lang)" json:"dataset"`
 }
