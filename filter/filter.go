@@ -546,6 +546,47 @@ func (c *Client) CreateFlexibleBlueprint(ctx context.Context, userAuthToken, ser
 	return respData.FilterID, eTag, nil
 }
 
+// CreateFlexibleBlueprintCustom creates a flexible filter blueprint with the 'custom' flag set to true
+// and returns the associated filterID and eTag
+func (c *Client) CreateFlexibleBlueprintCustom(ctx context.Context, uAuthToken, svcAuthToken, dlServiceToken string, req CreateFlexBlueprintCustomRequest) (filterID, eTag string, err error) {
+	r := struct {
+		CreateFlexBlueprintCustomRequest
+		Custom bool `json:"custom"`
+	}{
+		CreateFlexBlueprintCustomRequest: req,
+		Custom:                           true,
+	}
+
+	reqBody, err := json.Marshal(r)
+	if err != nil {
+		return
+	}
+
+	respBody, eTag, err := c.postBlueprint(
+		ctx,
+		uAuthToken,
+		svcAuthToken,
+		dlServiceToken,
+		req.CollectionID,
+		req.Dataset.DatasetID,
+		req.Dataset.Edition,
+		strconv.Itoa(req.Dataset.Version),
+		reqBody,
+	)
+	if err != nil {
+		return
+	}
+
+	var resp createFlexBlueprintResponse
+	if err = json.Unmarshal(respBody, &resp); err != nil {
+		return
+	}
+
+	filterID = resp.FilterID
+
+	return
+}
+
 // CreateBlueprint creates a filter blueprint and returns the associated filterID and eTag
 func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, names []string) (filterID, eTag string, err error) {
 	ver, err := strconv.Atoi(version)

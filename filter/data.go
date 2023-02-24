@@ -60,10 +60,6 @@ type createFlexBlueprintRequest struct {
 	PopulationType string           `json:"population_type"`
 }
 
-type createFlexBlueprintResponse struct {
-	FilterID string `json:"filter_id"`
-}
-
 // createFlexDimensionRequest represents the fields required to add a dimension to a flex filter
 type createFlexDimensionRequest struct {
 	Name       string   `json:"name"`
@@ -94,6 +90,7 @@ type Model struct {
 	IsPublished    bool                `json:"published"`
 	PopulationType string              `json:"population_type,omitempty"`
 	Type           string              `json:"type"`
+	Custom         *bool               `json:"custom,omitempty"`
 }
 
 // Links represents a links object on the filter api response
