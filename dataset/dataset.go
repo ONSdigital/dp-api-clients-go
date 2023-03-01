@@ -367,6 +367,27 @@ func (c *Client) PutDataset(ctx context.Context, userAuthToken, serviceAuthToken
 	return nil
 }
 
+// PutMetadata updates the dataset and the version metadata
+func (c *Client) PutMetadata(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version string, metadata Metadata) error {
+	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/metadata", c.hcCli.URL, datasetID, edition, version)
+
+	payload, err := json.Marshal(metadata)
+	if err != nil {
+		return errors.Wrap(err, "error while attempting to marshall metadata")
+	}
+
+	resp, err := c.doPutWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload, "")
+	if err != nil {
+		return errors.Wrap(err, "http client returned error while attempting to make request")
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return NewDatasetAPIResponse(resp, uri)
+	}
+	return nil
+}
+
 // GetEdition retrieves a single edition document from a given datasetID and edition label
 func (c *Client) GetEdition(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition string) (m Edition, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s", c.hcCli.URL, datasetID, edition)
