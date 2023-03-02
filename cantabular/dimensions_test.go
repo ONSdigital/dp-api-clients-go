@@ -1567,6 +1567,45 @@ func TestGetCategorisationsHappy(t *testing.T) {
 	})
 }
 
+func TestGetCategorisationsCountHappy(t *testing.T) {
+	Convey("Given a valid response from the /graphql endpoint", t, func() {
+		dataset := "Example"
+		variables := []string{"age", "sex"}
+
+		ctx := context.Background()
+		mockHttpClient, cantabularClient := newMockedClient(mockRespBodyGetCategorisationsCounts, http.StatusOK)
+
+		Convey("When GetCategorisationsCounts is called", func() {
+			req := cantabular.GetCategorisationsCountsRequest{
+				Dataset:   dataset,
+				Variables: variables,
+			}
+
+			resp, err := cantabularClient.GetCategorisationsCounts(ctx, req)
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular api-ext", func() {
+				So(mockHttpClient.PostCalls(), ShouldHaveLength, 1)
+				So(mockHttpClient.PostCalls()[0].URL, ShouldEqual, "cantabular.ext.host/graphql")
+				validateQuery(
+					mockHttpClient.PostCalls()[0].Body,
+					cantabular.QueryCategorisationsCounts,
+					cantabular.QueryData{
+						Dataset:   dataset,
+						Variables: variables,
+					},
+				)
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(resp, ShouldResemble, expectedCategorisationsCounts)
+			})
+		})
+	})
+}
+
 // newMockedClient creates a new cantabular client with a mocked response for post requests,
 // according to the provided response string and status code.
 func newMockedClient(response string, statusCode int) (*dphttp.ClienterMock, *cantabular.Client) {
@@ -2933,6 +2972,55 @@ var expectedParents = cantabular.GetParentsResponse{
 				},
 			},
 		},
+	},
+}
+
+const mockRespBodyGetCategorisationsCounts = `
+{
+    "data": {
+        "dataset": {
+            "variables": {
+                "edges": [
+                    {
+                        "node": {
+							"name": "age",
+                            "isSourceOf": {
+                                "totalCount": 5
+                            },
+							"mapFrom": []
+                        }
+                    },
+					{
+                        "node": {
+							"name": "sex",
+                            "isSourceOf": {
+                                "totalCount": 1
+                            },
+							"mapFrom": [
+								{
+									"edges": [
+										{
+											"node": {
+												"isSourceOf": {
+													"totalCount": 2
+												}
+											}
+										}
+									]
+								}
+							]
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}`
+
+var expectedCategorisationsCounts = &cantabular.GetCategorisationCountsResponse{
+	Counts: map[string]int{
+		"sex": 2,
+		"age": 5,
 	},
 }
 

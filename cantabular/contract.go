@@ -177,6 +177,15 @@ type GetParentsResponse struct {
 	Dataset gql.Dataset `json:"dataset"`
 }
 
+type GetCategorisationsCountsRequest struct {
+	Dataset   string
+	Variables []string
+}
+
+type GetCategorisationCountsResponse struct {
+	Counts map[string]int `json:"counts"`
+}
+
 // GetCategorisationsRequest holds the input parameters for the GetCategorisations query
 type GetCategorisationsRequest struct {
 	PaginationParams
