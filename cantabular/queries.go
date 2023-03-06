@@ -199,6 +199,12 @@ query($dataset: String!, $variables: [String!]!) {
 							node {
 								label
 								name
+								description
+								meta {
+									ONS_Variable {
+										Quality_Statement_Text
+									 }
+								}
 							}
 						}
 					}
@@ -226,6 +232,12 @@ query($dataset: String!, $variables: [String!]!) {
 							node {
 								label
 								name
+								description
+								meta {
+									ONS_Variable {
+										Quality_Statement_Text
+									 }
+								}
 							}
 						}
 					}
