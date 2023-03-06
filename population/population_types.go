@@ -19,6 +19,7 @@ type PopulationType struct {
 }
 
 type GetPopulationTypesInput struct {
+	DefaultDatasets bool
 	AuthTokens
 }
 
@@ -33,6 +34,9 @@ func (c *Client) GetPopulationTypes(ctx context.Context, input GetPopulationType
 
 	urlPath := "population-types"
 	urlValues := url.Values{}
+	if input.DefaultDatasets {
+		urlValues.Add("require-default-dataset", "true")
+	}
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {

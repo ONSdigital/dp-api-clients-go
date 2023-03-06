@@ -546,6 +546,47 @@ func (c *Client) CreateFlexibleBlueprint(ctx context.Context, userAuthToken, ser
 	return respData.FilterID, eTag, nil
 }
 
+// CreateFlexibleBlueprintCustom creates a flexible filter blueprint with the 'custom' flag set to true
+// and returns the associated filterID and eTag
+func (c *Client) CreateFlexibleBlueprintCustom(ctx context.Context, uAuthToken, svcAuthToken, dlServiceToken string, req CreateFlexBlueprintCustomRequest) (filterID, eTag string, err error) {
+	r := struct {
+		CreateFlexBlueprintCustomRequest
+		Custom bool `json:"custom"`
+	}{
+		CreateFlexBlueprintCustomRequest: req,
+		Custom:                           true,
+	}
+
+	reqBody, err := json.Marshal(r)
+	if err != nil {
+		return
+	}
+
+	respBody, eTag, err := c.postBlueprint(
+		ctx,
+		uAuthToken,
+		svcAuthToken,
+		dlServiceToken,
+		req.CollectionID,
+		req.Dataset.DatasetID,
+		req.Dataset.Edition,
+		strconv.Itoa(req.Dataset.Version),
+		reqBody,
+	)
+	if err != nil {
+		return
+	}
+
+	var resp createFlexBlueprintResponse
+	if err = json.Unmarshal(respBody, &resp); err != nil {
+		return
+	}
+
+	filterID = resp.FilterID
+
+	return
+}
+
 // CreateBlueprint creates a filter blueprint and returns the associated filterID and eTag
 func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, names []string) (filterID, eTag string, err error) {
 	ver, err := strconv.Atoi(version)
@@ -578,6 +619,60 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 	}
 
 	return cb.FilterID, eTag, nil
+}
+
+func (c *Client) CreateCustomFilter(ctx context.Context, userAuthToken, serviceAuthToken, populationType string) (filterID string, err error) {
+	uri := c.hcCli.URL + "/custom/filters"
+
+	clientlog.Do(ctx, "attempting to create custom filter ", service, uri, log.Data{
+		"method":         "POST",
+		"populationType": populationType,
+	})
+
+	body := struct {
+		PopulationType string `json:"population_type"`
+	}{
+		PopulationType: populationType,
+	}
+
+	b, err := json.Marshal(body)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
+	if err != nil {
+		return "", err
+	}
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return "", fmt.Errorf("failed to set auth token: %w", err)
+	}
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return "", fmt.Errorf("failed to set service auth token: %w", err)
+	}
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return "", err
+	}
+
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusCreated {
+		return "", ErrInvalidFilterAPIResponse{ExpectedCode: http.StatusCreated, ActualCode: resp.StatusCode, URI: uri}
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	var fresp createFlexBlueprintResponse
+	if err = json.Unmarshal(respBody, &fresp); err != nil {
+		return
+	}
+
+	filterID = fresp.FilterID
+	return
 }
 
 func (c *Client) postBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, reqBody []byte) ([]byte, string, error) {
