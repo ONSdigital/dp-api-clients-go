@@ -516,7 +516,7 @@ func TestGetPopulationTypes(t *testing.T) {
 
 	Convey("Given a valid population types response payload", t, func() {
 		ptypes := GetPopulationTypesResponse{
-			Items: []PopulationType{{Name: "test"}},
+			Items: []PopulationType{{Name: "test", Label: "test", Description: "Test", Type: "test"}},
 		}
 
 		resp, err := json.Marshal(ptypes)
