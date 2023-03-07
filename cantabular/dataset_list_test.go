@@ -66,11 +66,15 @@ var mockRespBodyListDatasets = `
 		"datasets": [
 			{
 				"name": "dataset_1",
-				"label": "dataset 1"
+				"label": "dataset 1",
+				"description": "Dataset 1",
+				"type": "microdata"
 			},
 			{
 				"name": "dataset_2",
-				"label": "dataset 2"
+				"label": "dataset 2",
+				"description": "Dataset 2",
+				"type": "tabular"
 			}
 		]
 	}
@@ -79,12 +83,16 @@ var mockRespBodyListDatasets = `
 var expectedListDatasets = cantabular.ListDatasetsResponse{
 	Datasets: []gql.Dataset{
 		{
-			Name:  "dataset_1",
-			Label: "dataset 1",
+			Name:        "dataset_1",
+			Label:       "dataset 1",
+			Description: "Dataset 1",
+			Type:        "microdata",
 		},
 		{
-			Name:  "dataset_2",
-			Label: "dataset 2",
+			Name:        "dataset_2",
+			Label:       "dataset 2",
+			Description: "Dataset 2",
+			Type:        "tabular",
 		},
 	},
 }

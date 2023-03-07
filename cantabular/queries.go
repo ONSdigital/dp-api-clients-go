@@ -530,6 +530,7 @@ query {
 		name
 		description
 		label
+		type
 	}
 }`
 
