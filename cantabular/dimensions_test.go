@@ -2977,25 +2977,25 @@ var expectedParents = cantabular.GetParentsResponse{
 
 const mockRespBodyGetCategorisationsCounts = `
 {
-    "data": {
-        "dataset": {
-            "variables": {
-                "edges": [
-                    {
-                        "node": {
-							"name": "age",
-                            "isSourceOf": {
-                                "totalCount": 5
-                            },
-							"mapFrom": []
-                        }
-                    },
+	"data": {
+		"dataset": {
+			"variables": {
+				"edges": [
 					{
-                        "node": {
+						"node": {
+							"name": "age",
+							"isSourceOf": {
+								"totalCount": 5
+							},
+							"mapFrom": []
+						}
+					},
+					{
+						"node": {
 							"name": "sex",
-                            "isSourceOf": {
-                                "totalCount": 1
-                            },
+							"isSourceOf": {
+								"totalCount": 1
+							},
 							"mapFrom": [
 								{
 									"edges": [
@@ -3009,12 +3009,12 @@ const mockRespBodyGetCategorisationsCounts = `
 									]
 								}
 							]
-                        }
-                    }
-                ]
-            }
-        }
-    }
+						}
+					}
+				]
+			}
+		}
+	}
 }`
 
 var expectedCategorisationsCounts = &cantabular.GetCategorisationCountsResponse{
