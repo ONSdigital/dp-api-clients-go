@@ -368,7 +368,7 @@ func (c *Client) PutDataset(ctx context.Context, userAuthToken, serviceAuthToken
 }
 
 // PutMetadata updates the dataset and the version metadata
-func (c *Client) PutMetadata(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version string, metadata Metadata) error {
+func (c *Client) PutMetadata(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version string, metadata EditableMetadata, versionEtag string) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s/metadata", c.hcCli.URL, datasetID, edition, version)
 
 	payload, err := json.Marshal(metadata)
@@ -376,7 +376,7 @@ func (c *Client) PutMetadata(ctx context.Context, userAuthToken, serviceAuthToke
 		return errors.Wrap(err, "error while attempting to marshall metadata")
 	}
 
-	resp, err := c.doPutWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload, "")
+	resp, err := c.doPutWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, payload, versionEtag)
 	if err != nil {
 		return errors.Wrap(err, "http client returned error while attempting to make request")
 	}
