@@ -223,24 +223,15 @@ type EditableMetadata struct {
 	NationalStatistic *bool              `json:"national_statistic,omitempty"`
 	NextRelease       string             `json:"next_release,omitempty"`
 	Publications      []Publication      `json:"publications,omitempty"`
-	Publisher         *Publisher         `json:"publisher,omitempty"`
 	QMI               *Publication       `json:"qmi,omitempty"`
 	RelatedDatasets   []RelatedDataset   `json:"related_datasets,omitempty"`
 	ReleaseDate       string             `json:"release_date,omitempty"`
 	ReleaseFrequency  string             `json:"release_frequency,omitempty"`
-	Temporal          *[]Temporal        `json:"temporal,omitempty"`
-	Theme             string             `json:"theme,omitempty"`
 	Title             string             `json:"title,omitempty"`
 	Survey            string             `json:"survey,omitempty"`
 	Subtopics         []string           `json:"subtopics,omitempty"`
 	UnitOfMeasure     string             `json:"unit_of_measure,omitempty"`
-	URI               string             `json:"uri,omitempty"`
 	UsageNotes        *[]UsageNote       `json:"usage_notes,omitempty"`
-	Coverage          string             `json:"coverage,omitempty"`
-	TablePopulation   string             `json:"table_population,omitempty"`
-	AreaType          string             `json:"area_type,omitempty"`
-	Classifications   string             `json:"classifications,omitempty"`
-	Source            string             `json:"source,omitempty"`
 	RelatedContent    []GeneralDetails   `json:"related_content,omitempty"`
 }
 
