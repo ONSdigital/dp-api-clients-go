@@ -421,66 +421,92 @@ query ($dataset: String!, $variables: [String!]!, $limit: Int!, $offset: Int) {
   }
 }`
 
+const QueryCategorisationsCounts = `
+query ($dataset: String!, $variables: [String!]!) {
+	dataset(name: $dataset) {
+		variables(names: $variables) {
+			edges {
+				node {
+					name
+					isSourceOf{
+						totalCount
+					}
+					mapFrom {
+						edges {
+							node {
+								isSourceOf{
+									totalCount
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+`
+
 const QueryCategorisations = `
 query ($dataset: String!, $text: String!) {
-  dataset(name: $dataset) {
-    variables(names: [ $text ] ) {
-      edges {
-	node {
-	  isSourceOf{
-	    totalCount
-	    edges{
-	      node{
-			meta {
-				ONS_Variable {
-				  Quality_Statement_Text
-				}
-			  }
-			categories{
-				edges{
-				  node{
-					label
-					code
-				  }
-				}
-			  }
-		name
-		label
-	      }
-	    }
-	  }
-	  mapFrom {
-	    edges {
-	      node {
-		  isSourceOf{
-		    totalCount
-		    edges{
-		      node{
-				meta {
-                  ONS_Variable {
-                    Quality_Statement_Text
-                  }
-                }
-				categories{
-					edges{
-					  node{
-						label
-						code
-					  }
+	dataset(name: $dataset) {
+		variables(names: [ $text ] ) {
+			edges {
+				node {
+					isSourceOf{
+						totalCount
+						edges{
+							node{
+								meta {
+									ONS_Variable {
+				  						Quality_Statement_Text
+									}
+								}
+								categories{
+									edges{
+										node{
+											label
+											code
+										}
+									}
+								}
+								name
+								label
+							}
+						}
 					}
-				  }
-			name
-			label
-		      }
-		    }
-		  }
-	      }
-	    }
-	  }
+					mapFrom {
+						edges {
+							node {
+								isSourceOf{
+									totalCount
+									edges{
+										node{
+											meta {
+												ONS_Variable {
+													Quality_Statement_Text
+												}
+											}
+											categories{
+												edges{
+													node{
+														label
+														code
+													}
+												}
+											}
+											name
+											label
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
-      }
-    }
-  }
 }`
 
 const QueryParentAreaCount = `
@@ -504,6 +530,7 @@ query {
 		name
 		description
 		label
+		type
 	}
 }`
 

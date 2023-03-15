@@ -4,6 +4,7 @@ type Dataset struct {
 	Name        string    `json:"name,omitempty"`
 	Label       string    `json:"label,omitempty"`
 	Description string    `json:"description,omitempty"`
+	Type        string    `json:"type,omitempty"`
 	RuleBase    RuleBase  `json:"ruleBase"`
 	Variables   Variables `json:"variables"`
 }
