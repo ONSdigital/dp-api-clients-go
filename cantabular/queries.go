@@ -199,14 +199,14 @@ query($dataset: String!, $variables: [String!]!) {
 							node {
 								label
 								name
-								description
-								meta {
-									ONS_Variable {
-										Quality_Statement_Text
-									 }
-								}
 							}
 						}
+					}
+					description
+					meta {
+						ONS_Variable {
+							Quality_Statement_Text
+						 }
 					}
 					label
 					categories {
@@ -232,14 +232,14 @@ query($dataset: String!, $variables: [String!]!) {
 							node {
 								label
 								name
-								description
-								meta {
-									ONS_Variable {
-										Quality_Statement_Text
-									 }
-								}
 							}
 						}
+					}
+					description
+					meta {
+						ONS_Variable {
+							Quality_Statement_Text
+						 }
 					}
 					label
 					categories {
