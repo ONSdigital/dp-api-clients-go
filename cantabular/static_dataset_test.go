@@ -277,6 +277,29 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 	})
 }
 
+func TestStaticDatasetType(t *testing.T) {
+	Convey("Given a GraphQL error from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		mockHttpClient := &dphttp.ClienterMock{PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(mockRespBodyDatasetType)),
+			}, nil
+		}}
+		cantabularClient := cantabular.NewClient(
+			cantabular.Config{
+				Host:       "cantabular.host",
+				ExtApiHost: "cantabular.ext.host",
+			},
+			mockHttpClient,
+			nil,
+		)
+		res, _ := cantabularClient.StaticDatasetType(testCtx, "testDataset")
+		So(res.Type, ShouldEqual, "microdata")
+	})
+
+}
+
 // mockRespBodyStaticDataset is a successful static dataset query respose that is returned from a mocked client for testing
 var mockRespBodyStaticDataset = `
 {
@@ -453,3 +476,13 @@ var mockRespBodyNoTable = `
 		}
 	]
 }`
+
+var mockRespBodyDatasetType = `
+{
+	"data": {
+	  "dataset": {
+		"type": "microdata"
+	  }
+	}
+  }		
+`

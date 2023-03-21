@@ -2780,3 +2780,49 @@ func getMockfilterAPI(expectRequest http.Request, mockedHTTPResponse ...MockedHT
 func boolToPtr(val bool) *bool {
 	return &val
 }
+
+func TestClient_CreateCustomFilter(t *testing.T) {
+	popualtionType := "UR"
+	resposeBody := `{
+		"filter_id": "29adf09b-0d87-41ea-bf5d-f8c165668624",
+		"instance_id": "a167d774-e725-4a40-8eb7-29650efbd0cd",
+		"dataset": {
+			"id": "jeet-testing-1",
+			"edition": "2021",
+			"version": 1,
+			"lowest_geography": "",
+			"release_date": "",
+			"title": "custom"
+		},
+		"published": true,
+		"custom": false,
+		"type": "multivariate",
+		"population_type": "UR",
+		"links": {
+			"version": {
+				"href": "http://localhost:22000/datasets/jeet-testing-1/editions/2021/versions/1",
+				"id": "1"
+			},
+			"self": {
+				"href": "http://localhost:22100/filters/29adf09b-0d87-41ea-bf5d-f8c165668624"
+			},
+			"dimensions": {
+				"href": "http://localhost:22100/filters/29adf09b-0d87-41ea-bf5d-f8c165668624"
+			}
+		}
+	}`
+
+	Convey("When happy request is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "POST"}, MockedHTTPResponse{StatusCode: 201, Body: resposeBody})
+		filterID, err := mockedAPI.CreateCustomFilter(ctx, testUserAuthToken, testServiceToken, popualtionType)
+		So(err, ShouldBeNil)
+		So(filterID, ShouldEqual, "29adf09b-0d87-41ea-bf5d-f8c165668624")
+	})
+
+	Convey("When happy request is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "POST"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
+		filterID, err := mockedAPI.CreateCustomFilter(ctx, testUserAuthToken, testServiceToken, popualtionType)
+		So(err, ShouldNotBeNil)
+		So(filterID, ShouldEqual, "")
+	})
+}

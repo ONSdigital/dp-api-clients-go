@@ -643,3 +643,58 @@ func (c *Client) GetCategorisations(ctx context.Context, req GetCategorisationsR
 
 	return &resp.Data, nil
 }
+
+// GetCategorisationsCounts returns a count of of variables that map to the provided variables
+func (c *Client) GetCategorisationsCounts(ctx context.Context, req GetCategorisationsCountsRequest) (*GetCategorisationCountsResponse, error) {
+	resp := &struct {
+		Data   GetCategorisationsResponse `json:"data"`
+		Errors []gql.Error                `json:"errors,omitempty"`
+	}{}
+
+	data := QueryData{
+		Dataset:   req.Dataset,
+		Variables: req.Variables,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryCategorisationsCounts, data, resp); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal query")
+	}
+
+	if resp != nil && len(resp.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			resp.Errors[0].StatusCode(),
+			log.Data{
+				"request": req,
+				"errors":  resp.Errors,
+			},
+		)
+	}
+
+	res := GetCategorisationCountsResponse{
+		Counts: make(map[string]int),
+	}
+
+	for _, v := range resp.Data.Dataset.Variables.Edges {
+		if len(v.Node.MapFrom) > 0 {
+			// is base variable, take count from here
+			mf := v.Node.MapFrom[0]
+			if len(mf.Edges) < 1 {
+				return nil, dperrors.New(
+					errors.New("invalid graphql response"),
+					http.StatusInternalServerError,
+					log.Data{
+						"request": req,
+					},
+				)
+			}
+			e := mf.Edges[0]
+			res.Counts[v.Node.Name] = e.Node.IsSourceOf.TotalCount
+		} else {
+			// not base variable
+			res.Counts[v.Node.Name] = v.Node.IsSourceOf.TotalCount
+		}
+	}
+
+	return &res, nil
+}

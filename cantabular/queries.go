@@ -36,11 +36,31 @@ query ($dataset: String!, $variables: [String!]!) {
 	}
 }`
 
+// Query static dataset type
+const QueryStaticDatasetType = `
+query($dataset: String!){
+	dataset(name: $dataset) {
+	  type
+	}
+}`
+
 // QueryStaticDataset is the graphQL query to obtain static dataset counts (variables with categories and counts)
 const QueryStaticDataset = `
 query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
 	dataset(name: $dataset) {
 		table(variables: $variables, filters: $filters) {
+			rules {
+				passed{
+					count
+				}
+				evaluated
+				{
+					count
+				}
+				blocked {
+					count
+				}
+			}
 			dimensions {
 				count
 				variable { name label }
@@ -202,6 +222,12 @@ query($dataset: String!, $variables: [String!]!) {
 							}
 						}
 					}
+					description
+					meta {
+						ONS_Variable {
+							Quality_Statement_Text
+						 }
+					}
 					label
 					categories {
 						totalCount
@@ -228,6 +254,12 @@ query($dataset: String!, $variables: [String!]!) {
 								name
 							}
 						}
+					}
+					description
+					meta {
+						ONS_Variable {
+							Quality_Statement_Text
+						 }
 					}
 					label
 					categories {
@@ -409,66 +441,92 @@ query ($dataset: String!, $variables: [String!]!, $limit: Int!, $offset: Int) {
   }
 }`
 
+const QueryCategorisationsCounts = `
+query ($dataset: String!, $variables: [String!]!) {
+	dataset(name: $dataset) {
+		variables(names: $variables) {
+			edges {
+				node {
+					name
+					isSourceOf{
+						totalCount
+					}
+					mapFrom {
+						edges {
+							node {
+								isSourceOf{
+									totalCount
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+`
+
 const QueryCategorisations = `
 query ($dataset: String!, $text: String!) {
-  dataset(name: $dataset) {
-    variables(names: [ $text ] ) {
-      edges {
-	node {
-	  isSourceOf{
-	    totalCount
-	    edges{
-	      node{
-			meta {
-				ONS_Variable {
-				  Quality_Statement_Text
-				}
-			  }
-			categories{
-				edges{
-				  node{
-					label
-					code
-				  }
-				}
-			  }
-		name
-		label
-	      }
-	    }
-	  }
-	  mapFrom {
-	    edges {
-	      node {
-		  isSourceOf{
-		    totalCount
-		    edges{
-		      node{
-				meta {
-                  ONS_Variable {
-                    Quality_Statement_Text
-                  }
-                }
-				categories{
-					edges{
-					  node{
-						label
-						code
-					  }
+	dataset(name: $dataset) {
+		variables(names: [ $text ] ) {
+			edges {
+				node {
+					isSourceOf{
+						totalCount
+						edges{
+							node{
+								meta {
+									ONS_Variable {
+				  						Quality_Statement_Text
+									}
+								}
+								categories{
+									edges{
+										node{
+											label
+											code
+										}
+									}
+								}
+								name
+								label
+							}
+						}
 					}
-				  }
-			name
-			label
-		      }
-		    }
-		  }
-	      }
-	    }
-	  }
+					mapFrom {
+						edges {
+							node {
+								isSourceOf{
+									totalCount
+									edges{
+										node{
+											meta {
+												ONS_Variable {
+													Quality_Statement_Text
+												}
+											}
+											categories{
+												edges{
+													node{
+														label
+														code
+													}
+												}
+											}
+											name
+											label
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
-      }
-    }
-  }
 }`
 
 const QueryParentAreaCount = `
@@ -492,6 +550,7 @@ query {
 		name
 		description
 		label
+		type
 	}
 }`
 

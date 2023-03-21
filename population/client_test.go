@@ -516,7 +516,7 @@ func TestGetPopulationTypes(t *testing.T) {
 
 	Convey("Given a valid population types response payload", t, func() {
 		ptypes := GetPopulationTypesResponse{
-			Items: []PopulationType{{Name: "test"}},
+			Items: []PopulationType{{Name: "test", Label: "test", Description: "Test", Type: "test"}},
 		}
 
 		resp, err := json.Marshal(ptypes)
@@ -617,6 +617,163 @@ func TestGetPopulationTypes(t *testing.T) {
 			},
 		}
 		_, err := client.GetPopulationTypes(nil, input)
+
+		Convey("it should return a client error", func() {
+			So(err, shouldBeDPError, http.StatusBadRequest)
+		})
+	})
+}
+
+func TestGetPopulationType(t *testing.T) {
+	const userAuthToken = "user"
+	const serviceAuthToken = "service"
+
+	Convey("Given a valid request", t, func() {
+		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
+		client, err := NewWithHealthClient(health.NewClientWithClienter("", "http://test.test:2000/v1", stubClient))
+		So(err, ShouldBeNil)
+
+		input := GetPopulationTypeInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType: "test",
+		}
+		client.GetPopulationType(context.Background(), input)
+
+		Convey("it should call the population types endpoint", func() {
+			calls := stubClient.DoCalls()
+			So(calls, ShouldNotBeEmpty)
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types/test")
+		})
+	})
+
+	Convey("Given authentication tokens", t, func() {
+		stubClient := newStubClient(&http.Response{Body: ioutil.NopCloser(bytes.NewReader(nil))}, nil)
+		client := newHealthClient(stubClient)
+
+		input := GetPopulationTypeInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+		}
+
+		client.GetPopulationType(context.Background(), input)
+
+		Convey("it should set the auth headers on the request", func() {
+			calls := stubClient.DoCalls()
+			So(calls, ShouldNotBeEmpty)
+
+			So(calls[0].Req, shouldHaveAuthHeaders, userAuthToken, serviceAuthToken)
+		})
+	})
+
+	Convey("Given a valid population types response payload", t, func() {
+		ptypes := GetPopulationTypeResponse{
+			PopulationType: PopulationType{Name: "test", Label: "test", Description: "Test", Type: "test"},
+		}
+
+		resp, err := json.Marshal(ptypes)
+		So(err, ShouldBeNil)
+
+		stubClient := newStubClient(&http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader(resp)),
+		}, nil)
+		client := newHealthClient(stubClient)
+
+		input := GetPopulationTypeInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+			PopulationType: "test",
+		}
+		types, err := client.GetPopulationType(context.Background(), input)
+
+		Convey("it should return a list of population types", func() {
+			So(err, ShouldBeNil)
+			So(types, ShouldResemble, ptypes)
+		})
+	})
+
+	Convey("Given the population types API returns an error", t, func() {
+		stubClient := newStubClient(nil, errors.New("oh no"))
+
+		client := newHealthClient(stubClient)
+
+		input := GetPopulationTypeInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+		}
+		_, err := client.GetPopulationType(context.Background(), input)
+
+		Convey("it should return an internal error", func() {
+			So(err, shouldBeDPError, http.StatusInternalServerError)
+		})
+	})
+
+	Convey("Given the population types API returns a status code of 404", t, func() {
+		stubClient := newStubClient(&http.Response{
+			StatusCode: http.StatusNotFound,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "errors": ["not found"] }`))),
+		}, nil)
+
+		client := newHealthClient(stubClient)
+
+		input := GetPopulationTypeInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+		}
+		_, err := client.GetPopulationType(context.Background(), input)
+
+		Convey("the error chain should contain the original Errors type", func() {
+			So(err, shouldBeDPError, http.StatusNotFound)
+
+			var respErr ErrorResp
+			ok := errors.As(err, &respErr)
+			So(ok, ShouldBeTrue)
+			So(respErr, ShouldResemble, ErrorResp{Errors: []string{"not found"}})
+		})
+	})
+
+	Convey("Given the response cannot be deserialized", t, func() {
+		stubClient := newStubClient(&http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "areas" `))),
+		}, nil)
+
+		client := newHealthClient(stubClient)
+
+		input := GetPopulationTypeInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+		}
+		_, err := client.GetPopulationType(context.Background(), input)
+
+		Convey("it should return an internal error", func() {
+			So(err, shouldBeDPError, http.StatusInternalServerError)
+		})
+	})
+
+	Convey("Given the request cannot be created", t, func() {
+		client := newHealthClient(newStubClient(nil, nil))
+
+		input := GetPopulationTypeInput{
+			AuthTokens: AuthTokens{
+				UserAuthToken:    userAuthToken,
+				ServiceAuthToken: serviceAuthToken,
+			},
+		}
+		_, err := client.GetPopulationType(nil, input)
 
 		Convey("it should return a client error", func() {
 			So(err, shouldBeDPError, http.StatusBadRequest)
