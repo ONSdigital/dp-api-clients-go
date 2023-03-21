@@ -2187,6 +2187,63 @@ func TestClient_PatchInstanceDimensions(t *testing.T) {
 	})
 }
 
+func TestClient_PutMetadata(t *testing.T) {
+
+	datasetId := "TS0002"
+	edition := "2023"
+	version := "1"
+	metadata := EditableMetadata{}
+
+	expectedPayload, _ := json.Marshal(metadata)
+	expectedUrl := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/metadata", datasetId, edition, version)
+
+	Convey("given a 200 status is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{
+			http.StatusOK,
+			nil,
+			map[string]string{"ETag": testETag},
+		})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when PutMetadata is called", func() {
+			err := datasetClient.PutMetadata(ctx, userAuthToken, serviceAuthToken, collectionID, datasetId, edition, version, metadata, testETag)
+
+			Convey("Then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And dphttpclient.Do is called 1 time with the expected method, path, headers and body", func() {
+				checkRequestBase(httpClient, http.MethodPut, expectedUrl, testETag)
+				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		errorMsg := "wrong!"
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, errorMsg, nil})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when PutMetadata is called", func() {
+			err := datasetClient.PutMetadata(ctx, userAuthToken, serviceAuthToken, collectionID, datasetId, edition, version, metadata, testETag)
+
+			Convey("then the expected error is returned", func() {
+				expectedError := fmt.Sprintf("invalid response: 404 from dataset api: http://localhost:8080%s, body: \"%s\"", expectedUrl, errorMsg)
+				So(err.Error(), ShouldResemble, errors.Errorf(expectedError).Error())
+			})
+
+			Convey("And dphttpclient.Do is called 1 time with expected method, path, headers and body", func() {
+				checkRequestBase(httpClient, http.MethodPut, expectedUrl, testETag)
+				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
+			})
+		})
+	})
+}
+
 func newDatasetClient(httpClient *dphttp.ClienterMock) *Client {
 	healthClient := health.NewClientWithClienter("", testHost, httpClient)
 	datasetClient := NewWithHealthClient(healthClient)
