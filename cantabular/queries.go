@@ -470,6 +470,7 @@ query ($dataset: String!, $text: String!) {
 						edges{
 							node{
 								meta {
+									Default_Classification_Flag
 									ONS_Variable {
 				  						Quality_Statement_Text
 									}
@@ -495,6 +496,7 @@ query ($dataset: String!, $text: String!) {
 									edges{
 										node{
 											meta {
+												Default_Classification_Flag
 												ONS_Variable {
 													Quality_Statement_Text
 												}
