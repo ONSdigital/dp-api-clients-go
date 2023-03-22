@@ -36,6 +36,14 @@ query ($dataset: String!, $variables: [String!]!) {
 	}
 }`
 
+// Query static dataset type
+const QueryStaticDatasetType = `
+query($dataset: String!){
+	dataset(name: $dataset) {
+	  type
+	}
+}`
+
 // QueryStaticDataset is the graphQL query to obtain static dataset counts (variables with categories and counts)
 const QueryStaticDataset = `
 query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
