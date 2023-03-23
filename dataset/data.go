@@ -119,6 +119,7 @@ type Version struct {
 	UsageNotes           *[]UsageNote         `json:"usage_notes,omitempty"`
 	IsBasedOn            *IsBasedOn           `json:"is_based_on,omitempty"`
 	LowestGeography      string               `json:"lowest_geography,omitempty"`
+	ETag                 string               `json:"e_tag,omitempty"`
 }
 
 type UpdateInstance struct {

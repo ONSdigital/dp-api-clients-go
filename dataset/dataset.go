@@ -566,7 +566,7 @@ func (c *Client) GetVersionsBatchProcess(ctx context.Context, userAuthToken, ser
 }
 
 // GetVersion gets a specific version for an edition from the dataset api
-func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (m Version, err error) {
+func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (v Version, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, datasetID, edition, version)
 
 	resp, err := c.doGetWithAuthHeadersAndWithDownloadToken(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, uri)
@@ -585,7 +585,9 @@ func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken
 		return
 	}
 
-	err = json.Unmarshal(b, &m)
+	err = json.Unmarshal(b, &v)
+	v.ETag, _ = headers.GetResponseETag(resp)
+
 	return
 }
 
