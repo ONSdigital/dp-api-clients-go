@@ -272,16 +272,38 @@ func TestClient_GetVersion(t *testing.T) {
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetVersion is called", func() {
-			So(version.ETag, ShouldBeEmpty) // Ensure etag is coming from the header
-
 			got, err := datasetClient.GetVersion(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetId, edition, versionString)
 
 			Convey("Then no error is returned", func() {
 				So(err, ShouldBeNil)
 			})
 			Convey("And it returns the version", func() {
-				version.ETag = etag // Check the etag has been set
 				So(got, ShouldResemble, version)
+			})
+			Convey("And the relevant api call has been made", func() {
+				expectedUrl := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s", datasetId, edition, versionString)
+				expectedHeaders := expectedHeaders{
+					FlorenceToken:        userAuthToken,
+					ServiceToken:         serviceAuthToken,
+					CollectionId:         collectionID,
+					DownloadServiceToken: downloadServiceAuthToken,
+				}
+				checkRequestBase(httpClient, http.MethodGet, expectedUrl, expectedHeaders)
+			})
+		})
+
+		Convey("when GetVersionWithHeaders is called", func() {
+			got, h, err := datasetClient.GetVersionWithHeaders(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetId, edition, versionString)
+
+			Convey("Then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("And it returns the version", func() {
+				So(got, ShouldResemble, version)
+			})
+			Convey("And it returns the headers", func() {
+				So(h, ShouldNotBeNil)
+				So(h.ETag, ShouldEqual, etag)
 			})
 			Convey("And the relevant api call has been made", func() {
 				expectedUrl := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s", datasetId, edition, versionString)

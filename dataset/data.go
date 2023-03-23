@@ -119,7 +119,6 @@ type Version struct {
 	UsageNotes           *[]UsageNote         `json:"usage_notes,omitempty"`
 	IsBasedOn            *IsBasedOn           `json:"is_based_on,omitempty"`
 	LowestGeography      string               `json:"lowest_geography,omitempty"`
-	ETag                 string               `json:"e_tag,omitempty"`
 }
 
 type UpdateInstance struct {
@@ -467,6 +466,11 @@ type Temporal struct {
 	StartDate string `json:"start_date"`
 	EndDate   string `json:"end_date"`
 	Frequency string `json:"frequency"`
+}
+
+// ResponseHedaers represents headers that are available in the HTTP response
+type ResponseHeaders struct {
+	ETag string
 }
 
 // ToString builds a string of metadata information

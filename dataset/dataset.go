@@ -567,9 +567,21 @@ func (c *Client) GetVersionsBatchProcess(ctx context.Context, userAuthToken, ser
 
 // GetVersion gets a specific version for an edition from the dataset api
 func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (v Version, err error) {
+	v, _, err = c.getVersion(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version)
+	return
+}
+
+// GetVersionWithHeaders gets a specific version for an edition from the dataset api and additional response headers
+func (c *Client) GetVersionWithHeaders(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (v Version, h ResponseHeaders, err error) {
+	v, resp, err := c.getVersion(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version)
+	h.ETag, _ = headers.GetResponseETag(resp)
+	return
+}
+
+func (c *Client) getVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (v Version, resp *http.Response, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, datasetID, edition, version)
 
-	resp, err := c.doGetWithAuthHeadersAndWithDownloadToken(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, uri)
+	resp, err = c.doGetWithAuthHeadersAndWithDownloadToken(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, uri)
 	if err != nil {
 		return
 	}
@@ -586,7 +598,6 @@ func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken
 	}
 
 	err = json.Unmarshal(b, &v)
-	v.ETag, _ = headers.GetResponseETag(resp)
 
 	return
 }
