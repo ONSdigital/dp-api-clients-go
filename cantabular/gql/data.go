@@ -30,7 +30,8 @@ type Edge struct {
 }
 
 type Meta struct {
-	ONSVariable ONS_Variable `json:"ONS_Variable"`
+	ONSVariable           ONS_Variable `json:"ONS_Variable"`
+	DefaultClassification string       `json:"default_classification_flag"`
 }
 
 type ONS_Variable struct {

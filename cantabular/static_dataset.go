@@ -112,6 +112,14 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 		)
 	}
 
+	if len(q.Data.Dataset.Table.Error) != 0 {
+		return nil, dperrors.New(
+			errors.New(c.parseTableError(q.Data.Dataset.Table.Error)),
+			http.StatusBadRequest,
+			logData,
+		)
+	}
+
 	return &q.Data, nil
 }
 

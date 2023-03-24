@@ -494,6 +494,11 @@ type Temporal struct {
 	Frequency string `json:"frequency"`
 }
 
+// ResponseHedaers represents headers that are available in the HTTP response
+type ResponseHeaders struct {
+	ETag string
+}
+
 // ToString builds a string of metadata information
 func (m Metadata) ToString() string {
 	var b bytes.Buffer

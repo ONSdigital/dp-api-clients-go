@@ -26,6 +26,12 @@ const (
 	SoftwareVersion = "v10"
 )
 
+var (
+	tableErrors = map[string]string{
+		"withinMaxCells": "resulting dataset too large",
+	}
+)
+
 // Client is the client for interacting with the Cantabular API
 type Client struct {
 	ua         httpClient
@@ -212,6 +218,14 @@ func (c *Client) StatusCode(err error) int {
 	}
 
 	return 0
+}
+
+func (c *Client) parseTableError(err string) string {
+	if tErr, ok := tableErrors[err]; ok {
+		return tErr
+	}
+
+	return err
 }
 
 // closeResponseBody closes the response body and logs an error if unsuccessful
