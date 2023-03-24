@@ -2475,7 +2475,13 @@ func TestClient_PutMetadata(t *testing.T) {
 			})
 
 			Convey("And dphttpclient.Do is called 1 time with the expected method, path, headers and body", func() {
-				checkRequestBase(httpClient, http.MethodPut, expectedUrl, testETag)
+				expectedHeaders := expectedHeaders{
+					FlorenceToken: userAuthToken,
+					ServiceToken:  serviceAuthToken,
+					CollectionId:  collectionID,
+					IfMatch:       testETag,
+				}
+				checkRequestBase(httpClient, http.MethodPut, expectedUrl, expectedHeaders)
 				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
@@ -2497,7 +2503,13 @@ func TestClient_PutMetadata(t *testing.T) {
 			})
 
 			Convey("And dphttpclient.Do is called 1 time with expected method, path, headers and body", func() {
-				checkRequestBase(httpClient, http.MethodPut, expectedUrl, testETag)
+				expectedHeaders := expectedHeaders{
+					FlorenceToken: userAuthToken,
+					ServiceToken:  serviceAuthToken,
+					CollectionId:  collectionID,
+					IfMatch:       testETag,
+				}
+				checkRequestBase(httpClient, http.MethodPut, expectedUrl, expectedHeaders)
 				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, expectedPayload)
