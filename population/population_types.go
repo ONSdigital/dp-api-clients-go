@@ -47,6 +47,8 @@ func (c *Client) GetPopulationTypes(ctx context.Context, input GetPopulationType
 	urlPath := "population-types"
 	if input.Limit > 0 {
 		urlPath = fmt.Sprintf("population-types?limit=%d&offset=%d", input.Limit, input.Offset)
+	} else if input.Offset > 0 {
+		urlPath = fmt.Sprintf("population-types?offset=%d", input.Offset)
 	}
 
 	urlValues := url.Values{}
