@@ -3,9 +3,9 @@ package population
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
@@ -36,6 +36,7 @@ type GetPopulationTypeResponse struct {
 }
 
 type GetPopulationTypesResponse struct {
+	PaginationResponse
 	Items []PopulationType `json:"items"`
 }
 
@@ -44,11 +45,14 @@ func (c *Client) GetPopulationTypes(ctx context.Context, input GetPopulationType
 		"method": http.MethodGet,
 	}
 
-	urlPath := fmt.Sprintf("population-types?limit=%d&offset=%d", input.Limit, input.Offset)
+	urlPath := "population-types"
 	urlValues := url.Values{}
 	if input.DefaultDatasets {
 		urlValues.Add("require-default-dataset", "true")
 	}
+
+	urlValues.Add("limit", strconv.Itoa(input.Limit))
+	urlValues.Add("offset", strconv.Itoa(input.Offset))
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {
