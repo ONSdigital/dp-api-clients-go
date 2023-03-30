@@ -36,11 +36,31 @@ query ($dataset: String!, $variables: [String!]!) {
 	}
 }`
 
+// Query static dataset type
+const QueryStaticDatasetType = `
+query($dataset: String!){
+	dataset(name: $dataset) {
+	  type
+	}
+}`
+
 // QueryStaticDataset is the graphQL query to obtain static dataset counts (variables with categories and counts)
 const QueryStaticDataset = `
 query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
 	dataset(name: $dataset) {
 		table(variables: $variables, filters: $filters) {
+			rules {
+				passed{
+					count
+				}
+				evaluated
+				{
+					count
+				}
+				blocked {
+					count
+				}
+			}
 			dimensions {
 				count
 				variable { name label }
@@ -199,14 +219,14 @@ query($dataset: String!, $variables: [String!]!) {
 							node {
 								label
 								name
-								description
-								meta {
-									ONS_Variable {
-										Quality_Statement_Text
-									 }
-								}
 							}
 						}
+					}
+					description
+					meta {
+						ONS_Variable {
+							Quality_Statement_Text
+						 }
 					}
 					label
 					categories {
@@ -232,14 +252,14 @@ query($dataset: String!, $variables: [String!]!) {
 							node {
 								label
 								name
-								description
-								meta {
-									ONS_Variable {
-										Quality_Statement_Text
-									 }
-								}
 							}
 						}
+					}
+					description
+					meta {
+						ONS_Variable {
+							Quality_Statement_Text
+						 }
 					}
 					label
 					categories {
@@ -458,6 +478,7 @@ query ($dataset: String!, $text: String!) {
 						edges{
 							node{
 								meta {
+									Default_Classification_Flag
 									ONS_Variable {
 				  						Quality_Statement_Text
 									}
@@ -483,6 +504,7 @@ query ($dataset: String!, $text: String!) {
 									edges{
 										node{
 											meta {
+												Default_Classification_Flag
 												ONS_Variable {
 													Quality_Statement_Text
 												}
@@ -530,6 +552,7 @@ query {
 		name
 		description
 		label
+		type
 	}
 }`
 

@@ -275,6 +275,60 @@ func TestStaticDatasetQueryUnHappy(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given a table error from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+
+		mockHttpClient := &dphttp.ClienterMock{PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(mockRespBodyTableError)),
+			}, nil
+		}}
+
+		cantabularClient := cantabular.NewClient(
+			cantabular.Config{
+				Host:       "cantabular.host",
+				ExtApiHost: "cantabular.ext.host",
+			},
+			mockHttpClient,
+			nil,
+		)
+
+		Convey("When the StaticDatasetQuery method is called", func() {
+			req := cantabular.StaticDatasetQueryRequest{}
+			_, err := cantabularClient.StaticDatasetQuery(testCtx, req)
+
+			Convey("An error should be returned with status code 400 Bad Request and appropriate parsed body", func() {
+				So(err, ShouldNotBeNil)
+				So(dperrors.StatusCode(err), ShouldEqual, http.StatusBadRequest)
+				So(err.Error(), ShouldResemble, "resulting dataset too large")
+			})
+		})
+	})
+}
+
+func TestStaticDatasetType(t *testing.T) {
+	Convey("Given a GraphQL error from the /graphql endpoint", t, func() {
+		testCtx := context.Background()
+		mockHttpClient := &dphttp.ClienterMock{PostFunc: func(ctx context.Context, url string, contentType string, body io.Reader) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(mockRespBodyDatasetType)),
+			}, nil
+		}}
+		cantabularClient := cantabular.NewClient(
+			cantabular.Config{
+				Host:       "cantabular.host",
+				ExtApiHost: "cantabular.ext.host",
+			},
+			mockHttpClient,
+			nil,
+		)
+		res, _ := cantabularClient.StaticDatasetType(testCtx, "testDataset")
+		So(res.Type, ShouldEqual, "microdata")
+	})
+
 }
 
 // mockRespBodyStaticDataset is a successful static dataset query respose that is returned from a mocked client for testing
@@ -453,3 +507,24 @@ var mockRespBodyNoTable = `
 		}
 	]
 }`
+
+var mockRespBodyTableError = `
+{
+	"data": {
+		"dataset": {
+			"table": {
+				"error": "withinMaxCells"
+			}
+		}
+	}
+}`
+
+var mockRespBodyDatasetType = `
+{
+	"data": {
+	  "dataset": {
+		"type": "microdata"
+	  }
+	}
+  }		
+`

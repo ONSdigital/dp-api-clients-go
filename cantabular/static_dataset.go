@@ -36,6 +36,45 @@ type DimensionsTable struct {
 	Error      string      `json:"error,omitempty" `
 }
 
+type StaticDatasetQueryTypeResponse struct {
+	Dataset gql.Dataset `json:"dataset"`
+}
+
+// StaticDatasetType will return the type of dataset
+func (c *Client) StaticDatasetType(ctx context.Context, datasetName string) (*gql.Dataset, error) {
+	logData := log.Data{
+		"url":     fmt.Sprintf("%s/graphql", c.extApiHost),
+		"request": datasetName,
+	}
+
+	var q struct {
+		Data   StaticDatasetQueryTypeResponse `json:"data"`
+		Errors []gql.Error                    `json:"errors"`
+	}
+
+	qd := QueryData{
+		Dataset: datasetName,
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryStaticDatasetType, qd, &q); err != nil {
+		return nil, dperrors.New(
+			fmt.Errorf("failed to make GraphQL query: %w", err),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	if len(q.Errors) != 0 {
+		return nil, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			q.Errors[0].StatusCode(),
+			log.Data{"errors": q.Errors},
+		)
+	}
+
+	return &q.Data.Dataset, nil
+}
+
 // StaticDatasetQuery performs a query for a static dataset against the
 // Cantabular Extended API using the /graphql endpoint and returns a StaticDatasetQuery,
 // loading the whole response to memory.
@@ -70,6 +109,14 @@ func (c *Client) StaticDatasetQuery(ctx context.Context, req StaticDatasetQueryR
 			errors.New("error(s) returned by graphQL query"),
 			q.Errors[0].StatusCode(),
 			log.Data{"errors": q.Errors},
+		)
+	}
+
+	if len(q.Data.Dataset.Table.Error) != 0 {
+		return nil, dperrors.New(
+			errors.New(c.parseTableError(q.Data.Dataset.Table.Error)),
+			http.StatusBadRequest,
+			logData,
 		)
 	}
 
