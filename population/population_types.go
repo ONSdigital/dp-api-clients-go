@@ -39,7 +39,7 @@ func (c *Client) GetPopulationTypes(ctx context.Context, input GetPopulationType
 		limit = input.Limit
 	}
 
-	urlPath := fmt.Sprintf("population-types?limit=%d,offset=%d", limit, input.Offset)
+	urlPath := fmt.Sprintf("population-types?limit=%d&offset=%d", limit, input.Offset)
 	urlValues := url.Values{}
 	if input.DefaultDatasets {
 		urlValues.Add("require-default-dataset", "true")
