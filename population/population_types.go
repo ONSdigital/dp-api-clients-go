@@ -32,7 +32,7 @@ func (c *Client) GetPopulationTypes(ctx context.Context, input GetPopulationType
 		"method": http.MethodGet,
 	}
 
-	urlPath := "population-types"
+	urlPath := "population-types?limit=1000"
 	urlValues := url.Values{}
 	if input.DefaultDatasets {
 		urlValues.Add("require-default-dataset", "true")
