@@ -2449,6 +2449,163 @@ func TestClient_PatchInstanceDimensions(t *testing.T) {
 	})
 }
 
+func TestClient_PutMetadata(t *testing.T) {
+	var nationalStatistic = false
+
+	datasetId := "TS0002"
+	edition := "2023"
+	version := "1"
+	metadata := EditableMetadata{
+		Alerts: &[]Alert{
+			{
+				Date:        "2017-10-10",
+				Description: "A correction to an observation for males of age 25, previously 11 now changed to 12",
+				Type:        "Correction",
+			},
+		},
+		CanonicalTopic: "canonicalTopicID",
+		Contacts: []Contact{
+			{
+				Name:      "Bob",
+				Email:     "bob@test.com",
+				Telephone: "01657923723",
+			},
+		},
+		Description: "description",
+		Dimensions: []VersionDimension{
+			{
+				Name:  "geography",
+				ID:    "city",
+				Label: "City",
+			},
+			{
+				Name:  "siblings",
+				ID:    "number_of_siblings_3",
+				Label: "Number Of Siblings (3 Mappings)",
+			},
+		},
+		Keywords: []string{"keyword_1", "keyword_2"},
+		LatestChanges: &[]Change{
+			{
+				Description: "change description",
+				Name:        "change name",
+				Type:        "change type",
+			},
+		},
+		License: "license",
+		Methodologies: []Methodology{
+			{
+				Description: "methodology description",
+				URL:         "methodology url",
+				Title:       "methodology title",
+			},
+		},
+		NationalStatistic: &nationalStatistic,
+		NextRelease:       "next release",
+		UnitOfMeasure:     "unit of measure",
+		UsageNotes: &[]UsageNote{
+			{
+				Note:  "usage note",
+				Title: "usage note title",
+			},
+		},
+		Publications: []Publication{
+			{
+				Description: "publication description",
+				URL:         "publication url",
+				Title:       "publication title",
+			},
+		},
+		QMI: &Publication{
+			Description: "some qmi description",
+			URL:         "http://localhost:22000//datasets/123/qmi",
+			Title:       "Quality and Methodology Information",
+		},
+		RelatedContent: []GeneralDetails{
+			{
+				Description: "related content description",
+				HRef:        "related content url",
+				Title:       "related content title",
+			},
+		},
+		RelatedDatasets: []RelatedDataset{
+			{
+				URL:   "related dataset url",
+				Title: "related dataset title",
+			},
+		},
+		ReleaseDate:      "release date",
+		ReleaseFrequency: "release frequency",
+		Subtopics: []string{
+			"secondaryTopic1ID",
+			"secondaryTopic2ID",
+		},
+		Survey: "census",
+		Title:  "title",
+	}
+
+	expectedPayload, _ := json.Marshal(metadata)
+	expectedUrl := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/metadata", datasetId, edition, version)
+
+	Convey("given a 200 status is returned", t, func() {
+		httpClient := createHTTPClientMock(MockedHTTPResponse{
+			http.StatusOK,
+			nil,
+			map[string]string{"ETag": testETag},
+		})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when PutMetadata is called", func() {
+			err := datasetClient.PutMetadata(ctx, userAuthToken, serviceAuthToken, collectionID, datasetId, edition, version, metadata, testETag)
+
+			Convey("Then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And dphttpclient.Do is called 1 time with the expected method, path, headers and body", func() {
+				expectedHeaders := expectedHeaders{
+					FlorenceToken: userAuthToken,
+					ServiceToken:  serviceAuthToken,
+					CollectionId:  collectionID,
+					IfMatch:       testETag,
+				}
+				checkRequestBase(httpClient, http.MethodPut, expectedUrl, expectedHeaders)
+				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
+			})
+		})
+	})
+
+	Convey("given a 404 status is returned", t, func() {
+		errorMsg := "wrong!"
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, errorMsg, nil})
+		datasetClient := newDatasetClient(httpClient)
+
+		Convey("when PutMetadata is called", func() {
+			err := datasetClient.PutMetadata(ctx, userAuthToken, serviceAuthToken, collectionID, datasetId, edition, version, metadata, testETag)
+
+			Convey("then the expected error is returned", func() {
+				expectedError := fmt.Sprintf("invalid response: 404 from dataset api: http://localhost:8080%s, body: \"%s\"", expectedUrl, errorMsg)
+				So(err.Error(), ShouldResemble, errors.Errorf(expectedError).Error())
+			})
+
+			Convey("And dphttpclient.Do is called 1 time with expected method, path, headers and body", func() {
+				expectedHeaders := expectedHeaders{
+					FlorenceToken: userAuthToken,
+					ServiceToken:  serviceAuthToken,
+					CollectionId:  collectionID,
+					IfMatch:       testETag,
+				}
+				checkRequestBase(httpClient, http.MethodPut, expectedUrl, expectedHeaders)
+				payload, err := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
+			})
+		})
+	})
+}
+
 func newDatasetClient(httpClient *dphttp.ClienterMock) *Client {
 	healthClient := health.NewClientWithClienter("", testHost, httpClient)
 	datasetClient := NewWithHealthClient(healthClient)
