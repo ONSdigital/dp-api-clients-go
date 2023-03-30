@@ -2450,11 +2450,99 @@ func TestClient_PatchInstanceDimensions(t *testing.T) {
 }
 
 func TestClient_PutMetadata(t *testing.T) {
+	var nationalStatistic = false
 
 	datasetId := "TS0002"
 	edition := "2023"
 	version := "1"
-	metadata := EditableMetadata{}
+	metadata := EditableMetadata{
+		Alerts: &[]Alert{
+			{
+				Date:        "2017-10-10",
+				Description: "A correction to an observation for males of age 25, previously 11 now changed to 12",
+				Type:        "Correction",
+			},
+		},
+		CanonicalTopic: "canonicalTopicID",
+		Contacts: []Contact{
+			{
+				Name:      "Bob",
+				Email:     "bob@test.com",
+				Telephone: "01657923723",
+			},
+		},
+		Description: "description",
+		Dimensions: []VersionDimension{
+			{
+				Name:  "geography",
+				ID:    "city",
+				Label: "City",
+			},
+			{
+				Name:  "siblings",
+				ID:    "number_of_siblings_3",
+				Label: "Number Of Siblings (3 Mappings)",
+			},
+		},
+		Keywords: []string{"keyword_1", "keyword_2"},
+		LatestChanges: &[]Change{
+			{
+				Description: "change description",
+				Name:        "change name",
+				Type:        "change type",
+			},
+		},
+		License: "license",
+		Methodologies: []Methodology{
+			{
+				Description: "methodology description",
+				URL:         "methodology url",
+				Title:       "methodology title",
+			},
+		},
+		NationalStatistic: &nationalStatistic,
+		NextRelease:       "next release",
+		UnitOfMeasure:     "unit of measure",
+		UsageNotes: &[]UsageNote{
+			{
+				Note:  "usage note",
+				Title: "usage note title",
+			},
+		},
+		Publications: []Publication{
+			{
+				Description: "publication description",
+				URL:         "publication url",
+				Title:       "publication title",
+			},
+		},
+		QMI: &Publication{
+			Description: "some qmi description",
+			URL:         "http://localhost:22000//datasets/123/qmi",
+			Title:       "Quality and Methodology Information",
+		},
+		RelatedContent: []GeneralDetails{
+			{
+				Description: "related content description",
+				HRef:        "related content url",
+				Title:       "related content title",
+			},
+		},
+		RelatedDatasets: []RelatedDataset{
+			{
+				URL:   "related dataset url",
+				Title: "related dataset title",
+			},
+		},
+		ReleaseDate:      "release date",
+		ReleaseFrequency: "release frequency",
+		Subtopics: []string{
+			"secondaryTopic1ID",
+			"secondaryTopic2ID",
+		},
+		Survey: "census",
+		Title:  "title",
+	}
 
 	expectedPayload, _ := json.Marshal(metadata)
 	expectedUrl := fmt.Sprintf("/datasets/%s/editions/%s/versions/%s/metadata", datasetId, edition, version)
