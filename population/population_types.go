@@ -3,6 +3,7 @@ package population
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -19,6 +20,7 @@ type PopulationType struct {
 }
 
 type GetPopulationTypesInput struct {
+	PaginationParams
 	DefaultDatasets bool
 	AuthTokens
 }
@@ -32,7 +34,12 @@ func (c *Client) GetPopulationTypes(ctx context.Context, input GetPopulationType
 		"method": http.MethodGet,
 	}
 
-	urlPath := "population-types?limit=1000"
+	limit := 1000
+	if input.Limit > 0 {
+		limit = input.Limit
+	}
+
+	urlPath := fmt.Sprintf("population-types?limit=%d,offset=%d", limit, input.Offset)
 	urlValues := url.Values{}
 	if input.DefaultDatasets {
 		urlValues.Add("require-default-dataset", "true")
