@@ -208,6 +208,32 @@ type Metadata struct {
 	DatasetLinks Links `json:"dataset_links,omitempty"`
 }
 
+// EditableMetadata represents the metadata fields that can be edited
+type EditableMetadata struct {
+	Alerts            *[]Alert           `json:"alerts,omitempty"`
+	CanonicalTopic    string             `json:"canonical_topic,omitempty"`
+	Contacts          []Contact          `json:"contacts,omitempty"`
+	Description       string             `json:"description,omitempty"`
+	Dimensions        []VersionDimension `json:"dimensions,omitempty"`
+	Keywords          []string           `json:"keywords,omitempty"`
+	LatestChanges     *[]Change          `json:"latest_changes,omitempty"`
+	License           string             `json:"license,omitempty"`
+	Methodologies     []Methodology      `json:"methodologies,omitempty"`
+	NationalStatistic *bool              `json:"national_statistic,omitempty"`
+	NextRelease       string             `json:"next_release,omitempty"`
+	Publications      []Publication      `json:"publications,omitempty"`
+	QMI               *Publication       `json:"qmi,omitempty"`
+	RelatedDatasets   []RelatedDataset   `json:"related_datasets,omitempty"`
+	ReleaseDate       string             `json:"release_date,omitempty"`
+	ReleaseFrequency  string             `json:"release_frequency,omitempty"`
+	Title             string             `json:"title,omitempty"`
+	Survey            string             `json:"survey,omitempty"`
+	Subtopics         []string           `json:"subtopics,omitempty"`
+	UnitOfMeasure     string             `json:"unit_of_measure,omitempty"`
+	UsageNotes        *[]UsageNote       `json:"usage_notes,omitempty"`
+	RelatedContent    []GeneralDetails   `json:"related_content,omitempty"`
+}
+
 type GeneralDetails struct {
 	Description string `json:"description,omitempty"`
 	HRef        string `json:"href,omitempty"`
