@@ -3,10 +3,10 @@ module github.com/ONSdigital/dp-api-clients-go/v2
 go 1.18
 
 require (
-	github.com/ONSdigital/dp-healthcheck v1.6.0
-	github.com/ONSdigital/dp-mocking v0.10.0
-	github.com/ONSdigital/dp-net/v2 v2.9.0
-	github.com/ONSdigital/log.go/v2 v2.4.0
+	github.com/ONSdigital/dp-healthcheck v1.6.1
+	github.com/ONSdigital/dp-mocking v0.10.1
+	github.com/ONSdigital/dp-net/v2 v2.9.1
+	github.com/ONSdigital/log.go/v2 v2.4.1
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/mux v1.8.0
 	github.com/pkg/errors v0.9.1
