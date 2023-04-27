@@ -34,6 +34,7 @@ type StaticDatasetDimensionOptions struct {
 type DimensionsTable struct {
 	Dimensions []Dimension `json:"dimensions"`
 	Error      string      `json:"error,omitempty" `
+	Rules      Rules       `json:"rules,omitempty"`
 }
 
 type StaticDatasetQueryTypeResponse struct {

@@ -2645,6 +2645,17 @@ var expectedDimensionOptions = cantabular.GetDimensionOptionsResponse{
 					},
 				},
 			},
+			Rules: cantabular.Rules{
+				Blocked: cantabular.RuleVariable{
+					Count: 0,
+				},
+				Passed: cantabular.RuleVariable{
+					Count: 0,
+				},
+				Total: cantabular.RuleVariable{
+					Count: 0,
+				},
+			},
 		},
 	},
 }
