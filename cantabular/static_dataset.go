@@ -30,7 +30,7 @@ type StaticDatasetDimensionOptions struct {
 }
 
 // DimensionsTable represents the 'table' field from the GraphQL dataset response,
-// which contains only dimensions and error fields
+// which contains dimensions, rules and error fields
 type DimensionsTable struct {
 	Dimensions []Dimension `json:"dimensions"`
 	Error      string      `json:"error,omitempty" `
