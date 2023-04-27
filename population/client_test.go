@@ -15,7 +15,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
-	dphttp "github.com/ONSdigital/dp-net/http"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
 )
 
 func TestNewClient(t *testing.T) {
@@ -489,7 +489,7 @@ func TestGetPopulationTypes(t *testing.T) {
 		Convey("it should call the population types endpoint", func() {
 			calls := stubClient.DoCalls()
 			So(calls, ShouldNotBeEmpty)
-			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types")
+			So(calls[0].Req.URL.String(), ShouldEqual, "http://test.test:2000/v1/population-types?limit=0&offset=0")
 		})
 	})
 

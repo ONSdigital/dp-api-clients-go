@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
@@ -25,6 +26,7 @@ type GetPopulationTypeInput struct {
 }
 
 type GetPopulationTypesInput struct {
+	PaginationParams
 	DefaultDatasets bool
 	AuthTokens
 }
@@ -34,6 +36,7 @@ type GetPopulationTypeResponse struct {
 }
 
 type GetPopulationTypesResponse struct {
+	PaginationResponse
 	Items []PopulationType `json:"items"`
 }
 
@@ -47,6 +50,9 @@ func (c *Client) GetPopulationTypes(ctx context.Context, input GetPopulationType
 	if input.DefaultDatasets {
 		urlValues.Add("require-default-dataset", "true")
 	}
+
+	urlValues.Add("limit", strconv.Itoa(input.Limit))
+	urlValues.Add("offset", strconv.Itoa(input.Offset))
 
 	req, err := c.createGetRequest(ctx, input.UserAuthToken, input.ServiceAuthToken, urlPath, urlValues)
 	if err != nil {
