@@ -101,6 +101,7 @@ func GraphQLJSONToCSV(ctx context.Context, r io.Reader, w io.Writer) (int32, err
 // If no table cell values are present then no output is written.
 func decodeTableFields(ctx context.Context, dec jsonstream.Decoder, w io.Writer) (rowCount int32, err error) {
 	var dims Dimensions
+	var rules Rules
 	for dec.More() {
 		field, err := dec.DecodeName()
 		if err != nil {
@@ -118,6 +119,10 @@ func decodeTableFields(ctx context.Context, dec jsonstream.Decoder, w io.Writer)
 			}
 			if errMsg != nil {
 				return 0, fmt.Errorf("table blocked: %s", *errMsg)
+			}
+		case "rules":
+			if err := dec.Decode(&rules); err != nil {
+				return 0, fmt.Errorf("error decoding rules: %w", err)
 			}
 		case "values":
 			if dims == nil {
