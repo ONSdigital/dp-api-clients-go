@@ -108,14 +108,15 @@ type Link struct {
 
 // ModelDimension represents a dimension to be filtered upon
 type ModelDimension struct {
-	Name           string   `json:"name"`
-	ID             string   `json:"id"`
-	Label          string   `json:"label"`
-	URI            string   `json:"dimension_url,omitempty"`
-	IsAreaType     *bool    `json:"is_area_type,omitempty"`
-	Options        []string `json:"options"`
-	Values         []string `json:"values"`
-	FilterByParent string   `json:"filter_by_parent,omitempty"`
+	Name                 string   `json:"name"`
+	ID                   string   `json:"id"`
+	Label                string   `json:"label"`
+	URI                  string   `json:"dimension_url,omitempty"`
+	IsAreaType           *bool    `json:"is_area_type,omitempty"`
+	Options              []string `json:"options"`
+	Values               []string `json:"values"`
+	FilterByParent       string   `json:"filter_by_parent,omitempty"`
+	QualityStatementText string   `json:"quality_statement_text,omitempty"`
 }
 
 // Download represents a download within a filter from api response
