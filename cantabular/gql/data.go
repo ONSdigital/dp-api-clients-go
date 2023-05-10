@@ -37,6 +37,7 @@ type Meta struct {
 type ONS_Variable struct {
 	GeographyHierarchyOrder string `json:"Geography_Hierarchy_Order"`
 	QualityStatementText    string `json:"quality_statement_text"`
+	QualitySummaryURL       string `json:"quality_summary_url"`
 }
 
 type Node struct {

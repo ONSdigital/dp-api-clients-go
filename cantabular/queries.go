@@ -226,6 +226,7 @@ query($dataset: String!, $variables: [String!]!) {
 					meta {
 						ONS_Variable {
 							Quality_Statement_Text
+							Quality_Summary_URL
 						 }
 					}
 					label
@@ -259,6 +260,7 @@ query($dataset: String!, $variables: [String!]!) {
 					meta {
 						ONS_Variable {
 							Quality_Statement_Text
+							Quality_Summary_URL
 						 }
 					}
 					label

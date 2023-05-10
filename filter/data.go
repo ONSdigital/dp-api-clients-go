@@ -117,6 +117,7 @@ type ModelDimension struct {
 	Values               []string `json:"values"`
 	FilterByParent       string   `json:"filter_by_parent,omitempty"`
 	QualityStatementText string   `json:"quality_statement_text,omitempty"`
+	QualitySummaryURL    string   `json:"quality_summary_url,omitempty"`
 }
 
 // Download represents a download within a filter from api response
