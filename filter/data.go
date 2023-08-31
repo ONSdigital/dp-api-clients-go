@@ -30,6 +30,8 @@ type Dimension struct {
 	Options               []string `json:"options,omitempty"`
 	DefaultCategorisation string   `json:"default_categorisation"`
 	FilterByParent        string   `json:"filter_by_parent,omitempty"`
+	QualityStatementText  string   `json:"quality_statement_text,omitempty"`
+	QualitySummaryURL     string   `json:"quality_summary_url,omitempty"`
 }
 
 // DimensionOption represents a dimension option from the filter api
