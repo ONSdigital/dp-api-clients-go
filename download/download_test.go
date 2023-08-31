@@ -135,7 +135,7 @@ func TestDownload(t *testing.T) {
 				So(actualMethod, ShouldEqual, http.MethodGet)
 				So(actualURL, ShouldEqual, "/")
 				So(actualContent, ShouldEqual, content)
-				So(actualAuthHeaderValue, ShouldBeEmpty) //not passed through
+				So(actualAuthHeaderValue, ShouldEqual, "Bearer a-service-client-auth-token")
 			})
 		})
 	})
