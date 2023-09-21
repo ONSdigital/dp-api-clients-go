@@ -112,6 +112,7 @@ func (c *Client) Put(ctx context.Context, userAccessToken, path string, payload 
 // GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
 // is returned there is a chance that a partly completed DatasetLandingPage is returned
 func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, collectionID, lang, path string) (DatasetLandingPage, error) {
+
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+path)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
@@ -150,6 +151,19 @@ func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, col
 	}
 	wg.Wait()
 
+	datasetDownloads := make([]Dataset, len(dlp.Datasets))
+
+	for i := range dlp.Datasets {
+		d, err := c.GetDataset(ctx, userAccessToken, collectionID, lang, dlp.Datasets[i].URI)
+		if err != nil {
+			log.Error(ctx, "zebedee client legacy dataset returned an error", err)
+			return DatasetLandingPage{}, err
+		}
+
+		datasetDownloads[i] = d
+	}
+
+	dlp.DatasetDownloads = datasetDownloads
 	return dlp, nil
 }
 

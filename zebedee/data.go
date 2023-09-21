@@ -80,6 +80,7 @@ type DatasetLandingPage struct {
 	RelatedMethodologyArticle []Related   `json:"relatedMethodologyArticle"`
 	Alerts                    []Alert     `json:"alerts"`
 	Timeseries                bool        `json:"timeseries"`
+	DatasetDownloads          []Dataset   `json:"datasetDownloads"`
 }
 
 // Description represents a page description
