@@ -15,7 +15,7 @@ type Download struct {
 	File    string `json:"file,omitempty"`
 	URI     string `json:"uri,omitempty"`
 	Version string `json:"version,omitempty"`
-	Size    string
+	Size    int    `json:"fileSize,omitempty"`
 }
 
 // FileSize represents a file size from zebedee

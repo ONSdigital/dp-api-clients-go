@@ -237,7 +237,9 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, collectionID, 
 		return dataset, err
 	}
 
-	return c.appendDatasetFileSizes(ctx, userAccessToken, collectionID, lang, uri, dataset)
+	fmt.Println("IN THE UPDATED API CLIENTS GO")
+	return dataset, nil
+	//return c.appendDatasetFileSizes(ctx, userAccessToken, collectionID, lang, uri, dataset)
 }
 
 func (c *Client) appendDatasetFileSizes(ctx context.Context, userAccessToken, collectionID, lang, uri string, dataset Dataset) (Dataset, error) {
@@ -248,7 +250,8 @@ func (c *Client) appendDatasetFileSizes(ctx context.Context, userAccessToken, co
 				return dataset, err
 			}
 
-			dataset.Downloads[i].Size = strconv.Itoa(fs.Size)
+			//dataset.Downloads[i].Size = strconv.Itoa(fs.Size)
+			dataset.Downloads[i].Size = fs.Size
 		}
 	}
 
@@ -290,6 +293,7 @@ func (c *Client) GetHomepageContent(ctx context.Context, userAccessToken, collec
 
 // GetFileSize retrieves a given filesize from zebedee
 func (c *Client) GetFileSize(ctx context.Context, userAccessToken, collectionID, lang, uri string) (FileSize, error) {
+	fmt.Println("GOING TO GET FILESIZE")
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/filesize", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
