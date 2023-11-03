@@ -46,7 +46,7 @@ func mockBerlinServer() *httptest.Server {
 }
 
 // mockScrubberServer creates and returns a mock HTTP test server
-// that responds with a predefined JSON structure simulating a Berlin API response.
+// that responds with a predefined JSON structure simulating a Scrubber API response.
 func mockScrubberServer() *httptest.Server {
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -72,7 +72,41 @@ func mockScrubberServer() *httptest.Server {
 				}
 			  ]
 			}
-		  }
+		}
+		`
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(responseJSON))
+	}))
+
+	return testServer
+}
+
+// mockCategoryServer creates and returns a mock HTTP test server
+// that responds with a predefined JSON structure simulating a Category API response.
+func mockCategoryServer() *httptest.Server {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		responseJSON := `
+		[
+			{
+				"s": 0.6395713392217672,
+				"c": [
+					"peoplepopulationandcommunity",
+					"healthandsocialcare",
+					"conditionsanddiseases"
+				]
+			},
+			{
+				"s": 0.6393863260746002,
+				"c": [
+					"peoplepopulationandcommunity",
+					"healthandsocialcare",
+					"healthcaresystem"
+				]
+			}
+		]
 		`
 
 		w.Header().Set("Content-Type", "application/json")

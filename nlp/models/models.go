@@ -31,7 +31,7 @@ type IndustryResp struct {
 
 type Category []struct {
 	Code  []string `json:"c,omitempty"`
-	Score float32  `json:"s,omitempty"`
+	Score float64  `json:"s,omitempty"`
 }
 
 type Berlin struct {

@@ -150,3 +150,56 @@ func TestGetScrubber(t *testing.T) {
 		})
 	})
 }
+
+func TestGetCategories(t *testing.T) {
+	// Initialize a testServer with a predefined JSON response
+	testServer := mockCategoryServer()
+
+	defer testServer.Close() // Close the test server when done
+
+	// Initialize a Client instance
+	client := &Client{
+		categoryBaseURL:  testServer.URL,
+		categoryEndpoint: "/v1/categories",
+		client:           dphttp.Client{}, // Ensure you set this up appropriately
+	}
+
+	Convey("Test GetCategory method", t, func() {
+		Convey("When making a successful request to get scrubber data", func() {
+			ctx := context.Background()
+			query := "testQuery"
+
+			Convey("It should return scrubber data without error", func() {
+				categories, err := client.GetCategory(ctx, query)
+
+				So(err, ShouldBeNil)
+				So(categories, ShouldNotBeEmpty)
+				So(categories[0].Code, ShouldNotBeEmpty)
+				So(categories[0].Code[0], ShouldEqual, "peoplepopulationandcommunity")
+				So(categories[0].Code[1], ShouldEqual, "healthandsocialcare")
+				So(categories[0].Code[2], ShouldEqual, "conditionsanddiseases")
+				So(categories[0].Score, ShouldEqual, 0.6395713392217672)
+				So(categories[1].Code, ShouldNotBeEmpty)
+				So(categories[1].Code[0], ShouldEqual, "peoplepopulationandcommunity")
+				So(categories[1].Code[1], ShouldEqual, "healthandsocialcare")
+				So(categories[1].Code[2], ShouldEqual, "healthcaresystem")
+				So(categories[1].Score, ShouldEqual, 0.6393863260746002)
+			})
+		})
+
+		Convey("When encountering an error during the request", func() {
+			// Mock the request to intentionally cause an error
+			client.categoryBaseURL = "invalidURL"
+
+			ctx := context.Background()
+			query := "exampleQuery"
+
+			Convey("It should return an error", func() {
+				_, err := client.GetCategory(ctx, query)
+
+				t.Logf("With a view %s", err.Error())
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
