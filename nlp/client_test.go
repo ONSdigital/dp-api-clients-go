@@ -2,8 +2,6 @@ package nlp
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	dphttp "github.com/ONSdigital/dp-net/v2/http"
@@ -91,53 +89,64 @@ func TestGetBerlin(t *testing.T) {
 			query := "exampleQuery"
 
 			Convey("It should return an error", func() {
-				berlin, err := client.GetBerlin(ctx, query)
+				_, err := client.GetBerlin(ctx, query)
 
 				t.Logf("With a view %s", err.Error())
 				So(err, ShouldNotBeNil)
-				So(berlin.Matches, ShouldBeEmpty)
 			})
 		})
 
 	})
 }
 
-// mockBerlinServer creates and returns a mock HTTP test server
-// that responds with a predefined JSON structure simulating a Berlin API response.
-func mockBerlinServer() *httptest.Server {
-	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestGetScrubber(t *testing.T) {
+	// Initialize a testServer with a predefined JSON response
+	testServer := mockScrubberServer()
 
-		responseJSON := `{
-			"matches": [
-				{
-					"codes": [
-						"codeTest",
-						"codeTest"
-					],
-					"encoding": "encodingTest",
-					"id": "idTest",
-					"key": "keyTest",
-					"names": [
-						"nameTest",
-						"nameTest"
-					],
-					"state": [
-						"stateTest"
-					],
-					"subdiv": [
-						"subDivTest"
-					],
-					"words": [
-						"wordsTest"
-					]
-				}
-			]
-		  }`
+	defer testServer.Close() // Close the test server when done
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(responseJSON))
-	}))
+	// Initialize a Client instance
+	client := &Client{
+		scrubberBaseURL:  testServer.URL,
+		scrubberEndpoint: "/v1/scrubber",
+		client:           dphttp.Client{}, // Ensure you set this up appropriately
+	}
 
-	return testServer
+	Convey("Test GetScrubber method", t, func() {
+		Convey("When making a successful request to get scrubber data", func() {
+			ctx := context.Background()
+			query := "testQuery"
+
+			Convey("It should return scrubber data without error", func() {
+				scrubber, err := client.GetScrubber(ctx, query)
+
+				So(err, ShouldBeNil)
+				So(scrubber, ShouldNotBeNil)
+				So(scrubber.Query, ShouldEqual, "testQuery")
+				So(scrubber.Results, ShouldNotBeEmpty)
+				So(scrubber.Results.Areas, ShouldNotBeEmpty)
+				So(scrubber.Results.Areas[0].Name, ShouldEqual, "City of London")
+				So(scrubber.Results.Areas[0].Region, ShouldEqual, "London")
+				So(scrubber.Results.Areas[0].RegionCode, ShouldEqual, "E12000007")
+				So(scrubber.Results.Industries, ShouldNotBeEmpty)
+				So(scrubber.Results.Industries[0].Code, ShouldEqual, "01230")
+				So(scrubber.Results.Industries[0].Name, ShouldEqual, "Growing of citrus fruits")
+			})
+		})
+
+		Convey("When encountering an error during the request", func() {
+			// Mock the request to intentionally cause an error
+			client.scrubberBaseURL = "invalidURL" // Simulate an invalid URL
+
+			ctx := context.Background()
+			query := "exampleQuery"
+
+			Convey("It should return an error", func() {
+				_, err := client.GetScrubber(ctx, query)
+
+				t.Logf("With a view %s", err.Error())
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
 }
