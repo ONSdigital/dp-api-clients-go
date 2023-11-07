@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
+	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/nlp/config"
 	"github.com/ONSdigital/dp-api-clients-go/v2/nlp/models"
 	dphttp "github.com/ONSdigital/dp-net/v2/http"
@@ -22,11 +23,12 @@ type Client struct {
 	categoryEndpoint string
 	scrubberBaseURL  string
 	scrubberEndpoint string
+	hcCLinet         *healthcheck.Client
 	client           dphttp.Client
 }
 
 // New initializes a new Client configured with provided NLP service settings.
-func New(nlp config.NLP) *Client {
+func NewAPIClient(nlp config.NLP) *Client {
 	client := dphttp.Client{}
 	return &Client{
 		berlinBaseURL:    nlp.BerlinAPIURL,
@@ -38,6 +40,19 @@ func New(nlp config.NLP) *Client {
 		client:           client,
 	}
 }
+
+// func NewWithHealthClient(hcCli *healthcheck.Client, version string) *Client {
+// 	return &Client{
+// 		berlinBaseURL:    nlp.BerlinAPIURL,
+// 		berlinEndpoint:   nlp.BerlinAPIEndpoint,
+// 		scrubberBaseURL:  nlp.ScrubberAPIURL,
+// 		scrubberEndpoint: nlp.ScrubberAPIEndpoint,
+// 		categoryBaseURL:  nlp.CategoryAPIURL,
+// 		categoryEndpoint: nlp.CategoryAPIEndpoint,
+// 		client:           client,
+// 		healthcheck.NewClientWithClienter(service, hcCli.URL, hcCli.Client), version,
+// 	}
+// }
 
 func (cli *Client) GetBerlin(ctx context.Context, query string) (*models.Berlin, error) {
 	var berlin models.Berlin
