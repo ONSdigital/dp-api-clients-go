@@ -171,7 +171,8 @@ func TestGetCategories(t *testing.T) {
 			query := "testQuery"
 
 			Convey("It should return scrubber data without error", func() {
-				categories, err := client.GetCategory(ctx, query)
+				cat, err := client.GetCategory(ctx, query)
+				categories := *cat
 
 				So(err, ShouldBeNil)
 				So(categories, ShouldNotBeEmpty)
