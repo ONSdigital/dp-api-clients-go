@@ -1,13 +1,13 @@
-package nlp
+package mocks
 
 import (
 	"net/http"
 	"net/http/httptest"
 )
 
-// mockBerlinServer creates and returns a mock HTTP test server
+// MockBerlinServer creates and returns a Mock HTTP test server
 // that responds with a predefined JSON structure simulating a Berlin API response.
-func mockBerlinServer() *httptest.Server {
+func MockBerlinServer() *httptest.Server {
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		responseJSON := `{
@@ -45,9 +45,9 @@ func mockBerlinServer() *httptest.Server {
 	return testServer
 }
 
-// mockScrubberServer creates and returns a mock HTTP test server
+// MockScrubberServer creates and returns a Mock HTTP test server
 // that responds with a predefined JSON structure simulating a Scrubber API response.
-func mockScrubberServer() *httptest.Server {
+func MockScrubberServer() *httptest.Server {
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		responseJSON := `
@@ -83,9 +83,9 @@ func mockScrubberServer() *httptest.Server {
 	return testServer
 }
 
-// mockCategoryServer creates and returns a mock HTTP test server
+// MockCategoryServer creates and returns a Mock HTTP test server
 // that responds with a predefined JSON structure simulating a Category API response.
-func mockCategoryServer() *httptest.Server {
+func MockCategoryServer() *httptest.Server {
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		responseJSON := `

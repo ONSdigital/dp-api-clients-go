@@ -14,7 +14,7 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-// Client represents an instance of the elasticsearch client - now deprecated
+// Client represents an dphttp Client that manages endpoints and URLs for NLP-enhanced services
 type Client struct {
 	berlinBaseURL    string
 	berlinEndpoint   string
@@ -25,7 +25,7 @@ type Client struct {
 	client           dphttp.Client
 }
 
-// New creates a new elasticsearch client. Any trailing slashes from the URL are removed.
+// New initializes a new Client configured with provided NLP service settings.
 func New(nlp config.NLP) *Client {
 	client := dphttp.Client{}
 	return &Client{
@@ -47,12 +47,13 @@ func (cli *Client) GetBerlin(ctx context.Context, query string) (models.Berlin, 
 		return berlin, err
 	}
 
-	log.Info(ctx, "successfully build berlin url", log.Data{"berlin url": berlinURL.String()})
+	log.Info(ctx, "retrieving geo-spatial-data", log.Data{"berlin url": berlinURL.String()})
 
 	resp, err := cli.client.Get(ctx, berlinURL.String())
 	if err != nil {
 		return berlin, fmt.Errorf("error making a get request to: %s err: %w", berlinURL.String(), err)
 	}
+
 	defer resp.Body.Close()
 
 	b, err := io.ReadAll(resp.Body)
@@ -81,7 +82,7 @@ func (cli *Client) GetCategory(ctx context.Context, query string) (models.Catego
 		return category, err
 	}
 
-	log.Info(ctx, "successfully build category url", log.Data{"category url": categoryURL.String()})
+	log.Info(ctx, "retrieving categories", log.Data{"category url": categoryURL.String()})
 
 	resp, err := cli.client.Get(ctx, categoryURL.String())
 	if err != nil {
@@ -113,7 +114,7 @@ func (cli *Client) GetScrubber(ctx context.Context, query string) (models.Scrubb
 		return scrubber, err
 	}
 
-	log.Info(ctx, "successfully build scrubber url", log.Data{"scrubber url": berlinURL.String()})
+	log.Info(ctx, "retrieving OAC and SIC codes", log.Data{"scrubber url": berlinURL.String()})
 
 	resp, err := cli.client.Get(ctx, berlinURL.String())
 	if err != nil {

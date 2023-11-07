@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/nlp/mocks"
 	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -47,7 +48,7 @@ func TestBuildURL(t *testing.T) {
 
 func TestGetBerlin(t *testing.T) {
 	// Initialize a testServer with a predefined JSON response
-	testServer := mockBerlinServer()
+	testServer := mocks.MockBerlinServer()
 
 	defer testServer.Close() // Close the test server when done
 
@@ -101,7 +102,7 @@ func TestGetBerlin(t *testing.T) {
 
 func TestGetScrubber(t *testing.T) {
 	// Initialize a testServer with a predefined JSON response
-	testServer := mockScrubberServer()
+	testServer := mocks.MockScrubberServer()
 
 	defer testServer.Close() // Close the test server when done
 
@@ -153,7 +154,7 @@ func TestGetScrubber(t *testing.T) {
 
 func TestGetCategories(t *testing.T) {
 	// Initialize a testServer with a predefined JSON response
-	testServer := mockCategoryServer()
+	testServer := mocks.MockCategoryServer()
 
 	defer testServer.Close() // Close the test server when done
 
