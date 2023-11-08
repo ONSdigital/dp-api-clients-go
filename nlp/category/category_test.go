@@ -12,7 +12,7 @@ import (
 	"time"
 
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
-	"github.com/ONSdigital/dp-api-clients-go/v2/nlp/categories/models"
+	"github.com/ONSdigital/dp-api-clients-go/v2/nlp/category/models"
 
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dphttp "github.com/ONSdigital/dp-net/v2/http"
