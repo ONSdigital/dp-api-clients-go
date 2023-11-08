@@ -14,7 +14,7 @@ Responsible for geospational data for more information read on the api [this REA
 
 ### Usage
 
-[Check this readme](nlp/berlin/README.md)
+[Check this readme](berlin/README.md)
 
 ## Category Client
 
@@ -24,4 +24,4 @@ Responsible for categorisation of the query for more information on the api [thi
 
 ### Usage
 
-[Check this readme](nlp/category/README.md)
+[Check this readme](category/README.md)
