@@ -48,12 +48,12 @@ func (cli *Client) Health() *healthcheck.Client {
 	return cli.hcCli
 }
 
-// Checker calls search api health endpoint and returns a check object to the caller
+// Checker calls berlin api health endpoint and returns a check object to the caller
 func (cli *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return cli.hcCli.Checker(ctx, check)
 }
 
-// GetBerlin gets a list of search results based on the search request
+// GetBerlin gets a list of berlin results based on the berlin request
 func (cli *Client) GetBerlin(ctx context.Context, options Options) (*models.Berlin, errors.Error) {
 	path := fmt.Sprintf("%s/v1/berlin/search", cli.URL())
 	if options.Query != nil {
@@ -69,7 +69,7 @@ func (cli *Client) GetBerlin(ctx context.Context, options Options) (*models.Berl
 
 	if err := json.Unmarshal(respInfo.Body, &berlinResp); err != nil {
 		return nil, errors.StatusError{
-			Err: fmt.Errorf("failed to unmarshal search response - error is: %v", err),
+			Err: fmt.Errorf("failed to unmarshal berlin response - error is: %v", err),
 		}
 	}
 
@@ -105,7 +105,7 @@ func (cli *Client) callBerlinAPI(ctx context.Context, path, method string, heade
 	// check req, above, didn't error
 	if err != nil {
 		return nil, errors.StatusError{
-			Err: fmt.Errorf("failed to create request for call to search api, error is: %v", err),
+			Err: fmt.Errorf("failed to create request for call to berlin api, error is: %v", err),
 		}
 	}
 
@@ -119,7 +119,7 @@ func (cli *Client) callBerlinAPI(ctx context.Context, path, method string, heade
 	resp, err := cli.hcCli.Client.Do(ctx, req)
 	if err != nil {
 		return nil, errors.StatusError{
-			Err:  fmt.Errorf("failed to call search api, error is: %v", err),
+			Err:  fmt.Errorf("failed to call berlin api, error is: %v", err),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -134,7 +134,7 @@ func (cli *Client) callBerlinAPI(ctx context.Context, path, method string, heade
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= 400 {
 		return respInfo, errors.StatusError{
-			Err:  fmt.Errorf("failed as unexpected code from search api: %v", resp.StatusCode),
+			Err:  fmt.Errorf("failed as unexpected code from berlin api: %v", resp.StatusCode),
 			Code: resp.StatusCode,
 		}
 	}
@@ -146,7 +146,7 @@ func (cli *Client) callBerlinAPI(ctx context.Context, path, method string, heade
 	respInfo.Body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return respInfo, errors.StatusError{
-			Err:  fmt.Errorf("failed to read response body from call to search api, error is: %v", err),
+			Err:  fmt.Errorf("failed to read response body from call to berlin api, error is: %v", err),
 			Code: resp.StatusCode,
 		}
 	}

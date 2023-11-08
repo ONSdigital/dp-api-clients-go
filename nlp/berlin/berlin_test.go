@@ -138,6 +138,7 @@ func TestGetBerlin(t *testing.T) {
 			resp, err := searchAPIClient.GetBerlin(ctx, Options{Query: query})
 
 			Convey("Then the expected response body is returned", func() {
+				So(resp, ShouldNotBeNil)
 				So(resp.Matches[0].Codes[0], ShouldEqual, berlinResults.Matches[0].Codes[0])
 				So(resp.Matches[0].Encoding, ShouldEqual, berlinResults.Matches[0].Encoding)
 				So(resp.Matches[0].Names[0], ShouldEqual, berlinResults.Matches[0].Names[0])
@@ -154,7 +155,7 @@ func TestGetBerlin(t *testing.T) {
 						doCalls := httpClient.DoCalls()
 						So(doCalls, ShouldHaveLength, 1)
 						So(doCalls[0].Req.Method, ShouldEqual, "GET")
-						So(doCalls[0].Req.URL.Path, ShouldEqual, "/v1/berlin")
+						So(doCalls[0].Req.URL.Path, ShouldEqual, "/v1/berlin/search")
 						So(doCalls[0].Req.URL.Query().Get("q"), ShouldEqual, "census")
 						So(doCalls[0].Req.Header["Authorization"], ShouldBeEmpty)
 					})
