@@ -15,6 +15,8 @@ require (
 )
 
 require (
+	github.com/ONSdigital/dp-search-scrubber-api v0.1.0 // indirect
+	github.com/ONSdigital/dp-topic-api v0.21.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
@@ -24,8 +26,8 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/smarty/assertions v1.15.1 // indirect
-	golang.org/x/net v0.14.0 // indirect
-	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 )
 
 retract [v2.226.0, v2.227.0] // contains breaking code
