@@ -13,7 +13,7 @@ import (
 
 type Clienter interface {
 	Checker(ctx context.Context, check *health.CheckState) error
-	GetCategory(ctx context.Context, options Options) ([]*models.Category, errors.Error)
+	GetCategory(ctx context.Context, options Options) (*[]models.Category, errors.Error)
 	Health() *healthcheck.Client
 	URL() string
 }
