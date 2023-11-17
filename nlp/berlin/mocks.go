@@ -6,9 +6,9 @@ package berlin
 import (
 	"context"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/nlp/berlin/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/nlp/berlin/models"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	"github.com/ONSdigital/dp-topic-api/sdk/errors"
 	"sync"
 )
 
