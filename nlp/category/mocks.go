@@ -6,9 +6,9 @@ package category
 import (
 	"context"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
+	"github.com/ONSdigital/dp-api-clients-go/v2/nlp/category/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/nlp/category/models"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	"github.com/ONSdigital/dp-topic-api/sdk/errors"
 	"sync"
 )
 
