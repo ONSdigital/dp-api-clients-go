@@ -6,7 +6,6 @@ require (
 	github.com/ONSdigital/dp-healthcheck v1.6.1
 	github.com/ONSdigital/dp-mocking v0.10.1
 	github.com/ONSdigital/dp-net/v2 v2.11.0
-	github.com/ONSdigital/dp-topic-api v0.21.0
 	github.com/ONSdigital/log.go/v2 v2.4.1
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/mux v1.8.0
