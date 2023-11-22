@@ -60,11 +60,11 @@ func TestHealthCheckerClient(t *testing.T) {
 	Convey("Given clienter.Do returns an error", t, func() {
 		clientError := errors.New("unexpected error")
 		httpClient := newMockHTTPClient(&http.Response{}, clientError)
-		searchAPIClient := newBerlinAPIClient(t, httpClient)
+		berlinAPI := newBerlinAPIClient(t, httpClient)
 		check := initialTestState
 
-		Convey("When search API client Checker is called", func() {
-			err := searchAPIClient.Checker(ctx, &check)
+		Convey("When berlin API client Checker is called", func() {
+			err := berlinAPI.Checker(ctx, &check)
 			So(err, ShouldBeNil)
 
 			Convey("Then the expected check is returned", func() {
@@ -87,11 +87,11 @@ func TestHealthCheckerClient(t *testing.T) {
 
 	Convey("Given a 500 response for health check", t, func() {
 		httpClient := newMockHTTPClient(&http.Response{StatusCode: http.StatusInternalServerError}, nil)
-		searchAPIClient := newBerlinAPIClient(t, httpClient)
+		berlinAPI := newBerlinAPIClient(t, httpClient)
 		check := initialTestState
 
-		Convey("When search API client Checker is called", func() {
-			err := searchAPIClient.Checker(ctx, &check)
+		Convey("When berlin API client Checker is called", func() {
+			err := berlinAPI.Checker(ctx, &check)
 			So(err, ShouldBeNil)
 
 			Convey("Then the expected check is returned", func() {
@@ -130,23 +130,16 @@ func TestGetBerlin(t *testing.T) {
 			},
 			nil)
 
-		searchAPIClient := newBerlinAPIClient(t, httpClient)
+		berlinAPI := newBerlinAPIClient(t, httpClient)
 
 		Convey("When GetBerlin is called", func() {
 			query := url.Values{}
 			query.Add("q", "census")
-			resp, err := searchAPIClient.GetBerlin(ctx, Options{Query: query})
+			resp, err := berlinAPI.GetBerlin(ctx, Options{Query: query})
 
 			Convey("Then the expected response body is returned", func() {
 				So(resp, ShouldNotBeNil)
-				So(resp.Matches[0].Codes[0], ShouldEqual, berlinResults.Matches[0].Codes[0])
-				So(resp.Matches[0].Encoding, ShouldEqual, berlinResults.Matches[0].Encoding)
-				So(resp.Matches[0].Names[0], ShouldEqual, berlinResults.Matches[0].Names[0])
-				So(resp.Matches[0].ID, ShouldEqual, berlinResults.Matches[0].ID)
-				So(resp.Matches[0].Key, ShouldEqual, berlinResults.Matches[0].Key)
-				So(resp.Matches[0].State[0], ShouldEqual, berlinResults.Matches[0].State[0])
-				So(resp.Matches[0].Subdivision[0], ShouldEqual, berlinResults.Matches[0].Subdivision[0])
-				So(resp.Matches[0].Words[0], ShouldEqual, berlinResults.Matches[0].Words[0])
+				So(resp.Matches, ShouldResemble, berlinResults.Matches)
 
 				Convey("And no error is returned", func() {
 					So(err, ShouldBeNil)

@@ -17,7 +17,7 @@ client := berlin.New("https://berlinURL.com")
 
 #### Functionality
 
-signiture
+signature
 ```go
 // GetBerlin gets a list of berlin results based on the berlin request
 // you can get options from the berlin client package 
@@ -33,7 +33,7 @@ options.Q("your_query_here")
 
 // Add custom headers to the options
 options.Headers = http.Header{}
-options.Headers.Set(auithHeader, "")
+options.Headers.Set(authHeader, "")
 options.Headers.Set(someOtherHeader, "")
 
 // Get Berlin results using the created client and custom options

@@ -158,7 +158,7 @@ func closeResponseBody(resp *http.Response) errors.Error {
 	if resp.Body != nil {
 		if err := resp.Body.Close(); err != nil {
 			return errors.StatusError{
-				Err:  fmt.Errorf("error closing http response body from call to search api, error is: %v", err),
+				Err:  fmt.Errorf("error closing http response body from call to berlin api, error is: %v", err),
 				Code: http.StatusInternalServerError,
 			}
 		}
