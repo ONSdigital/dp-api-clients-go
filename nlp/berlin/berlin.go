@@ -94,13 +94,15 @@ func (cli *Client) callBerlinAPI(ctx context.Context, path, method string, heade
 
 	path = URL.String()
 
-	var req *http.Request
+	var body io.Reader
 
 	if payload != nil {
-		req, err = http.NewRequest(method, path, bytes.NewReader(payload))
+		body = bytes.NewReader(payload)
 	} else {
-		req, err = http.NewRequest(method, path, http.NoBody)
+		body = http.NoBody
 	}
+
+	req, err := http.NewRequest(method, path, body)
 
 	// check req, above, didn't error
 	if err != nil {
