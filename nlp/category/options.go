@@ -5,12 +5,6 @@ import (
 	"net/url"
 )
 
-const (
-	// List of available headers
-	Authorization string = "Authorization"
-	CollectionID  string = "Collection-Id"
-)
-
 // Options is a struct containing for customised options for the API client
 type Options struct {
 	Headers http.Header

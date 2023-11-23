@@ -94,13 +94,15 @@ func (cli *Client) callBerlinAPI(ctx context.Context, path, method string, heade
 
 	path = URL.String()
 
-	var req *http.Request
+	var body io.Reader
 
 	if payload != nil {
-		req, err = http.NewRequest(method, path, bytes.NewReader(payload))
+		body = bytes.NewReader(payload)
 	} else {
-		req, err = http.NewRequest(method, path, http.NoBody)
+		body = http.NoBody
 	}
+
+	req, err := http.NewRequest(method, path, body)
 
 	// check req, above, didn't error
 	if err != nil {
@@ -158,7 +160,7 @@ func closeResponseBody(resp *http.Response) errors.Error {
 	if resp.Body != nil {
 		if err := resp.Body.Close(); err != nil {
 			return errors.StatusError{
-				Err:  fmt.Errorf("error closing http response body from call to search api, error is: %v", err),
+				Err:  fmt.Errorf("error closing http response body from call to berlin api, error is: %v", err),
 				Code: http.StatusInternalServerError,
 			}
 		}

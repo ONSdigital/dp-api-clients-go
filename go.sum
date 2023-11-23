@@ -4,8 +4,6 @@ github.com/ONSdigital/dp-mocking v0.10.1 h1:yEEglJ458kUztHlnGxhMiKhIr13gMYWYOBKF
 github.com/ONSdigital/dp-mocking v0.10.1/go.mod h1:LVFMmSpUTgalQoWbFOXTNUXrA+W+H1Lzbv+yrhmtPEY=
 github.com/ONSdigital/dp-net/v2 v2.11.0 h1:XXst84GpXhBiyKoqLuohR7CvzrCBfSkq6YsveTarlt4=
 github.com/ONSdigital/dp-net/v2 v2.11.0/go.mod h1:4T3GgoonNt2nZZJJer9cx7j/3XGJ1UhTp16flx+uDeA=
-github.com/ONSdigital/dp-topic-api v0.21.0 h1:ijcBU12Q/MfXbo+/uD/lyoZt6r6UBbMUWmof8rwnAmU=
-github.com/ONSdigital/dp-topic-api v0.21.0/go.mod h1:5uowhMBoWUX1HJWnW38GrXLqEj2x50zLysBm/YOv9V4=
 github.com/ONSdigital/log.go/v2 v2.4.1 h1:QAHQqtXgXx43OUTSebNAocVfN21RwrHzagN6zDAzwdo=
 github.com/ONSdigital/log.go/v2 v2.4.1/go.mod h1:hJTjxs9r8k49maNelGpL4SBWv8NG45vCKp15+6ce9bw=
 github.com/fatih/color v1.15.0 h1:kOqh6YHBtK8aywxGerMG2Eq3H6Qgoqeo13Bk2Mv/nBs=

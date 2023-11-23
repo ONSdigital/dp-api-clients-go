@@ -17,7 +17,7 @@ client := category.New("https://categoryURL.com")
 
 #### Functionality
 
-signiture
+signature
 ```go
 // GetCategory gets a list of category results based on the category request
 // you can get options from the category client package 
