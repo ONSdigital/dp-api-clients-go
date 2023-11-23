@@ -33,7 +33,7 @@ options.Q("your_query_here")
 
 // Add custom headers to the options
 options.Headers = http.Header{}
-options.Headers.Set(auithHeader, "")
+options.Headers.Set(authHeader, "")
 options.Headers.Set(someOtherHeader, "")
 
 // Get Category results using the created client and custom options
