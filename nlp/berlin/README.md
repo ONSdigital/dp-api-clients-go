@@ -2,7 +2,7 @@
 
 ### Description
 
-Responsible for geospational data for more information read [this README.md](https://github.com/ONSdigital/dp-nlp-berlin-api/blob/develop/README.md)
+Responsible for identifying geospatial data for more information read [this README.md](https://github.com/ONSdigital/dp-nlp-berlin-api/blob/develop/README.md)
 
 ### Usage
 
