@@ -153,3 +153,77 @@ func (c *Client) StaticDatasetQueryStreamCSV(ctx context.Context, req StaticData
 	// Stream is responsible for closing the response body
 	return rowCount, stream.Stream(ctx, res.Body, transform, consume)
 }
+
+// Checks the number of observations returned from a cantabular query
+func (c *Client) CheckQueryCount(ctx context.Context, req StaticDatasetQueryRequest) (int, error) {
+	data := QueryData{
+		Dataset:   req.Dataset,
+		Variables: req.Variables,
+		Filters:   req.Filters,
+	}
+
+	logData := log.Data{
+		"url":     fmt.Sprintf("%s/graphql", c.extApiHost),
+		"request": req,
+	}
+
+	var q struct {
+		Data   StaticDatasetQuery `json:"data"`
+		Errors []gql.Error        `json:"errors"`
+	}
+
+	if err := c.queryUnmarshal(ctx, QueryStaticDataset, data, &q); err != nil {
+		return 0, dperrors.New(
+			fmt.Errorf("failed to make GraphQL query: %w", err),
+			http.StatusInternalServerError,
+			logData,
+		)
+	}
+
+	rowCount := len(q.Data.Dataset.Table.Values)
+
+	if len(q.Data.Dataset.Table.Error) > 0 || q.Data.Dataset.Table.Values == nil {
+		return 0, dperrors.New(
+			errors.New(c.parseTableError(q.Data.Dataset.Table.Error)),
+			http.StatusBadRequest,
+			logData,
+		)
+	}
+
+	return rowCount, nil
+}
+
+// StaticDatasetQueryStreamJson performs a StaticDatasetQuery call
+// and then starts 2 go-routines to transform the response body into a Json stream and
+// consume the transformed output with the provided Consumer concurrently.
+// Returns a json formatted response
+// Use this method if large query responses are expected.
+func (c *Client) StaticDatasetQueryStreamJson(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) (GetObservationsResponse, error) {
+	data := QueryData{
+		Dataset:   req.Dataset,
+		Variables: req.Variables,
+		Filters:   req.Filters,
+	}
+
+	res, err := c.postQuery(ctx, QueryStaticDataset, data)
+	if err != nil {
+		closeResponseBody(ctx, res) // close response body, as it is not passed to the Stream func
+		return GetObservationsResponse{}, err
+	}
+
+	defer func() { _ = res.Body.Close() }()
+
+	var getObservationsResponse GetObservationsResponse
+
+	// transform will be executed by Stream when processing the data into 'json' format.
+	transform := func(ctx context.Context, body io.Reader, pipeWriter io.Writer) error {
+		if getObservationsResponse, err = GraphQLJSONToJson(ctx, body, pipeWriter); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Stream is responsible for closing the response body
+	return getObservationsResponse, stream.Stream(ctx, res.Body, transform, consume)
+
+}
