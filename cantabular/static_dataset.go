@@ -183,9 +183,25 @@ func (c *Client) CheckQueryCount(ctx context.Context, req StaticDatasetQueryRequ
 	rowCount := len(q.Data.Dataset.Table.Values)
 
 	if len(q.Data.Dataset.Table.Error) > 0 || q.Data.Dataset.Table.Values == nil {
+		var err string
+		if len(q.Errors) > 0 {
+			err = q.Errors[0].Message
+		}
+
+		if len(q.Data.Dataset.Table.Error) > 0 {
+			err = q.Data.Dataset.Table.Error
+		}
 		return 0, dperrors.New(
-			errors.New(c.parseTableError(q.Data.Dataset.Table.Error)),
+			errors.New(c.parseTableError(err)),
 			http.StatusBadRequest,
+			logData,
+		)
+	}
+
+	if len(q.Errors) > 0 {
+		return 0, dperrors.New(
+			errors.New("error(s) returned by graphQL query"),
+			q.Errors[0].StatusCode(),
 			logData,
 		)
 	}
