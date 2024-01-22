@@ -38,19 +38,19 @@ type Table struct {
 }
 
 type ObservationDimension struct {
-	Dimension   string `bson:"dimension"           json:"dimension"`
-	DimensionID string `bson:"dimension_id"           json:"dimension_id"`
-	Option      string `bson:"option"           json:"option"`
-	OptionID    string `bson:"option_id"           json:"option_id"`
+	Dimension   string `json:"dimension"`
+	DimensionID string `json:"dimension_id"`
+	Option      string `json:"option"`
+	OptionID    string `json:"option_id"`
 }
 
 type GetObservationResponse struct {
-	Dimensions  []ObservationDimension `bson:"dimensions"           json:"dimensions"`
-	Observation float32                `bson:"observation"   json:"observation"`
+	Dimensions  []ObservationDimension `json:"dimensions"`
+	Observation float32                `json:"observation"`
 }
 
 type GetObservationsResponse struct {
-	Observations      []GetObservationResponse `bson:"observations"           json:"observations"`
+	Observations      []GetObservationResponse `json:"observations"`
 	Links             DatasetJSONLinks         `json:"links"`
 	TotalObservations int                      `json:"total_observations"`
 	BlockedAreas      int                      `json:"blocked_areas"`
@@ -59,13 +59,13 @@ type GetObservationsResponse struct {
 }
 
 type DatasetJSONLinks struct {
-	Self Link `bson:"self"       json:"self"`
+	Self Link `json:"self"`
 }
 
 type Link struct {
-	HREF  string `bson:"href"            json:"href"`
-	Label string `bson:"label,omitempty" json:"label,omitempty"`
-	ID    string `bson:"id,omitempty"    json:"id,omitempty"`
+	HREF  string `json:"href"`
+	Label string `json:"label,omitempty"`
+	ID    string `json:"id,omitempty"`
 }
 
 // possible errors that may be returned while parsing a 'data' field value
