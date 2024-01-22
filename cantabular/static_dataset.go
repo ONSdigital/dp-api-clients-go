@@ -180,8 +180,6 @@ func (c *Client) CheckQueryCount(ctx context.Context, req StaticDatasetQueryRequ
 		)
 	}
 
-	rowCount := len(q.Data.Dataset.Table.Values)
-
 	if len(q.Data.Dataset.Table.Error) > 0 || q.Data.Dataset.Table.Values == nil {
 		var err string
 		if len(q.Errors) > 0 {
@@ -206,7 +204,7 @@ func (c *Client) CheckQueryCount(ctx context.Context, req StaticDatasetQueryRequ
 		)
 	}
 
-	return rowCount, nil
+	return len(q.Data.Dataset.Table.Values), nil
 }
 
 // StaticDatasetQueryStreamJson performs a StaticDatasetQuery call
