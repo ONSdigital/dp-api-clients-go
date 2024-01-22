@@ -102,7 +102,6 @@ func GraphQLJSONToCSV(ctx context.Context, r io.Reader, w io.Writer) (int32, err
 		}
 		switch field {
 		case "data":
-			fmt.Println("IN THE DATA BIT")
 			if rowCount, err = decodeDataFields(ctx, dec, w); err != nil {
 				// null values for 'dataste' or 'table' are ok as long as the error is reported under the 'errors' field
 				if err == errNullDataset || err == errNullTable {
@@ -174,73 +173,13 @@ func GraphQLJSONToJson(ctx context.Context, r io.Reader, w io.Writer) (GetObserv
 
 	// find final '}'
 	if err := dec.EndComposite(); err != nil {
-		return GetObservationsResponse{}, fmt.Errorf("In GraphQLJSONToJson error decoding end of json object: %w", err)
+		return GetObservationsResponse{}, fmt.Errorf("error decoding end of json object: %w", err)
 	}
 
 	// check if there was an error in the "data" section that was not reported in the "error" section
 	if errData != nil {
 		return GetObservationsResponse{}, fmt.Errorf("error found parsing 'data' filed, but no error was reported in 'error' filed: %w", errData)
 	}
-	return getObservationsResponse, nil
-}
-
-func getDimensionRow(query StaticDatasetQuery, dimIndices []int, dimIndex int) (value []ObservationDimension) {
-
-	var observationDimensions []ObservationDimension
-
-	for index, element := range dimIndices {
-		dimension := query.Dataset.Table.Dimensions[index]
-
-		observationDimensions = append(observationDimensions, ObservationDimension{
-			Dimension:   dimension.Variable.Label,
-			DimensionID: dimension.Variable.Name,
-			Option:      dimension.Categories[element].Label,
-			OptionID:    dimension.Categories[element].Code,
-		})
-	}
-
-	return observationDimensions
-}
-
-func toGetDatasetObservationsResponse(query StaticDatasetQuery, ctx context.Context) (GetObservationsResponse, error) {
-
-	var getObservationResponse []GetObservationResponse
-
-	dimLength := make([]int, 0)
-	dimIndices := make([]int, 0)
-
-	for k := 0; k < len(query.Dataset.Table.Dimensions); k++ {
-		dimLength = append(dimLength, len(query.Dataset.Table.Dimensions[k].Categories))
-		dimIndices = append(dimIndices, 0)
-	}
-
-	for v := 0; v < len(query.Dataset.Table.Values); v++ {
-		dimension := getDimensionRow(query, dimIndices, v)
-		getObservationResponse = append(getObservationResponse, GetObservationResponse{
-			Dimensions:  dimension,
-			Observation: query.Dataset.Table.Values[v],
-		})
-
-		i := len(dimIndices) - 1
-		for i >= 0 {
-			dimIndices[i] += 1
-			if dimIndices[i] < dimLength[i] {
-				break
-			}
-			dimIndices[i] = 0
-			i -= 1
-		}
-
-	}
-
-	var getObservationsResponse GetObservationsResponse
-	getObservationsResponse.Observations = getObservationResponse
-	getObservationsResponse.TotalObservations = len(query.Dataset.Table.Values)
-
-	getObservationsResponse.BlockedAreas = query.Dataset.Table.Rules.Blocked.Count
-	getObservationsResponse.TotalAreas = query.Dataset.Table.Rules.Total.Count
-	getObservationsResponse.AreasReturned = query.Dataset.Table.Rules.Total.Count
-
 	return getObservationsResponse, nil
 }
 
@@ -456,7 +395,7 @@ func decodeDataFieldsJson(ctx context.Context, dec jsonstream.Decoder, w io.Writ
 	defer func() {
 		for i := 0; i < depth; i++ {
 			if e := dec.EndComposite(); e != nil {
-				err = fmt.Errorf("in decodeDataFieldsJson error decoding end of json object: %w", e)
+				err = fmt.Errorf("error decoding end of json object: %w", e)
 			}
 		}
 	}()
