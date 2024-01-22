@@ -331,7 +331,7 @@ func decodeDataFields(ctx context.Context, dec jsonstream.Decoder, w io.Writer) 
 	defer func() {
 		for i := 0; i < depth; i++ {
 			if e := dec.EndComposite(); e != nil {
-				err = fmt.Errorf("In decodeDataFields error decoding end of json object: %w", e)
+				err = fmt.Errorf("error decoding end of json object: %w", e)
 			}
 		}
 	}()
