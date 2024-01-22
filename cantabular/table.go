@@ -495,7 +495,7 @@ func decodeValuesJson(ctx context.Context, dec jsonstream.Decoder, dims Dimensio
 		}
 		row, err := ti.createJsonObject(dims, count.String())
 		if err != nil {
-			return GetObservationsResponse{}, fmt.Errorf("error parsing a csv row: %w", err)
+			return GetObservationsResponse{}, fmt.Errorf("error parsing a json node: %w", err)
 		}
 		obsResp.Encode(row)
 		getObservationsResponse.Observations = append(getObservationsResponse.Observations, row)
@@ -567,7 +567,7 @@ func (it *Iterator) createJsonObject(dims []Dimension, count string) (GetObserva
 	obsResponse.Dimensions = obsDimArr
 	observation, err := strconv.ParseFloat(count, 32)
 	if err != nil {
-		return GetObservationResponse{}, fmt.Errorf("invalid observation %d, : %w", 0, err)
+		return GetObservationResponse{}, fmt.Errorf("Unable to parse observation value : %w", err)
 	}
 	obsResponse.Observation = float32(observation)
 	return obsResponse, nil
