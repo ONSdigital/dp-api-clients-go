@@ -605,7 +605,7 @@ query($dataset: String!, $variables: [String!]!, $filters: [Filter!]) {
 	dataset(name: $dataset) {
 		table(variables: $variables, filters: $filters) {
 			values
-				error
+			error
 		}
 	}
 }`
