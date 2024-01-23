@@ -165,7 +165,6 @@ func GraphQLJSONToJson(ctx context.Context, r io.Reader, w io.Writer) (GetObserv
 			}
 		case "errors":
 			if err := decodeErrors(dec); err != nil {
-				fmt.Println(err)
 				return GetObservationsResponse{}, err
 			}
 		}
@@ -501,7 +500,7 @@ func decodeValuesJson(ctx context.Context, dec jsonstream.Decoder, dims Dimensio
 		getObservationsResponse.Observations = append(getObservationsResponse.Observations, row)
 
 		if err := ti.Next(); err != nil {
-			return GetObservationsResponse{}, fmt.Errorf("error iterating to next row: %w", err)
+			return GetObservationsResponse{}, fmt.Errorf("error iterating to next json node: %w", err)
 		}
 	}
 
