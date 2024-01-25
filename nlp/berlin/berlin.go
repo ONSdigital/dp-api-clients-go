@@ -55,7 +55,7 @@ func (cli *Client) Checker(ctx context.Context, check *health.CheckState) error 
 
 // GetBerlin gets a list of berlin results based on the berlin request
 func (cli *Client) GetBerlin(ctx context.Context, options Options) (*models.Berlin, errors.Error) {
-	path := fmt.Sprintf("%s/v1/berlin/search", cli.URL())
+	path := fmt.Sprintf("%s/berlin/search", cli.URL())
 	if options.Query != nil {
 		path = path + "?" + options.Query.Encode()
 	}

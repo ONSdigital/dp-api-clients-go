@@ -18,7 +18,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-const testHost = "http://localhost:28900"
+const testHost = "http://localhost:28900/v1"
 
 var (
 	initialTestState = healthcheck.CreateCheckState(service)
@@ -55,7 +55,7 @@ func TestHealthCheckerClient(t *testing.T) {
 	ctx := context.Background()
 
 	timePriorHealthCheck := time.Now().UTC()
-	path := "/health"
+	path := "/v1/health"
 
 	Convey("Given clienter.Do returns an error", t, func() {
 		clientError := errors.New("unexpected error")
