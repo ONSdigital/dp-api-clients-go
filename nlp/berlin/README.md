@@ -12,7 +12,7 @@ Responsible for identifying geospatial data for more information read [this READ
 import "github.com/ONSdigital/dp-api-clients-go/v2/nlp/berlin"
 
 // Initialize the Berlin API client
-client := berlin.New("https://berlinURL.com")
+client := berlin.New("http://berlinURL.com")
 ```
 
 #### Functionality
@@ -28,11 +28,10 @@ Once initialized you can make a request to Berlin like so:
 ```go
 // Create an Options struct and set a query parameter 'q'
 // you can also use url.Values directly into the Options
-options := berlin.Options{}
+options := berlin.OptInit()
 options.Q("your_query_here")
 
 // Add custom headers to the options
-options.Headers = http.Header{}
 options.Headers.Set(authHeader, "")
 options.Headers.Set(someOtherHeader, "")
 

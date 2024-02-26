@@ -11,9 +11,46 @@ type Options struct {
 	Query   url.Values
 }
 
+// empty Options
+func OptInit() Options {
+	return Options{
+		Query:   url.Values{},
+		Headers: http.Header{},
+	}
+}
+
 // Q sets the 'q' Query parameter to the request
+// Required
 func (o *Options) Q(val string) *Options {
 	o.Query.Set("q", val)
+	return o
+}
+
+// State sets the 'state' Query parameter to the request
+// Optional default is 'gb'
+func (o *Options) State(val string) *Options {
+	o.Query.Set("state", val)
+	return o
+}
+
+// LevDist sets the 'lev_distance' Query parameter to the request
+// Optional default is '2'
+func (o *Options) LevDist(val string) *Options {
+	o.Query.Set("lev_distance", val)
+	return o
+}
+
+// Limit sets the 'limit' Query parameter to the request
+// Optional default is '10'
+func (o *Options) Limit(val string) *Options {
+	o.Query.Set("limit", val)
+	return o
+}
+
+// Limit sets the 'limit' Query parameter to the request
+// Optional default is 0(false)
+func (o *Options) WithScores(val string) *Options {
+	o.Query.Set("with_scores", val)
 	return o
 }
 

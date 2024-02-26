@@ -11,9 +11,23 @@ type Options struct {
 	Query   url.Values
 }
 
+// empty Options
+func OptInit() Options {
+	return Options{
+		Query:   url.Values{},
+		Headers: http.Header{},
+	}
+}
+
 // Q sets the 'q' Query parameter to the request
 func (o *Options) Q(val string) *Options {
 	o.Query.Set("query", val)
+	return o
+}
+
+// Snr sets the 'snr' Query parameter to the request
+func (o *Options) Snr(val string) *Options {
+	o.Query.Set("snr", val)
 	return o
 }
 

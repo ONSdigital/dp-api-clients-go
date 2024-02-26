@@ -26,23 +26,29 @@ var (
 	berlinResults = models.Berlin{
 		Matches: []models.Matches{
 			{
-				Codes: []string{
-					"testCode_1",
+				Loc: models.Locations{
+					Codes: []string{
+						"testCode_1",
+					},
+					Encoding: "encodingTest_1",
+					Names: []string{
+						"nameTest_1",
+					},
+					ID:  "idTest_1",
+					Key: "keyTest_1",
+					State: []string{
+						"stateTest_1",
+					},
+					Subdivision: []string{
+						"subdiv1",
+					},
+					Words: []string{
+						"wordTest_1",
+					},
 				},
-				Encoding: "encodingTest_1",
-				Names: []string{
-					"nameTest_1",
-				},
-				ID:  "idTest_1",
-				Key: "keyTest_1",
-				State: []string{
-					"stateTest_1",
-				},
-				Subdivision: []string{
-					"subdiv1",
-				},
-				Words: []string{
-					"wordTest_1",
+				Scores: models.Scores{
+					Offset: []int{0, 0},
+					Score:  1000,
 				},
 			},
 		},

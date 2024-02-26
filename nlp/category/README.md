@@ -28,7 +28,7 @@ Once initialized you can make a request to Category like so:
 ```go
 // Create an Options struct and set a query parameter 'query'
 // you can also use url.Values directly into the Options
-options := category.Options{}
+options := category.OptInit()
 options.Q("your_query_here")
 
 // Add custom headers to the options
