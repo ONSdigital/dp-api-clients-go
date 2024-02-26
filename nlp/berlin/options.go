@@ -47,13 +47,6 @@ func (o *Options) Limit(val string) *Options {
 	return o
 }
 
-// Limit sets the 'limit' Query parameter to the request
-// Optional default is 0(false)
-func (o *Options) WithScores(val string) *Options {
-	o.Query.Set("with_scores", val)
-	return o
-}
-
 func setHeaders(req *http.Request, headers http.Header) {
 	for name, values := range headers {
 		for _, value := range values {
