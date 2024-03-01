@@ -180,6 +180,12 @@ func (c *Client) MarkFileDecrypted(ctx context.Context, path string, etag string
 		ETag:  etag,
 	})
 }
+func (c *Client) MarkFileMoved(ctx context.Context, path string, etag string) error {
+	return c.PatchFile(ctx, path, FilePatch{
+		State: "MOVED",
+		ETag:  etag,
+	})
+}
 func (c *Client) MarkFilePublished(ctx context.Context, path string, etag string) error {
 	return c.PatchFile(ctx, path, FilePatch{
 		State: "PUBLISHED",
