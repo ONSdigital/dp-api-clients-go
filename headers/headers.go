@@ -47,6 +47,9 @@ const (
 
 	// eTagHeader is the ETag header name
 	eTagHeader = "ETag"
+
+	// eTagHeader is the Accept header name
+	AcceptHeader = "Accept"
 )
 
 const (
@@ -144,6 +147,12 @@ func GetETag(req *http.Request) (string, error) {
 // ErrResponseNil if the header is not found.
 func GetResponseETag(resp *http.Response) (string, error) {
 	return getResponseHeader(resp, eTagHeader)
+}
+
+// Get Accept returns the value of the "Accept" request header if it exists, returns
+// ErrHeaderNotFound if the header is not found.
+func GetAccept(req *http.Request) (string, error) {
+	return getRequestHeader(req, AcceptHeader)
 }
 
 func getRequestHeader(req *http.Request, headerName string) (string, error) {
@@ -257,6 +266,12 @@ func SetIfMatch(req *http.Request, headerValue string) error {
 // will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
 func SetETag(req *http.Request, headerValue string) error {
 	return setRequestHeader(req, eTagHeader, headerValue)
+}
+
+// SetETag set the ETag header on the provided request. If this header is already present it
+// will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
+func SetAccept(req *http.Request, headerValue string) error {
+	return setRequestHeader(req, AcceptHeader, headerValue)
 }
 
 func setRequestHeader(req *http.Request, headerName string, headerValue string) error {
