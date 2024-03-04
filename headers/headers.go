@@ -320,7 +320,7 @@ func SetETag(req *http.Request, headerValue string) error {
 	return nil
 }
 
-// SetETag set the ETag header on the provided request. If this header is already present it
+// SetAccept set the Accept header on the provided request. If this header is already present it
 // will be overwritten by the new value. If the header value is empty returns ErrValueEmpty
 func SetAccept(req *http.Request, headerValue string) error {
 	return setRequestHeader(req, acceptHeader, headerValue)
