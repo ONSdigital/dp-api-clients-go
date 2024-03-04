@@ -6,7 +6,7 @@ package mock
 import (
 	"context"
 	"github.com/ONSdigital/dp-api-clients-go/v2/identity"
-	dprequest "github.com/ONSdigital/dp-net/request"
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
 	"sync"
 )
 
@@ -16,19 +16,19 @@ var _ identity.TokenIdentity = &TokenIdentityMock{}
 
 // TokenIdentityMock is a mock implementation of identity.TokenIdentity.
 //
-// 	func TestSomethingThatUsesTokenIdentity(t *testing.T) {
+//	func TestSomethingThatUsesTokenIdentity(t *testing.T) {
 //
-// 		// make and configure a mocked identity.TokenIdentity
-// 		mockedTokenIdentity := &TokenIdentityMock{
-// 			CheckTokenIdentityFunc: func(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error) {
-// 				panic("mock out the CheckTokenIdentity method")
-// 			},
-// 		}
+//		// make and configure a mocked identity.TokenIdentity
+//		mockedTokenIdentity := &TokenIdentityMock{
+//			CheckTokenIdentityFunc: func(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error) {
+//				panic("mock out the CheckTokenIdentity method")
+//			},
+//		}
 //
-// 		// use mockedTokenIdentity in code that requires identity.TokenIdentity
-// 		// and then make assertions.
+//		// use mockedTokenIdentity in code that requires identity.TokenIdentity
+//		// and then make assertions.
 //
-// 	}
+//	}
 type TokenIdentityMock struct {
 	// CheckTokenIdentityFunc mocks the CheckTokenIdentity method.
 	CheckTokenIdentityFunc func(ctx context.Context, token string, tokenType identity.TokenType) (*dprequest.IdentityResponse, error)
@@ -70,7 +70,8 @@ func (mock *TokenIdentityMock) CheckTokenIdentity(ctx context.Context, token str
 
 // CheckTokenIdentityCalls gets all the calls that were made to CheckTokenIdentity.
 // Check the length with:
-//     len(mockedTokenIdentity.CheckTokenIdentityCalls())
+//
+//	len(mockedTokenIdentity.CheckTokenIdentityCalls())
 func (mock *TokenIdentityMock) CheckTokenIdentityCalls() []struct {
 	Ctx       context.Context
 	Token     string

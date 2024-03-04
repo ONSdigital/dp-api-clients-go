@@ -20,8 +20,16 @@ import (
 
 // Cantabular service names
 const (
-	Service       = "cantabular"
-	ServiceAPIExt = "cantabularAPIExt"
+	Service         = "cantabular"
+	ServiceAPIExt   = "cantabularAPIExt"
+	ServiceMetadata = "cantabularMetadataService"
+	SoftwareVersion = "v10"
+)
+
+var (
+	tableErrors = map[string]string{
+		"withinMaxCells": "resulting dataset too large",
+	}
 )
 
 // Client is the client for interacting with the Cantabular API
@@ -30,6 +38,7 @@ type Client struct {
 	gqlClient  GraphQLClient
 	host       string
 	extApiHost string
+	version    string
 }
 
 // NewClient returns a new Client
@@ -39,6 +48,7 @@ func NewClient(cfg Config, ua httpClient, g GraphQLClient) *Client {
 		gqlClient:  g,
 		host:       cfg.Host,
 		extApiHost: cfg.ExtApiHost,
+		version:    SoftwareVersion,
 	}
 
 	if len(cfg.ExtApiHost) > 0 && c.gqlClient == nil {
@@ -113,16 +123,24 @@ func (c *Client) httpPost(ctx context.Context, path string, contentType string, 
 	return resp, nil
 }
 
-// Checker contacts the /v9/datasets endpoint and updates the healthcheck state accordingly.
+// Checker contacts the /vXX/datasets endpoint and updates the healthcheck state accordingly.
 func (c *Client) Checker(ctx context.Context, state *healthcheck.CheckState) error {
-	reqURL := fmt.Sprintf("%s/v9/datasets", c.host)
+	reqURL := fmt.Sprintf("%s/%s/datasets", c.host, c.version)
 	return c.checkHealth(ctx, state, Service, reqURL)
 }
 
 // CheckerAPIExt contacts the /graphql endpoint with an empty query and updates the healthcheck state accordingly.
 func (c *Client) CheckerAPIExt(ctx context.Context, state *healthcheck.CheckState) error {
-	reqURL := fmt.Sprintf("%s/graphql?query={}", c.extApiHost)
+	reqURL := fmt.Sprintf("%s/graphql?query={datasets{name}}", c.extApiHost)
 	return c.checkHealth(ctx, state, ServiceAPIExt, reqURL)
+}
+
+// CheckerMetadataService contacts the /graphql endpoint and updates the healthcheck state accordingly.
+func (c *Client) CheckerMetadataService(ctx context.Context, state *healthcheck.CheckState) error {
+	// FIXME: We should not be using ext api host but that is the host used to create the graphql client
+	// despite it actually containing the dp-cantabular-metadata-service url as a value
+	reqURL := fmt.Sprintf("%s/graphql", c.extApiHost)
+	return c.checkHealth(ctx, state, ServiceMetadata, reqURL)
 }
 
 func (c *Client) checkHealth(ctx context.Context, state *healthcheck.CheckState, service, reqURL string) error {
@@ -132,11 +150,12 @@ func (c *Client) checkHealth(ctx context.Context, state *healthcheck.CheckState,
 	code := 0
 
 	res, err := c.httpGet(ctx, reqURL)
+	defer closeResponseBody(ctx, res)
+
 	if err != nil {
 		log.Error(ctx, "failed to request service health", err, logData)
 	} else {
 		code = res.StatusCode
-		defer closeResponseBody(ctx, res)
 	}
 
 	switch code {
@@ -188,4 +207,32 @@ func (c *Client) errorResponse(url string, res *http.Response) error {
 			"url": url,
 		},
 	)
+}
+
+// StatusCode provides a callback function whereby users can check a returned
+// error for an embedded HTTP status code
+func (c *Client) StatusCode(err error) int {
+	var cerr coder
+	if errors.As(err, &cerr) {
+		return cerr.Code()
+	}
+
+	return 0
+}
+
+func (c *Client) parseTableError(err string) string {
+	if tErr, ok := tableErrors[err]; ok {
+		return tErr
+	}
+
+	return err
+}
+
+// closeResponseBody closes the response body and logs an error if unsuccessful
+func closeResponseBody(ctx context.Context, resp *http.Response) {
+	if resp != nil && resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
+			log.Error(ctx, "error closing http response body", err)
+		}
+	}
 }

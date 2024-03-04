@@ -1,6 +1,6 @@
 package cantabular
 
-//go:generate moq -out mock/graphql_client.go . GraphQLClient
+//go:generate moq -out mock/graphql_client.go -pkg mock . GraphQLClient
 
 import (
 	"context"
@@ -17,4 +17,8 @@ type httpClient interface {
 // GraphQLClient is the Client used by the GraphQL package to make queries
 type GraphQLClient interface {
 	Query(ctx context.Context, query interface{}, vars map[string]interface{}) error
+}
+
+type coder interface {
+	Code() int
 }

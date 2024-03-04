@@ -30,7 +30,7 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 		vars += "&v=" + v
 	}
 
-	url := fmt.Sprintf("%s/v9/codebook/%s?cats=%v%s", c.host, req.DatasetName, req.Categories, vars)
+	url := fmt.Sprintf("%s/v10/codebook/%s?cats=%v%s", c.host, req.DatasetName, req.Categories, vars)
 
 	res, err := c.httpGet(ctx, url)
 	if err != nil {
@@ -77,13 +77,4 @@ func (c *Client) GetCodebook(ctx context.Context, req GetCodebookRequest) (*GetC
 	}
 
 	return &resp, nil
-}
-
-// closeResponseBody closes the response body and logs an error if unsuccessful
-func closeResponseBody(ctx context.Context, resp *http.Response) {
-	if resp.Body != nil {
-		if err := resp.Body.Close(); err != nil {
-			log.Error(ctx, "error closing http response body", err)
-		}
-	}
 }

@@ -2,6 +2,7 @@ package dataset
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"unicode"
 )
@@ -16,7 +17,7 @@ type DatasetDetails struct {
 	License           string            `json:"license,omitempty"`
 	Links             Links             `json:"links,omitempty"`
 	Methodologies     *[]Methodology    `json:"methodologies,omitempty"`
-	NationalStatistic bool              `json:"national_statistic,omitempty"`
+	NationalStatistic bool              `json:"national_statistic"`
 	NextRelease       string            `json:"next_release,omitempty"`
 	NomisReferenceURL string            `json:"nomis_reference_url,omitempty"`
 	Publications      *[]Publication    `json:"publications,omitempty"`
@@ -29,7 +30,15 @@ type DatasetDetails struct {
 	Title             string            `json:"title,omitempty"`
 	Type              string            `json:"type,omitempty"`
 	UnitOfMeasure     string            `json:"unit_of_measure,omitempty"`
+	UsageNotes        *[]UsageNote      `json:"usage_notes,omitempty"`
 	URI               string            `json:"uri,omitempty"`
+	IsBasedOn         *IsBasedOn        `json:"is_based_on,omitempty"`
+	VersionsList      VersionsList      `json:"versions_list,omitempty"`
+	CanonicalTopic    string            `json:"canonical_topic,omitempty"`
+	Subtopics         []string          `json:"subtopics,omitempty"`
+	Survey            string            `json:"survey,omitempty"`
+	RelatedContent    *[]GeneralDetails `json:"related_content,omitempty"`
+	LowestGeography   string            `json:"lowest_geography,omitempty"`
 }
 
 // Dataset represents a dataset resource
@@ -70,6 +79,7 @@ type NewInstance struct {
 	LastUpdated       string               `json:"last_updated,omitempty"`
 	ImportTasks       *InstanceImportTasks `json:"import_tasks"`
 	Type              string               `json:"type,omitempty"`
+	LowestGeography   string               `json:"lowest_geography,omitempty"`
 }
 
 // Event holds one of the event which has happened to a new Instance
@@ -108,6 +118,7 @@ type Version struct {
 	CSVHeader            []string             `json:"headers,omitempty"`
 	UsageNotes           *[]UsageNote         `json:"usage_notes,omitempty"`
 	IsBasedOn            *IsBasedOn           `json:"is_based_on,omitempty"`
+	LowestGeography      string               `json:"lowest_geography,omitempty"`
 }
 
 type UpdateInstance struct {
@@ -132,14 +143,17 @@ type UpdateInstance struct {
 
 // VersionDimension represents a dimension model nested in the Version model
 type VersionDimension struct {
-	ID              string `json:"id"`
-	Name            string `json:"name"`
-	Links           Links  `json:"links"`
-	Description     string `json:"description"`
-	Label           string `json:"label"`
-	URL             string `json:"href,omitempty"`
-	Variable        string `json:"variable,omitempty"`
-	NumberOfOptions int    `json:"number_of_options,omitempty"`
+	ID                   string `json:"id"`
+	Name                 string `json:"name"`
+	Links                Links  `json:"links"`
+	Description          string `json:"description"`
+	Label                string `json:"label"`
+	URL                  string `json:"href,omitempty"`
+	Variable             string `json:"variable,omitempty"`
+	NumberOfOptions      int    `json:"number_of_options,omitempty"`
+	IsAreaType           *bool  `json:"is_area_type,omitempty"`
+	QualityStatementText string `json:"quality_statement_text,omitempty"`
+	QualityStatementURL  string `json:"quality_statement_url,omitempty"`
 }
 
 // InstanceImportTasks represents all of the tasks required to complete an import job.
@@ -191,6 +205,67 @@ type Instances struct {
 type Metadata struct {
 	Version
 	DatasetDetails
+	DatasetLinks Links `json:"dataset_links,omitempty"`
+}
+
+// EditableMetadata represents the metadata fields that can be edited
+type EditableMetadata struct {
+	Alerts            *[]Alert           `json:"alerts,omitempty"`
+	CanonicalTopic    string             `json:"canonical_topic,omitempty"`
+	Contacts          []Contact          `json:"contacts,omitempty"`
+	Description       string             `json:"description,omitempty"`
+	Dimensions        []VersionDimension `json:"dimensions,omitempty"`
+	Keywords          []string           `json:"keywords,omitempty"`
+	LatestChanges     *[]Change          `json:"latest_changes,omitempty"`
+	License           string             `json:"license,omitempty"`
+	Methodologies     []Methodology      `json:"methodologies,omitempty"`
+	NationalStatistic *bool              `json:"national_statistic,omitempty"`
+	NextRelease       string             `json:"next_release,omitempty"`
+	Publications      []Publication      `json:"publications,omitempty"`
+	QMI               *Publication       `json:"qmi,omitempty"`
+	RelatedDatasets   []RelatedDataset   `json:"related_datasets,omitempty"`
+	ReleaseDate       string             `json:"release_date,omitempty"`
+	ReleaseFrequency  string             `json:"release_frequency,omitempty"`
+	Title             string             `json:"title,omitempty"`
+	Survey            string             `json:"survey,omitempty"`
+	Subtopics         []string           `json:"subtopics,omitempty"`
+	UnitOfMeasure     string             `json:"unit_of_measure,omitempty"`
+	UsageNotes        *[]UsageNote       `json:"usage_notes,omitempty"`
+	RelatedContent    []GeneralDetails   `json:"related_content,omitempty"`
+}
+
+type GeneralDetails struct {
+	Description string `json:"description,omitempty"`
+	HRef        string `json:"href,omitempty"`
+	Title       string `json:"title,omitempty"`
+}
+
+// UnmarshalJSON is used to disambiguate the 'links' attribute of the incoming Metadata struct. As currently structured
+// both the embedded Version and DatasetDetails objects have a 'links' attribute, and the default json marshaller will
+// not populate either field as it doesn't know which to populate.
+// In order not to introduce a breaking change to the api, the bespoke Unmarshaller below will do the disambiguation
+func (m *Metadata) UnmarshalJSON(js []byte) error {
+	e := json.Unmarshal(js, &m.Version)
+	if e != nil {
+		return e
+	}
+
+	e = json.Unmarshal(js, &m.DatasetDetails)
+	if e != nil {
+		return e
+	}
+	m.DatasetDetails.Links = Links{}
+
+	var dl struct {
+		Links `json:"dataset_links,omitempty"`
+	}
+	e = json.Unmarshal(js, &dl)
+	if e != nil {
+		return e
+	}
+	m.DatasetLinks = dl.Links
+
+	return nil
 }
 
 // DownloadList represents a list of objects of containing information on the downloadable files
@@ -206,6 +281,16 @@ type Download struct {
 	Size    string `json:"size"`
 	Public  string `json:"public,omitempty"`
 	Private string `json:"private,omitempty"`
+}
+type EditionsDetails struct {
+	ID      string  `json:"id"`
+	Next    Edition `json:"next"`
+	Current Edition `json:"current"`
+	Edition
+}
+
+type EditionItems struct {
+	Items []EditionsDetails `json:"items"`
 }
 
 // Edition represents an edition within a dataset
@@ -409,6 +494,11 @@ type Temporal struct {
 	Frequency string `json:"frequency"`
 }
 
+// ResponseHedaers represents headers that are available in the HTTP response
+type ResponseHeaders struct {
+	ETag string
+}
+
 // ToString builds a string of metadata information
 func (m Metadata) ToString() string {
 	var b bytes.Buffer
@@ -454,7 +544,15 @@ func (m Metadata) ToString() string {
 	if m.RelatedDatasets != nil {
 		b.WriteString(fmt.Sprintf("Related Links: %s\n", *m.RelatedDatasets))
 	}
-
+	b.WriteString(fmt.Sprintf("Canonical Topic: %s\n", m.CanonicalTopic))
+	if len(m.Subtopics) > 0 {
+		b.WriteString(fmt.Sprintf("Subtopics: %s\n", m.Subtopics))
+	}
+	b.WriteString(fmt.Sprintf("Survey: %s\n", m.Survey))
+	if m.RelatedContent != nil {
+		b.WriteString(fmt.Sprintf("Related Content: %s\n", *m.RelatedContent))
+	}
+	b.WriteString(fmt.Sprintf("Lowest Geography: %s\n", m.DatasetDetails.LowestGeography))
 	return b.String()
 }
 

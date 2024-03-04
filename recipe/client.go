@@ -61,11 +61,11 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken, servic
 	}
 
 	err = headers.SetAuthToken(req, userAuthToken)
-	if err != nil && err != headers.ErrValueEmpty {
+	if err != nil {
 		return nil, err
 	}
 	err = headers.SetServiceAuthToken(req, serviceAuthToken)
-	if err != nil && err != headers.ErrValueEmpty {
+	if err != nil {
 		return nil, err
 	}
 	return c.hcCli.Client.Do(ctx, req)

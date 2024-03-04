@@ -11,7 +11,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dprequest "github.com/ONSdigital/dp-net/request"
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
@@ -168,4 +168,36 @@ func (c *Client) GetDepartments(ctx context.Context, userAuthToken, serviceAuthT
 	}
 
 	return
+}
+
+// GetReleases returns the search results for published Releases and upcoming Release Calendar entries
+func (c *Client) GetReleases(ctx context.Context, userAuthToken, serviceAuthToken, collectionID string, query url.Values) (ReleaseResponse, error) {
+	uri := fmt.Sprintf("%s/search/releases", c.hcCli.URL)
+	if query != nil {
+		uri = uri + "?" + query.Encode()
+	}
+	clientlog.Do(ctx, "retrieving releases search response", service, uri)
+
+	var r ReleaseResponse
+	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	if err != nil {
+		return r, err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = NewSearchErrorResponse(resp, uri)
+		return r, err
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return r, err
+	}
+
+	if err = json.Unmarshal(b, &r); err != nil {
+		return r, err
+	}
+
+	return r, nil
 }

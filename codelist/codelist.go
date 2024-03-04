@@ -298,12 +298,12 @@ func (c *Client) doGetWithAuthHeaders(ctx context.Context, userAuthToken string,
 
 func setAuthenticationHeaders(req *http.Request, userAuthToken, serviceAuthToken string) error {
 	err := headers.SetAuthToken(req, userAuthToken)
-	if err != nil && err != headers.ErrValueEmpty {
+	if err != nil {
 		return err
 	}
 
 	err = headers.SetServiceAuthToken(req, serviceAuthToken)
-	if err != nil && err != headers.ErrValueEmpty {
+	if err != nil {
 		return err
 	}
 

@@ -1,5 +1,6 @@
 {
     "count": 5,
+    "distinct_topics_count": 4,
     "took": 36,
     "content_types": [
         {
@@ -15,9 +16,25 @@
             "count": 1
         }
     ],
+    "topics": [
+        {
+            "_comment": "type value represents topic id",
+            "type": "1234", 
+            "count": 3
+        },
+        {
+            "type": "3456", 
+            "count": 1
+        },
+        {
+            "type": "5677", 
+            "count": 1
+        }
+    ],
     "items": [
         {
             "description": {
+                "canonical_topic": "1234",
                 "contact": {
                     "name": "Christopher Jenkins",
                     "telephone": "+44 (0)1633 455474",
@@ -27,19 +44,6 @@
                 "headline1": "Improved methodology has been implemented leading to revisions to the full IPHRP time series. The data presented in this statistical bulletin are presented using the new methodology.",
                 "headline2": "Private rental prices paid by tenants in Great Britain rose by 1.7% in the 12 months to December 2014.",
                 "headline3": "Private rental prices grew by 1.8% in England, 2.0% in Scotland and 0.2% in Wales in the 12 months to December 2014.",
-                "keywords": [
-                    "Inflation",
-                    "Property",
-                    "private landlords",
-                    "rental market",
-                    "housing market"
-                ],
-                "latest_release": true,
-                "language": "English",
-                "national_statistic": false,
-                "release_date": "2015-01-30T00:00:00.000Z",
-                "summary": "The Index of Private Housing Rental Prices (IPHRP) measures the change in price of property rented by private landlords. The index is published as a series of price indices covering Great Britain, its constituent countries and the English regions.",
-                "title": "Index of Private Housing Rental Prices",
                 "hightlight": {
                     "summary": "The Index of Private <em class=\"highlight\">Housing</em> Rental Prices (IPHRP) measures the change in price of property rented by private landlords. The index is published as a series of price indices covering Great Britain, its constituent countries and the English regions.",
                     "title": "Index of Private <em class=\"highlight\">Housing</em> Rental Prices",
@@ -50,7 +54,23 @@
                         "rental market",
                         "<em class=\"highlight\">housing</em>  market"
                     ]
-                }
+                },
+                "keywords": [
+                    "Inflation",
+                    "Property",
+                    "private landlords",
+                    "rental market",
+                    "housing market"
+                ],
+                "language": "English",
+                "latest_release": true,
+                "national_statistic": false,
+                "release_date": "2015-01-30T00:00:00.000Z",
+                "summary": "The Index of Private Housing Rental Prices (IPHRP) measures the change in price of property rented by private landlords. The index is published as a series of price indices covering Great Britain, its constituent countries and the English regions.",
+                "title": "Index of Private Housing Rental Prices",
+                "topics": [
+                    "3456", "5677"
+                ]
             },
             "type": "bulletin",
             "uri": "/peoplepopulationandcommunity/housing/bulletins/indexofprivatehousingrentalprices/2015-01-30",
@@ -80,6 +100,7 @@
         },
         {
             "description": {
+                "canonical_topic": "3456",
                 "contact": {
                     "name": "Nigel Henretty",
                     "telephone": "+44 (0)1329 447934",
@@ -132,6 +153,7 @@
         },
         {
             "description": {
+                "canonical_topic": "5677",
                 "contact": {
                     "name": "Kate Davies",
                     "telephone": "+44 (0)1633 456344",

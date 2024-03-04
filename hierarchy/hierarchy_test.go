@@ -11,7 +11,7 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -39,7 +39,7 @@ func TestErrInvalidHierarchyAPIResponse(t *testing.T) {
 			})
 		})
 
-		Convey("Then Error() returns the expected error message", func() {
+		Convey("Then Errors() returns the expected error message", func() {
 			So(err.Error(), ShouldResemble, "invalid response from hierarchy api - should be: 200, got: 400, path: /hierarchies/foo/bar")
 		})
 

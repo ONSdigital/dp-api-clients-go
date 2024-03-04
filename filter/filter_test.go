@@ -15,11 +15,14 @@ import (
 
 	"github.com/pkg/errors"
 
+	. "github.com/smartystreets/goconvey/convey"
+
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
-	dprequest "github.com/ONSdigital/dp-net/request"
-	. "github.com/smartystreets/goconvey/convey"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
 )
 
 const (
@@ -350,7 +353,10 @@ func TestClient_GetDimension(t *testing.T) {
 	name := "corge"
 	dimensionBody := `{
 		"dimension_url": "www.ons.gov.uk",
+		"id": "quuz_id",
+		"label": "Dimension",
 		"name": "quuz",
+		"is_area_type": false,
 		"options": ["corge"]}`
 	Convey("When bad request is returned", t, func() {
 		mockedAPI := getMockfilterAPI(http.Request{Method: "GET"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
@@ -376,8 +382,12 @@ func TestClient_GetDimension(t *testing.T) {
 		dim, eTag, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldBeNil)
 		So(dim, ShouldResemble, Dimension{
-			Name: "quuz",
-			URI:  "www.ons.gov.uk",
+			Name:       "quuz",
+			ID:         "quuz_id",
+			Label:      "Dimension",
+			URI:        "www.ons.gov.uk",
+			Options:    []string{"corge"},
+			IsAreaType: boolToPtr(false),
 		})
 		So(eTag, ShouldResemble, testETag)
 	})
@@ -387,8 +397,12 @@ func TestClient_GetDimension(t *testing.T) {
 		dim, eTag, err := mockedAPI.GetDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterOutputID, name)
 		So(err, ShouldBeNil)
 		So(dim, ShouldResemble, Dimension{
-			Name: "quuz",
-			URI:  "www.ons.gov.uk",
+			Name:       "quuz",
+			ID:         "quuz_id",
+			Label:      "Dimension",
+			URI:        "www.ons.gov.uk",
+			Options:    []string{"corge"},
+			IsAreaType: boolToPtr(false),
 		})
 		So(eTag, ShouldResemble, testETag)
 	})
@@ -398,8 +412,19 @@ func TestClient_GetDimensions(t *testing.T) {
 	filterOutputID := "foo"
 	dimensionBody := `{
 		"items": [
-			{ "dimension_url": "www.ons.gov.uk/dim1", "name": "DimensionOne" },
-			{ "dimension_url": "www.ons.gov.uk/dim2", "name": "DimensionTwo" }],
+			{
+				"dimension_url": "www.ons.gov.uk/dim1",
+				"name": "DimensionOne",
+				"options": ["one"],
+				"is_area_type": false
+			},
+			{
+				"dimension_url": "www.ons.gov.uk/dim2",
+				"name": "DimensionTwo",
+				"options": ["two"],
+				"is_area_type": true
+			}
+		],
 		"count": 2,
 		"offset": 1,
 		"limit": 20,
@@ -435,8 +460,19 @@ func TestClient_GetDimensions(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(dims, ShouldResemble, Dimensions{
 			Items: []Dimension{
-				{URI: "www.ons.gov.uk/dim1", Name: "DimensionOne"},
-				{URI: "www.ons.gov.uk/dim2", Name: "DimensionTwo"}},
+				{
+					URI:        "www.ons.gov.uk/dim1",
+					Name:       "DimensionOne",
+					Options:    []string{"one"},
+					IsAreaType: boolToPtr(false),
+				},
+				{
+					URI:        "www.ons.gov.uk/dim2",
+					Name:       "DimensionTwo",
+					Options:    []string{"two"},
+					IsAreaType: boolToPtr(true),
+				},
+			},
 			Count:      2,
 			Offset:     1,
 			Limit:      20,
@@ -454,8 +490,19 @@ func TestClient_GetDimensions(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(dims, ShouldResemble, Dimensions{
 				Items: []Dimension{
-					{URI: "www.ons.gov.uk/dim1", Name: "DimensionOne"},
-					{URI: "www.ons.gov.uk/dim2", Name: "DimensionTwo"}},
+					{
+						URI:        "www.ons.gov.uk/dim1",
+						Name:       "DimensionOne",
+						Options:    []string{"one"},
+						IsAreaType: boolToPtr(false),
+					},
+					{
+						URI:        "www.ons.gov.uk/dim2",
+						Name:       "DimensionTwo",
+						Options:    []string{"two"},
+						IsAreaType: boolToPtr(true),
+					},
+				},
 				Count:      2,
 				Offset:     1,
 				Limit:      20,
@@ -815,19 +862,429 @@ func TestClient_GetDimensionOptionsInBatches(t *testing.T) {
 	})
 }
 
+func TestClient_DeleteDimensionOptions(t *testing.T) {
+
+	filterID := "foo"
+	name := "corge"
+
+	Convey("Given a Filter ID and Dimension name exist", t, func() {
+		newETag := "84798def3a75c8783b09e946d2fbf85e8a1dcce5"
+
+		r := &http.Response{
+			StatusCode: http.StatusNoContent,
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			r.Header.Set("ETag", newETag)
+			return r, nil
+		}
+		filterClient := newFilterClient(httpClient)
+
+		Convey("When DeleteDimensionOptions is called", func() {
+			eTag, err := filterClient.DeleteDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+
+			Convey("Then the new eTag is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETag)
+			})
+		})
+	})
+
+	Convey("Given a Filter ID exists but the Dimension name is incorrect", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusNotFound,
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			r.Header.Set("ETag", "")
+			return r, nil
+		}
+		filterClient := newFilterClient(httpClient)
+
+		Convey("When DeleteDimensionOptions is called", func() {
+			eTag, err := filterClient.DeleteDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+
+			Convey("Then an error is returned with no ETag", func() {
+				expectedErr := errors.Wrap(&ErrInvalidFilterAPIResponse{http.StatusNoContent, http.StatusNotFound, "http://localhost:8080/filters/foo/dimensions/corge/options"}, "unexpected response")
+				So(err.Error(), ShouldResemble, expectedErr.Error())
+				So(eTag, ShouldResemble, "")
+			})
+		})
+	})
+
+	Convey("Given a Filter ID is incorrect", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusBadRequest,
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			r.Header.Set("ETag", "")
+			return r, nil
+		}
+		filterClient := newFilterClient(httpClient)
+
+		Convey("When DeleteDimensionOptions is called", func() {
+			eTag, err := filterClient.DeleteDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+
+			Convey("Then an error is returned with no ETag", func() {
+				expectedErr := errors.Wrap(&ErrInvalidFilterAPIResponse{http.StatusNoContent, http.StatusBadRequest, "http://localhost:8080/filters/foo/dimensions/corge/options"}, "unexpected response")
+				So(err.Error(), ShouldResemble, expectedErr.Error())
+				So(eTag, ShouldResemble, "")
+			})
+		})
+	})
+
+	Convey("Given the filter-api returns a resource conflict", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusConflict,
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		httpClient.DoFunc = func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			r.Header.Set("ETag", "")
+			return r, nil
+		}
+		filterClient := newFilterClient(httpClient)
+
+		Convey("When DeleteDimensionOptions is called", func() {
+			eTag, err := filterClient.DeleteDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+
+			Convey("Then an error is returned with no ETag", func() {
+				expectedErr := errors.Wrap(&ErrInvalidFilterAPIResponse{http.StatusNoContent, http.StatusConflict, "http://localhost:8080/filters/foo/dimensions/corge/options"}, "unexpected response")
+				So(err.Error(), ShouldResemble, expectedErr.Error())
+				So(eTag, ShouldResemble, "")
+			})
+		})
+	})
+
+	Convey("Given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("dphttpclient.do is not available")
+		expectedError := errors.Wrap(mockErr, "failed to delete dimension options")
+
+		httpClient := newMockHTTPClient(nil, mockErr)
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when DeleteDimensionOptions is called", func() {
+			_, err := filterClient.DeleteDimensionOptions(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, expectedError.Error())
+			})
+		})
+	})
+
+}
+
+func TestClient_CreateFlexBlueprint(t *testing.T) {
+	trueValue := true
+	datasetID := "foo"
+	edition := "quux"
+	version := "1"
+	dimensions := []ModelDimension{
+		{
+			Name:       "name",
+			URI:        "uri.uri/uri",
+			IsAreaType: &trueValue,
+			Options: []string{
+				"option1",
+				"option2",
+			},
+			Values: []string{
+				"value1",
+				"value2",
+			},
+		},
+	}
+	populationType := "Teaching-Dataset"
+
+	expectedRequest := createFlexBlueprintRequest{
+		Dataset: Dataset{DatasetID: "foo", Edition: "quux", Version: 1},
+		Dimensions: []ModelDimension{
+			{
+				Name:       "name",
+				URI:        "uri.uri/uri",
+				IsAreaType: &trueValue,
+				Options: []string{
+					"option1",
+					"option2",
+				},
+				Values: []string{
+					"value1",
+					"value2",
+				},
+			}},
+		PopulationType: "Teaching-Dataset",
+	}
+
+	checkRequest := func(httpClient *dphttp.ClienterMock) {
+		So(len(httpClient.DoCalls()), ShouldEqual, 1)
+
+		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+		var actualVersion createFlexBlueprintRequest
+		err := json.Unmarshal(actualBody, &actualVersion)
+		So(err, ShouldBeNil)
+		So(actualVersion, ShouldResemble, expectedRequest)
+	}
+
+	Convey("Given a valid Blueprint is returned", t, func() {
+		expectedFilterId := "the-filter-id"
+		r := &http.Response{
+			StatusCode: http.StatusCreated,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":"the-filter-id"}`))),
+			Header:     http.Header{},
+		}
+		r.Header.Set("ETag", testETag)
+		httpClient := newMockHTTPClient(r, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when createBlueprint is called", func() {
+			bp, eTag, err := filterClient.CreateFlexibleBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, dimensions, populationType)
+
+			Convey("then the expectedRequest eTag is returned, with no error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, testETag)
+			})
+
+			Convey("and dphttp client is called one time with the expectedRequest parameters", func() {
+				checkRequest(httpClient)
+			})
+
+			Convey("and the response's filter id is correctly unmarshalled", func() {
+				So(bp, ShouldEqual, expectedFilterId)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("foo")
+		httpClient := newMockHTTPClient(nil, mockErr)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when createBlueprint is called", func() {
+			_, _, err := filterClient.CreateFlexibleBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, dimensions, populationType)
+
+			Convey("then the expectedRequest error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		url := "http://localhost:8080"
+		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusCreated, 500, url + "/filters"}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when createBlueprint is called", func() {
+			_, _, err := filterClient.CreateFlexibleBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, dimensions, populationType)
+
+			Convey("then the expectedRequest error is returned", func() {
+				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
+			})
+		})
+	})
+}
+
+func TestClient_CreateFlexBlueprintCustom(t *testing.T) {
+	trueValue := true
+	datasetID := "foo"
+	edition := "quux"
+	version := 1
+	dimensions := []ModelDimension{
+		{
+			Name:       "name",
+			URI:        "uri.uri/uri",
+			IsAreaType: &trueValue,
+			Options: []string{
+				"option1",
+				"option2",
+			},
+			Values: []string{
+				"value1",
+				"value2",
+			},
+		},
+	}
+	populationType := "Teaching-Dataset"
+
+	expectedRequest := struct {
+		CreateFlexBlueprintCustomRequest
+		Custom bool `json:"custom"`
+	}{
+		CreateFlexBlueprintCustomRequest: CreateFlexBlueprintCustomRequest{
+			Dataset: Dataset{DatasetID: "foo", Edition: "quux", Version: 1},
+			Dimensions: []ModelDimension{
+				{
+					Name:       "name",
+					URI:        "uri.uri/uri",
+					IsAreaType: &trueValue,
+					Options: []string{
+						"option1",
+						"option2",
+					},
+					Values: []string{
+						"value1",
+						"value2",
+					},
+				},
+			},
+			PopulationType: "Teaching-Dataset",
+		},
+		Custom: true,
+	}
+
+	checkRequest := func(httpClient *dphttp.ClienterMock) {
+		So(len(httpClient.DoCalls()), ShouldEqual, 1)
+
+		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+		var actualRequest struct {
+			CreateFlexBlueprintCustomRequest
+			Custom bool `json:"custom"`
+		}
+		err := json.Unmarshal(actualBody, &actualRequest)
+		So(err, ShouldBeNil)
+		So(actualRequest, ShouldResemble, expectedRequest)
+	}
+
+	Convey("Given a valid Blueprint is returned", t, func() {
+		expectedFilterId := "the-filter-id"
+		r := &http.Response{
+			StatusCode: http.StatusCreated,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":"the-filter-id"}`))),
+			Header:     http.Header{},
+		}
+		r.Header.Set("ETag", testETag)
+		httpClient := newMockHTTPClient(r, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when createBlueprint is called", func() {
+			bp, eTag, err := filterClient.CreateFlexibleBlueprintCustom(
+				ctx,
+				testUserAuthToken,
+				testServiceToken,
+				testDownloadServiceToken,
+				CreateFlexBlueprintCustomRequest{
+					Dataset: Dataset{
+						DatasetID: datasetID,
+						Edition:   edition,
+						Version:   version,
+					},
+					Dimensions:     dimensions,
+					PopulationType: populationType,
+					CollectionID:   testCollectionID,
+				},
+			)
+			Convey("then the expectedRequest eTag is returned, with no error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, testETag)
+			})
+
+			Convey("and dphttp client is called one time with the expectedRequest parameters", func() {
+				checkRequest(httpClient)
+			})
+
+			Convey("and the response's filter id is correctly unmarshalled", func() {
+				So(bp, ShouldEqual, expectedFilterId)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("foo")
+		httpClient := newMockHTTPClient(nil, mockErr)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when createBlueprint is called", func() {
+			_, _, err := filterClient.CreateFlexibleBlueprintCustom(
+				ctx,
+				testUserAuthToken,
+				testServiceToken,
+				testDownloadServiceToken,
+				CreateFlexBlueprintCustomRequest{
+					Dataset: Dataset{
+						DatasetID: datasetID,
+						Edition:   edition,
+						Version:   version,
+					},
+					Dimensions:     dimensions,
+					PopulationType: populationType,
+					CollectionID:   testCollectionID,
+				},
+			)
+
+			Convey("then the expectedRequest error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		url := "http://localhost:8080"
+		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusCreated, 500, url + "/filters"}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when createBlueprint is called", func() {
+			_, _, err := filterClient.CreateFlexibleBlueprintCustom(
+				ctx,
+				testUserAuthToken,
+				testServiceToken,
+				testDownloadServiceToken,
+				CreateFlexBlueprintCustomRequest{
+					Dataset: Dataset{
+						DatasetID: datasetID,
+						Edition:   edition,
+						Version:   version,
+					},
+					Dimensions:     dimensions,
+					PopulationType: populationType,
+					CollectionID:   testCollectionID,
+				},
+			)
+			Convey("then the expectedRequest error is returned", func() {
+				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
+			})
+		})
+	})
+}
+
 func TestClient_CreateBlueprint(t *testing.T) {
 	datasetID := "foo"
 	edition := "quux"
 	version := "1"
 	names := []string{"quuz", "corge"}
 
+	expectedRequest := createBlueprint{
+		Dataset: Dataset{DatasetID: "foo", Edition: "quux", Version: 1},
+		Dimensions: []ModelDimension{
+			{Name: "quuz"},
+			{Name: "corge"},
+		},
+	}
+
 	checkRequest := func(httpClient *dphttp.ClienterMock, expectedFilterID string) {
 		So(len(httpClient.DoCalls()), ShouldEqual, 1)
 
 		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
-		var actualVersion CreateBlueprint
+		var actualVersion createBlueprint
 		err := json.Unmarshal(actualBody, &actualVersion)
 		So(err, ShouldBeNil)
+		So(actualVersion, ShouldResemble, expectedRequest)
 		So(actualVersion.FilterID, ShouldResemble, expectedFilterID)
 	}
 
@@ -842,15 +1299,15 @@ func TestClient_CreateBlueprint(t *testing.T) {
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when CreateBlueprint is called", func() {
+		Convey("when createBlueprint is called", func() {
 			bp, eTag, err := filterClient.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
 
-			Convey("then the expected eTag is returned, with no error", func() {
+			Convey("then the expectedRequest eTag is returned, with no error", func() {
 				So(err, ShouldBeNil)
 				So(eTag, ShouldResemble, testETag)
 			})
 
-			Convey("and dphttp client is called one time with the expected parameters", func() {
+			Convey("and dphttp client is called one time with the expectedRequest parameters", func() {
 				checkRequest(httpClient, bp)
 			})
 		})
@@ -862,14 +1319,14 @@ func TestClient_CreateBlueprint(t *testing.T) {
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when CreateBlueprint is called", func() {
+		Convey("when createBlueprint is called", func() {
 			bp, _, err := filterClient.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
 
-			Convey("then the expected error is returned", func() {
+			Convey("then the expectedRequest error is returned", func() {
 				So(err.Error(), ShouldResemble, mockErr.Error())
 			})
 
-			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
+			Convey("and dphttpclient.do is called 1 time with the expectedRequest parameters", func() {
 				checkRequest(httpClient, bp)
 			})
 		})
@@ -885,15 +1342,151 @@ func TestClient_CreateBlueprint(t *testing.T) {
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when CreateBlueprint is called", func() {
+		Convey("when createBlueprint is called", func() {
 			bp, _, err := filterClient.CreateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, datasetID, edition, version, names)
 
-			Convey("then the expected error is returned", func() {
+			Convey("then the expectedRequest error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
 			})
 
-			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
+			Convey("and dphttpclient.do is called 1 time with the expectedRequest parameters", func() {
 				checkRequest(httpClient, bp)
+			})
+		})
+	})
+}
+
+func Test_SubmitFilter(t *testing.T) {
+	testDownloadServiceToken := "Download"
+	testServiceAuthTokenHeader := "X-Florence-Token"
+	testAuthTokenHeader := "Authorization"
+	ifMatch := "ea1e031b-3064-427d-8fed-4b35123213"
+	newETag := "eb31e352f140b8a965d008f5505153bc6c4f5b48"
+
+	ctx := context.Background()
+
+	var req = SubmitFilterRequest{
+		FilterID: "ea1e031b-3064-427d-8fed-4b35c99bf1a3",
+		Dimensions: []DimensionOptions{{
+			Items: []DimensionOption{{
+				DimensionOptionsURL: "http://some.url/city",
+				Option:              "City",
+			}},
+			Count:      3,
+			Offset:     0,
+			Limit:      0,
+			TotalCount: 3,
+		}},
+		PopulationType: "population-type",
+	}
+
+	var successfulResponse = SubmitFilterResponse{
+		InstanceID:     "instance-id",
+		FilterOutputID: "filter-output-id",
+		Dataset: Dataset{
+			DatasetID: "dataset-id",
+			Edition:   "2022",
+			Version:   1,
+		},
+		Links: FilterLinks{
+			Version: Link{
+				HRef: "http://some.url",
+				ID:   "version-id",
+			},
+			Self: Link{
+				ID:   "http://some.url",
+				HRef: "self-id",
+			},
+			Dimensions: Link{
+				ID:   "http://some.url",
+				HRef: "dimensions",
+			},
+		},
+		PopulationType: "population-type",
+	}
+
+	var newExpectedResponse = func(body interface{}, sc int, eTag string) *http.Response {
+		b, _ := json.Marshal(body)
+
+		expectedResponse := &http.Response{
+			StatusCode: sc,
+			Body:       ioutil.NopCloser(bytes.NewReader(b)),
+			Header:     http.Header{},
+		}
+		expectedResponse.Header.Set("ETag", eTag)
+		return expectedResponse
+	}
+
+	Convey("Given a valid Submit Filter Request ", t, func() {
+		Convey("when 'SubmitFilter' is called with the expected ifMatch value", func() {
+			httpClient := newMockHTTPClient(newExpectedResponse(successfulResponse, http.StatusAccepted, newETag), nil)
+			filterClient := newFilterClient(httpClient)
+			res, ETag, err := filterClient.SubmitFilter(ctx, testAuthTokenHeader, testServiceAuthTokenHeader, testDownloadServiceToken, ifMatch, req)
+
+			Convey("Then no error should be returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("And the expected query is posted to cantabular filter-flex-api", func() {
+				So(httpClient.DoCalls(), ShouldHaveLength, 1)
+				So(httpClient.DoCalls()[0].Req.URL.String(), ShouldEqual, fmt.Sprintf("%s/filters/%s/submit", filterClient.hcCli.URL, req.FilterID))
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(*res, ShouldResemble, successfulResponse)
+			})
+
+			Convey("And the expected ETag is empty", func() {
+				So(ETag, ShouldEqual, newETag)
+			})
+		})
+
+		Convey("when 'SubmitFilter' is called with an outdated ifMatch value", func() {
+			var mockRespETagConflict = `{"message": "conflict: invalid ETag provided or filter has been updated"}`
+
+			httpClient := newMockHTTPClient(newExpectedResponse(mockRespETagConflict, http.StatusConflict, ""), nil)
+			filterClient := newFilterClient(httpClient)
+			res, ETag, err := filterClient.SubmitFilter(ctx, testAuthTokenHeader, testServiceAuthTokenHeader, testDownloadServiceToken, ifMatch, req)
+
+			Convey("Then an error should be returned", func() {
+				So(err.(*dperrors.Error).Code(), ShouldEqual, http.StatusConflict)
+			})
+
+			Convey("And the expected query is posted to cantabular filter-flex-api", func() {
+				So(httpClient.DoCalls(), ShouldHaveLength, 1)
+				So(httpClient.DoCalls()[0].Req.URL.String(), ShouldEqual, fmt.Sprintf("%s/filters/%s/submit", filterClient.hcCli.URL, req.FilterID))
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(res, ShouldBeNil)
+			})
+
+			Convey("And the expected ETag is empty", func() {
+				So(ETag, ShouldEqual, "")
+			})
+		})
+
+		Convey("when 'SubmitFilter' is called and the POST method returns an error", func() {
+			mockError := errors.New("Something went wrong")
+			httpClient := newMockHTTPClient(nil, mockError)
+			filterClient := newFilterClient(httpClient)
+			res, ETag, err := filterClient.SubmitFilter(ctx, testAuthTokenHeader, testServiceAuthTokenHeader, testDownloadServiceToken, ifMatch, req)
+
+			Convey("Then an error should be returned", func() {
+				So(err.Error(), ShouldEqual, "failed to create submit request: Something went wrong")
+			})
+
+			Convey("And the expected query is posted to cantabular filter-flex-api", func() {
+				So(httpClient.DoCalls(), ShouldHaveLength, 1)
+				So(httpClient.DoCalls()[0].Req.URL.String(), ShouldEqual, fmt.Sprintf("%s/filters/%s/submit", filterClient.hcCli.URL, req.FilterID))
+			})
+
+			Convey("And the expected response is returned", func() {
+				So(res, ShouldBeNil)
+			})
+
+			Convey("And the expected ETag is empty", func() {
+				So(ETag, ShouldEqual, "")
 			})
 		})
 	})
@@ -904,6 +1497,7 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 		FilterID:    "",
 		InstanceID:  "",
 		Links:       Links{},
+		Dataset:     Dataset{},
 		DatasetID:   "",
 		Edition:     "",
 		Version:     "",
@@ -961,7 +1555,7 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when CreateBlueprint is called", func() {
+		Convey("when createBlueprint is called", func() {
 			bp, _, err := filterClient.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit, testETag)
 
 			Convey("then the expected error is returned", func() {
@@ -984,8 +1578,131 @@ func TestClient_UpdateBlueprint(t *testing.T) {
 
 		filterClient := newFilterClient(httpClient)
 
-		Convey("when CreateBlueprint is called", func() {
+		Convey("when createBlueprint is called", func() {
 			bp, _, err := filterClient.UpdateBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit, testETag)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
+			})
+
+			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
+				checkRequest(httpClient, bp, testETag)
+			})
+		})
+	})
+}
+
+func TestClient_UpdateFlexBlueprint(t *testing.T) {
+	model := Model{
+		FilterID:       "",
+		InstanceID:     "",
+		Links:          Links{},
+		Dataset:        Dataset{},
+		DatasetID:      "",
+		Edition:        "",
+		Version:        "",
+		State:          "",
+		Dimensions:     nil,
+		Downloads:      nil,
+		Events:         nil,
+		IsPublished:    false,
+		PopulationType: "",
+	}
+	doSubmit := true
+
+	populationType := "population-type"
+
+	checkRequest := func(httpClient *dphttp.ClienterMock, expectedModel Model, expectedIfMatch string) {
+		So(len(httpClient.DoCalls()), ShouldEqual, 1)
+
+		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+		var actualModel Model
+
+		err := json.Unmarshal(actualBody, &actualModel)
+		So(err, ShouldBeNil)
+		So(actualModel, ShouldResemble, expectedModel)
+
+		actualIfMatch := httpClient.DoCalls()[0].Req.Header.Get("If-Match")
+		So(actualIfMatch, ShouldResemble, expectedIfMatch)
+	}
+
+	Convey("Given a valid blueprint update is given", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		filterClient := newFilterClient(httpClient)
+		bp, _, err := filterClient.UpdateFlexBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit, populationType, testETag)
+
+		model.PopulationType = "population-type"
+
+		Convey("then the model should be returned with the updated PopulationType", func() {
+			So(err, ShouldBeNil)
+			So(bp, ShouldResemble, model)
+		})
+
+	})
+
+	Convey("Given a valid blueprint update is given", t, func() {
+		newETag := "eb31e352f140b8a965d008f5505153bc6c4f5b48"
+		r := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"filter_id":""}`))),
+			Header:     http.Header{},
+		}
+		r.Header.Set("ETag", newETag)
+		httpClient := newMockHTTPClient(r, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when UpdateFlexBlueprint is called with the expected ifMatch value", func() {
+			bp, eTag, err := filterClient.UpdateFlexBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit, populationType, testETag)
+
+			Convey("then the new eTag is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETag)
+			})
+
+			Convey("and dphttp client is called one time with the expected parameters", func() {
+				checkRequest(httpClient, bp, testETag)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("foo")
+
+		httpClient := newMockHTTPClient(nil, mockErr)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when createBlueprint is called", func() {
+			bp, _, err := filterClient.UpdateFlexBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit, populationType, testETag)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+
+			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
+				checkRequest(httpClient, bp, testETag)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		url := "http://localhost:8080"
+		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusOK, 500, url + "/filters/?submitted=" + strconv.FormatBool(doSubmit)}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when createBlueprint is called", func() {
+			bp, _, err := filterClient.UpdateFlexBlueprint(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, model, doSubmit, populationType, testETag)
 
 			Convey("then the expected error is returned", func() {
 				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
@@ -1212,6 +1929,107 @@ func TestClient_AddDimension(t *testing.T) {
 				So(err.(*ErrInvalidFilterAPIResponse).ExpectedCode, ShouldEqual, http.StatusCreated)
 				So(err.(*ErrInvalidFilterAPIResponse).ActualCode, ShouldEqual, http.StatusInternalServerError)
 				So(strings.HasSuffix(err.(*ErrInvalidFilterAPIResponse).URI, "http://localhost:8080/filters/baz/dimensions/quz"), ShouldBeTrue)
+			})
+		})
+	})
+}
+
+func TestClient_AddFlexDimension(t *testing.T) {
+	const filterID = "baz"
+	const name = "quz"
+	const isAreaType = true
+	const newETag = "eb31e352f140b8a965d008f5505153bc6c4f5b48"
+	options := []string{"test"}
+
+	Convey("Given a dimension is provided", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusCreated,
+			Header:     http.Header{"Etag": []string{newETag}},
+		}
+
+		httpClient := newMockHTTPClient(r, nil)
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when AddFlexDimension is called", func() {
+			eTag, err := filterClient.AddFlexDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, options, isAreaType, testETag)
+			calls := httpClient.DoCalls()
+
+			Convey("then the API should have been called once", func() {
+				So(calls, ShouldHaveLength, 1)
+			})
+
+			Convey("then the correct headers should be sent", func() {
+				headers := calls[0].Req.Header
+
+				Convey("then the expected ifMatch value is sent", func() {
+					So(headers.Get("If-Match"), ShouldEqual, testETag)
+				})
+
+				Convey("then the collection ID header is sent", func() {
+					So(headers.Get("Collection-Id"), ShouldEqual, testCollectionID)
+				})
+
+				Convey("then the auth token is sent", func() {
+					So(headers.Get("X-Florence-Token"), ShouldEqual, testUserAuthToken)
+				})
+
+				Convey("then the service token is sent", func() {
+					So(headers.Get("Authorization"), ShouldEqual, fmt.Sprintf("Bearer %s", testServiceToken))
+				})
+			})
+
+			Convey("then the request URL should contain the filter ID and name", func() {
+				calledPath := calls[0].Req.URL.Path
+				So(calledPath, ShouldEqual, fmt.Sprintf("/filters/%s/dimensions", filterID))
+			})
+
+			Convey("then the request body contains the passed dimension data", func() {
+				var expectedDimension createFlexDimensionRequest
+				err = json.NewDecoder(calls[0].Req.Body).Decode(&expectedDimension)
+				So(err, ShouldBeNil)
+
+				So(expectedDimension.Name, ShouldEqual, name)
+				So(expectedDimension.IsAreaType, ShouldEqual, isAreaType)
+				So(expectedDimension.Options, ShouldResemble, options)
+			})
+
+			Convey("then the expected eTag is returned", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETag)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("foo")
+		httpClient := newMockHTTPClient(nil, mockErr)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when AddFlexDimension is called", func() {
+			_, err := filterClient.AddFlexDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, nil, false, testETag)
+
+			Convey("then the error contains the original client error", func() {
+				So(errors.Is(err, mockErr), ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		httpClient := newMockHTTPClient(&http.Response{StatusCode: http.StatusInternalServerError}, nil)
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when AddFlexDimension is called", func() {
+			_, err := filterClient.AddDimension(ctx, testUserAuthToken, testServiceToken, testCollectionID, filterID, name, testETag)
+
+			Convey("then the error contains the original response error", func() {
+				var filterErr *ErrInvalidFilterAPIResponse
+				ok := errors.As(err, &filterErr)
+				So(ok, ShouldBeTrue)
+
+				So(filterErr.ExpectedCode, ShouldEqual, http.StatusCreated)
+				So(filterErr.ActualCode, ShouldEqual, http.StatusInternalServerError)
+				So(filterErr.URI, ShouldEqual, "http://localhost:8080/filters/baz/dimensions/quz")
 			})
 		})
 	})
@@ -1552,6 +2370,115 @@ func TestClient_PatchDimensionValues(t *testing.T) {
 	})
 }
 
+func TestClient_UpdateDimensions(t *testing.T) {
+	testID := "123"
+	testName := "old-filter"
+	dimension := Dimension{
+		Name:       "new-filter",
+		URI:        "test.com/test",
+		IsAreaType: new(bool),
+	}
+
+	checkRequest := func(httpClient *dphttp.ClienterMock, expectedDimension Dimension, expectedIfMatch string) {
+		So(len(httpClient.DoCalls()), ShouldEqual, 1)
+
+		actualBody, _ := ioutil.ReadAll(httpClient.DoCalls()[0].Req.Body)
+		var actualDimension Dimension
+
+		err := json.Unmarshal(actualBody, &actualDimension)
+		So(err, ShouldBeNil)
+		So(actualDimension, ShouldResemble, expectedDimension)
+
+		actualIfMatch := httpClient.DoCalls()[0].Req.Header.Get("If-Match")
+		So(actualIfMatch, ShouldResemble, expectedIfMatch)
+	}
+
+	Convey("Given a valid dimension update is given", t, func() {
+		r := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "name":"new-filter", "dimension_url": "test.com/test", "is_area_type": false }`))),
+			Header:     http.Header{},
+		}
+		httpClient := newMockHTTPClient(r, nil)
+		filterClient := newFilterClient(httpClient)
+		bp, _, err := filterClient.UpdateDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, testID, testName, testETag, dimension)
+
+		Convey("then the dimension should be returned with the updated name", func() {
+			So(err, ShouldBeNil)
+			So(bp, ShouldResemble, dimension)
+		})
+	})
+
+	Convey("Given a valid blueprint update is given", t, func() {
+		newETag := "eb31e352f140b8a965d008f5505153bc6c4f5b48"
+		r := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{ "name":"new-filter", "dimension_url": "test.com/test", "is_area_type": false }`))),
+			Header:     http.Header{},
+		}
+		r.Header.Set("ETag", newETag)
+		httpClient := newMockHTTPClient(r, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when UpdateFlexBlueprint is called with the expected ifMatch value", func() {
+			bp, eTag, err := filterClient.UpdateDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, testID, testName, testETag, dimension)
+
+			Convey("then the new eTag is returned without error", func() {
+				So(err, ShouldBeNil)
+				So(eTag, ShouldResemble, newETag)
+			})
+
+			Convey("and dphttp client is called one time with the expected parameters", func() {
+				checkRequest(httpClient, bp, testETag)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns an error", t, func() {
+		mockErr := errors.New("foo")
+
+		httpClient := newMockHTTPClient(nil, mockErr)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when updateDimensions is called", func() {
+			bp, _, err := filterClient.UpdateDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, testID, testName, testETag, dimension)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockErr.Error())
+			})
+
+			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
+				checkRequest(httpClient, bp, testETag)
+			})
+		})
+	})
+
+	Convey("given dphttpclient.do returns a non 200 response status", t, func() {
+		url := "http://localhost:8080"
+		mockInvalidStatusCodeError := ErrInvalidFilterAPIResponse{http.StatusOK, 500, fmt.Sprintf("%s/filters/%s/dimensions/%s", url, testID, testName)}
+		httpClient := newMockHTTPClient(&http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+		}, nil)
+
+		filterClient := newFilterClient(httpClient)
+
+		Convey("when updateDimensions is called", func() {
+			bp, _, err := filterClient.UpdateDimensions(ctx, testUserAuthToken, testServiceToken, testCollectionID, testID, testName, testETag, dimension)
+
+			Convey("then the expected error is returned", func() {
+				So(err.Error(), ShouldResemble, mockInvalidStatusCodeError.Error())
+			})
+
+			Convey("and dphttpclient.do is called 1 time with the expected parameters", func() {
+				checkRequest(httpClient, bp, testETag)
+			})
+		})
+	})
+}
+
 func TestClient_GetJobState(t *testing.T) {
 	filterID := "foo"
 	mockJobStateBody := `{
@@ -1590,6 +2517,127 @@ func TestClient_GetJobState(t *testing.T) {
 		_, eTag, err := mockedAPI.GetJobState(ctx, testUserAuthToken, testServiceToken, testDownloadServiceToken, testCollectionID, filterID)
 		So(err, ShouldBeNil)
 		So(eTag, ShouldResemble, testETag)
+	})
+}
+
+func TestClientGetFilter(t *testing.T) {
+	filterID := "b24676fd-e147-4a37-865e-c582be8654bc"
+	testBody := `
+	{
+		"dataset": {
+			"edition": "time-series",
+			"id": "cpih01",
+			"version": 2
+		},
+		"filter_id": "b24676fd-e147-4a37-865e-c582be8654bc",
+		"id": "b24676fd-e147-4a37-865e-c582be8654bc",
+		"instance_id": "c0cb806d-5306-407e-8c29-cb995da730f6",
+		"links": {
+			"dimensions": {
+				"href": "https://api.develop.onsdigital.co.uk/v1/filters/b24676fd-e147-4a37-865e-c582be8654bc/dimensions"
+			},
+			"self": {
+				"href": "https://api.develop.onsdigital.co.uk/v1/filters/b24676fd-e147-4a37-865e-c582be8654bc"
+			},
+			"version": {
+				"href": "https://api.develop.onsdigital.co.uk/v1/datasets/cpih01/editions/time-series/versions/2",
+				"id": "2"
+			}
+		},
+		"published": true,
+		"state": "submitted",
+		"population_type": "Usual-Residents"
+	}`
+
+	testInput := GetFilterInput{
+		AuthHeaders: AuthHeaders{
+			UserAuthToken:    testUserAuthToken,
+			ServiceAuthToken: testServiceToken,
+			CollectionID:     testCollectionID,
+		},
+		FilterID: filterID,
+	}
+
+	Convey("When a filter is returned", t, func() {
+		api := getMockfilterAPI(
+			http.Request{
+				Method: "GET",
+			},
+			MockedHTTPResponse{
+				StatusCode: http.StatusOK,
+				Body:       testBody,
+				ETag:       testETag,
+			},
+		)
+
+		expected := GetFilterResponse{
+			Dataset: Dataset{
+				DatasetID: "cpih01",
+				Edition:   "time-series",
+				Version:   2,
+			},
+			FilterID:   "b24676fd-e147-4a37-865e-c582be8654bc",
+			ID:         "b24676fd-e147-4a37-865e-c582be8654bc",
+			InstanceID: "c0cb806d-5306-407e-8c29-cb995da730f6",
+			Links: FilterLinks{
+				Dimensions: Link{
+					HRef: "https://api.develop.onsdigital.co.uk/v1/filters/b24676fd-e147-4a37-865e-c582be8654bc/dimensions",
+				},
+				Self: Link{
+					HRef: "https://api.develop.onsdigital.co.uk/v1/filters/b24676fd-e147-4a37-865e-c582be8654bc",
+				},
+				Version: Link{
+					HRef: "https://api.develop.onsdigital.co.uk/v1/datasets/cpih01/editions/time-series/versions/2",
+					ID:   "2",
+				},
+			},
+			Published:      true,
+			State:          "submitted",
+			PopulationType: "Usual-Residents",
+			ETag:           testETag,
+		}
+		resp, err := api.GetFilter(ctx, testInput)
+		So(err, ShouldBeNil)
+		So(resp, ShouldResemble, &expected)
+	})
+
+	Convey("When bad request is returned", t, func() {
+		api := getMockfilterAPI(
+			http.Request{
+				Method: "GET",
+			},
+			MockedHTTPResponse{
+				StatusCode: http.StatusBadRequest,
+				Body:       "",
+			},
+		)
+		_, err := api.GetFilter(ctx, testInput)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("When server error is returned in all attempts", t, func() {
+		api := getMockfilterAPI(
+			http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: http.StatusInternalServerError, Body: "qux"},
+			MockedHTTPResponse{StatusCode: http.StatusInternalServerError, Body: "qux"},
+			MockedHTTPResponse{StatusCode: http.StatusInternalServerError, Body: "qux"},
+		)
+		api.hcCli.Client.SetMaxRetries(2)
+		resp, err := api.GetFilter(ctx, testInput)
+		So(err, ShouldNotBeNil)
+		So(resp, ShouldBeNil)
+	})
+
+	Convey("When server error is returned in the first attempt but 200 OK is returned in the retry", t, func() {
+		api := getMockfilterAPI(
+			http.Request{Method: "GET"},
+			MockedHTTPResponse{StatusCode: http.StatusInternalServerError, Body: "qux"},
+			MockedHTTPResponse{StatusCode: http.StatusOK, Body: testBody, ETag: testETag},
+		)
+		api.hcCli.Client.SetMaxRetries(2)
+		resp, err := api.GetFilter(ctx, testInput)
+		So(err, ShouldBeNil)
+		So(resp.ETag, ShouldResemble, testETag)
 	})
 }
 
@@ -1727,4 +2775,54 @@ func getMockfilterAPI(expectRequest http.Request, mockedHTTPResponse ...MockedHT
 		numCall++
 	}))
 	return New(ts.URL)
+}
+
+func boolToPtr(val bool) *bool {
+	return &val
+}
+
+func TestClient_CreateCustomFilter(t *testing.T) {
+	popualtionType := "UR"
+	resposeBody := `{
+		"filter_id": "29adf09b-0d87-41ea-bf5d-f8c165668624",
+		"instance_id": "a167d774-e725-4a40-8eb7-29650efbd0cd",
+		"dataset": {
+			"id": "jeet-testing-1",
+			"edition": "2021",
+			"version": 1,
+			"lowest_geography": "",
+			"release_date": "",
+			"title": "custom"
+		},
+		"published": true,
+		"custom": false,
+		"type": "multivariate",
+		"population_type": "UR",
+		"links": {
+			"version": {
+				"href": "http://localhost:22000/datasets/jeet-testing-1/editions/2021/versions/1",
+				"id": "1"
+			},
+			"self": {
+				"href": "http://localhost:22100/filters/29adf09b-0d87-41ea-bf5d-f8c165668624"
+			},
+			"dimensions": {
+				"href": "http://localhost:22100/filters/29adf09b-0d87-41ea-bf5d-f8c165668624"
+			}
+		}
+	}`
+
+	Convey("When happy request is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "POST"}, MockedHTTPResponse{StatusCode: 201, Body: resposeBody})
+		filterID, err := mockedAPI.CreateCustomFilter(ctx, testUserAuthToken, testServiceToken, popualtionType)
+		So(err, ShouldBeNil)
+		So(filterID, ShouldEqual, "29adf09b-0d87-41ea-bf5d-f8c165668624")
+	})
+
+	Convey("When happy request is returned", t, func() {
+		mockedAPI := getMockfilterAPI(http.Request{Method: "POST"}, MockedHTTPResponse{StatusCode: 400, Body: ""})
+		filterID, err := mockedAPI.CreateCustomFilter(ctx, testUserAuthToken, testServiceToken, popualtionType)
+		So(err, ShouldNotBeNil)
+		So(filterID, ShouldEqual, "")
+	})
 }

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,8 +20,8 @@ import (
 
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/http"
-	dprequest "github.com/ONSdigital/dp-net/request"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
 
 	"github.com/ONSdigital/log.go/v2/log"
 )
@@ -65,7 +66,8 @@ func New(zebedeeURL string) *Client {
 	}
 }
 
-// NewWithSetTimeoutAndMaxRetry creates a new Zebedee Client, with a configurable timeout and maximum number of retries
+// NewClientWithClienter creates a new Zebedee Client using the dp-net Clienter Http Client
+// which has options to set timeout and max retries.
 func NewClientWithClienter(zebedeeURL string, clienter dphttp.Clienter) *Client {
 	hcClient := healthcheck.NewClientWithClienter(service, zebedeeURL, clienter)
 
@@ -215,52 +217,46 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, collectionID, 
 		return Dataset{}, err
 	}
 
-	var d Dataset
-	if err = json.Unmarshal(b, &d); err != nil {
-		return d, err
+	var dataset Dataset
+
+	if err = json.Unmarshal(b, &dataset); err != nil {
+		return dataset, err
 	}
 
-	downloads := make([]Download, 0)
+	return c.appendDatasetFileSizes(ctx, userAccessToken, collectionID, lang, uri, dataset)
+}
 
-	for _, v := range d.Downloads {
-		var path string
+func (c *Client) appendDatasetFileSizes(ctx context.Context, userAccessToken, collectionID, lang, uri string, dataset Dataset) (Dataset, error) {
+	for i, download := range dataset.Downloads {
+		if c.downloadStoredInZebedee(download) {
+			fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+download.File)
+			if err != nil {
+				return dataset, err
+			}
 
-		if strings.HasPrefix(v.File, uri) {
-			path = v.File
-		} else {
-			path = uri + "/" + v.File
+			dataset.Downloads[i].Size = strconv.Itoa(fs.Size)
 		}
-
-		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, path)
-		if err != nil {
-			return d, err
-		}
-
-		downloads = append(downloads, Download{
-			File: v.File,
-			Size: strconv.Itoa(fs.Size),
-		})
 	}
 
-	d.Downloads = downloads
-
-	supplementaryFiles := make([]SupplementaryFile, 0)
-	for _, v := range d.SupplementaryFiles {
-		fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+v.File)
-		if err != nil {
-			return d, err
+	for i, supplementaryFile := range dataset.SupplementaryFiles {
+		if c.supplementaryFileStoredInZebedee(supplementaryFile) {
+			fs, err := c.GetFileSize(ctx, userAccessToken, collectionID, lang, uri+"/"+supplementaryFile.File)
+			if err != nil {
+				return dataset, err
+			}
+			dataset.SupplementaryFiles[i].Size = strconv.Itoa(fs.Size)
 		}
-
-		supplementaryFiles = append(supplementaryFiles, SupplementaryFile{
-			File:  v.File,
-			Title: v.Title,
-			Size:  strconv.Itoa(fs.Size),
-		})
 	}
 
-	d.SupplementaryFiles = supplementaryFiles
+	return dataset, nil
+}
 
-	return d, nil
+func (c *Client) downloadStoredInZebedee(download Download) bool {
+	return download.URI == ""
+}
+
+func (c *Client) supplementaryFileStoredInZebedee(supplementaryFile SupplementaryFile) bool {
+	return supplementaryFile.URI == ""
 }
 
 func (c *Client) GetHomepageContent(ctx context.Context, userAccessToken, collectionID, lang, path string) (HomepageContent, error) {
@@ -308,6 +304,22 @@ func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, collectionID
 	}
 
 	return pt, nil
+}
+
+// GetPageDescription retrieves a page description from zebedee
+func (c *Client) GetPageDescription(ctx context.Context, userAccessToken, collectionID, lang, uri string) (PageDescription, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri+"&description")
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
+	if err != nil {
+		return PageDescription{}, err
+	}
+
+	var desc PageDescription
+	if err = json.Unmarshal(b, &desc); err != nil {
+		return desc, err
+	}
+
+	return desc, nil
 }
 
 func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, collectionID, lang, uri string) (TimeseriesMainFigure, error) {
@@ -377,9 +389,7 @@ func (c *Client) GetCollection(ctx context.Context, userAccessToken, collectionI
 }
 
 // GetBulletin retrieves a bulletin from zebedee
-func (c *Client) GetBulletin(ctx context.Context, userAccessToken, lang, uri string) (Bulletin, error) {
-	collectionID := ""
-
+func (c *Client) GetBulletin(ctx context.Context, userAccessToken, collectionID, lang, uri string) (Bulletin, error) {
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
@@ -435,6 +445,59 @@ func (c *Client) GetBulletin(ctx context.Context, userAccessToken, lang, uri str
 	return bulletin, nil
 }
 
+// GetRelease retrieves a release from zebedee
+func (c *Client) GetRelease(ctx context.Context, userAccessToken, collectionID, lang, uri string) (Release, error) {
+	// Ensure uri starts with /
+	cleanUri := filepath.Clean("/" + uri)
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+cleanUri)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
+	if err != nil {
+		return Release{}, err
+	}
+
+	var release Release
+	if err = json.Unmarshal(b, &release); err != nil {
+		return release, err
+	}
+
+	related := [][]Link{
+		release.RelatedDocuments,
+		release.RelatedDatasets,
+		release.RelatedMethodology,
+		release.RelatedMethodologyArticle,
+		release.Links,
+	}
+
+	// Concurrently resolve any URIs where we need more data from another page
+	var wg sync.WaitGroup
+	// We use this buffered channel to limit the number of concurrent calls we make to zebedee
+	sem := make(chan int, 10)
+
+	for _, element := range related {
+		for i, e := range element {
+			sem <- 1
+			wg.Add(1)
+			go func(i int, e Link, element []Link) {
+				defer func() {
+					<-sem
+					wg.Done()
+				}()
+				t, err := c.GetPageDescription(ctx, userAccessToken, collectionID, lang, e.URI)
+				if err == nil {
+					element[i].Title = t.Description.Title
+					if t.Description.Edition != "" {
+						element[i].Title += fmt.Sprintf(": %s", t.Description.Edition)
+					}
+					element[i].Summary = t.Description.Summary
+				}
+			}(i, e, element)
+		}
+	}
+	wg.Wait()
+
+	return release, nil
+}
+
 // GetResourceBody returns body of a resource e.g. JSON definition of a table
 func (c *Client) GetResourceBody(ctx context.Context, userAccessToken, collectionID, lang, uri string) ([]byte, error) {
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/resource", "uri="+uri)
@@ -467,6 +530,30 @@ func (c *Client) GetPublishedData(ctx context.Context, uriString string) ([]byte
 	}
 
 	return content, nil
+}
+
+// GetPublishedIndex returns PublishedIndex
+func (c *Client) GetPublishedIndex(ctx context.Context, params *PublishedIndexRequestParams) (PublishedIndex, error) {
+	reqURL := "/publishedindex"
+
+	if params != nil {
+		reqURL = fmt.Sprintf("%s?offset=%d", reqURL, params.Offset)
+		if params.Limit != nil {
+			reqURL = fmt.Sprintf("%s&limit=%d", reqURL, *(params.Limit))
+		}
+	}
+
+	b, _, err := c.get(ctx, "", reqURL)
+	if err != nil {
+		return PublishedIndex{}, err
+	}
+
+	var publishedIndex PublishedIndex
+	if err = json.Unmarshal(b, &publishedIndex); err != nil {
+		return publishedIndex, err
+	}
+
+	return publishedIndex, nil
 }
 
 // closeResponseBody closes the response body and logs an error if unsuccessful

@@ -5,24 +5,29 @@ package mock
 
 import (
 	"context"
+	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	"sync"
 )
 
-// GraphQLClientMock is a mock implementation of GraphQLClient.
+// Ensure, that GraphQLClientMock does implement cantabular.GraphQLClient.
+// If this is not the case, regenerate this file with moq.
+var _ cantabular.GraphQLClient = &GraphQLClientMock{}
+
+// GraphQLClientMock is a mock implementation of cantabular.GraphQLClient.
 //
-// 	func TestSomethingThatUsesGraphQLClient(t *testing.T) {
+//	func TestSomethingThatUsesGraphQLClient(t *testing.T) {
 //
-// 		// make and configure a mocked GraphQLClient
-// 		mockedGraphQLClient := &GraphQLClientMock{
-// 			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
-// 				panic("mock out the Query method")
-// 			},
-// 		}
+//		// make and configure a mocked cantabular.GraphQLClient
+//		mockedGraphQLClient := &GraphQLClientMock{
+//			QueryFunc: func(ctx context.Context, query interface{}, vars map[string]interface{}) error {
+//				panic("mock out the Query method")
+//			},
+//		}
 //
-// 		// use mockedGraphQLClient in code that requires GraphQLClient
-// 		// and then make assertions.
+//		// use mockedGraphQLClient in code that requires cantabular.GraphQLClient
+//		// and then make assertions.
 //
-// 	}
+//	}
 type GraphQLClientMock struct {
 	// QueryFunc mocks the Query method.
 	QueryFunc func(ctx context.Context, query interface{}, vars map[string]interface{}) error
@@ -64,7 +69,8 @@ func (mock *GraphQLClientMock) Query(ctx context.Context, query interface{}, var
 
 // QueryCalls gets all the calls that were made to Query.
 // Check the length with:
-//     len(mockedGraphQLClient.QueryCalls())
+//
+//	len(mockedGraphQLClient.QueryCalls())
 func (mock *GraphQLClientMock) QueryCalls() []struct {
 	Ctx   context.Context
 	Query interface{}

@@ -4,18 +4,21 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
 	"github.com/ONSdigital/dp-api-clients-go/v2/clientlog"
+	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dprequest "github.com/ONSdigital/dp-net/request"
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
@@ -109,6 +112,62 @@ func closeResponseBody(ctx context.Context, resp *http.Response) {
 	}
 }
 
+// GetFilter makes an authorised request to GET /filters
+func (c *Client) GetFilter(ctx context.Context, input GetFilterInput) (*GetFilterResponse, error) {
+	uri := fmt.Sprintf("%s/filters/%s", c.hcCli.URL, input.FilterID)
+	clientlog.Do(ctx, "retrieving filter", service, uri)
+
+	res, err := c.doGetWithAuthHeaders(
+		ctx,
+		input.UserAuthToken,
+		input.ServiceAuthToken,
+		input.CollectionID,
+		uri,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to do request")
+	}
+
+	defer closeResponseBody(ctx, res)
+
+	eTag, err := headers.GetResponseETag(res)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return nil, errors.Wrap(err, "failed to get ETag header")
+	}
+
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read response body")
+	}
+
+	logData := log.Data{
+		"uri":           uri,
+		"response_body": string(b),
+	}
+
+	resp := GetFilterResponse{
+		ETag: eTag,
+	}
+
+	if err := json.Unmarshal(b, &resp); err != nil {
+		return nil, dperrors.New(
+			errors.Wrap(err, "failed to unmarshal response"),
+			res.StatusCode,
+			logData,
+		)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, dperrors.New(
+			errors.Errorf("error(s) returned by %s", uri),
+			res.StatusCode,
+			logData,
+		)
+	}
+
+	return &resp, nil
+}
+
 // GetOutput returns a filter output job for a given filter output id, unmarshalled as a Model struct
 func (c *Client) GetOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID string) (m Model, err error) {
 	b, err := c.GetOutputBytes(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, filterOutputID)
@@ -141,7 +200,6 @@ func (c *Client) GetOutputBytes(ctx context.Context, userAuthToken, serviceAuthT
 
 // UpdateFilterOutput performs a PUT operation to update the filter with the provided filterOutput model
 func (c *Client) UpdateFilterOutput(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, filterJobID string, model *Model) error {
-
 	b, err := json.Marshal(model)
 	if err != nil {
 		return err
@@ -394,7 +452,6 @@ func (c *Client) GetDimensionOptionsInBatches(ctx context.Context, userAuthToken
 // If checkETag is true, then the ETag will be validated for each batch call. If it changes from one batch to another, an ErrBatchETagMismatch error will be returned.
 // Unless your processBatch function performs some call to modify the same filter, it is recommended to set checkETag to true, and you may retry this call if it fails with ErrBatchETagMismatch
 func (c *Client) GetDimensionOptionsBatchProcess(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string, processBatch DimensionOptionsBatchProcessor, batchSize, maxWorkers int, checkETag bool) (eTag string, err error) {
-
 	isFirstGet := true
 	eTag = ""
 
@@ -422,6 +479,114 @@ func (c *Client) GetDimensionOptionsBatchProcess(ctx context.Context, userAuthTo
 	return eTag, batch.ProcessInConcurrentBatches(batchGetter, batchProcessor, batchSize, maxWorkers)
 }
 
+// DeleteDimensionOptions completely removes the options array from a given dimension
+func (c *Client) DeleteDimensionOptions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name string) (string, error) {
+	logData := log.Data{
+		"filter_id":      filterID,
+		"dimension_name": name,
+	}
+
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options", c.hcCli.URL, filterID, name)
+	clientlog.Do(ctx, "deleting selected dimension options", service, uri)
+
+	res, err := c.doDeleteWithAuthHeadersAndWithDownloadToken(ctx, userAuthToken, serviceAuthToken, collectionID, uri)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to delete dimension options")
+	}
+
+	defer closeResponseBody(ctx, res)
+
+	if res.StatusCode != http.StatusNoContent {
+		return "", dperrors.New(
+			errors.Wrap(&ErrInvalidFilterAPIResponse{http.StatusNoContent, res.StatusCode, uri}, "unexpected response"),
+			res.StatusCode,
+			logData,
+		)
+	}
+
+	eTag, err := headers.GetResponseETag(res)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		dperrors.New(
+			errors.Wrap(err, "no ETag header found"),
+			res.StatusCode,
+			logData,
+		)
+	}
+	return eTag, err
+}
+
+// CreateFlexibleBlueprint creates a flexible filter blueprint and returns the associated filterID and eTag
+func (c *Client) CreateFlexibleBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, dimensions []ModelDimension, population_type string) (filterID, eTag string, err error) {
+	ver, err := strconv.Atoi(version)
+	if err != nil {
+		return "", "", err
+	}
+
+	cb := createFlexBlueprintRequest{
+		Dimensions:     dimensions,
+		Dataset:        Dataset{DatasetID: datasetID, Edition: edition, Version: ver},
+		PopulationType: population_type,
+	}
+
+	reqBody, err := json.Marshal(cb)
+	if err != nil {
+		return "", "", err
+	}
+
+	respBody, eTag, err := c.postBlueprint(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, reqBody)
+	if err != nil {
+		return "", "", err
+	}
+
+	var respData createFlexBlueprintResponse
+	if err = json.Unmarshal(respBody, &respData); err != nil {
+		return "", "", err
+	}
+
+	return respData.FilterID, eTag, nil
+}
+
+// CreateFlexibleBlueprintCustom creates a flexible filter blueprint with the 'custom' flag set to true
+// and returns the associated filterID and eTag
+func (c *Client) CreateFlexibleBlueprintCustom(ctx context.Context, uAuthToken, svcAuthToken, dlServiceToken string, req CreateFlexBlueprintCustomRequest) (filterID, eTag string, err error) {
+	r := struct {
+		CreateFlexBlueprintCustomRequest
+		Custom bool `json:"custom"`
+	}{
+		CreateFlexBlueprintCustomRequest: req,
+		Custom:                           true,
+	}
+
+	reqBody, err := json.Marshal(r)
+	if err != nil {
+		return
+	}
+
+	respBody, eTag, err := c.postBlueprint(
+		ctx,
+		uAuthToken,
+		svcAuthToken,
+		dlServiceToken,
+		req.CollectionID,
+		req.Dataset.DatasetID,
+		req.Dataset.Edition,
+		strconv.Itoa(req.Dataset.Version),
+		reqBody,
+	)
+	if err != nil {
+		return
+	}
+
+	var resp createFlexBlueprintResponse
+	if err = json.Unmarshal(respBody, &resp); err != nil {
+		return
+	}
+
+	filterID = resp.FilterID
+
+	return
+}
+
 // CreateBlueprint creates a filter blueprint and returns the associated filterID and eTag
 func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, names []string) (filterID, eTag string, err error) {
 	ver, err := strconv.Atoi(version)
@@ -429,21 +594,90 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		return "", "", err
 	}
 
-	cb := CreateBlueprint{Dataset: Dataset{DatasetID: datasetID, Edition: edition, Version: ver}}
-
-	var dimensions []ModelDimension
-	for _, name := range names {
-		dimensions = append(dimensions, ModelDimension{Name: name})
+	dimensions := make([]ModelDimension, len(names))
+	for i, name := range names {
+		dimensions[i] = ModelDimension{Name: name}
 	}
 
-	cb.Dimensions = dimensions
+	cb := createBlueprint{
+		Dimensions: dimensions,
+		Dataset:    Dataset{DatasetID: datasetID, Edition: edition, Version: ver},
+	}
 
-	b, err := json.Marshal(cb)
+	reqBody, err := json.Marshal(cb)
 	if err != nil {
 		return "", "", err
 	}
 
+	respBody, eTag, err := c.postBlueprint(ctx, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version, reqBody)
+	if err != nil {
+		return "", "", err
+	}
+
+	if err = json.Unmarshal(respBody, &cb); err != nil {
+		return "", "", err
+	}
+
+	return cb.FilterID, eTag, nil
+}
+
+func (c *Client) CreateCustomFilter(ctx context.Context, userAuthToken, serviceAuthToken, populationType string) (filterID string, err error) {
+	uri := c.hcCli.URL + "/custom/filters"
+
+	clientlog.Do(ctx, "attempting to create custom filter ", service, uri, log.Data{
+		"method":         "POST",
+		"populationType": populationType,
+	})
+
+	body := struct {
+		PopulationType string `json:"population_type"`
+	}{
+		PopulationType: populationType,
+	}
+
+	b, err := json.Marshal(body)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
+	if err != nil {
+		return "", err
+	}
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return "", fmt.Errorf("failed to set auth token: %w", err)
+	}
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return "", fmt.Errorf("failed to set service auth token: %w", err)
+	}
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return "", err
+	}
+
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusCreated {
+		return "", ErrInvalidFilterAPIResponse{ExpectedCode: http.StatusCreated, ActualCode: resp.StatusCode, URI: uri}
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	var fresp createFlexBlueprintResponse
+	if err = json.Unmarshal(respBody, &fresp); err != nil {
+		return
+	}
+
+	filterID = fresp.FilterID
+	return
+}
+
+func (c *Client) postBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID, datasetID, edition, version string, reqBody []byte) ([]byte, string, error) {
 	uri := c.hcCli.URL + "/filters"
+
 	clientlog.Do(ctx, "attempting to create filter blueprint", service, uri, log.Data{
 		"method":    "POST",
 		"datasetID": datasetID,
@@ -451,54 +685,179 @@ func (c *Client) CreateBlueprint(ctx context.Context, userAuthToken, serviceAuth
 		"version":   version,
 	})
 
-	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(b))
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(reqBody))
 	if err != nil {
-		return "", "", err
+		return nil, "", err
 	}
 
 	if err = headers.SetCollectionID(req, collectionID); err != nil {
-		return "", "", fmt.Errorf("failed to set collection id: %w", err)
+		return nil, "", fmt.Errorf("failed to set collection id: %w", err)
 	}
 	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
-		return "", "", fmt.Errorf("failed to set auth token: %w", err)
+		return nil, "", fmt.Errorf("failed to set auth token: %w", err)
 	}
 	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
-		return "", "", fmt.Errorf("failed to set service auth token: %w", err)
+		return nil, "", fmt.Errorf("failed to set service auth token: %w", err)
 	}
 	if err = headers.SetDownloadServiceToken(req, downloadServiceToken); err != nil {
-		return "", "", fmt.Errorf("failed to set download service token: %w", err)
+		return nil, "", fmt.Errorf("failed to set download service token: %w", err)
 	}
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
-		return "", "", err
+		return nil, "", err
 	}
 
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", "", ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
+		return nil, "", ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
 	}
 
-	eTag, err = headers.GetResponseETag(resp)
+	eTag, err := headers.GetResponseETag(resp)
 	if err != nil && err != headers.ErrHeaderNotFound {
-		return "", "", err
+		return nil, "", err
 	}
 
-	b, err = ioutil.ReadAll(resp.Body)
+	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", "", err
+		return nil, "", err
 	}
-
-	if err = json.Unmarshal(b, &cb); err != nil {
-		return "", "", err
-	}
-
-	return cb.FilterID, eTag, nil
+	return data, eTag, nil
 }
 
 // UpdateBlueprint will update a blueprint with a given filter model, providing the required IfMatch value to be sure the update is done in the expected object
 func (c *Client) UpdateBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID string, m Model, doSubmit bool, ifMatch string) (Model, string, error) {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return m, "", err
+	}
+
+	uri := fmt.Sprintf("%s/filters/%s", c.hcCli.URL, m.FilterID)
+
+	if doSubmit {
+		uri += "?submitted=true"
+	}
+
+	clientlog.Do(ctx, "updating filter job", service, uri, log.Data{
+		"method": "PUT",
+		"body":   string(b),
+	})
+
+	req, err := http.NewRequest("PUT", uri, bytes.NewBuffer(b))
+	if err != nil {
+		return m, "", err
+	}
+
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return m, "", fmt.Errorf("failed to set auth token: %w", err)
+	}
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return m, "", fmt.Errorf("failed to set service auth token: %w", err)
+	}
+	if err = headers.SetDownloadServiceToken(req, downloadServiceToken); err != nil {
+		return m, "", fmt.Errorf("failed to set download service token: %w", err)
+	}
+	if err = headers.SetIfMatch(req, ifMatch); err != nil {
+		return m, "", fmt.Errorf("failed to set if match: %w", err)
+	}
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return m, "", err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return m, "", ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+	}
+
+	eTag, err := headers.GetResponseETag(resp)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return m, "", err
+	}
+
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return m, "", err
+	}
+
+	if err = json.Unmarshal(b, &m); err != nil {
+		return m, "", err
+	}
+
+	return m, eTag, nil
+}
+
+// SubmitFilter function to submit the request to submit a filter for a cantabular dataset.
+// Should POST to /filters/{filterid}/submit in dp-cantabular-filter-flex-api microservice.
+func (c *Client) SubmitFilter(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, ifMatch string, sfr SubmitFilterRequest) (*SubmitFilterResponse, string, error) {
+	b, err := json.Marshal(sfr)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "could not marshal submit filter request")
+	}
+
+	uri := fmt.Sprintf("%s/filters/%s/submit", c.hcCli.URL, sfr.FilterID)
+
+	clientlog.Do(ctx, "updating filter job", service, uri, log.Data{
+		"method": http.MethodPost,
+		"body":   string(b),
+	})
+
+	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, "", errors.Wrap(err, "could not create a new POST request")
+	}
+
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return nil, "", errors.Wrap(err, "failed to set auth token")
+	}
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return nil, "", errors.Wrap(err, "failed to set service auth token")
+	}
+	if err = headers.SetDownloadServiceToken(req, downloadServiceToken); err != nil {
+		return nil, "", errors.Wrap(err, "failed to set download service token")
+	}
+	if err = headers.SetIfMatch(req, ifMatch); err != nil {
+		return nil, "", errors.Wrap(err, "failed to set if match")
+	}
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to create submit request")
+	}
+	defer closeResponseBody(ctx, resp)
+
+	eTag, err := headers.GetResponseETag(resp)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return nil, "", errors.Wrap(err, "no ETag header found")
+	}
+
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to read the response body")
+	}
+
+	if resp.StatusCode != http.StatusAccepted {
+		return nil, "", dperrors.New(
+			errors.Errorf("error(s) returned by %s", uri),
+			resp.StatusCode,
+			log.Data{"response_body": string(b)},
+		)
+	}
+
+	var r *SubmitFilterResponse
+	if err = json.Unmarshal(b, &r); err != nil {
+		return nil, "", errors.Wrap(err, "failed to unmarshal the response")
+	}
+
+	return r, eTag, nil
+}
+
+// UpdateFlexBlueprint will update a blueprint with a given filter model, providing the required IfMatch value to be sure the update is done in the expected object
+func (c *Client) UpdateFlexBlueprint(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceToken, collectionID string, m Model, doSubmit bool, populationType string, ifMatch string) (Model, string, error) {
+	m.PopulationType = populationType
+
 	b, err := json.Marshal(m)
 	if err != nil {
 		return m, "", err
@@ -742,6 +1101,67 @@ func (c *Client) PatchDimensionValues(ctx context.Context, userAuthToken, servic
 	return latestETag, nil
 }
 
+func (c *Client) UpdateDimensions(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, name, ifMatch string, dimension Dimension) (dim Dimension, eTag string, err error) {
+	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s", c.hcCli.URL, id, name)
+	clientlog.Do(ctx, "updating filter dimension", service, uri, log.Data{
+		"method":    http.MethodPut,
+		"dimension": name,
+	})
+
+	reqBody, err := json.Marshal(dimension)
+	if err != nil {
+		return dimension, "", err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, uri, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return dimension, "", err
+	}
+
+	if err = headers.SetCollectionID(req, collectionID); err != nil {
+		return dimension, "", fmt.Errorf("failed to set collection id: %w", err)
+	}
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return dimension, "", fmt.Errorf("failed to set auth token: %w", err)
+	}
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return dimension, "", fmt.Errorf("failed to set service auth token: %w", err)
+	}
+	if err = headers.SetIfMatch(req, ifMatch); err != nil {
+		return dimension, "", fmt.Errorf("failed to set if match: %w", err)
+	}
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return dimension, "", err
+	}
+
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusOK {
+		err = &ErrInvalidFilterAPIResponse{http.StatusOK, resp.StatusCode, uri}
+		return dimension, "", err
+	}
+
+	eTag, err = headers.GetResponseETag(resp)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return dimension, "", err
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return dimension, "", err
+	}
+
+	var updatedDimension Dimension
+
+	if err = json.Unmarshal(respBody, &updatedDimension); err != nil {
+		return updatedDimension, "", err
+	}
+
+	return updatedDimension, eTag, nil
+}
+
 // RemoveDimensionValue removes a particular value to a filter job for a given filterID and name
 func (c *Client) RemoveDimensionValue(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, filterID, name, value, ifMatch string) (eTag string, err error) {
 	uri := fmt.Sprintf("%s/filters/%s/dimensions/%s/options/%s", c.hcCli.URL, filterID, name, value)
@@ -875,6 +1295,69 @@ func (c *Client) AddDimension(ctx context.Context, userAuthToken, serviceAuthTok
 	eTag, err = headers.GetResponseETag(resp)
 	if err != nil && err != headers.ErrHeaderNotFound {
 		return "", err
+	}
+
+	return eTag, nil
+}
+
+// AddFlexDimension adds a new dimension to a filter job, with additional Cantabular-only fields
+func (c *Client) AddFlexDimension(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, name string, options []string, isAreaType bool, ifMatch string) (eTag string, err error) {
+	uri := fmt.Sprintf("%s/filters/%s/dimensions", c.hcCli.URL, id)
+
+	clientlog.Do(ctx, "adding dimension to filter job", service, uri, log.Data{
+		"method":       "POST",
+		"filter":       id,
+		"dimension":    name,
+		"options":      options,
+		"is_area_type": isAreaType,
+	})
+
+	reqBody, err := json.Marshal(createFlexDimensionRequest{
+		Name:       name,
+		IsAreaType: isAreaType,
+		Options:    options,
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal flex request body: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return "", fmt.Errorf("failed to make request to filter API: %w", err)
+	}
+
+	if err = headers.SetCollectionID(req, collectionID); err != nil {
+		return "", fmt.Errorf("failed to set collection id: %w", err)
+	}
+
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return "", fmt.Errorf("failed to set auth token: %w", err)
+	}
+
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return "", fmt.Errorf("failed to set service auth token: %w", err)
+	}
+
+	if err = headers.SetIfMatch(req, ifMatch); err != nil {
+		return "", fmt.Errorf("failed to set if match: %w", err)
+	}
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return "", fmt.Errorf("failed to make filter request: %w", err)
+	}
+
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode != http.StatusCreated {
+		err = &ErrInvalidFilterAPIResponse{http.StatusCreated, resp.StatusCode, uri}
+		return "", err
+	}
+
+	eTag, err = headers.GetResponseETag(resp)
+	if err != nil && err != headers.ErrHeaderNotFound {
+		return "", fmt.Errorf("unable to get reponse etag: %w", err)
 	}
 
 	return eTag, nil
@@ -1046,6 +1529,26 @@ func (c *Client) doGetWithAuthHeadersAndWithDownloadToken(ctx context.Context, u
 	}
 	if err = headers.SetDownloadServiceToken(req, downloadServiceAuthToken); err != nil {
 		return nil, fmt.Errorf("failed to set download service token: %w", err)
+	}
+	return c.hcCli.Client.Do(ctx, req)
+
+} // doDeleteWithAuthHeadersAndWithDownloadToken executes clienter.Do setting the user and service authentication and download token as a request header.
+// Returns the http.Response and any error.
+// It is the caller's responsibility to ensure response.Body is closed on completion.
+func (c *Client) doDeleteWithAuthHeadersAndWithDownloadToken(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, uri string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodDelete, uri, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = headers.SetCollectionID(req, collectionID); err != nil {
+		return nil, fmt.Errorf("failed to set collection id: %w", err)
+	}
+	if err = headers.SetAuthToken(req, userAuthToken); err != nil {
+		return nil, fmt.Errorf("failed to set auth token: %w", err)
+	}
+	if err = headers.SetServiceAuthToken(req, serviceAuthToken); err != nil {
+		return nil, fmt.Errorf("failed to set service auth token: %w", err)
 	}
 	return c.hcCli.Client.Do(ctx, req)
 }

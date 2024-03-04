@@ -1,6 +1,8 @@
 package filter
 
-import "time"
+import (
+	"time"
+)
 
 const (
 	EventFilterOutputQueryStart  = "FilterOutputQueryStart"
@@ -20,8 +22,16 @@ type Dimensions struct {
 
 // Dimension represents a dimension response from the filter api
 type Dimension struct {
-	Name string `json:"name"`
-	URI  string `json:"dimension_url"`
+	Name                  string   `json:"name"`
+	ID                    string   `json:"id,omitempty"`
+	Label                 string   `json:"label,omitempty"`
+	URI                   string   `json:"dimension_url"`
+	IsAreaType            *bool    `json:"is_area_type,omitempty"`
+	Options               []string `json:"options,omitempty"`
+	DefaultCategorisation string   `json:"default_categorisation"`
+	FilterByParent        string   `json:"filter_by_parent,omitempty"`
+	QualityStatementText  string   `json:"quality_statement_text,omitempty"`
+	QualitySummaryURL     string   `json:"quality_summary_url,omitempty"`
 }
 
 // DimensionOption represents a dimension option from the filter api
@@ -39,11 +49,24 @@ type DimensionOptions struct {
 	TotalCount int               `json:"total_count"`
 }
 
-// CreateBlueprint represents the fields required to create a filter blueprint
-type CreateBlueprint struct {
+// createBlueprint represents the fields required to create a filter blueprint
+type createBlueprint struct {
 	Dataset    Dataset          `json:"dataset"`
 	Dimensions []ModelDimension `json:"dimensions"`
 	FilterID   string           `json:"filter_id"`
+}
+
+type createFlexBlueprintRequest struct {
+	Dataset        Dataset          `json:"dataset"`
+	Dimensions     []ModelDimension `json:"dimensions"`
+	PopulationType string           `json:"population_type"`
+}
+
+// createFlexDimensionRequest represents the fields required to add a dimension to a flex filter
+type createFlexDimensionRequest struct {
+	Name       string   `json:"name"`
+	IsAreaType bool     `json:"is_area_type"`
+	Options    []string `json:"options"`
 }
 
 // Dataset represents the dataset fields required to create a filter blueprint
@@ -55,17 +78,21 @@ type Dataset struct {
 
 // Model represents a model returned from the filter api
 type Model struct {
-	FilterID    string              `json:"filter_id"`
-	InstanceID  string              `json:"instance_id"`
-	Links       Links               `json:"links"`
-	DatasetID   string              `json:"dataset_id"`
-	Edition     string              `json:"edition"`
-	Version     string              `json:"version"`
-	State       string              `json:"state"`
-	Dimensions  []ModelDimension    `json:"dimensions,omitempty"`
-	Downloads   map[string]Download `json:"downloads,omitempty"`
-	Events      []Event             `json:"events,omitempty"`
-	IsPublished bool                `json:"published"`
+	FilterID       string              `json:"filter_id"`
+	InstanceID     string              `json:"instance_id"`
+	Links          Links               `json:"links"`
+	DatasetID      string              `json:"dataset_id"`
+	Dataset        Dataset             `json:"dataset,omitempty"`
+	Edition        string              `json:"edition"`
+	Version        string              `json:"version"`
+	State          string              `json:"state"`
+	Dimensions     []ModelDimension    `json:"dimensions,omitempty"`
+	Downloads      map[string]Download `json:"downloads,omitempty"`
+	Events         []Event             `json:"events,omitempty"`
+	IsPublished    bool                `json:"published"`
+	PopulationType string              `json:"population_type,omitempty"`
+	Type           string              `json:"type"`
+	Custom         *bool               `json:"custom,omitempty"`
 }
 
 // Links represents a links object on the filter api response
@@ -83,9 +110,16 @@ type Link struct {
 
 // ModelDimension represents a dimension to be filtered upon
 type ModelDimension struct {
-	Name    string   `json:"name"`
-	Options []string `json:"options"`
-	Values  []string `json:"values"`
+	Name                 string   `json:"name"`
+	ID                   string   `json:"id"`
+	Label                string   `json:"label"`
+	URI                  string   `json:"dimension_url,omitempty"`
+	IsAreaType           *bool    `json:"is_area_type,omitempty"`
+	Options              []string `json:"options"`
+	Values               []string `json:"values"`
+	FilterByParent       string   `json:"filter_by_parent,omitempty"`
+	QualityStatementText string   `json:"quality_statement_text,omitempty"`
+	QualitySummaryURL    string   `json:"quality_summary_url,omitempty"`
 }
 
 // Download represents a download within a filter from api response
@@ -109,4 +143,18 @@ type Preview struct {
 	NumberOfRows    int        `json:"number_of_rows"`
 	NumberOfColumns int        `json:"number_of_columns"`
 	Rows            [][]string `json:"rows"`
+}
+
+type SubmitFilterRequest struct {
+	FilterID       string             `json:"filter_id"`
+	Dimensions     []DimensionOptions `json:"dimension_options,omitempty"`
+	PopulationType string             `json:"population_type"`
+}
+
+type SubmitFilterResponse struct {
+	InstanceID     string      `json:"instance_id"`
+	FilterOutputID string      `json:"filter_output_id"`
+	Dataset        Dataset     `json:"dataset"`
+	Links          FilterLinks `json:"links"`
+	PopulationType string      `json:"population_type"`
 }

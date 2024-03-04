@@ -11,8 +11,8 @@ import (
 
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
-	dphttp "github.com/ONSdigital/dp-net/http"
-	dprequest "github.com/ONSdigital/dp-net/request"
+	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	dprequest "github.com/ONSdigital/dp-net/v2/request"
 	"github.com/ONSdigital/log.go/v2/log"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -37,11 +37,24 @@ func checkRequest(httpClient *dphttp.ClienterMock, callIndex int, expectedMethod
 
 func TestGetRecipe(t *testing.T) {
 	recipeID := "testRecipe"
-	recipeBody := `{"id":"` + recipeID + `", "format": "cantabular_table", "cantabular_blob": "123"}`
+	recipeBody := `
+	{
+		"id":"` + recipeID + `",
+		"format": "cantabular_table",
+		"cantabular_blob": "123",
+		"output_instances":[{
+			"lowest_geography":"lowest_geo"
+		}]
+	}`
 	expectedRecipe := Recipe{
 		ID:             recipeID,
 		Format:         "cantabular_table",
 		CantabularBlob: "123",
+		OutputInstances: []Instance{
+			{
+				LowestGeography: "lowest_geo",
+			},
+		},
 	}
 
 	Convey("Given that 200 OK is returned by recipe API with a valid recipe body", t, func() {
