@@ -270,6 +270,11 @@ func TestSetETag(t *testing.T) {
 	execSetHeaderTestCases(t, cases)
 }
 
+func TestSetAccept(t *testing.T) {
+	cases := setterTestCases(t, "SetAccept", acceptHeader, SetAccept, false)
+	execSetHeaderTestCases(t, cases)
+}
+
 func getterTestCases(t *testing.T, fnName, headerName string, fnUnderTest func(req *http.Request) (string, error)) []getHeaderTestCase {
 	return []getHeaderTestCase{
 		{
@@ -371,6 +376,11 @@ func TestGetIfMatch(t *testing.T) {
 
 func TestGetETag(t *testing.T) {
 	cases := getterTestCases(t, "GetETag", eTagHeader, GetETag)
+	execGetHeaderTestCases(t, cases)
+}
+
+func TestGetAccept(t *testing.T) {
+	cases := getterTestCases(t, "GetAccept", acceptHeader, GetAccept)
 	execGetHeaderTestCases(t, cases)
 }
 
