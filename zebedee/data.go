@@ -106,6 +106,7 @@ type Description struct {
 	CancellationNotice []string `json:"cancellationNotice,omitempty"`
 	Published          bool     `json:"published,omitempty"`
 	ProvisionalDate    string   `json:"provisionalDate,omitempty"`
+	Abstract           string   `json:"_abstract,omitempty"`
 }
 
 // Contact represents a contact within dataset landing page
