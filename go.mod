@@ -1,6 +1,6 @@
 module github.com/ONSdigital/dp-api-clients-go/v2
 
-go 1.21
+go 1.22
 
 require (
 	github.com/ONSdigital/dp-healthcheck v1.6.1
