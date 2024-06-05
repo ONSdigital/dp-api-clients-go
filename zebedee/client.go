@@ -488,7 +488,11 @@ func (c *Client) GetRelease(ctx context.Context, userAccessToken, collectionID, 
 					if t.Description.Edition != "" {
 						element[i].Title += fmt.Sprintf(": %s", t.Description.Edition)
 					}
-					element[i].Summary = t.Description.Summary
+					if t.Description.Summary == "" {
+						element[i].Summary = t.Description.Abstract
+					} else {
+						element[i].Summary = t.Description.Summary
+					}
 				}
 			}(i, e, element)
 		}
