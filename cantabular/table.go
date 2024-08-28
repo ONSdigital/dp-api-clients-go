@@ -59,11 +59,13 @@ type GetObservationsResponse struct {
 }
 
 type DatasetJSONLinks struct {
-	Self Link `json:"self"`
+	Self            Link  `json:"self"`
+	Version         *Link `json:"version,omitempty"`
+	DatasetMetadata *Link `json:"dataset_metadata,omitempty"`
 }
 
 type Link struct {
-	HREF  string `json:"href"`
+	HREF  string `json:"href,omitempty"`
 	Label string `json:"label,omitempty"`
 	ID    string `json:"id,omitempty"`
 }
