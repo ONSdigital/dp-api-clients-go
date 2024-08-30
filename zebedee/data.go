@@ -30,6 +30,15 @@ type PageTitle struct {
 	URI     string `json:"uri"`
 }
 
+type PageType struct {
+	Type string `json:"type"`
+}
+
+type PageTypeAndMetadata struct {
+	Type        string      `json:"type"`
+	Description Description `json:"description"`
+}
+
 // PageDescription represents the content returned by zebedee when requesting a page description
 type PageDescription struct {
 	URI         string      `json:"uri"`
