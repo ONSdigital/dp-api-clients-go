@@ -306,36 +306,20 @@ func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, collectionID
 	return pt, nil
 }
 
-// GetPageType retrieves the type of content and page title for a given URI from zebedee
-func (c *Client) GetPageType(ctx context.Context, userAccessToken, collectionID, lang, uri string) (PageType, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri+"&type")
+// GetPageData retrieves data about a given page
+func (c *Client) GetPageData(ctx context.Context, userAccessToken, collectionID, lang, uri string) (PageData, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 	if err != nil {
-		return PageType{}, err
+		return PageData{}, err
 	}
 
-	var pt PageType
-	if err = json.Unmarshal(b, &pt); err != nil {
-		return pt, err
+	var pd PageData
+	if err = json.Unmarshal(b, &pd); err != nil {
+		return pd, err
 	}
 
-	return pt, nil
-}
-
-// GetPageTypeAndMetadata retrieves the type of content and page title for a given URI from zebedee
-func (c *Client) GetPageTypeAndMetadata(ctx context.Context, userAccessToken, collectionID, lang, uri string) (PageTypeAndMetadata, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri+"&type")
-	b, _, err := c.get(ctx, userAccessToken, reqURL)
-	if err != nil {
-		return PageTypeAndMetadata{}, err
-	}
-
-	var pt PageTypeAndMetadata
-	if err = json.Unmarshal(b, &pt); err != nil {
-		return pt, err
-	}
-
-	return pt, nil
+	return pd, nil
 }
 
 // GetPageDescription retrieves a page description from zebedee

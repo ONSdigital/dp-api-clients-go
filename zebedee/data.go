@@ -302,3 +302,16 @@ type PublishedIndex struct {
 type PublishedIndexItem struct {
 	URI string `json:"uri"`
 }
+
+// PageData respresents a generic page from Zebedee
+type PageData struct {
+	URI         string        `json:"uri"`
+	Type        string        `json:"type"`
+	Description Description   `json:"description"`
+	RelatedData []RelatedData `json:"relatedData,omitempty"`
+}
+
+// RelatedData represents a list of related data found on certain "content" type (e.g. bulletins) pages in Zebedee
+type RelatedData struct {
+	URI string `json:"uri"`
+}
