@@ -94,10 +94,8 @@ func contentData(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte(`{"title":"baby-names","edition":"2017","uri":"path/to/baby-names/2017"}`))
 	case "pageTitle2":
 		w.Write([]byte(`{"title":"page-title","edition":"2021","uri":"path/to/page-title/2021"}`))
-	case "pageType":
-		w.Write([]byte(`{"type":"bulletin"}`))
-	case "pageTypeAndMetadata":
-		w.Write([]byte(`{"type":"bulletin","description":{"title":"UK Environmental Accounts", "summary":"Measuring the contribution of the environment to the economy","keywords":["emissions","climate"],"metaDescription":"meta2","nationalStatistic":true,"latestRelease":true,"contact":{"email": "contact@ons.gov.uk","name":"Contact","telephone":"+44 (0) 1633 456900"},"releaseDate":"2021-06-02T23:00:00.000Z","nextRelease":"June 2022","edition":"2021"}}`))
+	case "pageData":
+		w.Write([]byte(`{"type":"bulletin","description":{"title":"UK Environmental Accounts", "summary":"Measuring the contribution of the environment to the economy","keywords":["emissions","climate"],"metaDescription":"meta2","nationalStatistic":true,"latestRelease":true,"contact":{"email": "contact@ons.gov.uk","name":"Contact","telephone":"+44 (0) 1633 456900"},"releaseDate":"2021-06-02T23:00:00.000Z","nextRelease":"June 2022","edition":"2021"},"relatedData":[{"uri":"/foo/1"},{"uri":"/bar/1"}]}`))
 	case "pageDescription1":
 		w.Write([]byte(`{"uri":"path/to/page-description","description":{"title":"Page title", "summary":"This is the page summary","keywords":["Economy","Retail"],"metaDescription":"meta","nationalStatistic":true,"latestRelease":true,"contact":{"email": "contact@ons.gov.uk","name":"Contact","telephone":"+44 (0) 1633 456900"},"releaseDate":"2015-09-14T23:00:00.000Z","nextRelease":"13 October 2015","edition":"August 2015"}}`))
 	case "pageDescription2":
@@ -340,34 +338,24 @@ func TestUnitClient(t *testing.T) {
 		So(t.URI, ShouldEqual, "path/to/baby-names/collection")
 	})
 
-	Convey("test getPageType returns a correctly formatted page type", t, func() {
-		t, err := cli.GetPageType(ctx, testAccessToken, "", testLang, "pageType")
-		So(err, ShouldBeNil)
-		So(t.Type, ShouldEqual, "bulletin")
-	})
-
-	Convey("test getPageType returns a correctly formatted page type when using a collection", t, func() {
-		t, err := cli.GetPageType(ctx, testAccessToken, "", testLang, "pageType")
-		So(err, ShouldBeNil)
-		So(t.Type, ShouldEqual, "bulletin")
-	})
-
-	Convey("test GetPageTypeAndMetadata returns a correctly formatted page type and metadata", t, func() {
-		t, err := cli.GetPageTypeAndMetadata(ctx, testAccessToken, "", testLang, "pageTypeAndMetadata")
+	Convey("test GetPageData returns a correctly formatted generic page", t, func() {
+		t, err := cli.GetPageData(ctx, testAccessToken, "", testLang, "pageData")
 		So(err, ShouldBeNil)
 		So(t.Type, ShouldEqual, "bulletin")
 		So(t.Description.Title, ShouldEqual, "UK Environmental Accounts")
 		So(t.Description.Edition, ShouldEqual, "2021")
 		So(t.Description.Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
+		So(t.RelatedData, ShouldHaveLength, 2)
 	})
 
-	Convey("test GetPageTypeAndMetadata returns a correctly formatted page type and metadata when using a collection", t, func() {
-		t, err := cli.GetPageTypeAndMetadata(ctx, testAccessToken, "", testLang, "pageTypeAndMetadata")
+	Convey("test GetPageData returns a correctly formatted generic page when using a collection", t, func() {
+		t, err := cli.GetPageData(ctx, testAccessToken, "", testLang, "pageData")
 		So(err, ShouldBeNil)
 		So(t.Type, ShouldEqual, "bulletin")
 		So(t.Description.Title, ShouldEqual, "UK Environmental Accounts")
 		So(t.Description.Edition, ShouldEqual, "2021")
 		So(t.Description.Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
+		So(t.RelatedData, ShouldHaveLength, 2)
 	})
 
 	Convey("test GetPageDescription", t, func() {
