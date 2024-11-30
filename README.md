@@ -17,6 +17,7 @@ Common client code - in go - for ONS APIs:
 * releasecalendar
 * renderer
 * search
+* table-renderer
 * upload (Static Files)
 
 ## Usage
