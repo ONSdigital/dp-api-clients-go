@@ -1,6 +1,6 @@
 module github.com/ONSdigital/dp-api-clients-go/v2
 
-go 1.22
+go 1.23
 
 require (
 	github.com/ONSdigital/dp-healthcheck v1.6.3
@@ -28,8 +28,8 @@ require (
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/metric v1.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.27.0 // indirect
-	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/net v0.34.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 )
 
 retract [v2.226.0, v2.227.0] // contains breaking code
