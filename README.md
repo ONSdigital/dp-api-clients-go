@@ -1,4 +1,5 @@
-# dp-api-clients-go [![GoDoc](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v2?status.svg)](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v2)
+dp-api-clients-go [![GoDoc](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v2?status.svg)](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v2)
+=====
 
 Common client code - in go - for ONS APIs:
 
@@ -15,8 +16,7 @@ Common client code - in go - for ONS APIs:
 * importapi
 * releasecalendar
 * renderer
-* search (dimension search)
-* site-search (deprecated in favour of [dp-search-api SDK](https://github.com/ONSdigital/dp-search-api/tree/develop/sdk))
+* search
 * upload (Static Files)
 
 ## Usage
@@ -24,7 +24,6 @@ Common client code - in go - for ONS APIs:
 Each client defines two constructor functions: one that creates a new healthcheck client (with a new dp-net/http Clienter), and the other that allows you to provide it externally, so that you can reuse it among different clients.
 
 For example, you may create a new image API client like so:
-
 ```go
     import  "github.com/ONSdigital/dp-api-clients-go/v2/image"
 
@@ -34,7 +33,6 @@ For example, you may create a new image API client like so:
 ```
 
 Or you may create it providing a Healthcheck client:
-
 ```go
     import  "github.com/ONSdigital/dp-api-clients-go/v2/image"
     import  "github.com/ONSdigital/dp-api-clients-go/v2/health"
@@ -65,7 +63,7 @@ Assuming you have a dataset client called `datasetClient`, then you can get all 
 
 ```go
     // obtain all options after aggregating paginated GetOption responses
-    allValues, err := datasetClient.GetOptionsInBatches(ctx, userToken, serviceToken, collectionID, datasetID, edition, version, dimensionName, batchSize, maxWorkers)
+	allValues, err := datasetClient.GetOptionsInBatches(ctx, userToken, serviceToken, collectionID, datasetID, edition, version, dimensionName, batchSize, maxWorkers)
 ```
 
 where `batchSize` is the maximum number of items requested in each batch, and `maxWorkers` is the maximum number of concurrent go-routines.
@@ -78,16 +76,17 @@ Instead of aggregating the results, you may want to perform some different logic
     // processBatch is a function that performs some logic for each batch, and has the ability to abort execution if forceAbort is true or an error is returned.
     var processBatch dataset.OptionsBatchProcessor = func(batch dataset.Options) (forceAbort bool, err error) {
         // <Do something with batch>
-        return false, nil
+		return false, nil
     }
 
     // list of option IDs to obtain (if nil, all options will be provided)
     optionIDs := []string{"option1", "option2", "option3"}
     
-    // call dataset API GetOptionsBatchProcess with the batch processor
-    err = f.DatasetClient.GetOptionsBatchProcess(ctx, userToken, serviceToken, collectionID, datasetID, edition, version, dimensionName, &optionIDs, processBatch, f.maxDatasetOptions, f.BatchMaxWorkers)
-    return idLabelMap, err
+	// call dataset API GetOptionsBatchProcess with the batch processor
+	err = f.DatasetClient.GetOptionsBatchProcess(ctx, userToken, serviceToken, collectionID, datasetID, edition, version, dimensionName, &optionIDs, processBatch, f.maxDatasetOptions, f.BatchMaxWorkers)
+	return idLabelMap, err
 ```
+
 
 ## Package docs
 
@@ -99,6 +98,6 @@ Run tests using `make test`
 
 ## Licence
 
-Copyright ©‎ 2025, Crown Copyright (Office for National Statistics) <https://www.ons.gov.uk>
+Copyright ©‎ 2021, Crown Copyright (Office for National Statistics) (https://www.ons.gov.uk)
 
 Released under MIT license, see [LICENSE](LICENSE.md) for details.

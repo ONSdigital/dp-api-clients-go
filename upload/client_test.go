@@ -11,7 +11,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-api-clients-go/v2/upload"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	"github.com/ONSdigital/dp-net/v2/request"
+	"github.com/ONSdigital/dp-net/v3/request"
 	. "github.com/smartystreets/goconvey/convey"
 	"io"
 	"math/rand"

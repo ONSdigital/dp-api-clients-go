@@ -11,7 +11,7 @@ import (
 
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	dphttp "github.com/ONSdigital/dp-net/v3/http"
 )
 
 func TestNewClient(t *testing.T) {
@@ -63,7 +63,8 @@ func newStubClient(response *http.Response, err error) *dphttp.ClienterMock {
 // includes a dperrors.Error within the chain, and optionally that the status
 // code matches the expected value.
 // Usage:`So(err, shouldBeDPError)`
-//       `So(err, shouldBeDPError, 404)`
+//
+//	`So(err, shouldBeDPError, 404)`
 func shouldBeDPError(actual interface{}, expected ...interface{}) string {
 	err, ok := actual.(error)
 	if !ok {

@@ -17,8 +17,8 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
-	dprequest "github.com/ONSdigital/dp-net/v2/request"
+	dphttp "github.com/ONSdigital/dp-net/v3/http"
+	dprequest "github.com/ONSdigital/dp-net/v3/request"
 )
 
 const (
@@ -2587,7 +2587,7 @@ func TestClient_PutMetadata(t *testing.T) {
 
 			Convey("then the expected error is returned", func() {
 				expectedError := fmt.Sprintf("invalid response: 404 from dataset api: http://localhost:8080%s, body: \"%s\"", expectedUrl, errorMsg)
-				So(err.Error(), ShouldResemble, errors.Errorf(expectedError).Error())
+				So(err.Error(), ShouldResemble, expectedError)
 			})
 
 			Convey("And dphttpclient.Do is called 1 time with expected method, path, headers and body", func() {

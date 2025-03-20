@@ -10,7 +10,7 @@ import (
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabularmetadata"
 
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	dphttp "github.com/ONSdigital/dp-net/v3/http"
 )
 
 // newMockedClient creates a new client with a mocked response for post requests,
