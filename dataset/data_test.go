@@ -27,22 +27,20 @@ func TestMetaData_ToString(t *testing.T) {
 
 func setupMetadata() Metadata {
 	m := Metadata{
-		Version: Version{
-			ReleaseDate: "release date",
-			LatestChanges: []Change{
-				{
-					Description: "change description",
-					Name:        "change name",
-					Type:        "change type",
-				},
+		ReleaseDate: "release date",
+		LatestChanges: []Change{
+			{
+				Description: "change description",
+				Name:        "change name",
+				Type:        "change type",
 			},
-			Downloads: map[string]Download{
-				"download1": {
-					URL:     "url",
-					Size:    "size",
-					Public:  "public",
-					Private: "private",
-				},
+		},
+		Downloads: map[string]Download{
+			"download1": {
+				URL:     "url",
+				Size:    "size",
+				Public:  "public",
+				Private: "private",
 			},
 		},
 		DatasetDetails: DatasetDetails{

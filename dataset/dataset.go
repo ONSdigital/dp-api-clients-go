@@ -16,6 +16,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/batch"
 	"github.com/ONSdigital/dp-api-clients-go/v2/headers"
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
+	"github.com/ONSdigital/dp-dataset-api/models"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 	dprequest "github.com/ONSdigital/dp-net/v2/request"
 	"github.com/pkg/errors"
@@ -542,7 +543,7 @@ func (c *Client) GetVersionsInBatches(ctx context.Context, userAuthToken, servic
 	var processBatch VersionsBatchProcessor = func(b VersionsList) (abort bool, err error) {
 		if len(versions.Items) == 0 { // first batch response being handled
 			versions.TotalCount = b.TotalCount
-			versions.Items = make([]Version, b.TotalCount)
+			versions.Items = make([]models.Version, b.TotalCount)
 			versions.Count = b.TotalCount
 		}
 		if len(versions.Items) < len(b.Items)+b.Offset {
@@ -587,19 +588,19 @@ func (c *Client) GetVersionsBatchProcess(ctx context.Context, userAuthToken, ser
 }
 
 // GetVersion gets a specific version for an edition from the dataset api
-func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (v Version, err error) {
+func (c *Client) GetVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (v models.Version, err error) {
 	v, _, err = c.getVersion(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version)
 	return
 }
 
 // GetVersionWithHeaders gets a specific version for an edition from the dataset api and additional response headers
-func (c *Client) GetVersionWithHeaders(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (v Version, h ResponseHeaders, err error) {
+func (c *Client) GetVersionWithHeaders(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (v models.Version, h ResponseHeaders, err error) {
 	v, resp, err := c.getVersion(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version)
 	h.ETag, _ = headers.GetResponseETag(resp)
 	return
 }
 
-func (c *Client) getVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (v Version, resp *http.Response, err error) {
+func (c *Client) getVersion(ctx context.Context, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, datasetID, edition, version string) (v models.Version, resp *http.Response, err error) {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, datasetID, edition, version)
 
 	resp, err = c.doGetWithAuthHeadersAndWithDownloadToken(ctx, userAuthToken, serviceAuthToken, downloadServiceAuthToken, collectionID, uri)
@@ -624,7 +625,7 @@ func (c *Client) getVersion(ctx context.Context, userAuthToken, serviceAuthToken
 }
 
 // GetInstance returns an instance from the dataset api
-func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID, ifMatch string) (m Instance, eTag string, err error) {
+func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID, ifMatch string) (m models.Instance, eTag string, err error) {
 	b, eTag, err := c.GetInstanceBytes(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, ifMatch)
 	if err != nil {
 		return m, "", err
@@ -663,7 +664,7 @@ func (c *Client) GetInstanceBytes(ctx context.Context, userAuthToken, serviceAut
 }
 
 // PostInstance performs a POST /instances/ request with the provided instance marshalled as body
-func (c *Client) PostInstance(ctx context.Context, serviceAuthToken string, newInstance *NewInstance) (i *Instance, eTag string, err error) {
+func (c *Client) PostInstance(ctx context.Context, serviceAuthToken string, newInstance *NewInstance) (i *models.Instance, eTag string, err error) {
 
 	payload, err := json.Marshal(newInstance)
 	if err != nil {
@@ -687,7 +688,7 @@ func (c *Client) PostInstance(ctx context.Context, serviceAuthToken string, newI
 		return nil, "", err
 	}
 
-	var instance *Instance
+	var instance *models.Instance
 	if err := json.Unmarshal(b, &instance); err != nil {
 		return nil, "", err
 	}
@@ -768,7 +769,7 @@ func (c *Client) GetInstancesInBatches(ctx context.Context, userAuthToken, servi
 	var processBatch InstancesBatchProcessor = func(b Instances) (abort bool, err error) {
 		if len(instances.Items) == 0 { // first batch response being handled
 			instances.TotalCount = b.TotalCount
-			instances.Items = make([]Instance, b.TotalCount)
+			instances.Items = make([]models.Instance, b.TotalCount)
 			instances.Count = b.TotalCount
 		}
 		for i := 0; i < len(b.Items); i++ {
@@ -1154,7 +1155,7 @@ func (c *Client) PatchInstanceDimensionOption(ctx context.Context, serviceAuthTo
 }
 
 // PutVersion update the version
-func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version string, v Version) error {
+func (c *Client) PutVersion(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, datasetID, edition, version string, v models.Version) error {
 	uri := fmt.Sprintf("%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, datasetID, edition, version)
 
 	payload, err := json.Marshal(v)
