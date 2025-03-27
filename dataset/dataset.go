@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -625,7 +626,7 @@ func (c *Client) getVersion(ctx context.Context, userAuthToken, serviceAuthToken
 }
 
 // GetInstance returns an instance from the dataset api
-func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID, ifMatch string) (m models.Instance, eTag string, err error) {
+func (c *Client) GetInstance(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, instanceID, ifMatch string) (m Instance, eTag string, err error) {
 	b, eTag, err := c.GetInstanceBytes(ctx, userAuthToken, serviceAuthToken, collectionID, instanceID, ifMatch)
 	if err != nil {
 		return m, "", err
@@ -664,7 +665,7 @@ func (c *Client) GetInstanceBytes(ctx context.Context, userAuthToken, serviceAut
 }
 
 // PostInstance performs a POST /instances/ request with the provided instance marshalled as body
-func (c *Client) PostInstance(ctx context.Context, serviceAuthToken string, newInstance *NewInstance) (i *models.Instance, eTag string, err error) {
+func (c *Client) PostInstance(ctx context.Context, serviceAuthToken string, newInstance *NewInstance) (i *Instance, eTag string, err error) {
 
 	payload, err := json.Marshal(newInstance)
 	if err != nil {
@@ -688,7 +689,7 @@ func (c *Client) PostInstance(ctx context.Context, serviceAuthToken string, newI
 		return nil, "", err
 	}
 
-	var instance *models.Instance
+	var instance *Instance
 	if err := json.Unmarshal(b, &instance); err != nil {
 		return nil, "", err
 	}
@@ -769,7 +770,7 @@ func (c *Client) GetInstancesInBatches(ctx context.Context, userAuthToken, servi
 	var processBatch InstancesBatchProcessor = func(b Instances) (abort bool, err error) {
 		if len(instances.Items) == 0 { // first batch response being handled
 			instances.TotalCount = b.TotalCount
-			instances.Items = make([]models.Instance, b.TotalCount)
+			instances.Items = make([]Instance, b.TotalCount)
 			instances.Count = b.TotalCount
 		}
 		for i := 0; i < len(b.Items); i++ {
@@ -1181,7 +1182,7 @@ func (c *Client) GetMetadataURL(id, edition, version string) string {
 }
 
 // GetVersionMetadata returns the metadata for a given dataset id, edition and version
-func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m Metadata, err error) {
+func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m models.Metadata, err error) {
 	uri := c.GetMetadataURL(id, edition, version)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
@@ -1195,7 +1196,7 @@ func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceA
 		return
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
@@ -1204,7 +1205,7 @@ func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceA
 	return
 }
 
-func (c *Client) GetVersionMetadataSelection(ctx context.Context, req GetVersionMetadataSelectionInput) (*Metadata, error) {
+func (c *Client) GetVersionMetadataSelection(ctx context.Context, req GetVersionMetadataSelectionInput) (*models.Metadata, error) {
 	m, err := c.GetVersionMetadata(
 		ctx,
 		req.UserAuthToken,

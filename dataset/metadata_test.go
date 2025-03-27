@@ -78,22 +78,24 @@ func setDatasetAPIMetadata() (json.RawMessage, Metadata) {
 `)
 
 	expected := Metadata{
-		ReleaseDate: "release date",
-		CSVHeader:   []string{"csv header 1", "csv header 2"},
-		LatestChanges: []Change{
-			{
-				Description: "change description",
-				Name:        "change name",
-				Type:        "change type",
+		Version: Version{
+			ReleaseDate: "release date",
+			CSVHeader:   []string{"csv header 1", "csv header 2"},
+			LatestChanges: []Change{
+				{
+					Description: "change description",
+					Name:        "change name",
+					Type:        "change type",
+				},
 			},
-		},
-		Links: Links{
-			Self: Link{
-				URL: "/dataset/metadata",
-			},
-			Version: Link{
-				URL: "/dataset/D1/editions/E1/versions/V1",
-				ID:  "V1",
+			Links: Links{
+				Self: Link{
+					URL: "/dataset/metadata",
+				},
+				Version: Link{
+					URL: "/dataset/D1/editions/E1/versions/V1",
+					ID:  "V1",
+				},
 			},
 		},
 		DatasetDetails: DatasetDetails{

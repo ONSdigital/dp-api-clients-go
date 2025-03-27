@@ -100,24 +100,47 @@ type CodeList struct {
 	IsHierarchy bool   `json:"is_hierarchy"`
 }
 
+// Version represents a version within a dataset
+type Version struct {
+	Alerts               *[]Alert             `json:"alerts"`
+	CollectionID         string               `json:"collection_id"`
+	Downloads            map[string]Download  `json:"downloads"`
+	Edition              string               `json:"edition"`
+	Dimensions           []VersionDimension   `json:"dimensions"`
+	ID                   string               `json:"id"`
+	InstanceID           string               `json:"instance_id"`
+	LatestChanges        []Change             `json:"latest_changes"`
+	Links                Links                `json:"links,omitempty"`
+	ReleaseDate          string               `json:"release_date"`
+	State                string               `json:"state"`
+	Temporal             []Temporal           `json:"temporal"`
+	Version              int                  `json:"version"`
+	NumberOfObservations int64                `json:"total_observations,omitempty"`
+	ImportTasks          *InstanceImportTasks `json:"import_tasks,omitempty"`
+	CSVHeader            []string             `json:"headers,omitempty"`
+	UsageNotes           *[]UsageNote         `json:"usage_notes,omitempty"`
+	IsBasedOn            *IsBasedOn           `json:"is_based_on,omitempty"`
+	LowestGeography      string               `json:"lowest_geography,omitempty"`
+}
+
 type UpdateInstance struct {
-	Alerts               *[]Alert              `json:"alerts"`
-	CollectionID         string                `json:"collection_id"`
-	Downloads            DownloadList          `json:"downloads"`
-	Edition              string                `json:"edition"`
-	Dimensions           []VersionDimension    `json:"dimensions"`
-	ID                   string                `json:"id"`
-	InstanceID           string                `json:"instance_id"`
-	LatestChanges        []models.LatestChange `json:"latest_changes"`
-	ReleaseDate          string                `json:"release_date"`
-	State                string                `json:"state"`
-	Temporal             []Temporal            `json:"temporal"`
-	Version              int                   `json:"version"`
-	NumberOfObservations int64                 `json:"total_observations,omitempty"`
-	ImportTasks          *InstanceImportTasks  `json:"import_tasks,omitempty"`
-	CSVHeader            []string              `json:"headers,omitempty"`
-	Type                 string                `json:"type,omitempty"`
-	IsBasedOn            *IsBasedOn            `json:"is_based_on,omitempty"`
+	Alerts               *[]Alert             `json:"alerts"`
+	CollectionID         string               `json:"collection_id"`
+	Downloads            DownloadList         `json:"downloads"`
+	Edition              string               `json:"edition"`
+	Dimensions           []VersionDimension   `json:"dimensions"`
+	ID                   string               `json:"id"`
+	InstanceID           string               `json:"instance_id"`
+	LatestChanges        []Change             `json:"latest_changes"`
+	ReleaseDate          string               `json:"release_date"`
+	State                string               `json:"state"`
+	Temporal             []Temporal           `json:"temporal"`
+	Version              int                  `json:"version"`
+	NumberOfObservations int64                `json:"total_observations,omitempty"`
+	ImportTasks          *InstanceImportTasks `json:"import_tasks,omitempty"`
+	CSVHeader            []string             `json:"headers,omitempty"`
+	Type                 string               `json:"type,omitempty"`
+	IsBasedOn            *IsBasedOn           `json:"is_based_on,omitempty"`
 }
 
 // VersionDimension represents a dimension model nested in the Version model
@@ -161,6 +184,11 @@ type BuildSearchIndexTask struct {
 	DimensionName string `json:"dimension_name,omitempty"`
 }
 
+// Instance represents an instance within a dataset
+type Instance struct {
+	Version
+}
+
 // stateData represents a json with a single state filed
 type stateData struct {
 	State string `json:"state"`
@@ -168,36 +196,18 @@ type stateData struct {
 
 // Instances represent a list of Instance objects
 type Instances struct {
-	Items      []models.Instance `json:"items"`
-	Count      int               `json:"count"`
-	Offset     int               `json:"offset"`
-	Limit      int               `json:"limit"`
-	TotalCount int               `json:"total_count"`
+	Items      []Instance `json:"items"`
+	Count      int        `json:"count"`
+	Offset     int        `json:"offset"`
+	Limit      int        `json:"limit"`
+	TotalCount int        `json:"total_count"`
 }
 
 // Metadata is a combination of version and dataset model fields
 type Metadata struct {
-	Alerts               *[]Alert             `json:"alerts"`
-	CollectionID         string               `json:"collection_id"`
-	Downloads            map[string]Download  `json:"downloads"`
-	Edition              string               `json:"edition"`
-	Dimensions           []VersionDimension   `json:"dimensions"`
-	ID                   string               `json:"id"`
-	InstanceID           string               `json:"instance_id"`
-	LatestChanges        []Change             `json:"latest_changes"`
-	Links                Links                `json:"links,omitempty"`
-	ReleaseDate          string               `json:"release_date"`
-	State                string               `json:"state"`
-	Temporal             []Temporal           `json:"temporal"`
-	Version              int                  `json:"version"`
-	NumberOfObservations int64                `json:"total_observations,omitempty"`
-	ImportTasks          *InstanceImportTasks `json:"import_tasks,omitempty"`
-	CSVHeader            []string             `json:"headers,omitempty"`
-	UsageNotes           *[]UsageNote         `json:"usage_notes,omitempty"`
-	IsBasedOn            *IsBasedOn           `json:"is_based_on,omitempty"`
-	LowestGeography      string               `json:"lowest_geography,omitempty"`
-	DatasetLinks         Links                `json:"dataset_links,omitempty"`
+	Version
 	DatasetDetails
+	DatasetLinks Links `json:"dataset_links,omitempty"`
 }
 
 // EditableMetadata represents the metadata fields that can be edited
