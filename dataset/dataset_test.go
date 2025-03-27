@@ -411,16 +411,18 @@ func TestClient_GetVersionMetadataSelection(t *testing.T) {
 
 	Convey("Given dataset api is responding with the following metadata", t, func() {
 		mockResp := &Metadata{
-			Dimensions: []VersionDimension{
-				{
-					Name:  "geography",
-					ID:    "city",
-					Label: "City",
-				},
-				{
-					Name:  "siblings",
-					ID:    "number_of_siblings_3",
-					Label: "Number Of Siblings (3 Mappings)",
+			Version: Version{
+				Dimensions: []VersionDimension{
+					{
+						Name:  "geography",
+						ID:    "city",
+						Label: "City",
+					},
+					{
+						Name:  "siblings",
+						ID:    "number_of_siblings_3",
+						Label: "Number Of Siblings (3 Mappings)",
+					},
 				},
 			},
 		}
@@ -1262,7 +1264,7 @@ func TestClient_PostInstance(t *testing.T) {
 func TestClient_GetInstances(t *testing.T) {
 
 	Convey("given a 200 status is returned", t, func() {
-		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, models.Instance{}, nil})
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusOK, Instance{}, nil})
 		datasetClient := newDatasetClient(httpClient)
 
 		Convey("when GetInstance is called", func() {

@@ -1182,7 +1182,7 @@ func (c *Client) GetMetadataURL(id, edition, version string) string {
 }
 
 // GetVersionMetadata returns the metadata for a given dataset id, edition and version
-func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m models.Metadata, err error) {
+func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceAuthToken, collectionID, id, edition, version string) (m Metadata, err error) {
 	uri := c.GetMetadataURL(id, edition, version)
 
 	resp, err := c.doGetWithAuthHeaders(ctx, userAuthToken, serviceAuthToken, collectionID, uri, nil, "")
@@ -1205,7 +1205,7 @@ func (c *Client) GetVersionMetadata(ctx context.Context, userAuthToken, serviceA
 	return
 }
 
-func (c *Client) GetVersionMetadataSelection(ctx context.Context, req GetVersionMetadataSelectionInput) (*models.Metadata, error) {
+func (c *Client) GetVersionMetadataSelection(ctx context.Context, req GetVersionMetadataSelectionInput) (*Metadata, error) {
 	m, err := c.GetVersionMetadata(
 		ctx,
 		req.UserAuthToken,
