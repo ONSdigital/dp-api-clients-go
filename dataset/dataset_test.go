@@ -2578,33 +2578,33 @@ func TestClient_PutMetadata(t *testing.T) {
 		})
 	})
 
-	// Convey("given a 404 status is returned", t, func() {
-	// 	errorMsg := "wrong!"
-	// 	httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, errorMsg, nil})
-	// 	datasetClient := newDatasetClient(httpClient)
+	Convey("given a 404 status is returned", t, func() {
+		errorMsg := "wrong!"
+		httpClient := createHTTPClientMock(MockedHTTPResponse{http.StatusNotFound, errorMsg, nil})
+		datasetClient := newDatasetClient(httpClient)
 
-	// 	Convey("when PutMetadata is called", func() {
-	// 		err := datasetClient.PutMetadata(ctx, userAuthToken, serviceAuthToken, collectionID, datasetId, edition, version, metadata, testETag)
+		Convey("when PutMetadata is called", func() {
+			err := datasetClient.PutMetadata(ctx, userAuthToken, serviceAuthToken, collectionID, datasetId, edition, version, metadata, testETag)
 
-	// 		Convey("then the expected error is returned", func() {
-	// 			expectedError := fmt.Sprintf("invalid response: 404 from dataset api: http://localhost:8080%s, body: \"%s\"", expectedUrl, errorMsg)
-	// 			So(err.Error(), ShouldResemble, errors.Errorf(expectedError).Error())
-	// 		})
+			Convey("then the expected error is returned", func() {
+				expectedError := fmt.Sprintf("invalid response: 404 from dataset api: http://localhost:8080%s, body: \"%s\"", expectedUrl, errorMsg)
+				So(err.Error(), ShouldResemble, expectedError)
+			})
 
-	// 		Convey("And dphttpclient.Do is called 1 time with expected method, path, headers and body", func() {
-	// 			expectedHeaders := expectedHeaders{
-	// 				FlorenceToken: userAuthToken,
-	// 				ServiceToken:  serviceAuthToken,
-	// 				CollectionId:  collectionID,
-	// 				IfMatch:       testETag,
-	// 			}
-	// 			checkRequestBase(httpClient, http.MethodPut, expectedUrl, expectedHeaders)
-	// 			payload, err := io.ReadAll(httpClient.DoCalls()[0].Req.Body)
-	// 			So(err, ShouldBeNil)
-	// 			So(payload, ShouldResemble, expectedPayload)
-	// 		})
-	// 	})
-	// })
+			Convey("And dphttpclient.Do is called 1 time with expected method, path, headers and body", func() {
+				expectedHeaders := expectedHeaders{
+					FlorenceToken: userAuthToken,
+					ServiceToken:  serviceAuthToken,
+					CollectionId:  collectionID,
+					IfMatch:       testETag,
+				}
+				checkRequestBase(httpClient, http.MethodPut, expectedUrl, expectedHeaders)
+				payload, err := io.ReadAll(httpClient.DoCalls()[0].Req.Body)
+				So(err, ShouldBeNil)
+				So(payload, ShouldResemble, expectedPayload)
+			})
+		})
+	})
 }
 
 func newDatasetClient(httpClient *dphttp.ClienterMock) *Client {
