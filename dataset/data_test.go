@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/ONSdigital/dp-dataset-api/models"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -27,21 +28,21 @@ func TestMetaData_ToString(t *testing.T) {
 
 func setupMetadata() Metadata {
 	m := Metadata{
-		Version: Version{
+		Version: models.Version{
 			ReleaseDate: "release date",
-			LatestChanges: []Change{
+			LatestChanges: &[]models.LatestChange{
 				{
 					Description: "change description",
 					Name:        "change name",
 					Type:        "change type",
 				},
 			},
-			Downloads: map[string]Download{
-				"download1": {
-					URL:     "url",
-					Size:    "size",
-					Public:  "public",
+			Downloads: &models.DownloadList{
+				XLS: &models.DownloadObject{
+					HRef:    "url",
 					Private: "private",
+					Public:  "public",
+					Size:    "size",
 				},
 			},
 		},
@@ -113,7 +114,6 @@ func expectedData(isEmpty bool) string {
 			"Next Release: \n" +
 			"Identifier: \n" +
 			"Language: English\n" +
-			"Latest Changes: []\n" +
 			"Periodicity: \n" +
 			"Distribution:\n" +
 			"Unit of measure: \n" +
@@ -136,7 +136,7 @@ func expectedData(isEmpty bool) string {
 		"Latest Changes: [{change description change name change type}]\n" +
 		"Periodicity: release frequency\n" +
 		"Distribution:\n" +
-		"\tExtension: download1\n" +
+		"\tExtension: xls\n" +
 		"\tSize: size\n" +
 		"\tURL: url\n\n" +
 		"Unit of measure: unit of measure\n" +

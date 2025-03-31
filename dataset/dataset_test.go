@@ -411,8 +411,8 @@ func TestClient_GetVersionMetadataSelection(t *testing.T) {
 
 	Convey("Given dataset api is responding with the following metadata", t, func() {
 		mockResp := &Metadata{
-			Version: Version{
-				Dimensions: []VersionDimension{
+			Version: models.Version{
+				Dimensions: []models.Dimension{
 					{
 						Name:  "geography",
 						ID:    "city",
@@ -461,8 +461,8 @@ func TestClient_GetVersionMetadataSelection(t *testing.T) {
 
 			Convey("the Metadata document should be returned with only the chosen dimension", func() {
 				expected := &Metadata{
-					Version: Version{
-						Dimensions: []VersionDimension{
+					Version: models.Version{
+						Dimensions: []models.Dimension{
 							{
 								Name:  "siblings",
 								ID:    "number_of_siblings_3",

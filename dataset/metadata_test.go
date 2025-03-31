@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/ONSdigital/dp-dataset-api/models"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -60,10 +61,6 @@ func setDatasetAPIMetadata() (json.RawMessage, Metadata) {
   "national_statistic":true,
   "release_date":"release date",
   "title":"title",
-  "headers":[
-    "csv header 1",
-    "csv header 2"
-  ],
   "dataset_links":{
     "latest_version":{
       "href":"/dataset/D1/editions/E1/versions/V1",
@@ -78,23 +75,18 @@ func setDatasetAPIMetadata() (json.RawMessage, Metadata) {
 `)
 
 	expected := Metadata{
-		Version: Version{
+		Version: models.Version{
 			ReleaseDate: "release date",
-			CSVHeader:   []string{"csv header 1", "csv header 2"},
-			LatestChanges: []Change{
+			LatestChanges: &[]models.LatestChange{
 				{
 					Description: "change description",
 					Name:        "change name",
 					Type:        "change type",
 				},
 			},
-			Links: Links{
-				Self: Link{
-					URL: "/dataset/metadata",
-				},
-				Version: Link{
-					URL: "/dataset/D1/editions/E1/versions/V1",
-					ID:  "V1",
+			Links: &models.VersionLinks{
+				Self: &models.LinkObject{
+					HRef: "/dataset/metadata",
 				},
 			},
 		},

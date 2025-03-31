@@ -205,7 +205,7 @@ type Instances struct {
 
 // Metadata is a combination of version and dataset model fields
 type Metadata struct {
-	Version
+	models.Version
 	DatasetDetails
 	DatasetLinks Links `json:"dataset_links,omitempty"`
 }
@@ -523,16 +523,38 @@ func (m Metadata) ToString() string {
 			b.WriteString(fmt.Sprintf("Contact: %s, %s, %s\n", contacts[0].Name, contacts[0].Email, contacts[0].Telephone))
 		}
 	}
-	if len(m.Temporal) > 0 {
-		b.WriteString(fmt.Sprintf("Temporal: %s\n", m.Temporal[0].Frequency))
+	if m.Temporal != nil {
+		temporal := *m.Temporal
+		if len(temporal) > 0 {
+			b.WriteString(fmt.Sprintf("Temporal: %s\n", temporal[0].Frequency))
+		}
 	}
-	b.WriteString(fmt.Sprintf("Latest Changes: %s\n", m.LatestChanges))
+	if m.LatestChanges != nil {
+		latestChanges := *m.LatestChanges
+		if len(latestChanges) > 0 {
+			b.WriteString(fmt.Sprintf("Latest Changes: %s\n", latestChanges))
+		}
+	}
 	b.WriteString(fmt.Sprintf("Periodicity: %s\n", m.ReleaseFrequency))
 	b.WriteString("Distribution:\n")
-	for k, v := range m.Downloads {
-		b.WriteString(fmt.Sprintf("\tExtension: %s\n", k))
-		b.WriteString(fmt.Sprintf("\tSize: %s\n", v.Size))
-		b.WriteString(fmt.Sprintf("\tURL: %s\n\n", v.URL))
+	if m.Downloads != nil {
+		downloads := *m.Downloads
+		// We need a way to map `DownloadObject` identifiers to extension strings
+		downloadObjects := map[*models.DownloadObject]string{
+			downloads.XLS:  "xls",
+			downloads.XLSX: "xlsx",
+			downloads.CSV:  "csv",
+			downloads.TXT:  "txt",
+			downloads.CSVW: "csvw",
+		}
+
+		for downloadObject, extension := range downloadObjects {
+			if downloadObject != nil {
+				b.WriteString(fmt.Sprintf("\tExtension: %s\n", extension))
+				b.WriteString(fmt.Sprintf("\tSize: %s\n", downloadObject.Size))
+				b.WriteString(fmt.Sprintf("\tURL: %s\n\n", downloadObject.HRef))
+			}
+		}
 	}
 	b.WriteString(fmt.Sprintf("Unit of measure: %s\n", m.UnitOfMeasure))
 	b.WriteString(fmt.Sprintf("License: %s\n", m.License))
