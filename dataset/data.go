@@ -352,8 +352,8 @@ type VersionDimensions struct {
 	Items VersionDimensionItems `json:"items"`
 }
 
-// VersionDimensionItems represents a list of Version Dimensions
-type VersionDimensionItems []VersionDimension
+// VersionDimensionItems represents a list of Dimensions
+type VersionDimensionItems []models.Dimension
 
 func (d VersionDimensionItems) Len() int      { return len(d) }
 func (d VersionDimensionItems) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
