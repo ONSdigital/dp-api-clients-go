@@ -106,6 +106,7 @@ type Description struct {
 	CancellationNotice []string `json:"cancellationNotice,omitempty"`
 	Published          bool     `json:"published,omitempty"`
 	ProvisionalDate    string   `json:"provisionalDate,omitempty"`
+	Abstract           string   `json:"_abstract,omitempty"`
 }
 
 // Contact represents a contact within dataset landing page
@@ -290,5 +291,18 @@ type PublishedIndex struct {
 
 // PublishedIndexItem represents an individual content item returned from the PublishedIndex endpoint
 type PublishedIndexItem struct {
+	URI string `json:"uri"`
+}
+
+// PageData respresents a generic page from Zebedee
+type PageData struct {
+	URI         string        `json:"uri"`
+	Type        string        `json:"type"`
+	Description Description   `json:"description"`
+	RelatedData []RelatedData `json:"relatedData,omitempty"`
+}
+
+// RelatedData represents a list of related data found on certain "content" type (e.g. bulletins) pages in Zebedee
+type RelatedData struct {
 	URI string `json:"uri"`
 }

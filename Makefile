@@ -1,4 +1,4 @@
-SHELL=bash
+makSHELL=bash
 
 test:
 	go test -count=1 -race -cover ./...

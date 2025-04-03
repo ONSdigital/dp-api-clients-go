@@ -1,10 +1,9 @@
-dp-api-clients-go [![GoDoc](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v2?status.svg)](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v2)
+# dp-api-clients-go [![GoDoc](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v2?status.svg)](https://godoc.org/github.com/ONSdigital/dp-api-clients-go/v2)
 =====
 
 Common client code - in go - for ONS APIs:
 
 * areas
-* articles
 * clientlog - logging
 * codelist
 * dataset
@@ -15,10 +14,10 @@ Common client code - in go - for ONS APIs:
 * identity
 * image
 * importapi
-* interactives
 * releasecalendar
 * renderer
-* search
+* search (dimension search)
+* site-search (deprecated in favour of [dp-search-api SDK](https://github.com/ONSdigital/dp-search-api/tree/develop/sdk))
 * upload (Static Files)
 
 ## Usage

@@ -5,7 +5,7 @@ package identity
 import (
 	"context"
 
-	dprequest "github.com/ONSdigital/dp-net/v2/request"
+	dprequest "github.com/ONSdigital/dp-net/v3/request"
 )
 
 // TokenIdentity is the Client used by the GraphQL package to make queries

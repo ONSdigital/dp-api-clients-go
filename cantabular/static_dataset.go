@@ -212,7 +212,7 @@ func (c *Client) CheckQueryCount(ctx context.Context, req StaticDatasetQueryRequ
 // consume the transformed output with the provided Consumer concurrently.
 // Returns a json formatted response
 // Use this method if large query responses are expected.
-func (c *Client) StaticDatasetQueryStreamJson(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) (GetObservationsResponse, error) {
+func (c *Client) StaticDatasetQueryStreamJSON(ctx context.Context, req StaticDatasetQueryRequest, consume Consumer) (GetObservationsResponse, error) {
 	data := QueryData{
 		Dataset:   req.Dataset,
 		Variables: req.Variables,

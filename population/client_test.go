@@ -15,7 +15,7 @@ import (
 	"github.com/ONSdigital/dp-api-clients-go/v2/cantabular"
 	dperrors "github.com/ONSdigital/dp-api-clients-go/v2/errors"
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
+	dphttp "github.com/ONSdigital/dp-net/v3/http"
 )
 
 func TestNewClient(t *testing.T) {

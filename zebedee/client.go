@@ -20,8 +20,8 @@ import (
 
 	healthcheck "github.com/ONSdigital/dp-api-clients-go/v2/health"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
-	dphttp "github.com/ONSdigital/dp-net/v2/http"
-	dprequest "github.com/ONSdigital/dp-net/v2/request"
+	dphttp "github.com/ONSdigital/dp-net/v3/http"
+	dprequest "github.com/ONSdigital/dp-net/v3/request"
 
 	"github.com/ONSdigital/log.go/v2/log"
 )
@@ -306,6 +306,22 @@ func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, collectionID
 	return pt, nil
 }
 
+// GetPageData retrieves data about a given page
+func (c *Client) GetPageData(ctx context.Context, userAccessToken, collectionID, lang, uri string) (PageData, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
+	b, _, err := c.get(ctx, userAccessToken, reqURL)
+	if err != nil {
+		return PageData{}, err
+	}
+
+	var pd PageData
+	if err = json.Unmarshal(b, &pd); err != nil {
+		return pd, err
+	}
+
+	return pd, nil
+}
+
 // GetPageDescription retrieves a page description from zebedee
 func (c *Client) GetPageDescription(ctx context.Context, userAccessToken, collectionID, lang, uri string) (PageDescription, error) {
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri+"&description")
@@ -488,7 +504,11 @@ func (c *Client) GetRelease(ctx context.Context, userAccessToken, collectionID, 
 					if t.Description.Edition != "" {
 						element[i].Title += fmt.Sprintf(": %s", t.Description.Edition)
 					}
-					element[i].Summary = t.Description.Summary
+					if t.Description.Summary == "" {
+						element[i].Summary = t.Description.Abstract
+					} else {
+						element[i].Summary = t.Description.Summary
+					}
 				}
 			}(i, e, element)
 		}

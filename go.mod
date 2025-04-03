@@ -8,8 +8,8 @@ require (
 	github.com/ONSdigital/dp-dataset-api v1.72.0
 	github.com/ONSdigital/dp-healthcheck v1.6.3
 	github.com/ONSdigital/dp-mocking v0.10.1
-	github.com/ONSdigital/dp-net/v2 v2.22.0
-	github.com/ONSdigital/log.go/v2 v2.4.3
+	github.com/ONSdigital/dp-net/v3 v3.1.0
+	github.com/ONSdigital/log.go/v2 v2.4.4
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/pkg/errors v0.9.1
@@ -34,7 +34,7 @@ require (
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 )
 
