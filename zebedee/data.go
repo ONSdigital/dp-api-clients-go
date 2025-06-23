@@ -89,6 +89,7 @@ type Description struct {
 	Summary            string   `json:"summary"`
 	Keywords           []string `json:"keywords"`
 	MetaDescription    string   `json:"metaDescription"`
+	MigrationLink      string   `json:"migrationLink"`
 	NationalStatistic  bool     `json:"nationalStatistic"`
 	WelshStatistic     bool     `json:"welshStatistic"`
 	Survey             string   `json:"survey"`

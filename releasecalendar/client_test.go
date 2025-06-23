@@ -112,6 +112,7 @@ func TestGetLegacyRelease(t *testing.T) {
 				Name:      "Contact name",
 				Telephone: "029",
 			},
+			MigrationLink:      "/redirect1",
 			NationalStatistic:  true,
 			ReleaseDate:        "2020-07-08T23:00:00.000Z",
 			NextRelease:        "January 2021",

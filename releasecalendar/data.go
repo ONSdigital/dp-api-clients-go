@@ -33,15 +33,16 @@ type ReleaseDescription struct {
 	Cancelled          bool     `json:"cancelled"`
 	Contact            Contact  `json:"contact"`
 	Finalised          bool     `json:"finalised"`
+	MigrationLink      string   `json:"migration_link"`
 	NationalStatistic  bool     `json:"national_statistic"`
-	WelshStatistic     bool     `json:"welsh_statistic"`
-	Survey             string   `json:"survey"`
 	NextRelease        string   `json:"next_release"`
 	ProvisionalDate    string   `json:"provisional_date"`
 	Published          bool     `json:"published"`
 	ReleaseDate        string   `json:"release_date"`
 	Summary            string   `json:"summary"`
+	Survey             string   `json:"survey"`
 	Title              string   `json:"title"`
+	WelshStatistic     bool     `json:"welsh_statistic"`
 }
 
 // Contact represents the contact details for the release
