@@ -671,6 +671,19 @@ func TestRegisterFile(t *testing.T) {
 			err := client.RegisterFile(context.Background(), files.FileMetaData{})
 			So(err, ShouldEqual, files.ErrNotAuthorized)
 		})
+
+		Convey("resource conflict", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusConflict)
+			}))
+
+			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
+			client := files.NewWithHealthClient(&hCli)
+
+			err := client.RegisterFile(context.Background(), files.FileMetaData{})
+
+			So(err, ShouldEqual, files.ErrConflict)
+		})
 	})
 }
 
