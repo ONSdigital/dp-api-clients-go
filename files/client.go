@@ -157,12 +157,21 @@ func (c *Client) RegisterFile(ctx context.Context, metadata FileMetaData) error 
 		e := jsonErrors.Errors[0]
 
 		switch e.Code {
-		case "DuplicateFileError":
-			return ErrFileAlreadyRegistered
 		case "ValidationError":
 			return fmt.Errorf("%w: %s", ErrValidationError, e.Description)
 		default:
 			return fmt.Errorf("%w: %s: %s", ErrUnknown, e.Code, e.Description)
+		}
+	case http.StatusConflict:
+		jsonErrors := dperrors.JsonErrors{}
+		if err := json.NewDecoder(resp.Body).Decode(&jsonErrors); err != nil {
+			return fmt.Errorf("%w: %s", ErrConflict, err)
+		}
+		e := jsonErrors.Errors[0]
+
+		switch e.Code {
+		case "DuplicateFileError":
+			return ErrFileAlreadyRegistered
 		}
 	}
 

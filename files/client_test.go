@@ -559,7 +559,7 @@ func TestRegisterFile(t *testing.T) {
 			Convey("duplicate file", func() {
 				expectedCode := "DuplicateFileError"
 				expectedDescription := ""
-				server := newMockFilesAPIServerWithError(http.StatusBadRequest, expectedCode, expectedDescription)
+				server := newMockFilesAPIServerWithError(http.StatusConflict, expectedCode, expectedDescription)
 
 				hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
 				client := files.NewWithHealthClient(&hCli)
@@ -675,6 +675,7 @@ func TestRegisterFile(t *testing.T) {
 		Convey("resource conflict", func() {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				w.WriteHeader(http.StatusConflict)
+				fmt.Fprint(w, "<invalid JSON>")
 			}))
 
 			hCli := health.Client{URL: server.URL, Client: &dphttp.Client{}}
@@ -682,7 +683,7 @@ func TestRegisterFile(t *testing.T) {
 
 			err := client.RegisterFile(context.Background(), files.FileMetaData{})
 
-			So(err, ShouldEqual, files.ErrConflict)
+			So(errors.Is(err, files.ErrConflict), ShouldBeTrue)
 		})
 	})
 }
