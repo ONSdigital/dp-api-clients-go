@@ -567,8 +567,8 @@ func TestRegisterFile(t *testing.T) {
 
 				So(err, ShouldBeError)
 				So(err, ShouldBeError, files.ErrFileAlreadyRegistered)
-				So(errors.Is(err, files.ErrBadRequest), ShouldBeTrue)
-				So(err.Error(), ShouldEqual, "bad request: file already registered")
+				So(errors.Is(err, files.ErrConflict), ShouldBeTrue)
+				So(err.Error(), ShouldEqual, "resource conflict: file already registered")
 			})
 
 			Convey("validation error", func() {
@@ -757,7 +757,7 @@ func TestPatchFile(t *testing.T) {
 			err := client.PatchFile(context.Background(), "a.txt", files.FilePatch{})
 
 			So(err, ShouldBeError)
-			So(err.Error(), ShouldEqual, "bad request: file already registered")
+			So(err.Error(), ShouldEqual, "resource conflict: file already registered")
 		})
 
 		Convey("file is in invalid state", func() {

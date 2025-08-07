@@ -27,7 +27,7 @@ var (
 	ErrUnexpectedStatus        = errors.New("unexpected response status code")
 	ErrBadRequest              = errors.New("bad request")
 	ErrConflict                = errors.New("resource conflict")
-	ErrFileAlreadyRegistered   = fmt.Errorf("%w: file already registered", ErrBadRequest)
+	ErrFileAlreadyRegistered   = fmt.Errorf("%w: file already registered", ErrConflict)
 	ErrValidationError         = fmt.Errorf("%w: validation error", ErrBadRequest)
 	ErrUnknown                 = fmt.Errorf("%w: unknown error", ErrBadRequest)
 )
