@@ -5,8 +5,8 @@ test:
 
 .PHONY: test
 
-audit:
-	go list -json -m all | nancy sleuth
+audit: ## Runs checks for security vulnerabilities on dependencies (including transient ones)
+	dis-vulncheck
 .PHONY: audit
 
 build:
