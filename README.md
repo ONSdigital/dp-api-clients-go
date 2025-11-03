@@ -97,6 +97,12 @@ Instead of aggregating the results, you may want to perform some different logic
 
 Run tests using `make test`
 
+## Tools
+
+### Audit
+
+We use `dis-vulncheck` to do auditing, which you will [need to install](https://github.com/ONSdigital/dis-vulncheck).
+
 ## Licence
 
 Copyright ©‎ 2021, Crown Copyright (Office for National Statistics) <https://www.ons.gov.uk>
