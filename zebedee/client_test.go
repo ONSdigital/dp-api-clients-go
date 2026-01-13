@@ -30,7 +30,7 @@ var (
 	testCollectionID       = "test-collection"
 	testFileSize           = 5242880
 	testFileSizeCollection = 3313490
-	testLang               = "en"
+	testLang               = EnglishLangCode
 	initialState           = health.CreateCheckState(service)
 )
 
