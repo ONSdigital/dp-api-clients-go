@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -168,12 +167,36 @@ func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte,
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
-		io.Copy(ioutil.Discard, resp.Body)
+		io.Copy(io.Discard, resp.Body)
 		return nil, nil, ErrInvalidZebedeeResponse{resp.StatusCode, req.URL.Path}
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	return b, resp.Header, err
+}
+
+// getStream returns an io.ReadCloser for the requested uri in zebedee
+// Caller is responsible for closing the ReadCloser
+func (c *Client) getStream(ctx context.Context, userAccessToken, path string) (io.ReadCloser, http.Header, error) {
+	req, err := http.NewRequest("GET", c.hcCli.URL+path, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	dprequest.AddFlorenceHeader(req, userAccessToken)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode > 399 {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+		return nil, nil, ErrInvalidZebedeeResponse{resp.StatusCode, req.URL.Path}
+	}
+
+	return resp.Body, resp.Header, nil
 }
 
 func (c *Client) put(ctx context.Context, userAccessToken, path string, payload []byte) (*http.Response, error) {
@@ -524,7 +547,15 @@ func (c *Client) GetResourceBody(ctx context.Context, userAccessToken, collectio
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
 
 	return b, err
+}
 
+// GetResourceStream returns a ReadCloser for a resource e.g. a file download
+// Caller is responsible for closing the ReadCloser
+func (c *Client) GetResourceStream(ctx context.Context, userAccessToken, collectionID, lang, uri string) (io.ReadCloser, error) {
+	reqURL := c.createRequestURL(ctx, collectionID, lang, "/resource", "uri="+uri)
+	s, _, err := c.getStream(ctx, userAccessToken, reqURL)
+
+	return s, err
 }
 
 func (c *Client) createRequestURL(ctx context.Context, collectionID, lang, path, query string) string {

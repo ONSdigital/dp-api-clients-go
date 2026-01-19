@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -1400,6 +1401,56 @@ func TestGetDataset(t *testing.T) {
 
 			So(actualFilename, ShouldEqual, expectedSupplementaryFile)
 			So(actualFileSize, ShouldEqual, 0)
+		})
+	})
+}
+
+func TestGetResourceStream(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	testURIString := "/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02"
+	documentContent := []byte("streamed byte content")
+	body := httpmocks.NewReadCloserMock(documentContent, nil)
+
+	Convey("Given zebedee responds successfully", t, func() {
+		response := httpmocks.NewResponseMock(body, http.StatusOK)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when GetResourceStream is called", func() {
+			stream, err := zebedeeClient.GetResourceStream(ctx, "", EmptyCollectionId, EnglishLangCode, testURIString)
+
+			Convey("then the expected content is returned", func() {
+				So(err, ShouldBeNil)
+				So(stream, ShouldNotBeNil)
+
+				streamedContent, err := io.ReadAll(stream)
+				So(err, ShouldBeNil)
+				So(streamedContent, ShouldResemble, documentContent)
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := httpClient.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, "/resource")
+				p := doCalls[0].Req.FormValue("uri")
+				So(p, ShouldEqual, testURIString)
+			})
+		})
+	})
+
+	Convey("Given zebedee responds with an error", t, func() {
+		response := httpmocks.NewResponseMock(body, http.StatusInternalServerError)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("When GetResourceStream is called", func() {
+			stream, err := zebedeeClient.GetResourceStream(ctx, "", EmptyCollectionId, EnglishLangCode, testURIString)
+
+			Convey("then an error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(stream, ShouldBeNil)
+			})
 		})
 	})
 }
