@@ -102,6 +102,8 @@ type Description struct {
 	PreUnit            string   `json:"preUnit"`
 	Source             string   `json:"source"`
 	VersionLabel       string   `json:"versionLabel"`
+	CanonicalTopic     string   `json:"canonicalTopic,omitempty"`
+	Topics             []string `json:"secondaryTopics,omitempty"`
 	Finalised          bool     `json:"finalised,omitempty"`
 	Cancelled          bool     `json:"cancelled,omitempty"`
 	CancellationNotice []string `json:"cancellationNotice,omitempty"`
