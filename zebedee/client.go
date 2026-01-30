@@ -159,6 +159,7 @@ func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte,
 	}
 
 	dprequest.AddFlorenceHeader(req, userAccessToken)
+	dprequest.AddAuthHeaders(ctx, req, userAccessToken)
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
@@ -184,6 +185,7 @@ func (c *Client) getStream(ctx context.Context, userAccessToken, path string) (i
 	}
 
 	dprequest.AddFlorenceHeader(req, userAccessToken)
+	dprequest.AddAuthHeaders(ctx, req, userAccessToken)
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
@@ -206,6 +208,7 @@ func (c *Client) put(ctx context.Context, userAccessToken, path string, payload 
 	}
 
 	dprequest.AddFlorenceHeader(req, userAccessToken)
+	dprequest.AddAuthHeaders(ctx, req, userAccessToken)
 
 	resp, err := c.hcCli.Client.Do(ctx, req)
 	if err != nil {
