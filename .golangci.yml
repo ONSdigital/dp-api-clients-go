@@ -1,0 +1,105 @@
+# This file was inspired by the golangci-lint one:
+# https://github.com/golangci/golangci-lint/blob/master/.golangci.yml
+version: "2"
+run:
+  concurrency: 4
+linters:
+  default: none
+  enable:
+    - dogsled
+    - errcheck
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godoclint
+    - gosec
+    - govet
+    - ineffassign
+    - nakedret
+    - prealloc
+    - revive
+    - staticcheck
+    - unconvert
+    - unused
+    - whitespace
+  settings:
+    dupl:
+      threshold: 100
+    gocognit:
+      min-complexity: 40
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+    gocritic:
+      disabled-checks:
+        - wrapperFunc
+        - dupImport
+        - ifElseChain
+        - octalLiteral
+        - hugeParam
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+    gocyclo:
+      min-complexity: 20
+    godoclint:
+      enable:
+        - start-with-name
+        - require-doc
+        - deprecated
+        - max-len
+        - no-unused-link
+    lll:
+      line-length: 140
+    misspell:
+      locale: UK
+    revive:
+      rules:
+        - name: unused-parameter
+          severity: warning
+          disabled: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - dupl
+          - errcheck
+          - gocyclo
+          - gosec
+          - godoclint
+        path: _test\.go
+      - linters:
+          - godoclint
+        path: features/
+      - linters:
+          - revive
+        path: _test.go
+        text: dot-imports
+        source: github.com/smartystreets/goconvey/convey
+    paths-except:
+      - zebedee
+issues:
+  new: false
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: false
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
