@@ -2,7 +2,9 @@ package zebedee
 
 // Collection related
 const (
-	EmptyCollectionId string = ""
+	EmptyCollectionId       string = ""
+	CollectionTypeManual    string = "manual"
+	CollectionTypeScheduled string = "scheduled"
 )
 
 // Language related

@@ -108,6 +108,15 @@ func (c *Client) Put(ctx context.Context, userAccessToken, path string, payload 
 	return resp, nil
 }
 
+// Post creates a resource in zebedee
+func (c *Client) Post(ctx context.Context, userAccessToken, path string, payload []byte) ([]byte, http.Header, error) {
+	b, headers, err := c.post(ctx, userAccessToken, path, payload)
+	if err != nil {
+		return nil, nil, err
+	}
+	return b, headers, nil
+}
+
 // GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
 // is returned there is a chance that a partly completed DatasetLandingPage is returned
 func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, collectionID, lang, path string) (DatasetLandingPage, error) {
@@ -217,6 +226,30 @@ func (c *Client) put(ctx context.Context, userAccessToken, path string, payload 
 	defer closeResponseBody(ctx, resp)
 
 	return resp, nil
+}
+
+func (c *Client) post(ctx context.Context, userAccessToken, path string, payload []byte) ([]byte, http.Header, error) {
+	req, err := http.NewRequest(http.MethodPost, c.hcCli.URL+path, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	dprequest.AddFlorenceHeader(req, userAccessToken)
+	dprequest.AddAuthHeaders(ctx, req, userAccessToken)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode < 200 || resp.StatusCode > 399 {
+		io.Copy(io.Discard, resp.Body)
+		return nil, nil, ErrInvalidZebedeeResponse{resp.StatusCode, req.URL.Path}
+	}
+
+	b, err := io.ReadAll(resp.Body)
+	return b, resp.Header, err
 }
 
 // GetBreadcrumb returns a Breadcrumb
@@ -412,22 +445,6 @@ func (c *Client) PutDatasetVersionInCollection(ctx context.Context, userAccessTo
 	}
 
 	return nil
-}
-
-func (c *Client) GetCollection(ctx context.Context, userAccessToken, collectionID string) (Collection, error) {
-	reqURL := fmt.Sprintf("/collectionDetails/%s", collectionID)
-	b, _, err := c.get(ctx, userAccessToken, reqURL)
-
-	if err != nil {
-		return Collection{}, err
-	}
-
-	var collection Collection
-	if err = json.Unmarshal(b, &collection); err != nil {
-		return collection, err
-	}
-
-	return collection, nil
 }
 
 // GetBulletin retrieves a bulletin from zebedee
