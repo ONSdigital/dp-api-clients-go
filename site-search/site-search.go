@@ -1,3 +1,5 @@
+// Deprecated: use the dp-search-api sdk package:
+// https://github.com/ONSdigital/dp-search-api/tree/develop/sdk
 package search
 
 import (
