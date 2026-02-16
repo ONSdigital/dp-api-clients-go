@@ -25,7 +25,7 @@ func (c *Client) GetCollection(ctx context.Context, userAccessToken, collectionI
 	return collection, nil
 }
 
-// CreateCollection creates a collection in zebedee
+// CreateCollection creates a collection in zebedee and returns it.
 func (c *Client) CreateCollection(ctx context.Context, userAccessToken string, collection Collection) (Collection, error) {
 	reqURL := "/collection"
 
@@ -49,7 +49,7 @@ func (c *Client) CreateCollection(ctx context.Context, userAccessToken string, c
 	return createdCollection, nil
 }
 
-// SaveContentToCollection saves a content to a collection in zebedee
+// SaveContentToCollection saves the provided json content to a collection in zebedee
 func (c *Client) SaveContentToCollection(ctx context.Context, userAccessToken, collectionID, pagePath string, content interface{}) error {
 	reqURL := fmt.Sprintf("/content/%s?uri=%s/data.json", collectionID, pagePath)
 
