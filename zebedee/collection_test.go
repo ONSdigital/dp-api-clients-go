@@ -11,13 +11,20 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+const (
+	endpointCollection        = "/collection"
+	endpointCollectionDetails = "/collectionDetails/"
+
+	testCollectionID = "test-collection"
+)
+
 func TestClientGetCollection(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	expectedPath := "/collectionDetails/" + testCollectionID
+	expectedPath := endpointCollectionDetails + testCollectionID
 	expectedCollection := Collection{
-		ID:             "collection-id",
+		ID:             testCollectionID,
 		Name:           "Example collection",
 		ApprovalStatus: "APPROVED",
 		Type:           "collection",
@@ -92,7 +99,7 @@ func TestClientCreateCollection(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	expectedPath := "/collection"
+	expectedPath := endpointCollection
 	collection := Collection{
 		Name: "Create collection",
 		Type: "collection",
@@ -104,7 +111,7 @@ func TestClientCreateCollection(t *testing.T) {
 		}},
 	}
 	createdCollection := Collection{
-		ID:             "collection-id",
+		ID:             testCollectionID,
 		Name:           "Create collection",
 		ApprovalStatus: "APPROVED",
 		Type:           "collection",

@@ -24,15 +24,39 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-const testHost = "http://localhost:8080"
-
 var (
+	initialState = health.CreateCheckState(service)
+)
+
+const (
+	// These content keys are used in the tests to deliver
+	// specific responses from the mock Zebedee server. See #contentData
+	// and #contentDataCollection for more details.
+	testContentKeyEmpty                    = "foo"
+	testContentKeyLabourMarket             = "labour"
+	testContentKeyDataset                  = "dataset"
+	testContentKeyPageTitle1               = "pageTitle1"
+	testContentKeyPageTitle2               = "pageTitle2"
+	testContentKeyPageData                 = "pageData"
+	testContentKeyPageDescription1         = "pageDescription1"
+	testContentKeyPageDescription2         = "pageDescription2"
+	testContentKeyPageDescription3         = "pageDescription3"
+	testContentKeyBulletinLatestRelease    = "bulletin-latest-release"
+	testContentKeyBulletinNotLatestRelease = "bulletin-not-latest-release"
+	testContentKeyBulletinLatest           = "/bulletin/latest"
+	testContentKeyRelease                  = "/release"
+	testContentKeyHomepage                 = "/"
+	testContentKeyNotFound                 = "notFound"
+
+	endpointPublishedIndex = "/publishedindex"
+
+	testHost               = "http://localhost:8080"
 	testAccessToken        = "test-access-token"
-	testCollectionID       = "test-collection"
+	testFileName           = "filename.csv"
 	testFileSize           = 5242880
 	testFileSizeCollection = 3313490
 	testLang               = EnglishLangCode
-	initialState           = health.CreateCheckState(service)
+	testDatasetURI         = "/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02"
 )
 
 func mockZebedeeServer(port chan int) {
@@ -61,7 +85,7 @@ func mockZebedeeServer(port chan int) {
 func newMockHTTPClient(r *http.Response, err error) *dphttp.ClienterMock {
 	return &dphttp.ClienterMock{
 		SetPathsWithNoRetriesFunc: func(paths []string) {
-			return
+			// Do nothing
 		},
 		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			return r, err
@@ -85,38 +109,37 @@ func contentData(w http.ResponseWriter, req *http.Request) {
 	checkLanguage(w, req)
 
 	switch uri {
-	case "foo":
+	case testContentKeyEmpty:
 		w.Write([]byte(`{}`))
-	case "labour":
+	case testContentKeyLabourMarket:
 		w.Write([]byte(`{"downloads":[{"title":"Latest","file":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02/labd02jul2015_tcm77-408195.xls"}],"section":{"markdown":""},"relatedDatasets":[{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputeslabd01"},{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/stoppagesofworklabd03"}],"relatedDocuments":[{"uri":"/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/uklabourmarket/2015-07-15"}],"relatedMethodology":[],"type":"dataset_landing_page","uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02","description":{"title":"Labour disputes by sector: LABD02","summary":"Labour disputes by sector.","keywords":["strike"],"metaDescription":"Labour disputes by sector.","nationalStatistic":true,"contact":{"email":"richard.clegg@ons.gsi.gov.uk\n","name":"Richard Clegg\n","telephone":"+44 (0)1633 455400 \n"},"releaseDate":"2015-07-14T23:00:00.000Z","nextRelease":"12 August 2015","datasetId":"","unit":"","preUnit":"","source":""}}`))
-	case "dataset":
+	case testContentKeyDataset:
 		w.Write([]byte(`{"type":"dataset","uri":"www.google.com","downloads":[{"file":"test.txt"}],"supplementaryFiles":[{"title":"helloworld","file":"helloworld.txt"}],"versions":[{"uri":"www.google.com"}]}`))
-	case "pageTitle1":
+	case testContentKeyPageTitle1:
 		w.Write([]byte(`{"title":"baby-names","edition":"2017","uri":"path/to/baby-names/2017"}`))
-	case "pageTitle2":
+	case testContentKeyPageTitle2:
 		w.Write([]byte(`{"title":"page-title","edition":"2021","uri":"path/to/page-title/2021"}`))
-	case "pageData":
+	case testContentKeyPageData:
 		w.Write([]byte(`{"type":"bulletin","description":{"title":"UK Environmental Accounts", "summary":"Measuring the contribution of the environment to the economy","keywords":["emissions","climate"],"metaDescription":"meta2","nationalStatistic":true,"latestRelease":true,"contact":{"email": "contact@ons.gov.uk","name":"Contact","telephone":"+44 (0) 1633 456900"},"releaseDate":"2021-06-02T23:00:00.000Z","nextRelease":"June 2022","edition":"2021"},"relatedData":[{"uri":"/foo/1"},{"uri":"/bar/1"}]}`))
-	case "pageDescription1":
+	case testContentKeyPageDescription1:
 		w.Write([]byte(`{"uri":"path/to/page-description","description":{"migrationLink": "/redirect1", "title":"Page title", "summary":"This is the page summary","keywords":["Economy","Retail"],"metaDescription":"meta","nationalStatistic":true,"latestRelease":true,"contact":{"email": "contact@ons.gov.uk","name":"Contact","telephone":"+44 (0) 1633 456900"},"releaseDate":"2015-09-14T23:00:00.000Z","nextRelease":"13 October 2015","edition":"August 2015"}}`))
-	case "pageDescription2":
+	case testContentKeyPageDescription2:
 		w.Write([]byte(`{"uri":"page-description-2","description":{"title":"UK Environmental Accounts", "summary":"Measuring the contribution of the environment to the economy","keywords":["emissions","climate"],"metaDescription":"meta2","nationalStatistic":true,"latestRelease":true,"contact":{"email": "contact@ons.gov.uk","name":"Contact","telephone":"+44 (0) 1633 456900"},"releaseDate":"2021-06-02T23:00:00.000Z","nextRelease":"June 2022","edition":"2021"}}`))
-	case "pageDescription3":
+	case testContentKeyPageDescription3:
 		w.Write([]byte(`{"uri":"page-description-3","description":{"title":"Another page title", "summary":"","_abstract":"Page description is mapped from _abstract"}}`))
-	case "bulletin-latest-release":
+	case testContentKeyBulletinLatestRelease:
 		w.Write([]byte(`{"relatedBulletins":[{"uri":"pageTitle1"}],"sections":[{"title":"Main points","markdown":"Main points markdown"},{"title":"Overview","markdown":"Overview markdown"}],"accordion":[{"title":"Background notes","markdown":"Notes markdown"}],"relatedData":[{"uri":"/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging"}],"charts":[{"title":"Figure 1.1","filename":"38d8c337","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337"}],"tables":[{"title":"Table 5.1","filename":"6f587872","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872"}],"images":[],"equations":[],"links":[{"uri":"pageTitle1"}, {"uri":"pageTitle2"}],"alerts":[{"date":"2021-09-30T07:10:46.230Z","markdown":"alert"}],"versions":[{"uri":"v1","updateDate":"2021-10-19T10:43:34.507Z","correctionNotice":"Notice"}],"type":"bulletin","uri":"/bulletin/2015-07-09","description":{"title":"UK Environmental Accounts","summary":"Measures the contribution of the environment to the economy","keywords":["fuel, energy"], "migrationLink": "/redirect1", "metaDescription":"Measures the contribution of the environment.","nationalStatistic":true,"latestRelease":true,"contact":{"email":"environment.accounts@ons.gsi.gov.uk","name":"Someone","telephone":"+44 (0)1633 455680"},"releaseDate":"2015-07-08T23:00:00.000Z","nextRelease":"","edition":"2015","unit":"","preUnit":"","source":""}}`))
-	case "bulletin-not-latest-release":
+	case testContentKeyBulletinNotLatestRelease:
 		w.Write([]byte(`{"relatedBulletins":[{"uri":"pageTitle1"}],"sections":[{"title":"Main points","markdown":"Main points markdown"},{"title":"Overview","markdown":"Overview markdown"}],"accordion":[{"title":"Background notes","markdown":"Notes markdown"}],"relatedData":[{"uri":"/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging"}],"charts":[{"title":"Figure 1.1","filename":"38d8c337","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337"}],"tables":[{"title":"Table 5.1","filename":"6f587872","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872"}],"images":[],"equations":[],"links":[{"uri":"pageTitle1"}, {"uri":"pageTitle2"}],"alerts":[{"date":"2021-09-30T07:10:46.230Z","markdown":"alert"}],"versions":[{"uri":"v1","updateDate":"2021-10-19T10:43:34.507Z","correctionNotice":"Notice"}],"type":"bulletin","uri":"/bulletin/2015-07-09","description":{"title":"UK Environmental Accounts","summary":"Measures the contribution of the environment to the economy","keywords":["fuel, energy"], "migrationLink": "/redirect1", "metaDescription":"Measures the contribution of the environment.","nationalStatistic":true,"latestRelease":false,"contact":{"email":"environment.accounts@ons.gsi.gov.uk","name":"Someone","telephone":"+44 (0)1633 455680"},"releaseDate":"2015-07-08T23:00:00.000Z","nextRelease":"","edition":"2015","unit":"","preUnit":"","source":""}}`))
-	case "/bulletin/latest":
+	case testContentKeyBulletinLatest:
 		w.Write([]byte(`{"title":"latest release","edition":"2021","uri":"/bulletin/collection/2021"}`))
-	case "/release":
+	case testContentKeyRelease:
 		w.Write([]byte(`{"markdown":["markdown"],"relatedDocuments":[{"uri":"pageDescription2"}],"relatedDatasets":[{"uri":"pageDescription1"}],"relatedAPIDatasets":[{"uri":"cantabularDataset","title":"Title for cantabularDataset"},{"uri":"cmdDataset","title":"Title for cmdDataset"}],"relatedMethodology":[{"uri":"pageDescription1"}],"relatedMethodologyArticle":[{"uri":"pageDescription2"}],"links":[{"uri":"pageDescription1"}, {"uri":"pageDescription2"}, {"uri":"externalLinkURI","title":"This is a link to an external site"}],"dateChanges":[{"previousDate":"2021-08-15T11:12:05.592Z","changeNotice":"change notice"}],"uri":"/releases/indexofproductionukdecember2021timeseries","description":{"migrationLink": "/redirect1", "finalised":true,"title":"Index of Production","summary":"Movements in the volume of production for the UK production industries","nationalStatistic":true,"contact":{"email":"indexofproduction@ons.gov.uk","name":"Contact name","telephone":"+44 1633 456980"},"releaseDate":"2022-02-11T07:00:00.000Z","nextRelease":"11 March 2022","cancelled":true,"cancellationNotice":["notice"],"finalised":true,"published":true,"provisionalDate":"Dec 22"}}`))
-	case "/":
+	case testContentKeyHomepage:
 		w.Write([]byte(`{"intro":{"title":"Welcome to the Office for National Statistics","markdown":"Test markdown"},"featuredContent":[{"title":"Featured Content One","description":"Featured Content One Description","uri":"/one","image":"testImage"}],"aroundONS":[{"title":"Around ONS One","description":"Around ONS One Description","uri":"/one","image":"testImage"}],"serviceMessage":"","emergencyBanner":{"type":"notable_death","title":"Emergency banner title","description":"Emergency banner description","uri":"www.google.com","linkText":"More info"},"description":{"keywords":[ "keywordOne", "keywordTwo" ],"metaDescription":"","unit":"","preUnit":"","source":""}}`))
-	case "notFound":
+	case testContentKeyNotFound:
 		w.WriteHeader(http.StatusNotFound)
 	}
-
 }
 
 func contentDataCollection(w http.ResponseWriter, req *http.Request) {
@@ -127,29 +150,29 @@ func contentDataCollection(w http.ResponseWriter, req *http.Request) {
 	checkCollection(w, req)
 
 	switch uri {
-	case "labour":
+	case testContentKeyLabourMarket:
 		w.Write([]byte(`{"downloads":[{"title":"Latest","file":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02/labd02jul2015_tcm77-408195.xls"}],"section":{"markdown":""},"relatedDatasets":[{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputeslabd01"},{"uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/stoppagesofworklabd03"}],"relatedDocuments":[{"uri":"/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/bulletins/uklabourmarket/2015-07-15"}],"relatedMethodology":[],"type":"dataset_landing_page","uri":"/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02","description":{"title":"Labour disputes by sector: LABD02 - publishing","summary":"Labour disputes by sector.","keywords":["strike"],"metaDescription":"Labour disputes by sector.","nationalStatistic":true,"contact":{"email":"richard.clegg@ons.gsi.gov.uk\n","name":"Richard Clegg\n","telephone":"+44 (0)1633 455400 \n"},"releaseDate":"2015-07-14T23:00:00.000Z","nextRelease":"12 August 2015","datasetId":"","unit":"","preUnit":"","source":""}}`))
-	case "dataset":
+	case testContentKeyDataset:
 		w.Write([]byte(`{"type":"dataset","uri":"www.google.com","downloads":[{"file":"testCollection.txt"}],"supplementaryFiles":[{"title":"helloworld","file":"helloworld.txt"}],"versions":[{"uri":"www.google.com"}]}`))
-	case "pageTitle1":
+	case testContentKeyPageTitle1:
 		w.Write([]byte(`{"title":"baby-names","edition":"collection","uri":"path/to/baby-names/collection"}`))
-	case "pageTitle2":
+	case testContentKeyPageTitle2:
 		w.Write([]byte(`{"title":"page-title","edition":"c2021","uri":"path/to/page-title/2021"}`))
-	case "pageDescription1":
+	case testContentKeyPageDescription1:
 		w.Write([]byte(`{"uri":"path/to/page-description/collection","description":{"migrationLink": "/redirect1", "title":"Page title", "summary":"This is the page summary","keywords":["Economy","Retail"],"metaDescription":"meta","nationalStatistic":true,"latestRelease":true,"contact":{"email": "contact@ons.gov.uk","name":"Contact","telephone":"+44 (0) 1633 456900"},"releaseDate":"2015-09-14T23:00:00.000Z","nextRelease":"13 October 2015","edition":"collection"}}`))
-	case "pageDescription2":
+	case testContentKeyPageDescription2:
 		w.Write([]byte(`{"uri":"collection/page-description-2","description":{"title":"Collection UK Environmental Accounts", "summary":"Measuring the contribution of the environment to the economy","keywords":["emissions","climate"],"metaDescription":"meta2","nationalStatistic":true,"latestRelease":true,"contact":{"email": "contact@ons.gov.uk","name":"Contact","telephone":"+44 (0) 1633 456900"},"releaseDate":"2021-06-02T23:00:00.000Z","nextRelease":"June 2022","edition":"2021c"}}`))
-	case "pageDescription3":
+	case testContentKeyPageDescription3:
 		w.Write([]byte(`{"uri":"collection/page-description-3","description":{"title":"Another page title", "summary":"", "_abstract": "Summary is from the _abstract field"}}`))
-	case "bulletin-latest-release":
+	case testContentKeyBulletinLatestRelease:
 		w.Write([]byte(`{"relatedBulletins":[{"uri":"pageTitle1"}],"sections":[{"title":"Main points","markdown":"Main points markdown"},{"title":"Overview","markdown":"Overview markdown"}],"accordion":[{"title":"Background notes","markdown":"Notes markdown"}],"relatedData":[{"uri":"/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging"}],"charts":[{"title":"Figure 1.1","filename":"38d8c337","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337"}],"tables":[{"title":"Table 5.1","filename":"6f587872","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872"}],"images":[],"equations":[],"links":[{"uri":"pageTitle1"}, {"uri":"pageTitle2"}],"alerts":[{"date":"2021-09-30T07:10:46.230Z","markdown":"alert"}],"versions":[{"uri":"v1","updateDate":"2021-10-19T10:43:34.507Z","correctionNotice":"Notice"}],"type":"bulletin","uri":"/bulletin/2015-07-09","description":{"migrationLink": "/redirect1", "title":"UK Environmental Accounts with collection","summary":"Measures the contribution of the environment to the economy","keywords":["fuel, energy"],"metaDescription":"Measures the contribution of the environment.","nationalStatistic":true,"latestRelease":true,"contact":{"email":"environment.accounts@ons.gsi.gov.uk","name":"Someone","telephone":"+44 (0)1633 455680"},"releaseDate":"2015-07-08T23:00:00.000Z","nextRelease":"","edition":"2015","unit":"","preUnit":"","source":""}}`))
-	case "bulletin-not-latest-release":
+	case testContentKeyBulletinNotLatestRelease:
 		w.Write([]byte(`{"relatedBulletins":[{"uri":"pageTitle1"}],"sections":[{"title":"Main points","markdown":"Main points markdown"},{"title":"Overview","markdown":"Overview markdown"}],"accordion":[{"title":"Background notes","markdown":"Notes markdown"}],"relatedData":[{"uri":"/economy/environmentalaccounts/datasets/ukenvironmentalaccountsenergybridging"}],"charts":[{"title":"Figure 1.1","filename":"38d8c337","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/38d8c337"}],"tables":[{"title":"Table 5.1","filename":"6f587872","uri":"/economy/environmentalaccounts/bulletins/ukenvironmentalaccounts/2015-07-09/6f587872"}],"images":[],"equations":[],"links":[{"uri":"pageTitle1"}, {"uri":"pageTitle2"}],"alerts":[{"date":"2021-09-30T07:10:46.230Z","markdown":"alert"}],"versions":[{"uri":"v1","updateDate":"2021-10-19T10:43:34.507Z","correctionNotice":"Notice"}],"type":"bulletin","uri":"/bulletin/2015-07-09","description":{"migrationLink": "/redirect1", "title":"UK Environmental Accounts with collection","summary":"Measures the contribution of the environment to the economy","keywords":["fuel, energy"],"metaDescription":"Measures the contribution of the environment.","nationalStatistic":true,"latestRelease":false,"contact":{"email":"environment.accounts@ons.gsi.gov.uk","name":"Someone","telephone":"+44 (0)1633 455680"},"releaseDate":"2015-07-08T23:00:00.000Z","nextRelease":"","edition":"2015","unit":"","preUnit":"","source":""}}`))
-	case "/bulletin/latest":
+	case testContentKeyBulletinLatest:
 		w.Write([]byte(`{"title":"latest release","edition":"2021","uri":"/bulletin/2021"}`))
-	case "/release":
+	case testContentKeyRelease:
 		w.Write([]byte(`{"markdown":["collection markdown"],"relatedDocuments":[{"uri":"pageDescription2"},{"uri":"pageDescription3"}],"relatedDatasets":[{"uri":"pageDescription1"}],"relatedMethodology":[{"uri":"pageDescription1"}],"relatedMethodologyArticle":[{"uri":"pageDescription2"}],"links":[{"uri":"pageDescription1"}, {"uri":"pageDescription2"}, {"uri":"externalLinkURI","title":"This is a link to an external site"}],"dateChanges":[{"previousDate":"2021-08-15T11:12:05.592Z","changeNotice":"change notice"}],"uri":"/releases/collection","description":{"migrationLink": "/redirect1", "finalised":true,"title":"Index of Production","summary":"Movements in the volume of production for the UK production industries","nationalStatistic":true,"contact":{"email":"indexofproduction@ons.gov.uk","name":"Contact name","telephone":"+44 1633 456980"},"releaseDate":"2022-02-11T07:00:00.000Z","nextRelease":"11 March 2022","cancelled":true,"cancellationNotice":["notice"],"finalised":true,"published":true,"provisionalDate":"Dec 22"}}`))
-	case "/":
+	case testContentKeyHomepage:
 		w.Write([]byte(`{"intro":{"title":"Welcome to Publishing","markdown":"Test markdown"},"featuredContent":[{"title":"Featured Content One","description":"Featured Content One Description","uri":"/one","image":"testImage"}],"aroundONS":[{"title":"Around ONS One","description":"Around ONS One Description","uri":"/one","image":"testImage"}],"serviceMessage":"","emergencyBanner":{"type":"notable_death","title":"Emergency banner title","description":"Emergency banner description","uri":"www.google.com","linkText":"More info"},"description":{"keywords":[ "keywordOne", "keywordTwo" ],"metaDescription":"","unit":"","preUnit":"","source":""}}`))
 	}
 }
@@ -214,7 +237,6 @@ func TestUnitClient(t *testing.T) {
 	ctx := context.Background()
 
 	Convey("test get()", t, func() {
-
 		Convey("test get successfully returns response from zebedee with headers", func() {
 			b, h, err := cli.get(ctx, testAccessToken, "/data?uri=foo&lang="+testLang)
 			So(err, ShouldBeNil)
@@ -236,7 +258,7 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test getLanding successfully returns a landing model", t, func() {
-		m, err := cli.GetDatasetLandingPage(ctx, testAccessToken, "", testLang, "labour")
+		m, err := cli.GetDatasetLandingPage(ctx, testAccessToken, "", testLang, testContentKeyLabourMarket)
 		So(err, ShouldBeNil)
 		So(m, ShouldNotBeEmpty)
 		So(m.Type, ShouldEqual, "dataset_landing_page")
@@ -244,7 +266,7 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test getLanding successfully returns a landing model when using a collection", t, func() {
-		m, err := cli.GetDatasetLandingPage(ctx, testAccessToken, testCollectionID, testLang, "labour")
+		m, err := cli.GetDatasetLandingPage(ctx, testAccessToken, testCollectionID, testLang, testContentKeyLabourMarket)
 		So(err, ShouldBeNil)
 		So(m, ShouldNotBeEmpty)
 		So(m.Type, ShouldEqual, "dataset_landing_page")
@@ -252,7 +274,7 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("GetHomepageContent() returns a homepage model", t, func() {
-		m, err := cli.GetHomepageContent(ctx, testAccessToken, "", testLang, "/")
+		m, err := cli.GetHomepageContent(ctx, testAccessToken, "", testLang, testContentKeyHomepage)
 		So(err, ShouldBeNil)
 		So(m, ShouldNotBeEmpty)
 		So(m.Intro.Title, ShouldEqual, "Welcome to the Office for National Statistics")
@@ -272,7 +294,7 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("GetHomepageContent() returns a homepage model when using a collection", t, func() {
-		m, err := cli.GetHomepageContent(ctx, testAccessToken, testCollectionID, testLang, "/")
+		m, err := cli.GetHomepageContent(ctx, testAccessToken, testCollectionID, testLang, testContentKeyHomepage)
 		So(err, ShouldBeNil)
 		So(m, ShouldNotBeEmpty)
 		So(m.Intro.Title, ShouldEqual, "Welcome to Publishing")
@@ -292,7 +314,7 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test get dataset details", t, func() {
-		d, err := cli.GetDataset(ctx, testAccessToken, "", testLang, "dataset")
+		d, err := cli.GetDataset(ctx, testAccessToken, "", testLang, testContentKeyDataset)
 		So(err, ShouldBeNil)
 		So(d.URI, ShouldEqual, "www.google.com")
 		So(d.SupplementaryFiles[0].Title, ShouldEqual, "helloworld")
@@ -302,7 +324,7 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test get dataset details when using a collection", t, func() {
-		d, err := cli.GetDataset(ctx, testAccessToken, testCollectionID, testLang, "dataset")
+		d, err := cli.GetDataset(ctx, testAccessToken, testCollectionID, testLang, testContentKeyDataset)
 		So(err, ShouldBeNil)
 		So(d.URI, ShouldEqual, "www.google.com")
 		So(d.SupplementaryFiles[0].Title, ShouldEqual, "helloworld")
@@ -324,7 +346,7 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test getPageTitle returns a correctly formatted page title", t, func() {
-		t, err := cli.GetPageTitle(ctx, testAccessToken, "", testLang, "pageTitle1")
+		t, err := cli.GetPageTitle(ctx, testAccessToken, "", testLang, testContentKeyPageTitle1)
 		So(err, ShouldBeNil)
 		So(t.Title, ShouldEqual, "baby-names")
 		So(t.Edition, ShouldEqual, "2017")
@@ -332,7 +354,7 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test getPageTitle returns a correctly formatted page title when using a collection", t, func() {
-		t, err := cli.GetPageTitle(ctx, testAccessToken, testCollectionID, testLang, "pageTitle1")
+		t, err := cli.GetPageTitle(ctx, testAccessToken, testCollectionID, testLang, testContentKeyPageTitle1)
 		So(err, ShouldBeNil)
 		So(t.Title, ShouldEqual, "baby-names")
 		So(t.Edition, ShouldEqual, "collection")
@@ -340,7 +362,7 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test GetPageData returns a correctly formatted generic page", t, func() {
-		t, err := cli.GetPageData(ctx, testAccessToken, "", testLang, "pageData")
+		t, err := cli.GetPageData(ctx, testAccessToken, "", testLang, testContentKeyPageData)
 		So(err, ShouldBeNil)
 		So(t.Type, ShouldEqual, "bulletin")
 		So(t.Description.Title, ShouldEqual, "UK Environmental Accounts")
@@ -350,7 +372,7 @@ func TestUnitClient(t *testing.T) {
 	})
 
 	Convey("test GetPageData returns a correctly formatted generic page when using a collection", t, func() {
-		t, err := cli.GetPageData(ctx, testAccessToken, "", testLang, "pageData")
+		t, err := cli.GetPageData(ctx, testAccessToken, "", testLang, testContentKeyPageData)
 		So(err, ShouldBeNil)
 		So(t.Type, ShouldEqual, "bulletin")
 		So(t.Description.Title, ShouldEqual, "UK Environmental Accounts")
@@ -363,7 +385,7 @@ func TestUnitClient(t *testing.T) {
 		Convey("when not using a collection", func() {
 			collectionId := ""
 			Convey("it returns a page description", func() {
-				d, err := cli.GetPageDescription(ctx, testAccessToken, collectionId, testLang, "pageDescription1")
+				d, err := cli.GetPageDescription(ctx, testAccessToken, collectionId, testLang, testContentKeyPageDescription1)
 				So(err, ShouldBeNil)
 				So(d.URI, ShouldEqual, "path/to/page-description")
 				So(d.Description.Title, ShouldEqual, "Page title")
@@ -386,7 +408,7 @@ func TestUnitClient(t *testing.T) {
 		Convey("when using a collection", func() {
 			collectionId := testCollectionID
 			Convey("it returns a page description", func() {
-				d, err := cli.GetPageDescription(ctx, testAccessToken, collectionId, testLang, "pageDescription1")
+				d, err := cli.GetPageDescription(ctx, testAccessToken, collectionId, testLang, testContentKeyPageDescription1)
 				So(err, ShouldBeNil)
 				So(d.URI, ShouldEqual, "path/to/page-description/collection")
 				So(d.Description.Title, ShouldEqual, "Page title")
@@ -409,7 +431,7 @@ func TestUnitClient(t *testing.T) {
 		Convey("when the page type maps summary to _abstract", func() {
 			collectionId := ""
 			Convey("it maps to abstract", func() {
-				d, err := cli.GetPageDescription(ctx, testAccessToken, collectionId, testLang, "pageDescription3")
+				d, err := cli.GetPageDescription(ctx, testAccessToken, collectionId, testLang, testContentKeyPageDescription3)
 				So(err, ShouldBeNil)
 				So(d.Description.Title, ShouldEqual, "Another page title")
 				So(d.Description.Abstract, ShouldEqual, "Page description is mapped from _abstract")
@@ -440,20 +462,20 @@ func TestUnitClient(t *testing.T) {
 		Convey("when using a collection", func() {
 			collectionId := testCollectionID
 			Convey("returns the latest release of a bulletin", func() {
-				b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, testLang, "bulletin-latest-release")
+				b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, testLang, testContentKeyBulletinLatestRelease)
 				So(err, ShouldBeNil)
 				So(b, ShouldNotBeEmpty)
 				So(b.Type, ShouldEqual, "bulletin")
 				So(b.URI, ShouldEqual, "/bulletin/2015-07-09")
 				So(b.RelatedBulletins, ShouldNotBeEmpty)
 				So(len(b.RelatedBulletins), ShouldEqual, 1)
-				So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle1")
+				So(b.RelatedBulletins[0].URI, ShouldEqual, testContentKeyPageTitle1)
 				So(b.RelatedBulletins[0].Title, ShouldEqual, "baby-names: collection")
 				So(b.Links, ShouldNotBeEmpty)
 				So(len(b.Links), ShouldEqual, 2)
-				So(b.Links[0].URI, ShouldEqual, "pageTitle1")
+				So(b.Links[0].URI, ShouldEqual, testContentKeyPageTitle1)
 				So(b.Links[0].Title, ShouldEqual, "baby-names: collection")
-				So(b.Links[1].URI, ShouldEqual, "pageTitle2")
+				So(b.Links[1].URI, ShouldEqual, testContentKeyPageTitle2)
 				So(b.Links[1].Title, ShouldEqual, "page-title: c2021")
 				So(b.Sections, ShouldNotBeEmpty)
 				So(len(b.Sections), ShouldEqual, 2)
@@ -504,20 +526,20 @@ func TestUnitClient(t *testing.T) {
 			})
 
 			Convey("returns a non-latest release of a bulletin", func() {
-				b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, testLang, "bulletin-not-latest-release")
+				b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, testLang, testContentKeyBulletinNotLatestRelease)
 				So(err, ShouldBeNil)
 				So(b, ShouldNotBeEmpty)
 				So(b.Type, ShouldEqual, "bulletin")
 				So(b.URI, ShouldEqual, "/bulletin/2015-07-09")
 				So(b.RelatedBulletins, ShouldNotBeEmpty)
 				So(len(b.RelatedBulletins), ShouldEqual, 1)
-				So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle1")
+				So(b.RelatedBulletins[0].URI, ShouldEqual, testContentKeyPageTitle1)
 				So(b.RelatedBulletins[0].Title, ShouldEqual, "baby-names: collection")
 				So(b.Links, ShouldNotBeEmpty)
 				So(len(b.Links), ShouldEqual, 2)
-				So(b.Links[0].URI, ShouldEqual, "pageTitle1")
+				So(b.Links[0].URI, ShouldEqual, testContentKeyPageTitle1)
 				So(b.Links[0].Title, ShouldEqual, "baby-names: collection")
-				So(b.Links[1].URI, ShouldEqual, "pageTitle2")
+				So(b.Links[1].URI, ShouldEqual, testContentKeyPageTitle2)
 				So(b.Links[1].Title, ShouldEqual, "page-title: c2021")
 				So(b.Sections, ShouldNotBeEmpty)
 				So(len(b.Sections), ShouldEqual, 2)
@@ -571,20 +593,20 @@ func TestUnitClient(t *testing.T) {
 		Convey("when not using a collection", func() {
 			collectionId := ""
 			Convey("returns the latest release of a bulletin", func() {
-				b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, testLang, "bulletin-latest-release")
+				b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, testLang, testContentKeyBulletinLatestRelease)
 				So(err, ShouldBeNil)
 				So(b, ShouldNotBeEmpty)
 				So(b.Type, ShouldEqual, "bulletin")
 				So(b.URI, ShouldEqual, "/bulletin/2015-07-09")
 				So(b.RelatedBulletins, ShouldNotBeEmpty)
 				So(len(b.RelatedBulletins), ShouldEqual, 1)
-				So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle1")
+				So(b.RelatedBulletins[0].URI, ShouldEqual, testContentKeyPageTitle1)
 				So(b.RelatedBulletins[0].Title, ShouldEqual, "baby-names: 2017")
 				So(b.Links, ShouldNotBeEmpty)
 				So(len(b.Links), ShouldEqual, 2)
-				So(b.Links[0].URI, ShouldEqual, "pageTitle1")
+				So(b.Links[0].URI, ShouldEqual, testContentKeyPageTitle1)
 				So(b.Links[0].Title, ShouldEqual, "baby-names: 2017")
-				So(b.Links[1].URI, ShouldEqual, "pageTitle2")
+				So(b.Links[1].URI, ShouldEqual, testContentKeyPageTitle2)
 				So(b.Links[1].Title, ShouldEqual, "page-title: 2021")
 				So(b.Sections, ShouldNotBeEmpty)
 				So(len(b.Sections), ShouldEqual, 2)
@@ -636,20 +658,20 @@ func TestUnitClient(t *testing.T) {
 			})
 
 			Convey("returns a non-latest release of a bulletin", func() {
-				b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, testLang, "bulletin-not-latest-release")
+				b, err := cli.GetBulletin(ctx, testAccessToken, collectionId, testLang, testContentKeyBulletinNotLatestRelease)
 				So(err, ShouldBeNil)
 				So(b, ShouldNotBeEmpty)
 				So(b.Type, ShouldEqual, "bulletin")
 				So(b.URI, ShouldEqual, "/bulletin/2015-07-09")
 				So(b.RelatedBulletins, ShouldNotBeEmpty)
 				So(len(b.RelatedBulletins), ShouldEqual, 1)
-				So(b.RelatedBulletins[0].URI, ShouldEqual, "pageTitle1")
+				So(b.RelatedBulletins[0].URI, ShouldEqual, testContentKeyPageTitle1)
 				So(b.RelatedBulletins[0].Title, ShouldEqual, "baby-names: 2017")
 				So(b.Links, ShouldNotBeEmpty)
 				So(len(b.Links), ShouldEqual, 2)
-				So(b.Links[0].URI, ShouldEqual, "pageTitle1")
+				So(b.Links[0].URI, ShouldEqual, testContentKeyPageTitle1)
 				So(b.Links[0].Title, ShouldEqual, "baby-names: 2017")
-				So(b.Links[1].URI, ShouldEqual, "pageTitle2")
+				So(b.Links[1].URI, ShouldEqual, testContentKeyPageTitle2)
 				So(b.Links[1].Title, ShouldEqual, "page-title: 2021")
 				So(b.Sections, ShouldNotBeEmpty)
 				So(len(b.Sections), ShouldEqual, 2)
@@ -701,7 +723,7 @@ func TestUnitClient(t *testing.T) {
 		})
 
 		Convey("returns an error if uri not found", func() {
-			b, err := cli.GetBulletin(ctx, testAccessToken, "", testLang, "notFound")
+			b, err := cli.GetBulletin(ctx, testAccessToken, "", testLang, testContentKeyNotFound)
 			So(err, ShouldNotBeNil)
 			So(b, ShouldResemble, Bulletin{})
 		})
@@ -719,11 +741,11 @@ func TestUnitClient(t *testing.T) {
 					So(len(r.Markdown), ShouldEqual, 1)
 					So(r.Markdown[0], ShouldEqual, "markdown")
 					So(len(r.RelatedDocuments), ShouldEqual, 1)
-					So(r.RelatedDocuments[0].URI, ShouldEqual, "pageDescription2")
+					So(r.RelatedDocuments[0].URI, ShouldEqual, testContentKeyPageDescription2)
 					So(r.RelatedDocuments[0].Title, ShouldEqual, "UK Environmental Accounts: 2021")
 					So(r.RelatedDocuments[0].Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
 					So(len(r.RelatedDatasets), ShouldEqual, 1)
-					So(r.RelatedDatasets[0].URI, ShouldEqual, "pageDescription1")
+					So(r.RelatedDatasets[0].URI, ShouldEqual, testContentKeyPageDescription1)
 					So(r.RelatedDatasets[0].Title, ShouldEqual, "Page title: August 2015")
 					So(r.RelatedDatasets[0].Summary, ShouldEqual, "This is the page summary")
 					So(len(r.RelatedAPIDatasets), ShouldEqual, 2)
@@ -732,18 +754,18 @@ func TestUnitClient(t *testing.T) {
 					So(r.RelatedAPIDatasets[1].URI, ShouldEqual, "cmdDataset")
 					So(r.RelatedAPIDatasets[1].Title, ShouldEqual, "Title for cmdDataset")
 					So(len(r.RelatedMethodology), ShouldEqual, 1)
-					So(r.RelatedMethodology[0].URI, ShouldEqual, "pageDescription1")
+					So(r.RelatedMethodology[0].URI, ShouldEqual, testContentKeyPageDescription1)
 					So(r.RelatedMethodology[0].Title, ShouldEqual, "Page title: August 2015")
 					So(r.RelatedMethodology[0].Summary, ShouldEqual, "This is the page summary")
 					So(len(r.RelatedMethodologyArticle), ShouldEqual, 1)
-					So(r.RelatedMethodologyArticle[0].URI, ShouldEqual, "pageDescription2")
+					So(r.RelatedMethodologyArticle[0].URI, ShouldEqual, testContentKeyPageDescription2)
 					So(r.RelatedMethodologyArticle[0].Title, ShouldEqual, "UK Environmental Accounts: 2021")
 					So(r.RelatedMethodologyArticle[0].Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
 					So(len(r.Links), ShouldEqual, 3)
-					So(r.Links[0].URI, ShouldEqual, "pageDescription1")
+					So(r.Links[0].URI, ShouldEqual, testContentKeyPageDescription1)
 					So(r.Links[0].Title, ShouldEqual, "Page title: August 2015")
 					So(r.Links[0].Summary, ShouldEqual, "This is the page summary")
-					So(r.Links[1].URI, ShouldEqual, "pageDescription2")
+					So(r.Links[1].URI, ShouldEqual, testContentKeyPageDescription2)
 					So(r.Links[1].Title, ShouldEqual, "UK Environmental Accounts: 2021")
 					So(r.Links[1].Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
 					So(r.Links[2].URI, ShouldEqual, "externalLinkURI")
@@ -779,11 +801,11 @@ func TestUnitClient(t *testing.T) {
 					So(len(r.Markdown), ShouldEqual, 1)
 					So(r.Markdown[0], ShouldEqual, "markdown")
 					So(len(r.RelatedDocuments), ShouldEqual, 1)
-					So(r.RelatedDocuments[0].URI, ShouldEqual, "pageDescription2")
+					So(r.RelatedDocuments[0].URI, ShouldEqual, testContentKeyPageDescription2)
 					So(r.RelatedDocuments[0].Title, ShouldEqual, "UK Environmental Accounts: 2021")
 					So(r.RelatedDocuments[0].Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
 					So(len(r.RelatedDatasets), ShouldEqual, 1)
-					So(r.RelatedDatasets[0].URI, ShouldEqual, "pageDescription1")
+					So(r.RelatedDatasets[0].URI, ShouldEqual, testContentKeyPageDescription1)
 					So(r.RelatedDatasets[0].Title, ShouldEqual, "Page title: August 2015")
 					So(r.RelatedDatasets[0].Summary, ShouldEqual, "This is the page summary")
 					So(len(r.RelatedAPIDatasets), ShouldEqual, 2)
@@ -792,18 +814,18 @@ func TestUnitClient(t *testing.T) {
 					So(r.RelatedAPIDatasets[1].URI, ShouldEqual, "cmdDataset")
 					So(r.RelatedAPIDatasets[1].Title, ShouldEqual, "Title for cmdDataset")
 					So(len(r.RelatedMethodology), ShouldEqual, 1)
-					So(r.RelatedMethodology[0].URI, ShouldEqual, "pageDescription1")
+					So(r.RelatedMethodology[0].URI, ShouldEqual, testContentKeyPageDescription1)
 					So(r.RelatedMethodology[0].Title, ShouldEqual, "Page title: August 2015")
 					So(r.RelatedMethodology[0].Summary, ShouldEqual, "This is the page summary")
 					So(len(r.RelatedMethodologyArticle), ShouldEqual, 1)
-					So(r.RelatedMethodologyArticle[0].URI, ShouldEqual, "pageDescription2")
+					So(r.RelatedMethodologyArticle[0].URI, ShouldEqual, testContentKeyPageDescription2)
 					So(r.RelatedMethodologyArticle[0].Title, ShouldEqual, "UK Environmental Accounts: 2021")
 					So(r.RelatedMethodologyArticle[0].Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
 					So(len(r.Links), ShouldEqual, 3)
-					So(r.Links[0].URI, ShouldEqual, "pageDescription1")
+					So(r.Links[0].URI, ShouldEqual, testContentKeyPageDescription1)
 					So(r.Links[0].Title, ShouldEqual, "Page title: August 2015")
 					So(r.Links[0].Summary, ShouldEqual, "This is the page summary")
-					So(r.Links[1].URI, ShouldEqual, "pageDescription2")
+					So(r.Links[1].URI, ShouldEqual, testContentKeyPageDescription2)
 					So(r.Links[1].Title, ShouldEqual, "UK Environmental Accounts: 2021")
 					So(r.Links[1].Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
 					So(r.Links[2].URI, ShouldEqual, "externalLinkURI")
@@ -834,7 +856,7 @@ func TestUnitClient(t *testing.T) {
 		Convey("Given that we are using a collection", func() {
 			collectionId := testCollectionID
 			Convey("When we call GetRelease with a valid clean path", func() {
-				r, err := cli.GetRelease(ctx, testAccessToken, collectionId, testLang, "/release")
+				r, err := cli.GetRelease(ctx, testAccessToken, collectionId, testLang, testContentKeyRelease)
 				Convey("Then it returns the release", func() {
 					So(err, ShouldBeNil)
 					So(r, ShouldNotBeEmpty)
@@ -842,29 +864,29 @@ func TestUnitClient(t *testing.T) {
 					So(len(r.Markdown), ShouldEqual, 1)
 					So(r.Markdown[0], ShouldEqual, "collection markdown")
 					So(len(r.RelatedDocuments), ShouldEqual, 2)
-					So(r.RelatedDocuments[0].URI, ShouldEqual, "pageDescription2")
+					So(r.RelatedDocuments[0].URI, ShouldEqual, testContentKeyPageDescription2)
 					So(r.RelatedDocuments[0].Title, ShouldEqual, "Collection UK Environmental Accounts: 2021c")
 					So(r.RelatedDocuments[0].Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
-					So(r.RelatedDocuments[1].URI, ShouldEqual, "pageDescription3")
+					So(r.RelatedDocuments[1].URI, ShouldEqual, testContentKeyPageDescription3)
 					So(r.RelatedDocuments[1].Title, ShouldEqual, "Another page title")
 					So(r.RelatedDocuments[1].Summary, ShouldEqual, "Summary is from the _abstract field")
 					So(len(r.RelatedDatasets), ShouldEqual, 1)
-					So(r.RelatedDatasets[0].URI, ShouldEqual, "pageDescription1")
+					So(r.RelatedDatasets[0].URI, ShouldEqual, testContentKeyPageDescription1)
 					So(r.RelatedDatasets[0].Title, ShouldEqual, "Page title: collection")
 					So(r.RelatedDatasets[0].Summary, ShouldEqual, "This is the page summary")
 					So(len(r.RelatedMethodology), ShouldEqual, 1)
-					So(r.RelatedMethodology[0].URI, ShouldEqual, "pageDescription1")
+					So(r.RelatedMethodology[0].URI, ShouldEqual, testContentKeyPageDescription1)
 					So(r.RelatedMethodology[0].Title, ShouldEqual, "Page title: collection")
 					So(r.RelatedMethodology[0].Summary, ShouldEqual, "This is the page summary")
 					So(len(r.RelatedMethodologyArticle), ShouldEqual, 1)
-					So(r.RelatedMethodologyArticle[0].URI, ShouldEqual, "pageDescription2")
+					So(r.RelatedMethodologyArticle[0].URI, ShouldEqual, testContentKeyPageDescription2)
 					So(r.RelatedMethodologyArticle[0].Title, ShouldEqual, "Collection UK Environmental Accounts: 2021c")
 					So(r.RelatedMethodologyArticle[0].Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
 					So(len(r.Links), ShouldEqual, 3)
-					So(r.Links[0].URI, ShouldEqual, "pageDescription1")
+					So(r.Links[0].URI, ShouldEqual, testContentKeyPageDescription1)
 					So(r.Links[0].Title, ShouldEqual, "Page title: collection")
 					So(r.Links[0].Summary, ShouldEqual, "This is the page summary")
-					So(r.Links[1].URI, ShouldEqual, "pageDescription2")
+					So(r.Links[1].URI, ShouldEqual, testContentKeyPageDescription2)
 					So(r.Links[1].Title, ShouldEqual, "Collection UK Environmental Accounts: 2021c")
 					So(r.Links[1].Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
 					So(r.Links[2].URI, ShouldEqual, "externalLinkURI")
@@ -900,29 +922,29 @@ func TestUnitClient(t *testing.T) {
 					So(len(r.Markdown), ShouldEqual, 1)
 					So(r.Markdown[0], ShouldEqual, "collection markdown")
 					So(len(r.RelatedDocuments), ShouldEqual, 2)
-					So(r.RelatedDocuments[0].URI, ShouldEqual, "pageDescription2")
+					So(r.RelatedDocuments[0].URI, ShouldEqual, testContentKeyPageDescription2)
 					So(r.RelatedDocuments[0].Title, ShouldEqual, "Collection UK Environmental Accounts: 2021c")
 					So(r.RelatedDocuments[0].Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
-					So(r.RelatedDocuments[1].URI, ShouldEqual, "pageDescription3")
+					So(r.RelatedDocuments[1].URI, ShouldEqual, testContentKeyPageDescription3)
 					So(r.RelatedDocuments[1].Title, ShouldEqual, "Another page title")
 					So(r.RelatedDocuments[1].Summary, ShouldEqual, "Summary is from the _abstract field")
 					So(len(r.RelatedDatasets), ShouldEqual, 1)
-					So(r.RelatedDatasets[0].URI, ShouldEqual, "pageDescription1")
+					So(r.RelatedDatasets[0].URI, ShouldEqual, testContentKeyPageDescription1)
 					So(r.RelatedDatasets[0].Title, ShouldEqual, "Page title: collection")
 					So(r.RelatedDatasets[0].Summary, ShouldEqual, "This is the page summary")
 					So(len(r.RelatedMethodology), ShouldEqual, 1)
-					So(r.RelatedMethodology[0].URI, ShouldEqual, "pageDescription1")
+					So(r.RelatedMethodology[0].URI, ShouldEqual, testContentKeyPageDescription1)
 					So(r.RelatedMethodology[0].Title, ShouldEqual, "Page title: collection")
 					So(r.RelatedMethodology[0].Summary, ShouldEqual, "This is the page summary")
 					So(len(r.RelatedMethodologyArticle), ShouldEqual, 1)
-					So(r.RelatedMethodologyArticle[0].URI, ShouldEqual, "pageDescription2")
+					So(r.RelatedMethodologyArticle[0].URI, ShouldEqual, testContentKeyPageDescription2)
 					So(r.RelatedMethodologyArticle[0].Title, ShouldEqual, "Collection UK Environmental Accounts: 2021c")
 					So(r.RelatedMethodologyArticle[0].Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
 					So(len(r.Links), ShouldEqual, 3)
-					So(r.Links[0].URI, ShouldEqual, "pageDescription1")
+					So(r.Links[0].URI, ShouldEqual, testContentKeyPageDescription1)
 					So(r.Links[0].Title, ShouldEqual, "Page title: collection")
 					So(r.Links[0].Summary, ShouldEqual, "This is the page summary")
-					So(r.Links[1].URI, ShouldEqual, "pageDescription2")
+					So(r.Links[1].URI, ShouldEqual, testContentKeyPageDescription2)
 					So(r.Links[1].Title, ShouldEqual, "Collection UK Environmental Accounts: 2021c")
 					So(r.Links[1].Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
 					So(r.Links[2].URI, ShouldEqual, "externalLinkURI")
@@ -950,7 +972,6 @@ func TestUnitClient(t *testing.T) {
 			})
 		})
 	})
-
 }
 
 func TestClient_HealthChecker(t *testing.T) {
@@ -1103,7 +1124,7 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	path := "/publisheddata"
-	testURIString := "/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02"
+	testURIString := testDatasetURI
 	documentContent := []byte("{byte slice returned}")
 	body := httpmocks.NewReadCloserMock(documentContent, nil)
 
@@ -1143,7 +1164,6 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 				So(testContent, ShouldBeNil)
 				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
 				So(err.Error(), ShouldEqual, "invalid response from zebedee: 500, path: /publisheddata")
-
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -1166,7 +1186,6 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 				So(testContent, ShouldBeNil)
 				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
 				So(err.Error(), ShouldEqual, "invalid response from zebedee: 404, path: /publisheddata")
-
 			})
 
 			Convey("and client.Do should be called once with the expected parameters", func() {
@@ -1181,7 +1200,7 @@ func TestClient_PublishedDataEndpoint(t *testing.T) {
 func TestClient_PublishedIndexEndpoint(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	path := "/publishedindex"
+	path := endpointPublishedIndex
 
 	Convey("given a 200 response", t, func() {
 		documentContent, err := os.ReadFile("./response_mocks/publishedindex.json")
@@ -1291,7 +1310,7 @@ func MockZebedeeDatasetHandler(mockDataset Dataset, expectedFileSize int, fileNo
 func TestGetDataset(t *testing.T) {
 	Convey("Client.GetDataset called and file exists within Zebedee", t, func() {
 		Convey("result contains valid downloads", func() {
-			expectedDownloadFile := "filename.csv"
+			expectedDownloadFile := testFileName
 			expectedSize := 100
 			mockDownload := Download{File: expectedDownloadFile}
 			mockDataset := Dataset{
@@ -1348,7 +1367,7 @@ func TestGetDataset(t *testing.T) {
 
 	Convey("Client.GetDataset called and file exists in files API", t, func() {
 		Convey("result contains a download without size", func() {
-			expectedDownloadFile := "filename.csv"
+			expectedDownloadFile := testFileName
 			expectedSize := 100
 			expectedVersion := "2"
 			mockDownload := Download{
@@ -1376,7 +1395,7 @@ func TestGetDataset(t *testing.T) {
 		})
 
 		Convey("result contains a supplementary file without size", func() {
-			expectedSupplementaryFile := "filename.csv"
+			expectedSupplementaryFile := testFileName
 			expectedSize := 100
 			expectedVersion := "2"
 			mockSupplementaryFile := SupplementaryFile{
@@ -1408,7 +1427,7 @@ func TestGetDataset(t *testing.T) {
 func TestGetResourceStream(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	testURIString := "/employmentandlabourmarket/peopleinwork/workplacedisputesandworkingconditions/datasets/labourdisputesbysectorlabd02"
+	testURIString := testDatasetURI
 	documentContent := []byte("streamed byte content")
 	body := httpmocks.NewReadCloserMock(documentContent, nil)
 

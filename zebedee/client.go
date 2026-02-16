@@ -39,7 +39,8 @@ type ErrInvalidZebedeeResponse struct {
 	URI        string
 }
 
-// Error should be called by the user to print out the stringified version of the error
+// Error should be called by the user to print out the stringified
+// version of the error
 func (e ErrInvalidZebedeeResponse) Error() string {
 	return fmt.Sprintf("invalid response from zebedee: %d, path: %s",
 		e.ActualCode,
@@ -49,8 +50,9 @@ func (e ErrInvalidZebedeeResponse) Error() string {
 
 var _ error = ErrInvalidZebedeeResponse{}
 
-// New creates a new Zebedee Client, set ZEBEDEE_REQUEST_TIMEOUT_SECOND
-// environment variable to modify default client timeout as zebedee can often be slow
+// New creates a new Zebedee Client, set
+// ZEBEDEE_REQUEST_TIMEOUT_SECONDS environment variable to
+// modify default client timeout as zebedee can often be slow
 // to respond
 func New(zebedeeURL string) *Client {
 	timeout, err := strconv.Atoi(os.Getenv("ZEBEDEE_REQUEST_TIMEOUT_SECONDS"))
@@ -65,8 +67,8 @@ func New(zebedeeURL string) *Client {
 	}
 }
 
-// NewClientWithClienter creates a new Zebedee Client using the dp-net Clienter Http Client
-// which has options to set timeout and max retries.
+// NewClientWithClienter creates a new Zebedee Client using the dp-net
+// Clienter Http Client which has options to set timeout and max retries.
 func NewClientWithClienter(zebedeeURL string, clienter dphttp.Clienter) *Client {
 	hcClient := healthcheck.NewClientWithClienter(service, zebedeeURL, clienter)
 
@@ -83,7 +85,8 @@ func NewWithHealthClient(hcCli *healthcheck.Client) *Client {
 	}
 }
 
-// Checker calls zebedee health endpoint and returns a check object to the caller.
+// Checker calls zebedee health endpoint and returns a check object to
+// the caller.
 func (c *Client) Checker(ctx context.Context, check *health.CheckState) error {
 	return c.hcCli.Checker(ctx, check)
 }
@@ -94,7 +97,8 @@ func (c *Client) Get(ctx context.Context, userAccessToken, path string) ([]byte,
 	return b, err
 }
 
-// GetWithHeaders returns a response for the requested uri in zebedee, providing the headers too
+// GetWithHeaders returns a response for the requested uri in zebedee,
+// providing the headers too
 func (c *Client) GetWithHeaders(ctx context.Context, userAccessToken, path string) ([]byte, http.Header, error) {
 	return c.get(ctx, userAccessToken, path)
 }
@@ -117,8 +121,9 @@ func (c *Client) Post(ctx context.Context, userAccessToken, path string, payload
 	return b, headers, nil
 }
 
-// GetDatasetLandingPage returns a DatasetLandingPage populated with data from a zebedee response. If an error
-// is returned there is a chance that a partly completed DatasetLandingPage is returned
+// GetDatasetLandingPage returns a DatasetLandingPage populated with data
+// from a zebedee response. If an error is returned there is a chance that
+// a partly completed DatasetLandingPage is returned
 func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, collectionID, lang, path string) (DatasetLandingPage, error) {
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+path)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
@@ -127,7 +132,7 @@ func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, col
 	}
 
 	var dlp DatasetLandingPage
-	if err = json.Unmarshal(b, &dlp); err != nil {
+	if err := json.Unmarshal(b, &dlp); err != nil {
 		return dlp, err
 	}
 
@@ -162,7 +167,7 @@ func (c *Client) GetDatasetLandingPage(ctx context.Context, userAccessToken, col
 }
 
 func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte, http.Header, error) {
-	req, err := http.NewRequest("GET", c.hcCli.URL+path, nil)
+	req, err := http.NewRequest("GET", c.hcCli.URL+path, http.NoBody)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -192,7 +197,7 @@ func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte,
 // getStream returns an io.ReadCloser for the requested uri in zebedee
 // Caller is responsible for closing the ReadCloser
 func (c *Client) getStream(ctx context.Context, userAccessToken, path string) (io.ReadCloser, http.Header, error) {
-	req, err := http.NewRequest("GET", c.hcCli.URL+path, nil)
+	req, err := http.NewRequest("GET", c.hcCli.URL+path, http.NoBody)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -272,7 +277,7 @@ func (c *Client) GetBreadcrumb(ctx context.Context, userAccessToken, collectionI
 	}
 
 	var parentsJSON []Breadcrumb
-	if err = json.Unmarshal(b, &parentsJSON); err != nil {
+	if err := json.Unmarshal(b, &parentsJSON); err != nil {
 		return nil, err
 	}
 
@@ -290,7 +295,7 @@ func (c *Client) GetDataset(ctx context.Context, userAccessToken, collectionID, 
 
 	var dataset Dataset
 
-	if err = json.Unmarshal(b, &dataset); err != nil {
+	if err := json.Unmarshal(b, &dataset); err != nil {
 		return dataset, err
 	}
 
@@ -330,6 +335,7 @@ func (c *Client) supplementaryFileStoredInZebedee(supplementaryFile Supplementar
 	return supplementaryFile.URI == ""
 }
 
+// GetHomepageContent gets the content for the homepage from zebedee
 func (c *Client) GetHomepageContent(ctx context.Context, userAccessToken, collectionID, lang, path string) (HomepageContent, error) {
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+path)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
@@ -338,7 +344,7 @@ func (c *Client) GetHomepageContent(ctx context.Context, userAccessToken, collec
 	}
 
 	var homepageContent HomepageContent
-	if err = json.Unmarshal(b, &homepageContent); err != nil {
+	if err := json.Unmarshal(b, &homepageContent); err != nil {
 		return homepageContent, err
 	}
 
@@ -354,7 +360,7 @@ func (c *Client) GetFileSize(ctx context.Context, userAccessToken, collectionID,
 	}
 
 	var fs FileSize
-	if err = json.Unmarshal(b, &fs); err != nil {
+	if err := json.Unmarshal(b, &fs); err != nil {
 		return fs, err
 	}
 
@@ -370,7 +376,7 @@ func (c *Client) GetPageTitle(ctx context.Context, userAccessToken, collectionID
 	}
 
 	var pt PageTitle
-	if err = json.Unmarshal(b, &pt); err != nil {
+	if err := json.Unmarshal(b, &pt); err != nil {
 		return pt, err
 	}
 
@@ -386,7 +392,7 @@ func (c *Client) GetPageData(ctx context.Context, userAccessToken, collectionID,
 	}
 
 	var pd PageData
-	if err = json.Unmarshal(b, &pd); err != nil {
+	if err := json.Unmarshal(b, &pd); err != nil {
 		return pd, err
 	}
 
@@ -402,13 +408,14 @@ func (c *Client) GetPageDescription(ctx context.Context, userAccessToken, collec
 	}
 
 	var desc PageDescription
-	if err = json.Unmarshal(b, &desc); err != nil {
+	if err := json.Unmarshal(b, &desc); err != nil {
 		return desc, err
 	}
 
 	return desc, nil
 }
 
+// GetTimeseriesMainFigure retrieves a timeseries main figure from zebedee
 func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, collectionID, lang, uri string) (TimeseriesMainFigure, error) {
 	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
@@ -418,13 +425,15 @@ func (c *Client) GetTimeseriesMainFigure(ctx context.Context, userAccessToken, c
 	}
 
 	var ts TimeseriesMainFigure
-	if err = json.Unmarshal(b, &ts); err != nil {
+	if err := json.Unmarshal(b, &ts); err != nil {
 		return ts, err
 	}
 
 	return ts, nil
 }
 
+// PutDatasetInCollection adds a CMD dataset to a
+// collection in zebedee with the given state
 func (c *Client) PutDatasetInCollection(ctx context.Context, userAccessToken, collectionID, lang, datasetID, state string) error {
 	uri := fmt.Sprintf("%s/collections/%s/datasets/%s", c.hcCli.URL, collectionID, datasetID)
 
@@ -442,6 +451,8 @@ func (c *Client) PutDatasetInCollection(ctx context.Context, userAccessToken, co
 	return nil
 }
 
+// PutDatasetVersionInCollection adds a CMD dataseries version
+// to a collection in zebedee with the given state
 func (c *Client) PutDatasetVersionInCollection(ctx context.Context, userAccessToken, collectionID, lang, datasetID, edition, version, state string) error {
 	uri := fmt.Sprintf("%s/collections/%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, collectionID, datasetID, edition, version)
 
@@ -468,7 +479,7 @@ func (c *Client) GetBulletin(ctx context.Context, userAccessToken, collectionID,
 	}
 
 	var bulletin Bulletin
-	if err = json.Unmarshal(b, &bulletin); err != nil {
+	if err := json.Unmarshal(b, &bulletin); err != nil {
 		return bulletin, err
 	}
 
@@ -527,7 +538,7 @@ func (c *Client) GetRelease(ctx context.Context, userAccessToken, collectionID, 
 	}
 
 	var release Release
-	if err = json.Unmarshal(b, &release); err != nil {
+	if err := json.Unmarshal(b, &release); err != nil {
 		return release, err
 	}
 
@@ -591,13 +602,13 @@ func (c *Client) GetResourceStream(ctx context.Context, userAccessToken, collect
 }
 
 func (c *Client) createRequestURL(ctx context.Context, collectionID, lang, path, query string) string {
-	if len(collectionID) > 0 {
+	if collectionID != "" {
 		path += "/" + collectionID
 	}
 
 	path += "?" + url.PathEscape(query)
 
-	if len(lang) > 0 {
+	if lang != "" {
 		path += "&lang=" + lang
 	}
 
@@ -632,7 +643,7 @@ func (c *Client) GetPublishedIndex(ctx context.Context, params *PublishedIndexRe
 	}
 
 	var publishedIndex PublishedIndex
-	if err = json.Unmarshal(b, &publishedIndex); err != nil {
+	if err := json.Unmarshal(b, &publishedIndex); err != nil {
 		return publishedIndex, err
 	}
 

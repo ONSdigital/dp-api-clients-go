@@ -30,7 +30,8 @@ type PageTitle struct {
 	URI     string `json:"uri"`
 }
 
-// PageDescription represents the content returned by zebedee when requesting a page description
+// PageDescription represents the content returned by zebedee when
+// requesting a page description
 type PageDescription struct {
 	URI         string      `json:"uri"`
 	Description Description `json:"description"`
@@ -65,7 +66,8 @@ type NodeDescription struct {
 	Title string `json:"title"`
 }
 
-// DatasetLandingPage is the page model of the Zebedee response for a dataset landing page type
+// DatasetLandingPage is the page model of the Zebedee response
+// for a dataset landing page type
 type DatasetLandingPage struct {
 	Type                      string      `json:"type"`
 	URI                       string      `json:"uri"`
@@ -140,7 +142,8 @@ type Alert struct {
 	Type     string `json:"type"`
 }
 
-// Related stores the Title and URI for any related data (e.g. related publications on a dataset page)
+// Related stores the Title and URI for any related data
+// (e.g. related publications on a dataset page)
 // Deprecated: use Link
 type Related = Link
 
@@ -151,7 +154,8 @@ type Link struct {
 	URI     string `json:"uri"`
 }
 
-// TimeseriesMainFigure represents timeseries data for main figure on the homepage
+// TimeseriesMainFigure represents timeseries data for main figure on
+// the homepage
 type TimeseriesMainFigure struct {
 	Description      TimeseriesDescription `json:"description"`
 	Years            []TimeseriesDataPoint `json:"years"`
@@ -161,18 +165,22 @@ type TimeseriesMainFigure struct {
 	URI              string                `json:"uri"`
 }
 
+// TimeseriesDataPoint represents a single data point in
+// a timeseries
 type TimeseriesDataPoint struct {
 	Value string `json:"value"`
 	Label string `json:"label"`
 }
 
+// TimeseriesDescription represents the description of a timeseries
 type TimeseriesDescription struct {
 	CDID        string `json:"cdid"`
 	Unit        string `json:"unit"`
 	ReleaseDate string `json:"releaseDate"`
 }
 
-// HomepageContent represents the page model of the Zebedee response for the ONS homepage
+// HomepageContent represents the page model of the Zebedee response
+// for the ONS homepage
 type HomepageContent struct {
 	Intro           Intro               `json:"intro"`
 	FeaturedContent []Featured          `json:"featuredContent"`
@@ -184,11 +192,13 @@ type HomepageContent struct {
 	EmergencyBanner EmergencyBanner     `json:"emergencyBanner"`
 }
 
+// Intro represents the intro section of a homepage.
 type Intro struct {
 	Title    string `json:"title"`
 	Markdown string `json:"markdown"`
 }
 
+// Featured represents a featured content item on a homepage.
 type Featured struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -196,6 +206,7 @@ type Featured struct {
 	ImageID     string `json:"image"`
 }
 
+// HomepageDescription represents a homepage description.
 type HomepageDescription struct {
 	Title           string   `json:"title"`
 	Summary         string   `json:"summary"`
@@ -206,6 +217,7 @@ type HomepageDescription struct {
 	Source          string   `json:"source"`
 }
 
+// EmergencyBanner represents an emergency banner
 type EmergencyBanner struct {
 	Type        string `json:"type"`
 	Title       string `json:"title"`
@@ -214,6 +226,7 @@ type EmergencyBanner struct {
 	LinkText    string `json:"linkText"`
 }
 
+// Collection represents a zebedee collection.
 type Collection struct {
 	ID              string           `json:"id"`
 	Name            string           `json:"name"`
@@ -227,6 +240,7 @@ type Collection struct {
 	Type            string           `json:"type"`
 }
 
+// CollectionItem represents an item within a collection.
 type CollectionItem struct {
 	ID           string `json:"id"`
 	State        string `json:"state"`
@@ -237,10 +251,12 @@ type CollectionItem struct {
 	Version      string `json:"version,omitempty"`
 }
 
+// CollectionState represents the state of a collection.
 type CollectionState struct {
 	State string `json:"state"`
 }
 
+// Bulletin represents a bulletin page.
 type Bulletin struct {
 	RelatedBulletins []Link      `json:"relatedBulletins"`
 	Sections         []Section   `json:"sections"`
@@ -259,6 +275,7 @@ type Bulletin struct {
 	LatestReleaseURI string      `json:"latestReleaseUri"`
 }
 
+// Release represents a release page.
 type Release struct {
 	Markdown                  []string            `json:"markdown"`
 	RelatedDocuments          []Link              `json:"relatedDocuments"`
@@ -272,12 +289,14 @@ type Release struct {
 	Description               Description         `json:"description"`
 }
 
+// ReleaseDateChange represents a release date change notice.
 type ReleaseDateChange struct {
 	Date         string `json:"previousDate"`
 	ChangeNotice string `json:"changeNotice"`
 }
 
-// PublishedIndexRequestParams represents request parameters for making paged PublishedIndex requests
+// PublishedIndexRequestParams represents request parameters
+// for making paged PublishedIndex requests
 type PublishedIndexRequestParams struct {
 	Limit  *int
 	Offset int
@@ -292,7 +311,8 @@ type PublishedIndex struct {
 	TotalCount int                  `json:"total_count"`
 }
 
-// PublishedIndexItem represents an individual content item returned from the PublishedIndex endpoint
+// PublishedIndexItem represents an individual content item returned
+// from the PublishedIndex endpoint
 type PublishedIndexItem struct {
 	URI string `json:"uri"`
 }
@@ -305,7 +325,8 @@ type PageData struct {
 	RelatedData []RelatedData `json:"relatedData,omitempty"`
 }
 
-// RelatedData represents a list of related data found on certain "content" type (e.g. bulletins) pages in Zebedee
+// RelatedData represents a list of related data found on certain
+// "content" type (e.g. bulletins) pages in Zebedee
 type RelatedData struct {
 	URI string `json:"uri"`
 }

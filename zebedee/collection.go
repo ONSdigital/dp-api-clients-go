@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GetCollection returns a Collection populated with data from a zebedee response. If an error occurs, it is returned.
+// GetCollection returns a collection from zebedee.
 func (c *Client) GetCollection(ctx context.Context, userAccessToken, collectionID string) (Collection, error) {
 	reqURL := fmt.Sprintf("/collectionDetails/%s", collectionID)
 	b, _, err := c.get(ctx, userAccessToken, reqURL)
@@ -18,7 +18,7 @@ func (c *Client) GetCollection(ctx context.Context, userAccessToken, collectionI
 	}
 
 	var collection Collection
-	if err = json.Unmarshal(b, &collection); err != nil {
+	if err := json.Unmarshal(b, &collection); err != nil {
 		return collection, err
 	}
 
@@ -49,7 +49,8 @@ func (c *Client) CreateCollection(ctx context.Context, userAccessToken string, c
 	return createdCollection, nil
 }
 
-// SaveContentToCollection saves the provided json content to a collection in zebedee
+// SaveContentToCollection saves the provided json content
+// to a collection in zebedee
 func (c *Client) SaveContentToCollection(ctx context.Context, userAccessToken, collectionID, pagePath string, content interface{}) error {
 	reqURL := fmt.Sprintf("/content/%s?uri=%s/data.json", collectionID, pagePath)
 
