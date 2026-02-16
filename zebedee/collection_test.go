@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/ONSdigital/dp-mocking/httpmocks"
-	dprequest "github.com/ONSdigital/dp-net/v3/request"
+	dpRequest "github.com/ONSdigital/dp-net/v3/request"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -49,7 +49,7 @@ func TestClientGetCollection(t *testing.T) {
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.Method, ShouldEqual, http.MethodGet)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, expectedPath)
-				So(doCalls[0].Req.Header.Get(dprequest.FlorenceHeaderKey), ShouldEqual, testAccessToken)
+				So(doCalls[0].Req.Header.Get(dpRequest.FlorenceHeaderKey), ShouldEqual, testAccessToken)
 			})
 		})
 	})
@@ -130,7 +130,7 @@ func TestClientCreateCollection(t *testing.T) {
 				So(doCalls, ShouldHaveLength, 1)
 				So(doCalls[0].Req.Method, ShouldEqual, http.MethodPost)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, expectedPath)
-				So(doCalls[0].Req.Header.Get(dprequest.FlorenceHeaderKey), ShouldEqual, testAccessToken)
+				So(doCalls[0].Req.Header.Get(dpRequest.FlorenceHeaderKey), ShouldEqual, testAccessToken)
 
 				var payload Collection
 				err := json.NewDecoder(doCalls[0].Req.Body).Decode(&payload)
@@ -206,7 +206,7 @@ func TestClientSaveContentToCollection(t *testing.T) {
 				So(doCalls[0].Req.Method, ShouldEqual, http.MethodPost)
 				So(doCalls[0].Req.URL.Path, ShouldEqual, expectedPath)
 				So(doCalls[0].Req.URL.RawQuery, ShouldEqual, expectedQuery)
-				So(doCalls[0].Req.Header.Get(dprequest.FlorenceHeaderKey), ShouldEqual, testAccessToken)
+				So(doCalls[0].Req.Header.Get(dpRequest.FlorenceHeaderKey), ShouldEqual, testAccessToken)
 
 				var payload map[string]interface{}
 				err := json.NewDecoder(doCalls[0].Req.Body).Decode(&payload)
