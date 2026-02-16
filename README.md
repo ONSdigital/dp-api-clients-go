@@ -14,7 +14,6 @@ Common client code - in go - for ONS APIs:
 * image
 * importapi
 * releasecalendar
-* renderer
 * search (dimension search)
 * site-search (deprecated in favour of [dp-search-api SDK](https://github.com/ONSdigital/dp-search-api/tree/develop/sdk))
 * upload (Static Files)
