@@ -177,7 +177,11 @@ func (c *Client) get(ctx context.Context, userAccessToken, path string) ([]byte,
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
-		io.Copy(io.Discard, resp.Body)
+		// Ensure we read the body and close it to prevent resource leaks, even in error cases.
+		// If an error is returned from draining the body we still want to return
+		// the original error in this case as it's more likely to be useful to the caller than
+		// an error from reading the body
+		_, _ = io.Copy(io.Discard, resp.Body)
 		return nil, nil, ErrInvalidZebedeeResponse{resp.StatusCode, req.URL.Path}
 	}
 
@@ -202,7 +206,11 @@ func (c *Client) getStream(ctx context.Context, userAccessToken, path string) (i
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
-		io.Copy(io.Discard, resp.Body)
+		// Ensure we read the body and close it to prevent resource leaks, even in error cases.
+		// If an error is returned from draining the body we still want to return
+		// the original error in this case as it's more likely to be useful to the caller than
+		// an error from reading the body
+		_, _ = io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 		return nil, nil, ErrInvalidZebedeeResponse{resp.StatusCode, req.URL.Path}
 	}
@@ -244,7 +252,11 @@ func (c *Client) post(ctx context.Context, userAccessToken, path string, payload
 	defer closeResponseBody(ctx, resp)
 
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
-		io.Copy(io.Discard, resp.Body)
+		// Ensure we read the body and close it to prevent resource leaks, even in error cases.
+		// If an error is returned from draining the body we still want to return
+		// the original error in this case as it's more likely to be useful to the caller than
+		// an error from reading the body
+		_, _ = io.Copy(io.Discard, resp.Body)
 		return nil, nil, ErrInvalidZebedeeResponse{resp.StatusCode, req.URL.Path}
 	}
 
