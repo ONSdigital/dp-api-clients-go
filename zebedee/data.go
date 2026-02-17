@@ -144,6 +144,7 @@ type Alert struct {
 
 // Related stores the Title and URI for any related data
 // (e.g. related publications on a dataset page)
+//
 // Deprecated: use Link
 type Related = Link
 
