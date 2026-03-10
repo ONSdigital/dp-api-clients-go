@@ -269,6 +269,36 @@ func (c *Client) post(ctx context.Context, userAccessToken, path string, payload
 	return b, resp.Header, err
 }
 
+func (c *Client) delete(ctx context.Context, userAccessToken, path string) ([]byte, http.Header, error) {
+	req, err := http.NewRequest(http.MethodDelete, c.hcCli.URL+path, http.NoBody)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	dprequest.AddFlorenceHeader(req, userAccessToken)
+	dprequest.AddAuthHeaders(ctx, req, userAccessToken)
+
+	resp, err := c.hcCli.Client.Do(ctx, req)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer closeResponseBody(ctx, resp)
+
+	defer closeResponseBody(ctx, resp)
+
+	if resp.StatusCode < 200 || resp.StatusCode > 399 {
+		// Ensure we read the body and close it to prevent resource leaks, even in error cases.
+		// If an error is returned from draining the body we still want to return
+		// the original error in this case as it's more likely to be useful to the caller than
+		// an error from reading the body
+		_, _ = io.Copy(io.Discard, resp.Body)
+		return nil, nil, ErrInvalidZebedeeResponse{resp.StatusCode, req.URL.Path}
+	}
+
+	b, err := io.ReadAll(resp.Body)
+	return b, resp.Header, err
+}
+
 // GetBreadcrumb returns a Breadcrumb
 func (c *Client) GetBreadcrumb(ctx context.Context, userAccessToken, collectionID, lang, uri string) ([]Breadcrumb, error) {
 	b, _, err := c.get(ctx, userAccessToken, "/parents?uri="+uri)

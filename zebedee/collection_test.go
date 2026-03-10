@@ -366,3 +366,57 @@ func TestClientApproveCollectionContent(t *testing.T) {
 		})
 	})
 }
+
+func TestClientDeleteCollectionContent(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	pagePath := testPagePath
+	expectedPath := "/page/" + testCollectionID
+	expectedQuery := "uri=" + pagePath
+	responseBody := []byte(`{}`)
+
+	Convey("given a 204 response", t, func() {
+		body := httpmocks.NewReadCloserMock(responseBody, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusNoContent)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when DeleteCollectionContent is called", func() {
+			err := zebedeeClient.DeleteCollectionContent(ctx, testAccessToken, testCollectionID, pagePath)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := httpClient.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.Method, ShouldEqual, http.MethodDelete)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, expectedPath)
+				So(doCalls[0].Req.URL.RawQuery, ShouldEqual, expectedQuery)
+				So(doCalls[0].Req.Header.Get(dpRequest.FlorenceHeaderKey), ShouldEqual, testAccessToken)
+
+				bodyBytes, readErr := io.ReadAll(doCalls[0].Req.Body)
+				So(readErr, ShouldBeNil)
+				So(string(bodyBytes), ShouldEqual, "")
+			})
+		})
+	})
+
+	Convey("given a 500 response", t, func() {
+		body := httpmocks.NewReadCloserMock(responseBody, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusInternalServerError)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when DeleteCollectionContent is called", func() {
+			err := zebedeeClient.DeleteCollectionContent(ctx, testAccessToken, testCollectionID, pagePath)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
+			})
+		})
+	})
+}

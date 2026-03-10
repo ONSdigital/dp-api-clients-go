@@ -92,3 +92,16 @@ func (c *Client) ApproveCollectionContent(ctx context.Context, userAccessToken, 
 
 	return nil
 }
+
+// DeleteCollectionContent deletes the content at the provided content path
+// in a collection in zebedee
+func (c *Client) DeleteCollectionContent(ctx context.Context, userAccessToken, collectionID, pagePath string) error {
+	reqURL := fmt.Sprintf("/page/%s?uri=%s", collectionID, pagePath)
+
+	_, _, err := c.delete(ctx, userAccessToken, reqURL)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
