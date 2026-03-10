@@ -17,6 +17,7 @@ const (
 	endpointCollectionDetails = "/collectionDetails/"
 
 	testCollectionID = "test-collection"
+	testPagePath     = "some/page"
 )
 
 func TestClientGetCollection(t *testing.T) {
@@ -186,7 +187,7 @@ func TestClientSaveContentToCollection(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	pagePath := "some/page"
+	pagePath := testPagePath
 	expectedPath := "/content/" + testCollectionID
 	expectedQuery := "uri=" + pagePath + "/data.json"
 	content := map[string]interface{}{
@@ -316,7 +317,7 @@ func TestClientApproveCollectionContent(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	pagePath := "some/page"
+	pagePath := testPagePath
 	expectedPath := "/review/" + testCollectionID
 	expectedQuery := "uri=" + pagePath + "/data.json"
 	responseBody := []byte(`{}`)
