@@ -66,3 +66,29 @@ func (c *Client) SaveContentToCollection(ctx context.Context, userAccessToken, c
 
 	return nil
 }
+
+// CompleteCollectionContent marks the content
+// as completed and ready for review in zebedee
+func (c *Client) CompleteCollectionContent(ctx context.Context, userAccessToken, collectionID, lang, pagePath string) error {
+	reqURL := fmt.Sprintf("/complete/%s?uri=%s/%s", collectionID, pagePath, getDataFileForLang(lang))
+
+	_, _, err := c.post(ctx, userAccessToken, reqURL, []byte{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ApproveCollectionContent approves the provided json content path
+// in a collection in zebedee
+func (c *Client) ApproveCollectionContent(ctx context.Context, userAccessToken, collectionID, lang, pagePath string) error {
+	reqURL := fmt.Sprintf("/review/%s?uri=%s/%s", collectionID, pagePath, getDataFileForLang(lang))
+
+	_, _, err := c.post(ctx, userAccessToken, reqURL, []byte{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -3,6 +3,7 @@ package zebedee
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"testing"
 
@@ -248,6 +249,114 @@ func TestClientSaveContentToCollection(t *testing.T) {
 
 		Convey("when SaveContentToCollection is called", func() {
 			err := zebedeeClient.SaveContentToCollection(ctx, testAccessToken, testCollectionID, pagePath, content)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
+			})
+		})
+	})
+}
+
+func TestClientCompleteCollectionContent(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	pagePath := "some/page"
+	expectedPath := "/complete/" + testCollectionID
+	expectedQuery := "uri=" + pagePath + "/data.json"
+	responseBody := []byte(`{}`)
+
+	Convey("given a 201 response", t, func() {
+		body := httpmocks.NewReadCloserMock(responseBody, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusCreated)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when CompleteCollectionContent is called", func() {
+			err := zebedeeClient.CompleteCollectionContent(ctx, testAccessToken, testCollectionID, EnglishLangCode, pagePath)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := httpClient.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.Method, ShouldEqual, http.MethodPost)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, expectedPath)
+				So(doCalls[0].Req.URL.RawQuery, ShouldEqual, expectedQuery)
+				So(doCalls[0].Req.Header.Get(dpRequest.FlorenceHeaderKey), ShouldEqual, testAccessToken)
+
+				bodyBytes, readErr := io.ReadAll(doCalls[0].Req.Body)
+				So(readErr, ShouldBeNil)
+				So(string(bodyBytes), ShouldEqual, "")
+			})
+		})
+	})
+
+	Convey("given a 500 response", t, func() {
+		body := httpmocks.NewReadCloserMock(responseBody, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusInternalServerError)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when CompleteCollectionContent is called", func() {
+			err := zebedeeClient.CompleteCollectionContent(ctx, testAccessToken, testCollectionID, EnglishLangCode, pagePath)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
+			})
+		})
+	})
+}
+
+func TestClientApproveCollectionContent(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	pagePath := "some/page"
+	expectedPath := "/review/" + testCollectionID
+	expectedQuery := "uri=" + pagePath + "/data.json"
+	responseBody := []byte(`{}`)
+
+	Convey("given a 201 response", t, func() {
+		body := httpmocks.NewReadCloserMock(responseBody, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusCreated)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when ApproveCollectionContent is called", func() {
+			err := zebedeeClient.ApproveCollectionContent(ctx, testAccessToken, testCollectionID, EnglishLangCode, pagePath)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := httpClient.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.Method, ShouldEqual, http.MethodPost)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, expectedPath)
+				So(doCalls[0].Req.URL.RawQuery, ShouldEqual, expectedQuery)
+				So(doCalls[0].Req.Header.Get(dpRequest.FlorenceHeaderKey), ShouldEqual, testAccessToken)
+
+				bodyBytes, readErr := io.ReadAll(doCalls[0].Req.Body)
+				So(readErr, ShouldBeNil)
+				So(string(bodyBytes), ShouldEqual, "")
+			})
+		})
+	})
+
+	Convey("given a 500 response", t, func() {
+		body := httpmocks.NewReadCloserMock(responseBody, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusInternalServerError)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when ApproveCollectionContent is called", func() {
+			err := zebedeeClient.ApproveCollectionContent(ctx, testAccessToken, testCollectionID, EnglishLangCode, pagePath)
 
 			Convey("then the expected error is returned", func() {
 				So(err, ShouldNotBeNil)

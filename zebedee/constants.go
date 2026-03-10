@@ -16,3 +16,11 @@ const (
 	EnglishLangCode string = "en"
 	WelshLangCode   string = "cy"
 )
+
+func getDataFileForLang(lang string) string {
+	if lang == WelshLangCode {
+		return "data_cy.json"
+	} else {
+		return "data.json"
+	}
+}
