@@ -229,6 +229,98 @@ func TestClientDeleteCollection(t *testing.T) {
 	})
 }
 
+func TestClientApproveCollection(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	expectedPath := "/approve/" + testCollectionID
+
+	Convey("given a 200 response", t, func() {
+		body := httpmocks.NewReadCloserMock([]byte{}, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusOK)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when ApproveCollection is called", func() {
+			err := zebedeeClient.ApproveCollection(ctx, testAccessToken, testCollectionID)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := httpClient.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.Method, ShouldEqual, http.MethodPost)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, expectedPath)
+				So(doCalls[0].Req.Header.Get(dpRequest.FlorenceHeaderKey), ShouldEqual, testAccessToken)
+			})
+		})
+	})
+
+	Convey("given a 500 response", t, func() {
+		body := httpmocks.NewReadCloserMock([]byte{}, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusInternalServerError)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when ApproveCollection is called", func() {
+			err := zebedeeClient.ApproveCollection(ctx, testAccessToken, testCollectionID)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
+			})
+		})
+	})
+}
+
+func TestClientPublishCollection(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	expectedPath := "/publish/" + testCollectionID
+
+	Convey("given a 200 response", t, func() {
+		body := httpmocks.NewReadCloserMock([]byte{}, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusOK)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when PublishCollection is called", func() {
+			err := zebedeeClient.PublishCollection(ctx, testAccessToken, testCollectionID)
+
+			Convey("then no error is returned", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := httpClient.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.Method, ShouldEqual, http.MethodPost)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, expectedPath)
+				So(doCalls[0].Req.Header.Get(dpRequest.FlorenceHeaderKey), ShouldEqual, testAccessToken)
+			})
+		})
+	})
+
+	Convey("given a 500 response", t, func() {
+		body := httpmocks.NewReadCloserMock([]byte{}, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusInternalServerError)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when PublishCollection is called", func() {
+			err := zebedeeClient.PublishCollection(ctx, testAccessToken, testCollectionID)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
+			})
+		})
+	})
+}
+
 func TestClientSaveContentToCollection(t *testing.T) {
 	t.Parallel()
 

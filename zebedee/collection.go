@@ -61,6 +61,30 @@ func (c *Client) DeleteCollection(ctx context.Context, userAccessToken, collecti
 	return nil
 }
 
+// ApproveCollection approves a collection in zebedee.
+func (c *Client) ApproveCollection(ctx context.Context, userAccessToken, collectionID string) error {
+	reqURL := fmt.Sprintf("/approve/%s", collectionID)
+
+	_, _, err := c.post(ctx, userAccessToken, reqURL, []byte{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// PublishCollection publishes a collection in zebedee.
+func (c *Client) PublishCollection(ctx context.Context, userAccessToken, collectionID string) error {
+	reqURL := fmt.Sprintf("/publish/%s", collectionID)
+
+	_, _, err := c.post(ctx, userAccessToken, reqURL, []byte{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SaveContentToCollection saves the provided json content
 // to a collection in zebedee
 func (c *Client) SaveContentToCollection(ctx context.Context, userAccessToken, collectionID, pagePath string, content interface{}) error {
