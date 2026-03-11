@@ -49,6 +49,18 @@ func (c *Client) CreateCollection(ctx context.Context, userAccessToken string, c
 	return createdCollection, nil
 }
 
+// DeleteCollection deletes a collection in zebedee.
+func (c *Client) DeleteCollection(ctx context.Context, userAccessToken, collectionID string) error {
+	reqURL := fmt.Sprintf("/collection/%s", collectionID)
+
+	_, _, err := c.delete(ctx, userAccessToken, reqURL)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SaveContentToCollection saves the provided json content
 // to a collection in zebedee
 func (c *Client) SaveContentToCollection(ctx context.Context, userAccessToken, collectionID, pagePath string, content interface{}) error {
