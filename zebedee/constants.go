@@ -9,6 +9,7 @@ const (
 	EmptyCollectionId       string = ""
 	CollectionTypeManual    string = "manual"
 	CollectionTypeScheduled string = "scheduled"
+	CollectionTypeAutomated string = "automated"
 )
 
 // Language related
