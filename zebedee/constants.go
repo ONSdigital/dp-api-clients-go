@@ -6,10 +6,13 @@ package zebedee
 
 // Collection related
 const (
-	EmptyCollectionId       string = ""
-	CollectionTypeManual    string = "manual"
-	CollectionTypeScheduled string = "scheduled"
-	CollectionTypeAutomated string = "automated"
+	EmptyCollectionId          string = ""
+	CollectionTypeManual       string = "manual"
+	CollectionTypeScheduled    string = "scheduled"
+	CollectionTypeAutomated    string = "automated"
+	CollectionStatusNotStarted string = "NOT_STARTED"
+	CollectionStatusApproved   string = "APPROVED"
+	CollectionStatusError      string = "ERROR"
 )
 
 // Language related
