@@ -86,6 +86,10 @@ linters:
         path: _test.go
         text: dot-imports
         source: github.com/smartystreets/goconvey/convey
+      - linters:
+          - goconst
+        path: _test.go
+        text: "make it a constant"
     paths-except:
       - zebedee
 issues:
