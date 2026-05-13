@@ -10,9 +10,10 @@ const (
 	CollectionTypeManual       string = "manual"
 	CollectionTypeScheduled    string = "scheduled"
 	CollectionTypeAutomated    string = "automated"
-	CollectionStatusNotStarted string = "NOT_STARTED"
-	CollectionStatusApproved   string = "APPROVED"
+	CollectionStatusComplete   string = "COMPLETE"
 	CollectionStatusError      string = "ERROR"
+	CollectionStatusInProgress string = "IN_PROGRESS"
+	CollectionStatusNotStarted string = "NOT_STARTED"
 )
 
 // Language related

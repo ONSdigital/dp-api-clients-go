@@ -28,7 +28,7 @@ func TestClientGetCollection(t *testing.T) {
 	expectedCollection := Collection{
 		ID:             testCollectionID,
 		Name:           "Example collection",
-		ApprovalStatus: CollectionStatusApproved,
+		ApprovalStatus: CollectionStatusComplete,
 		Type:           "collection",
 		Inprogress: []CollectionItem{{
 			ID:    "item-1",
@@ -116,7 +116,7 @@ func TestClientCreateCollection(t *testing.T) {
 	createdCollection := Collection{
 		ID:             testCollectionID,
 		Name:           "Create collection",
-		ApprovalStatus: CollectionStatusApproved,
+		ApprovalStatus: CollectionStatusComplete,
 		Type:           "collection",
 	}
 	responseBody, _ := json.Marshal(createdCollection)
