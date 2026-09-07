@@ -567,3 +567,74 @@ func TestClientDeleteCollectionContent(t *testing.T) {
 		})
 	})
 }
+
+func TestClientCheckCollectionsForURI(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	uri := "/some/uri"
+	expectedPath := "/CheckCollectionsForURI"
+	expectedQuery := "uri=" + uri
+
+	Convey("given a 200 response with a blocking collection name", t, func() {
+		body := httpmocks.NewReadCloserMock([]byte("Example collection"), nil)
+		response := httpmocks.NewResponseMock(body, http.StatusOK)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when CheckCollectionsForURI is called", func() {
+			name, blocked, err := zebedeeClient.CheckCollectionsForURI(ctx, testAccessToken, uri)
+
+			Convey("then the blocking collection name is returned", func() {
+				So(err, ShouldBeNil)
+				So(blocked, ShouldBeTrue)
+				So(name, ShouldEqual, "Example collection")
+			})
+
+			Convey("and client.Do should be called once with the expected parameters", func() {
+				doCalls := httpClient.DoCalls()
+				So(doCalls, ShouldHaveLength, 1)
+				So(doCalls[0].Req.Method, ShouldEqual, http.MethodGet)
+				So(doCalls[0].Req.URL.Path, ShouldEqual, expectedPath)
+				So(doCalls[0].Req.URL.RawQuery, ShouldEqual, expectedQuery)
+				So(doCalls[0].Req.Header.Get(dpRequest.FlorenceHeaderKey), ShouldEqual, "Bearer "+testAccessToken)
+				So(doCalls[0].Req.Header.Get(dpRequest.AuthHeaderKey), ShouldEqual, "Bearer "+testAccessToken)
+			})
+		})
+	})
+
+	Convey("given a 204 response", t, func() {
+		body := httpmocks.NewReadCloserMock([]byte{}, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusNoContent)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when CheckCollectionsForURI is called", func() {
+			name, blocked, err := zebedeeClient.CheckCollectionsForURI(ctx, testAccessToken, uri)
+
+			Convey("then no blocking collection is returned", func() {
+				So(err, ShouldBeNil)
+				So(blocked, ShouldBeFalse)
+				So(name, ShouldEqual, "")
+			})
+		})
+	})
+
+	Convey("given a 500 response", t, func() {
+		body := httpmocks.NewReadCloserMock([]byte{}, nil)
+		response := httpmocks.NewResponseMock(body, http.StatusInternalServerError)
+		httpClient := newMockHTTPClient(response, nil)
+		zebedeeClient := newZebedeeClient(httpClient)
+
+		Convey("when CheckCollectionsForURI is called", func() {
+			name, blocked, err := zebedeeClient.CheckCollectionsForURI(ctx, testAccessToken, uri)
+
+			Convey("then the expected error is returned", func() {
+				So(err, ShouldNotBeNil)
+				So(err, ShouldHaveSameTypeAs, ErrInvalidZebedeeResponse{})
+				So(blocked, ShouldBeFalse)
+				So(name, ShouldEqual, "")
+			})
+		})
+	})
+}

@@ -141,3 +141,17 @@ func (c *Client) DeleteCollectionContent(ctx context.Context, authToken, collect
 
 	return nil
 }
+
+// CheckCollectionsForURI checks whether the given uri
+// is already being edited in a collection.
+func (c *Client) CheckCollectionsForURI(ctx context.Context, authToken, uri string) (collectionName string, found bool, err error) {
+	reqURL := "/CheckCollectionsForURI?uri=" + uri
+
+	b, _, err := c.get(ctx, authToken, reqURL)
+	if err != nil {
+		return "", false, err
+	}
+
+	name := string(b)
+	return name, name != "", nil
+}
