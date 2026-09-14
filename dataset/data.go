@@ -34,11 +34,14 @@ type DatasetDetails struct {
 	URI               string            `json:"uri,omitempty"`
 	IsBasedOn         *IsBasedOn        `json:"is_based_on,omitempty"`
 	VersionsList      VersionsList      `json:"versions_list,omitempty"`
-	CanonicalTopic    string            `json:"canonical_topic,omitempty"`
-	Subtopics         []string          `json:"subtopics,omitempty"`
-	Survey            string            `json:"survey,omitempty"`
-	RelatedContent    *[]GeneralDetails `json:"related_content,omitempty"`
-	LowestGeography   string            `json:"lowest_geography,omitempty"`
+	//Deprecated: CanonicalTopic is only used for CMD / Cantabular - for Static, use Topics instead.
+	CanonicalTopic string `json:"canonical_topic,omitempty"`
+	//Deprecated: Subtopics is only used for CMD / Cantabular - for Static, use Topics instead.
+	Subtopics       []string          `json:"subtopics,omitempty"`
+	Survey          string            `json:"survey,omitempty"`
+	RelatedContent  *[]GeneralDetails `json:"related_content,omitempty"`
+	LowestGeography string            `json:"lowest_geography,omitempty"`
+	Topics          []string          `json:"topics,omitempty"`
 }
 
 // Dataset represents a dataset resource
