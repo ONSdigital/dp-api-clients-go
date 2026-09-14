@@ -103,6 +103,7 @@ type Version struct {
 	Alerts               *[]Alert             `json:"alerts"`
 	CollectionID         string               `json:"collection_id"`
 	Downloads            map[string]Download  `json:"downloads"`
+	EditionTitle         string               `json:"edition_title"`
 	Edition              string               `json:"edition"`
 	Dimensions           []VersionDimension   `json:"dimensions"`
 	ID                   string               `json:"id"`
