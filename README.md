@@ -5,7 +5,7 @@ Common client code - in go - for ONS APIs:
 * areas
 * clientlog - logging
 * codelist
-* dataset
+* dataset (deprecated in favour of [dp-dataset-api SDK](https://github.com/ONSdigital/dp-dataset-api/tree/develop/sdk))
 * filter
 * headers - common API request headers
 * healthcheck -> health

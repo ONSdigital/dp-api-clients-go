@@ -1,3 +1,5 @@
+// Deprecated: use the dp-dataset-api sdk package:
+// https://github.com/ONSdigital/dp-dataset-api/tree/develop/sdk
 package dataset
 
 import (
