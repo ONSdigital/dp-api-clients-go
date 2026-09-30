@@ -1492,3 +1492,11 @@ func TestErrInvalidZebedeeResponse(t *testing.T) {
 		So(err.Error(), ShouldEqual, "invalid response from zebedee: 404, path: /missing/resource")
 	})
 }
+
+func TestClientImplementsClienter(t *testing.T) {
+	Convey("Given a zebedee API client", t, func() {
+		Convey("Then it should implement the Clienter interface", func() {
+			So(&Client{}, ShouldImplement, (*Clienter)(nil))
+		})
+	})
+}
