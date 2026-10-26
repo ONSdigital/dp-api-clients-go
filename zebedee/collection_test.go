@@ -16,8 +16,9 @@ const (
 	endpointCollection        = "/collection"
 	endpointCollectionDetails = "/collectionDetails/"
 
-	testCollectionID = "test-collection"
-	testPagePath     = "some/page"
+	testCollectionID    = "test-collection"
+	testCollectionBadID = "../../v1/something"
+	testPagePath        = "some/page"
 )
 
 func TestClientGetCollection(t *testing.T) {
@@ -61,6 +62,12 @@ func TestClientGetCollection(t *testing.T) {
 				So(doCalls[0].Req.Header.Get(dpRequest.FlorenceHeaderKey), ShouldEqual, "Bearer "+testAccessToken)
 				So(doCalls[0].Req.Header.Get(dpRequest.AuthHeaderKey), ShouldEqual, "Bearer "+testAccessToken)
 			})
+		})
+
+		Convey("when using invalid collection id an error is returned", func() {
+			_, err := zebedeeClient.GetCollection(ctx, testAccessToken, testCollectionBadID)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, errInvalidCollectionID)
 		})
 	})
 
@@ -213,6 +220,12 @@ func TestClientDeleteCollection(t *testing.T) {
 				So(doCalls[0].Req.Header.Get(dpRequest.AuthHeaderKey), ShouldEqual, "Bearer "+testAccessToken)
 			})
 		})
+
+		Convey("when using invalid collection id an error is returned", func() {
+			err := zebedeeClient.DeleteCollection(ctx, testAccessToken, testCollectionBadID)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, errInvalidCollectionID)
+		})
 	})
 
 	Convey("given a 500 response", t, func() {
@@ -260,6 +273,12 @@ func TestClientApproveCollection(t *testing.T) {
 				So(doCalls[0].Req.Header.Get(dpRequest.AuthHeaderKey), ShouldEqual, "Bearer "+testAccessToken)
 			})
 		})
+
+		Convey("when using invalid collection id an error is returned", func() {
+			err := zebedeeClient.ApproveCollection(ctx, testAccessToken, testCollectionBadID)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, errInvalidCollectionID)
+		})
 	})
 
 	Convey("given a 500 response", t, func() {
@@ -306,6 +325,12 @@ func TestClientPublishCollection(t *testing.T) {
 				So(doCalls[0].Req.Header.Get(dpRequest.FlorenceHeaderKey), ShouldEqual, "Bearer "+testAccessToken)
 				So(doCalls[0].Req.Header.Get(dpRequest.AuthHeaderKey), ShouldEqual, "Bearer "+testAccessToken)
 			})
+		})
+
+		Convey("when using invalid collection id an error is returned", func() {
+			err := zebedeeClient.PublishCollection(ctx, testAccessToken, testCollectionBadID)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, errInvalidCollectionID)
 		})
 	})
 
@@ -366,6 +391,12 @@ func TestClientSaveContentToCollection(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(payload, ShouldResemble, content)
 			})
+		})
+
+		Convey("when using invalid collection id an error is returned", func() {
+			err := zebedeeClient.SaveContentToCollection(ctx, testAccessToken, testCollectionBadID, pagePath, content)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, errInvalidCollectionID)
 		})
 	})
 
@@ -439,6 +470,12 @@ func TestClientCompleteCollectionContent(t *testing.T) {
 				So(string(bodyBytes), ShouldEqual, "")
 			})
 		})
+
+		Convey("when using invalid collection id an error is returned", func() {
+			err := zebedeeClient.CompleteCollectionContent(ctx, testAccessToken, testCollectionBadID, EnglishLangCode, pagePath)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, errInvalidCollectionID)
+		})
 	})
 
 	Convey("given a 500 response", t, func() {
@@ -494,6 +531,12 @@ func TestClientApproveCollectionContent(t *testing.T) {
 				So(string(bodyBytes), ShouldEqual, "")
 			})
 		})
+
+		Convey("when using invalid collection id an error is returned", func() {
+			err := zebedeeClient.ApproveCollectionContent(ctx, testAccessToken, testCollectionBadID, EnglishLangCode, pagePath)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, errInvalidCollectionID)
+		})
 	})
 
 	Convey("given a 500 response", t, func() {
@@ -548,6 +591,12 @@ func TestClientDeleteCollectionContent(t *testing.T) {
 				So(readErr, ShouldBeNil)
 				So(string(bodyBytes), ShouldEqual, "")
 			})
+		})
+
+		Convey("when using invalid collection id an error is returned", func() {
+			err := zebedeeClient.DeleteCollectionContent(ctx, testAccessToken, testCollectionBadID, pagePath)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, errInvalidCollectionID)
 		})
 	})
 

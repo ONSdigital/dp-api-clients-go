@@ -5,11 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 
+	dprequest "github.com/ONSdigital/dp-net/v3/request"
 	"github.com/pkg/errors"
 )
 
 // GetCollection returns a collection from zebedee.
 func (c *Client) GetCollection(ctx context.Context, authToken, collectionID string) (Collection, error) {
+	if !dprequest.IsCollectionIDValid(collectionID) {
+		return Collection{}, errors.New(errInvalidCollectionID)
+	}
 	reqURL := fmt.Sprintf("/collectionDetails/%s", collectionID)
 	b, _, err := c.get(ctx, authToken, reqURL)
 
@@ -51,6 +55,9 @@ func (c *Client) CreateCollection(ctx context.Context, authToken string, collect
 
 // DeleteCollection deletes a collection in zebedee.
 func (c *Client) DeleteCollection(ctx context.Context, authToken, collectionID string) error {
+	if !dprequest.IsCollectionIDValid(collectionID) {
+		return errors.New(errInvalidCollectionID)
+	}
 	reqURL := fmt.Sprintf("/collection/%s", collectionID)
 
 	_, _, err := c.delete(ctx, authToken, reqURL)
@@ -63,6 +70,9 @@ func (c *Client) DeleteCollection(ctx context.Context, authToken, collectionID s
 
 // ApproveCollection approves a collection in zebedee.
 func (c *Client) ApproveCollection(ctx context.Context, authToken, collectionID string) error {
+	if !dprequest.IsCollectionIDValid(collectionID) {
+		return errors.New(errInvalidCollectionID)
+	}
 	reqURL := fmt.Sprintf("/approve/%s", collectionID)
 
 	_, _, err := c.post(ctx, authToken, reqURL, []byte{})
@@ -75,6 +85,9 @@ func (c *Client) ApproveCollection(ctx context.Context, authToken, collectionID 
 
 // PublishCollection publishes a collection in zebedee.
 func (c *Client) PublishCollection(ctx context.Context, authToken, collectionID string) error {
+	if !dprequest.IsCollectionIDValid(collectionID) {
+		return errors.New(errInvalidCollectionID)
+	}
 	reqURL := fmt.Sprintf("/publish/%s", collectionID)
 
 	_, _, err := c.post(ctx, authToken, reqURL, []byte{})
@@ -88,6 +101,9 @@ func (c *Client) PublishCollection(ctx context.Context, authToken, collectionID 
 // SaveContentToCollection saves the provided json content
 // to a collection in zebedee
 func (c *Client) SaveContentToCollection(ctx context.Context, authToken, collectionID, pagePath string, content interface{}) error {
+	if !dprequest.IsCollectionIDValid(collectionID) {
+		return errors.New(errInvalidCollectionID)
+	}
 	reqURL := fmt.Sprintf("/content/%s?uri=%s/data.json", collectionID, pagePath)
 
 	payload, err := json.Marshal(content)
@@ -106,6 +122,9 @@ func (c *Client) SaveContentToCollection(ctx context.Context, authToken, collect
 // CompleteCollectionContent marks the content
 // as completed and ready for review in zebedee
 func (c *Client) CompleteCollectionContent(ctx context.Context, authToken, collectionID, lang, pagePath string) error {
+	if !dprequest.IsCollectionIDValid(collectionID) {
+		return errors.New(errInvalidCollectionID)
+	}
 	reqURL := fmt.Sprintf("/complete/%s?uri=%s/%s", collectionID, pagePath, getDataFileForLang(lang))
 
 	_, _, err := c.post(ctx, authToken, reqURL, []byte{})
@@ -119,6 +138,9 @@ func (c *Client) CompleteCollectionContent(ctx context.Context, authToken, colle
 // ApproveCollectionContent approves the provided json content path
 // in a collection in zebedee
 func (c *Client) ApproveCollectionContent(ctx context.Context, authToken, collectionID, lang, pagePath string) error {
+	if !dprequest.IsCollectionIDValid(collectionID) {
+		return errors.New(errInvalidCollectionID)
+	}
 	reqURL := fmt.Sprintf("/review/%s?uri=%s/%s", collectionID, pagePath, getDataFileForLang(lang))
 
 	_, _, err := c.post(ctx, authToken, reqURL, []byte{})
@@ -132,6 +154,9 @@ func (c *Client) ApproveCollectionContent(ctx context.Context, authToken, collec
 // DeleteCollectionContent deletes the content at the provided content path
 // in a collection in zebedee
 func (c *Client) DeleteCollectionContent(ctx context.Context, authToken, collectionID, pagePath string) error {
+	if !dprequest.IsCollectionIDValid(collectionID) {
+		return errors.New(errInvalidCollectionID)
+	}
 	reqURL := fmt.Sprintf("/page/%s?uri=%s", collectionID, pagePath)
 
 	_, _, err := c.delete(ctx, authToken, reqURL)

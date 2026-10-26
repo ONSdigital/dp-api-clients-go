@@ -47,6 +47,7 @@ const (
 	testContentKeyRelease                  = "/release"
 	testContentKeyHomepage                 = "/"
 	testContentKeyNotFound                 = "notFound"
+	testContentKeyFilesize                 = "filesize"
 
 	endpointPublishedIndex = "/publishedindex"
 
@@ -278,6 +279,12 @@ func TestUnitClient(t *testing.T) {
 		So(m.Description.Title, ShouldEqual, "Labour disputes by sector: LABD02 - publishing")
 	})
 
+	Convey("test GetDatasetLandingPage returns error if using invalid collection id", t, func() {
+		_, err := cli.GetDatasetLandingPage(ctx, testAccessToken, testCollectionBadID, testLang, testContentKeyLabourMarket)
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, errInvalidCollectionID)
+	})
+
 	Convey("GetHomepageContent() returns a homepage model", t, func() {
 		m, err := cli.GetHomepageContent(ctx, testAccessToken, "", testLang, testContentKeyHomepage)
 		So(err, ShouldBeNil)
@@ -318,6 +325,12 @@ func TestUnitClient(t *testing.T) {
 		So(m.EmergencyBanner.LinkText, ShouldEqual, "More info")
 	})
 
+	Convey("GetHomepageContent returns error if using invalid collection id", t, func() {
+		_, err := cli.GetHomepageContent(ctx, testAccessToken, testCollectionBadID, testLang, testContentKeyHomepage)
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, errInvalidCollectionID)
+	})
+
 	Convey("test get dataset details", t, func() {
 		d, err := cli.GetDataset(ctx, testAccessToken, "", testLang, testContentKeyDataset)
 		So(err, ShouldBeNil)
@@ -338,16 +351,28 @@ func TestUnitClient(t *testing.T) {
 		So(d.Downloads[0].Size, ShouldEqual, strconv.Itoa(testFileSizeCollection))
 	})
 
+	Convey("test GetDataset returns error if using invalid collection id", t, func() {
+		_, err := cli.GetDataset(ctx, testAccessToken, testCollectionBadID, testLang, testContentKeyDataset)
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, errInvalidCollectionID)
+	})
+
 	Convey("test getFileSize returns human readable filesize", t, func() {
-		fs, err := cli.GetFileSize(ctx, testAccessToken, "", testLang, "filesize")
+		fs, err := cli.GetFileSize(ctx, testAccessToken, "", testLang, testContentKeyFilesize)
 		So(err, ShouldBeNil)
 		So(fs.Size, ShouldEqual, testFileSize)
 	})
 
 	Convey("test getFileSize returns human readable filesize when using a collection", t, func() {
-		fs, err := cli.GetFileSize(ctx, testAccessToken, testCollectionID, testLang, "filesize")
+		fs, err := cli.GetFileSize(ctx, testAccessToken, testCollectionID, testLang, testContentKeyFilesize)
 		So(err, ShouldBeNil)
 		So(fs.Size, ShouldEqual, testFileSizeCollection)
+	})
+
+	Convey("test getFileSize returns error if using invalid collection id", t, func() {
+		_, err := cli.GetFileSize(ctx, testAccessToken, testCollectionBadID, testLang, testContentKeyFilesize)
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, errInvalidCollectionID)
 	})
 
 	Convey("test getPageTitle returns a correctly formatted page title", t, func() {
@@ -364,6 +389,12 @@ func TestUnitClient(t *testing.T) {
 		So(t.Title, ShouldEqual, "baby-names")
 		So(t.Edition, ShouldEqual, "collection")
 		So(t.URI, ShouldEqual, "path/to/baby-names/collection")
+	})
+
+	Convey("test getPageTitle returns error if using invalid collection id", t, func() {
+		_, err := cli.GetPageTitle(ctx, testAccessToken, testCollectionBadID, testLang, testContentKeyPageTitle1)
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, errInvalidCollectionID)
 	})
 
 	Convey("test GetPageData returns a correctly formatted generic page", t, func() {
@@ -384,6 +415,12 @@ func TestUnitClient(t *testing.T) {
 		So(t.Description.Edition, ShouldEqual, "2021")
 		So(t.Description.Summary, ShouldEqual, "Measuring the contribution of the environment to the economy")
 		So(t.RelatedData, ShouldHaveLength, 2)
+	})
+
+	Convey("test GetPageData returns error if using invalid collection id", t, func() {
+		_, err := cli.GetPageData(ctx, testAccessToken, testCollectionBadID, testLang, testContentKeyPageData)
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, errInvalidCollectionID)
 	})
 
 	Convey("test GetPageDescription", t, func() {
@@ -442,24 +479,38 @@ func TestUnitClient(t *testing.T) {
 				So(d.Description.Abstract, ShouldEqual, "Page description is mapped from _abstract")
 			})
 		})
+		Convey("when using invalid collection id an error is returned", func() {
+			_, err := cli.GetPageDescription(ctx, testAccessToken, testCollectionBadID, testLang, testContentKeyPageDescription1)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, errInvalidCollectionID)
+		})
 	})
 
 	Convey("test createRequestURL", t, func() {
 		Convey("test collection ID is added to URL when collection ID is passed", func() {
-			url := cli.createRequestURL(ctx, testCollectionID, "", "/data", "uri=/test/path/123")
+			url, err := cli.createRequestURL(ctx, testCollectionID, "", "/data", "uri=/test/path/123")
+			So(err, ShouldBeNil)
 			So(url, ShouldEqual, "/data/test-collection?uri=%2Ftest%2Fpath%2F123")
 		})
 		Convey("test collection ID is not added to URL when empty collection ID is passed", func() {
-			url := cli.createRequestURL(ctx, "", "", "/data", "uri=/test/path/123")
+			url, err := cli.createRequestURL(ctx, "", "", "/data", "uri=/test/path/123")
+			So(err, ShouldBeNil)
 			So(url, ShouldEqual, "/data?uri=%2Ftest%2Fpath%2F123")
 		})
 		Convey("test lang query parameter is added to URL when locale code is passed", func() {
-			url := cli.createRequestURL(ctx, "", "cy", "/data", "uri=/test/path/123")
+			url, err := cli.createRequestURL(ctx, "", "cy", "/data", "uri=/test/path/123")
+			So(err, ShouldBeNil)
 			So(url, ShouldEqual, "/data?uri=%2Ftest%2Fpath%2F123&lang=cy")
 		})
 		Convey("test collection ID and lang query parameter are added to URL when collection ID and locale code are present", func() {
-			url := cli.createRequestURL(ctx, testCollectionID, "cy", "/data", "uri=/test/path/123")
+			url, err := cli.createRequestURL(ctx, testCollectionID, "cy", "/data", "uri=/test/path/123")
+			So(err, ShouldBeNil)
 			So(url, ShouldEqual, "/data/test-collection?uri=%2Ftest%2Fpath%2F123&lang=cy")
+		})
+		Convey("bad test collection ID returns an error", func() {
+			_, err := cli.createRequestURL(ctx, testCollectionBadID, "cy", "/data", "uri=/test/path/123")
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldResemble, errInvalidCollectionID)
 		})
 	})
 
@@ -732,6 +783,12 @@ func TestUnitClient(t *testing.T) {
 			So(err, ShouldNotBeNil)
 			So(b, ShouldResemble, Bulletin{})
 		})
+
+		Convey("when using invalid collection id an error is returned", func() {
+			_, err := cli.GetBulletin(ctx, testAccessToken, testCollectionBadID, testLang, testContentKeyBulletinLatest)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, errInvalidCollectionID)
+		})
 	})
 
 	Convey("test GetRelease", t, func() {
@@ -976,6 +1033,42 @@ func TestUnitClient(t *testing.T) {
 				})
 			})
 		})
+
+		Convey("test GetRelease returns error if using invalid collection id", func() {
+			_, err := cli.GetRelease(ctx, testAccessToken, testCollectionBadID, testLang, testContentKeyRelease)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, errInvalidCollectionID)
+		})
+	})
+
+	Convey("test GetTimeseriesMainFigure returns error if using invalid collection id", t, func() {
+		_, err := cli.GetTimeseriesMainFigure(ctx, testAccessToken, testCollectionBadID, testLang, "")
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, errInvalidCollectionID)
+	})
+
+	Convey("test PutDatasetInCollection returns error if using invalid collection id", t, func() {
+		err := cli.PutDatasetInCollection(ctx, testAccessToken, testCollectionBadID, testLang, "", "")
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, errInvalidCollectionID)
+	})
+
+	Convey("test PutDatasetVersionInCollection returns error if using invalid collection id", t, func() {
+		err := cli.PutDatasetVersionInCollection(ctx, testAccessToken, testCollectionBadID, testLang, "", "", "", "")
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, errInvalidCollectionID)
+	})
+
+	Convey("test GetResourceBody returns error if using invalid collection id", t, func() {
+		_, err := cli.GetResourceBody(ctx, testAccessToken, testCollectionBadID, testLang, "")
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, errInvalidCollectionID)
+	})
+
+	Convey("test GetResourceStream returns error if using invalid collection id", t, func() {
+		_, err := cli.GetResourceStream(ctx, testAccessToken, testCollectionBadID, testLang, "")
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldEqual, errInvalidCollectionID)
 	})
 }
 
