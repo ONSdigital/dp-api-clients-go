@@ -25,7 +25,10 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-const service = "zebedee"
+const (
+	service                = "zebedee"
+	errInvalidCollectionID = "invalid collection id"
+)
 
 // Client represents a zebedee client
 type Client struct {
@@ -130,7 +133,10 @@ func (c *Client) Post(ctx context.Context, authToken, path string, payload []byt
 // from a zebedee response. If an error is returned there is a chance that
 // a partly completed DatasetLandingPage is returned
 func (c *Client) GetDatasetLandingPage(ctx context.Context, authToken, collectionID, lang, path string) (DatasetLandingPage, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+path)
+	reqURL, err := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+path)
+	if err != nil {
+		return DatasetLandingPage{}, err
+	}
 	b, _, err := c.get(ctx, authToken, reqURL)
 	if err != nil {
 		return DatasetLandingPage{}, err
@@ -327,7 +333,10 @@ func (c *Client) GetBreadcrumb(ctx context.Context, authToken, collectionID, lan
 
 // GetDataset returns details about a dataset from zebedee
 func (c *Client) GetDataset(ctx context.Context, authToken, collectionID, lang, uri string) (Dataset, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
+	reqURL, err := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
+	if err != nil {
+		return Dataset{}, err
+	}
 	b, _, err := c.get(ctx, authToken, reqURL)
 
 	if err != nil {
@@ -378,7 +387,10 @@ func (c *Client) supplementaryFileStoredInZebedee(supplementaryFile Supplementar
 
 // GetHomepageContent gets the content for the homepage from zebedee
 func (c *Client) GetHomepageContent(ctx context.Context, authToken, collectionID, lang, path string) (HomepageContent, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+path)
+	reqURL, err := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+path)
+	if err != nil {
+		return HomepageContent{}, err
+	}
 	b, _, err := c.get(ctx, authToken, reqURL)
 	if err != nil {
 		return HomepageContent{}, err
@@ -394,7 +406,10 @@ func (c *Client) GetHomepageContent(ctx context.Context, authToken, collectionID
 
 // GetFileSize retrieves a given filesize from zebedee
 func (c *Client) GetFileSize(ctx context.Context, authToken, collectionID, lang, uri string) (FileSize, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/filesize", "uri="+uri)
+	reqURL, err := c.createRequestURL(ctx, collectionID, lang, "/filesize", "uri="+uri)
+	if err != nil {
+		return FileSize{}, err
+	}
 	b, _, err := c.get(ctx, authToken, reqURL)
 	if err != nil {
 		return FileSize{}, err
@@ -410,7 +425,10 @@ func (c *Client) GetFileSize(ctx context.Context, authToken, collectionID, lang,
 
 // GetPageTitle retrieves a page title from zebedee
 func (c *Client) GetPageTitle(ctx context.Context, authToken, collectionID, lang, uri string) (PageTitle, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri+"&title")
+	reqURL, err := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri+"&title")
+	if err != nil {
+		return PageTitle{}, err
+	}
 	b, _, err := c.get(ctx, authToken, reqURL)
 	if err != nil {
 		return PageTitle{}, err
@@ -426,7 +444,10 @@ func (c *Client) GetPageTitle(ctx context.Context, authToken, collectionID, lang
 
 // GetPageData retrieves data about a given page
 func (c *Client) GetPageData(ctx context.Context, authToken, collectionID, lang, uri string) (PageData, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
+	reqURL, err := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
+	if err != nil {
+		return PageData{}, err
+	}
 	b, _, err := c.get(ctx, authToken, reqURL)
 	if err != nil {
 		return PageData{}, err
@@ -442,7 +463,10 @@ func (c *Client) GetPageData(ctx context.Context, authToken, collectionID, lang,
 
 // GetPageDescription retrieves a page description from zebedee
 func (c *Client) GetPageDescription(ctx context.Context, authToken, collectionID, lang, uri string) (PageDescription, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri+"&description")
+	reqURL, err := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri+"&description")
+	if err != nil {
+		return PageDescription{}, err
+	}
 	b, _, err := c.get(ctx, authToken, reqURL)
 	if err != nil {
 		return PageDescription{}, err
@@ -458,7 +482,10 @@ func (c *Client) GetPageDescription(ctx context.Context, authToken, collectionID
 
 // GetTimeseriesMainFigure retrieves a timeseries main figure from zebedee
 func (c *Client) GetTimeseriesMainFigure(ctx context.Context, authToken, collectionID, lang, uri string) (TimeseriesMainFigure, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
+	reqURL, err := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
+	if err != nil {
+		return TimeseriesMainFigure{}, err
+	}
 	b, _, err := c.get(ctx, authToken, reqURL)
 
 	if err != nil {
@@ -476,6 +503,9 @@ func (c *Client) GetTimeseriesMainFigure(ctx context.Context, authToken, collect
 // PutDatasetInCollection adds a CMD dataset to a
 // collection in zebedee with the given state
 func (c *Client) PutDatasetInCollection(ctx context.Context, authToken, collectionID, lang, datasetID, state string) error {
+	if !dprequest.IsCollectionIDValid(collectionID) {
+		return errors.New(errInvalidCollectionID)
+	}
 	uri := fmt.Sprintf("%s/collections/%s/datasets/%s", c.hcCli.URL, collectionID, datasetID)
 
 	zebedeeState := CollectionState{State: state}
@@ -495,6 +525,9 @@ func (c *Client) PutDatasetInCollection(ctx context.Context, authToken, collecti
 // PutDatasetVersionInCollection adds a CMD dataseries version
 // to a collection in zebedee with the given state
 func (c *Client) PutDatasetVersionInCollection(ctx context.Context, authToken, collectionID, lang, datasetID, edition, version, state string) error {
+	if !dprequest.IsCollectionIDValid(collectionID) {
+		return errors.New(errInvalidCollectionID)
+	}
 	uri := fmt.Sprintf("%s/collections/%s/datasets/%s/editions/%s/versions/%s", c.hcCli.URL, collectionID, datasetID, edition, version)
 
 	zebedeeState := CollectionState{State: state}
@@ -513,7 +546,10 @@ func (c *Client) PutDatasetVersionInCollection(ctx context.Context, authToken, c
 
 // GetBulletin retrieves a bulletin from zebedee
 func (c *Client) GetBulletin(ctx context.Context, authToken, collectionID, lang, uri string) (Bulletin, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
+	reqURL, err := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+uri)
+	if err != nil {
+		return Bulletin{}, err
+	}
 	b, _, err := c.get(ctx, authToken, reqURL)
 	if err != nil {
 		return Bulletin{}, err
@@ -572,7 +608,10 @@ func (c *Client) GetBulletin(ctx context.Context, authToken, collectionID, lang,
 func (c *Client) GetRelease(ctx context.Context, authToken, collectionID, lang, uri string) (Release, error) {
 	// Ensure uri starts with /
 	cleanUri := filepath.Clean("/" + uri)
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+cleanUri)
+	reqURL, err := c.createRequestURL(ctx, collectionID, lang, "/data", "uri="+cleanUri)
+	if err != nil {
+		return Release{}, err
+	}
 	b, _, err := c.get(ctx, authToken, reqURL)
 	if err != nil {
 		return Release{}, err
@@ -627,7 +666,10 @@ func (c *Client) GetRelease(ctx context.Context, authToken, collectionID, lang, 
 
 // GetResourceBody returns body of a resource e.g. JSON definition of a table
 func (c *Client) GetResourceBody(ctx context.Context, authToken, collectionID, lang, uri string) ([]byte, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/resource", "uri="+uri)
+	reqURL, err := c.createRequestURL(ctx, collectionID, lang, "/resource", "uri="+uri)
+	if err != nil {
+		return nil, err
+	}
 	b, _, err := c.get(ctx, authToken, reqURL)
 
 	return b, err
@@ -636,14 +678,20 @@ func (c *Client) GetResourceBody(ctx context.Context, authToken, collectionID, l
 // GetResourceStream returns a ReadCloser for a resource e.g. a file download
 // Caller is responsible for closing the ReadCloser
 func (c *Client) GetResourceStream(ctx context.Context, authToken, collectionID, lang, uri string) (io.ReadCloser, error) {
-	reqURL := c.createRequestURL(ctx, collectionID, lang, "/resource", "uri="+uri)
+	reqURL, err := c.createRequestURL(ctx, collectionID, lang, "/resource", "uri="+uri)
+	if err != nil {
+		return nil, err
+	}
 	s, _, err := c.getStream(ctx, authToken, reqURL)
 
 	return s, err
 }
 
-func (c *Client) createRequestURL(ctx context.Context, collectionID, lang, path, query string) string {
+func (c *Client) createRequestURL(ctx context.Context, collectionID, lang, path, query string) (string, error) {
 	if collectionID != "" {
+		if !dprequest.IsCollectionIDValid(collectionID) {
+			return "", errors.New(errInvalidCollectionID)
+		}
 		path += "/" + collectionID
 	}
 
@@ -653,12 +701,15 @@ func (c *Client) createRequestURL(ctx context.Context, collectionID, lang, path,
 		path += "&lang=" + lang
 	}
 
-	return path
+	return path, nil
 }
 
 // GetPublishedData returns []byte
 func (c *Client) GetPublishedData(ctx context.Context, uriString string) ([]byte, error) {
-	reqURL := c.createRequestURL(ctx, "", "", "/publisheddata", "uri="+uriString)
+	reqURL, err := c.createRequestURL(ctx, "", "", "/publisheddata", "uri="+uriString)
+	if err != nil {
+		return nil, err
+	}
 	content, _, err := c.get(ctx, "", reqURL)
 	if err != nil {
 		return nil, err
